@@ -31,3 +31,9 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# File nh?y c?m
+src/main/resources/application.properties
+
+# IDE files
+.idea/
