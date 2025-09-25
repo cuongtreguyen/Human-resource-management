@@ -37,3 +37,9 @@ src/main/resources/application.properties
 
 # IDE files
 .idea/
+
+# File nh?y c?m
+src/main/resources/application.properties
+
+# IDE files
+.idea/
