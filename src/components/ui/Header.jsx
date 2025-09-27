@@ -6,6 +6,7 @@ import Button from './Button';
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false); // ✅ thêm state
   const location = useLocation();
 
   const primaryNavItems = [
@@ -70,9 +71,9 @@ const Header = () => {
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Icon 
-                name={item?.icon} 
-                size={16} 
+              <Icon
+                name={item?.icon}
+                size={16}
                 className={`transition-colors duration-300 ${
                   isActivePath(item?.path) ? 'text-primary' : 'text-current'
                 }`}
@@ -124,14 +125,44 @@ const Header = () => {
           </Button>
 
           {/* User Profile */}
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-secondary to-muted rounded-full flex items-center justify-center">
-              <Icon name="User" size={16} color="white" />
+          <div className="relative">
+            <div
+              className="flex items-center space-x-3 cursor-pointer"
+              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-secondary to-muted rounded-full flex items-center justify-center">
+                <Icon name="User" size={16} color="white" />
+              </div>
+              <div className="hidden md:block">
+                <p className="text-sm font-medium text-foreground">Nguyễn Văn Cương</p>
+                <p className="text-xs text-muted-foreground">Trưởng phòng HR</p>
+              </div>
             </div>
-            <div className="hidden md:block">
-              <p className="text-sm font-medium text-foreground">Nguyễn Văn A</p>
-              <p className="text-xs text-muted-foreground">Trưởng phòng HR</p>
-            </div>
+
+            {isProfileMenuOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-popover border border-gray-200 rounded-lg shadow-strong animate-fade-in">
+                <div className="py-2">
+                  <Link
+                    to="/my-profile"
+                    onClick={() => setIsProfileMenuOpen(false)}
+                    className="flex items-center space-x-3 px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  >
+                    <Icon name="User" size={16} />
+                    <span>Hồ sơ của tôi</span>
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsProfileMenuOpen(false);
+                      console.log("Logout clicked");
+                    }}
+                    className="flex w-full items-center space-x-3 px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  >
+                    <Icon name="LogOut" size={16} />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
@@ -141,10 +172,11 @@ const Header = () => {
             onClick={toggleMobileMenu}
             className="lg:hidden"
           >
-            <Icon name={isMobileMenuOpen ? "X" : "Menu"} size={20} />
+            <Icon name={isMobileMenuOpen ? 'X' : 'Menu'} size={20} />
           </Button>
         </div>
       </div>
+
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-card border-t border-gray-200 animate-fade-in">
@@ -160,9 +192,9 @@ const Header = () => {
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 }`}
               >
-                <Icon 
-                  name={item?.icon} 
-                  size={18} 
+                <Icon
+                  name={item?.icon}
+                  size={18}
                   className={`transition-colors duration-300 ${
                     isActivePath(item?.path) ? 'text-primary' : 'text-current'
                   }`}
@@ -187,6 +219,7 @@ const Header = () => {
           </nav>
         </div>
       )}
+
       {/* Overlay for mobile menu */}
       {isMobileMenuOpen && (
         <div
@@ -195,11 +228,20 @@ const Header = () => {
           style={{ top: '64px' }}
         ></div>
       )}
+
       {/* Overlay for more menu */}
       {isMoreMenuOpen && (
         <div
           className="fixed inset-0 z-40"
           onClick={() => setIsMoreMenuOpen(false)}
+        ></div>
+      )}
+
+      {/* Overlay for profile menu */}
+      {isProfileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsProfileMenuOpen(false)}
         ></div>
       )}
     </header>

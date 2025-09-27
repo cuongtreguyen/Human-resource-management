@@ -12,25 +12,25 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
       category: 'Chính',
       items: [
         { name: 'Bảng điều khiển', path: '/dashboard', icon: 'LayoutDashboard', description: 'Tổng quan & thống kê' },
-        { name: 'Quản lý nhân viên', path: '/team-directory', icon: 'Users', description: 'H�?sơ nhân viên' },
-        { name: 'H�?sơ cá nhân', path: '/my-profile', icon: 'User', description: 'Cài đặt cá nhân' },
-        { name: 'Trung tâm công ty', path: '/company-hub', icon: 'Building2', description: 'Thông tin t�?chức' },
+        { name: 'Quản lý nhân viên', path: '/team-directory', icon: 'Users', description: 'Hồ sơ nhân viên' },
+        { name: 'Hồ sơ cá nhân', path: '/my-profile', icon: 'User', description: 'Cài đặt cá nhân' },
+        { name: 'Trung tâm công ty', path: '/company-hub', icon: 'Building2', description: 'Thông tin tổ chức' },
       ]
     },
     {
-      category: 'Công c�?,
+      category: 'Công cụ',
       items: [
-        { name: 'Phân tích', path: '/analytics', icon: 'BarChart3', description: 'Ch�?s�?hiệu suất' },
+        { name: 'Phân tích', path: '/analytics', icon: 'BarChart3', description: 'Chỉ số hiệu suất' },
         { name: 'Báo cáo', path: '/reports', icon: 'FileText', description: 'Tạo báo cáo' },
-        { name: 'Lịch', path: '/calendar', icon: 'Calendar', description: 'Lịch trình & s�?kiện' },
+        { name: 'Lịch', path: '/calendar', icon: 'Calendar', description: 'Lịch trình & sự kiện' },
       ]
     },
     {
       category: 'Cài đặt',
       items: [
         { name: 'Cài đặt', path: '/settings', icon: 'Settings', description: 'Tùy chọn ứng dụng' },
-        { name: 'Tr�?giúp', path: '/help', icon: 'HelpCircle', description: 'H�?tr�?& tài liệu' },
-        { name: 'Quản tr�?, path: '/admin', icon: 'Shield', description: 'Quản lý h�?thống' },
+        { name: 'Trợ giúp', path: '/help', icon: 'HelpCircle', description: 'Hỗ trợ & tài liệu' },
+        { name: 'Quản trị', path: '/admin', icon: 'Shield', description: 'Quản lý hệ thống' },
       ]
     }
   ];
@@ -56,7 +56,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-foreground">Truy cập nhanh</h2>
-                <p className="text-xs text-muted-foreground">Điều hướng hiệu qu�?/p>
+                <p className="text-xs text-muted-foreground">Điều hướng hiệu quả</p>
               </div>
             </div>
           )}
@@ -81,7 +81,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
-          {navigationItems?.map((section, sectionIndex) => (
+          {navigationItems?.map((section) => (
             <div key={section?.category} className="mb-6">
               {shouldShowContent && (
                 <div className="px-4 mb-3 animate-fade-in">
@@ -108,7 +108,8 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
                         size={18} 
                         className={`transition-all duration-300 ${
                           isActivePath(item?.path) 
-                            ? 'text-primary animate-pulse-soft' :'text-current group-hover:scale-110'
+                            ? 'text-primary animate-pulse-soft' 
+                            : 'text-current group-hover:scale-110'
                         }`}
                       />
                       {isActivePath(item?.path) && (
@@ -148,7 +149,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
                 </div>
                 <div className="flex-1">
                   <p className="text-xs font-medium text-foreground">Mẹo hay</p>
-                  <p className="text-xs text-muted-foreground">Dùng Ctrl+K đ�?tìm kiếm nhanh</p>
+                  <p className="text-xs text-muted-foreground">Dùng Ctrl+K để tìm kiếm nhanh</p>
                 </div>
               </div>
             </div>
@@ -161,6 +162,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
           )}
         </div>
       </aside>
+
       {/* Main content offset */}
       <div className={`transition-all duration-300 ${
         isCollapsed && !isHovered ? 'ml-16' : 'ml-64'
@@ -168,8 +170,7 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
         {/* This div ensures proper spacing for main content */}
       </div>
     </>
-  );
+  );  
 };
-
+  
 export default Sidebar;
-

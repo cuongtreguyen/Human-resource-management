@@ -63,7 +63,7 @@ const ExportOptions = ({ employees, onExport }) => {
         iconName="Download"
         iconPosition="left"
       >
-        Xuất d�?liệu
+        Xuất dữ liệu
       </Button>
     );
   }
@@ -160,11 +160,11 @@ const ExportOptions = ({ employees, onExport }) => {
           {/* Summary */}
           <div className="p-4 bg-muted/30 rounded-lg">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Nhân viên s�?xuất:</span>
+              <span className="text-muted-foreground">Nhân viên sản xuất:</span>
               <span className="font-medium text-foreground">{employees?.length}</span>
             </div>
             <div className="flex items-center justify-between text-sm mt-1">
-              <span className="text-muted-foreground">Trường d�?liệu:</span>
+              <span className="text-muted-foreground">Trường dữ liệu:</span>
               <span className="font-medium text-foreground">{selectedFieldsCount}</span>
             </div>
           </div>

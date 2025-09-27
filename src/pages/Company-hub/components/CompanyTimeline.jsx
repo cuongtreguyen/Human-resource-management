@@ -11,89 +11,89 @@ const CompanyTimeline = () => {
       id: 1,
       year: '2024',
       quarter: 'Q3',
-      title: "Employee Hub Wins \'Best Workplace Technology\' Award",
-      description: "Our innovative approach to employee engagement has been recognized by the Industry Excellence Awards, marking a significant milestone in our journey.",
+      title: "Employee Hub giành giải thưởng 'Best Workplace Technology'",
+      description: "Cách tiếp cận sáng tạo của chúng tôi trong việc gắn kết nhân viên đã được công nhận tại Industry Excellence Awards, đánh dấu một cột mốc quan trọng trong hành trình phát triển.",
       image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       type: "Achievement",
-      impact: "Company-wide recognition and increased market visibility",
-      metrics: ["150% productivity increase", "95% employee satisfaction", "50+ industry mentions"]
+      impact: "Được công nhận toàn công ty và tăng cường uy tín trên thị trường",
+      metrics: ["+150% năng suất", "95% sự hài lòng nhân viên", "50+ lần nhắc đến trong ngành"]
     },
     {
       id: 2,
       year: '2024',
       quarter: 'Q2',
-      title: "Austin Office Grand Opening",
-      description: "Expanded our presence with a state-of-the-art facility in Austin, Texas, featuring collaborative spaces and cutting-edge technology.",
+      title: "Khai trương văn phòng Austin",
+      description: "Mở rộng hiện diện với cơ sở hiện đại tại Austin, Texas, bao gồm không gian hợp tác và công nghệ tiên tiến.",
       image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       type: "Expansion",
-      impact: "200+ new employees and enhanced regional presence",
-      metrics: ["25,000 sq ft facility", "200+ new hires", "3 new departments"]
+      impact: "200+ nhân viên mới và mở rộng sự hiện diện khu vực",
+      metrics: ["25,000 ft² văn phòng", "200+ nhân viên mới", "3 phòng ban mới"]
     },
     {
       id: 3,
       year: '2024',
       quarter: 'Q1',
-      title: "AI Innovation Lab Launch",
-      description: "Established our dedicated AI research and development lab, focusing on workplace automation and employee experience enhancement.",
+      title: "Ra mắt Phòng thí nghiệm AI Innovation Lab",
+      description: "Thành lập phòng nghiên cứu AI chuyên dụng, tập trung vào tự động hóa nơi làm việc và nâng cao trải nghiệm nhân viên.",
       image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       type: "Innovation",
-      impact: "Breakthrough AI solutions improving workflow efficiency by 40%",
-      metrics: ["15 AI researchers", "5 patents filed", "40% efficiency gain"]
+      impact: "Các giải pháp AI đột phá cải thiện hiệu suất công việc 40%",
+      metrics: ["15 nhà nghiên cứu AI", "5 bằng sáng chế", "40% tăng hiệu suất"]
     },
     {
       id: 4,
       year: '2023',
       quarter: 'Q4',
-      title: "Wellness Program Excellence Award",
-      description: "Our comprehensive employee wellness program received national recognition for its innovative approach to mental health and work-life balance.",
+      title: "Giải thưởng Chương trình Sức khỏe Xuất sắc",
+      description: "Chương trình chăm sóc sức khỏe toàn diện cho nhân viên đã được công nhận quốc gia nhờ sự sáng tạo trong cân bằng tinh thần và công việc.",
       image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       type: "Culture",
-      impact: "Improved employee wellbeing and reduced turnover by 30%",
-      metrics: ["30% turnover reduction", "90% program participation", "4.8/5 satisfaction rating"]
+      impact: "Cải thiện sức khỏe nhân viên và giảm 30% tỷ lệ nghỉ việc",
+      metrics: ["30% giảm nghỉ việc", "90% tham gia", "4.8/5 điểm hài lòng"]
     },
     {
       id: 5,
       year: '2023',
       quarter: 'Q2',
-      title: "Global Partnership with TechCorp",
-      description: "Formed strategic alliance with TechCorp to enhance our technology stack and expand our global reach in the enterprise market.",
+      title: "Hợp tác toàn cầu với TechCorp",
+      description: "Thiết lập liên minh chiến lược với TechCorp để tăng cường công nghệ và mở rộng thị trường toàn cầu.",
       image: "https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       type: "Partnership",
-      impact: "Access to new markets and enhanced product capabilities",
-      metrics: ["12 new markets", "$50M partnership value", "25% revenue growth"]
+      impact: "Tiếp cận thị trường mới và nâng cao năng lực sản phẩm",
+      metrics: ["12 thị trường mới", "Hợp tác trị giá $50M", "25% tăng trưởng doanh thu"]
     },
     {
       id: 6,
       year: '2022',
       quarter: 'Q3',
-      title: "IPO Success and Public Listing",
-      description: "Successfully completed our initial public offering, raising $200M to fuel our growth and innovation initiatives.",
+      title: "IPO thành công và niêm yết công khai",
+      description: "Hoàn tất IPO thành công, huy động được $200M để thúc đẩy tăng trưởng và đổi mới.",
       image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       type: "Milestone",
-      impact: "Secured funding for accelerated growth and market expansion",
-      metrics: ["$200M raised", "NYSE listing", "500% stock growth"]
+      impact: "Đảm bảo nguồn vốn cho tăng trưởng và mở rộng thị trường",
+      metrics: ["$200M huy động", "Niêm yết NYSE", "500% tăng trưởng cổ phiếu"]
     },
     {
       id: 7,
       year: '2021',
       quarter: 'Q1',
-      title: "Remote-First Culture Transformation",
-      description: "Successfully transitioned to a remote-first work culture, implementing new tools and processes to maintain productivity and connection.",
+      title: "Chuyển đổi sang văn hoá Remote-First",
+      description: "Chuyển đổi thành công sang mô hình làm việc từ xa, triển khai công cụ và quy trình mới để duy trì năng suất.",
       image: "https://images.unsplash.com/photo-1600880292203-757bb62b4baf?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       type: "Transformation",
-      impact: "Maintained 100% productivity while expanding talent pool globally",
-      metrics: ["100% remote capability", "Global talent access", "Zero productivity loss"]
+      impact: "Duy trì 100% năng suất và mở rộng nhân tài toàn cầu",
+      metrics: ["100% khả năng remote", "Tiếp cận nhân tài toàn cầu", "Không mất năng suất"]
     },
     {
       id: 8,
       year: '2020',
       quarter: 'Q2',
-      title: "Employee Hub Platform Launch",
-      description: "Launched our flagship employee management platform, revolutionizing how companies engage with their workforce.",
+      title: "Ra mắt nền tảng Employee Hub",
+      description: "Phát hành nền tảng quản lý nhân sự đầu tiên, cách mạng hóa cách doanh nghiệp gắn kết với lực lượng lao động.",
       image: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       type: "Product",
-      impact: "Transformed employee experience for 1000+ companies",
-      metrics: ["1000+ companies", "100K+ users", "99.9% uptime"]
+      impact: "Thay đổi trải nghiệm nhân viên cho 1000+ công ty",
+      metrics: ["1000+ công ty", "100K+ người dùng", "99.9% uptime"]
     }
   ];
 
@@ -143,14 +143,14 @@ const CompanyTimeline = () => {
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Icon name="Clock" size={24} className="text-primary" />
             <span className="text-sm font-medium text-primary uppercase tracking-wider">
-              Company Timeline
+              Dòng thời gian công ty
             </span>
           </div>
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-            Our Journey of Growth & Innovation
+            Hành trình tăng trưởng & đổi mới
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover the key milestones, achievements, and transformative moments that have shaped our company's evolution
+            Khám phá những cột mốc, thành tựu và khoảnh khắc thay đổi đã định hình sự phát triển của công ty chúng tôi
           </p>
         </div>
 
@@ -164,14 +164,13 @@ const CompanyTimeline = () => {
               onClick={() => setSelectedYear(year)}
               className="transition-all duration-300 hover:scale-105"
             >
-              {year === 'all' ? 'All Years' : year}
+              {year === 'all' ? 'Tất cả' : year}
             </Button>
           ))}
         </div>
 
         {/* Timeline */}
         <div className="relative">
-          {/* Timeline Line */}
           <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary via-accent to-success opacity-30"></div>
 
           <div className="space-y-12">
@@ -181,14 +180,11 @@ const CompanyTimeline = () => {
                 className="relative animate-fade-in"
                 style={{ animationDelay: `${index * 0.2}s` }}
               >
-                {/* Timeline Dot */}
                 <div className="absolute left-6 w-4 h-4 bg-gradient-to-br from-primary to-accent rounded-full border-4 border-background shadow-strong z-10"></div>
 
-                {/* Content Card */}
                 <div className="ml-20">
                   <div className="bg-card rounded-xl border border-gray-200 shadow-soft hover:shadow-strong transition-all duration-300 overflow-hidden">
                     <div className="grid lg:grid-cols-3 gap-0">
-                      {/* Image */}
                       <div className="relative lg:col-span-1">
                         <Image
                           src={milestone?.image}
@@ -197,13 +193,11 @@ const CompanyTimeline = () => {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                         
-                        {/* Type Badge */}
                         <div className={`absolute top-4 left-4 px-3 py-1 bg-gradient-to-r ${getTypeColor(milestone?.type)} text-white text-sm font-medium rounded-full flex items-center space-x-2`}>
                           <Icon name={getTypeIcon(milestone?.type)} size={14} />
                           <span>{milestone?.type}</span>
                         </div>
 
-                        {/* Year Badge */}
                         <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2">
                           <div className="text-center">
                             <div className="text-lg font-bold text-primary">{milestone?.year}</div>
@@ -212,12 +206,11 @@ const CompanyTimeline = () => {
                         </div>
                       </div>
 
-                      {/* Content */}
                       <div className="lg:col-span-2 p-8 space-y-6">
                         <div className="space-y-4">
                           <div className="flex items-center space-x-3">
                             <div className="text-sm text-muted-foreground font-medium">
-                              {milestone?.year} �?{milestone?.quarter}
+                              {milestone?.year} · {milestone?.quarter}
                             </div>
                           </div>
                           
@@ -230,20 +223,18 @@ const CompanyTimeline = () => {
                           </p>
                         </div>
 
-                        {/* Impact */}
                         <div className="bg-muted/30 rounded-lg p-4">
                           <div className="flex items-center space-x-2 mb-2">
                             <Icon name="TrendingUp" size={16} className="text-success" />
-                            <span className="text-sm font-medium text-foreground">Impact</span>
+                            <span className="text-sm font-medium text-foreground">Tác động</span>
                           </div>
                           <p className="text-sm text-muted-foreground">{milestone?.impact}</p>
                         </div>
 
-                        {/* Metrics */}
                         <div className="space-y-3">
                           <div className="flex items-center space-x-2">
                             <Icon name="BarChart3" size={16} className="text-primary" />
-                            <span className="text-sm font-medium text-foreground">Key Metrics</span>
+                            <span className="text-sm font-medium text-foreground">Chỉ số chính</span>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                             {milestone?.metrics?.map((metric, metricIndex) => (
@@ -257,13 +248,12 @@ const CompanyTimeline = () => {
                           </div>
                         </div>
 
-                        {/* Action */}
                         <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                           <div className="text-sm text-muted-foreground">
-                            Milestone #{milestone?.id}
+                            Mốc #{milestone?.id}
                           </div>
                           <Button variant="ghost" size="sm" iconName="ExternalLink">
-                            Learn More
+                            Xem thêm
                           </Button>
                         </div>
                       </div>
@@ -275,11 +265,10 @@ const CompanyTimeline = () => {
           </div>
         </div>
 
-        {/* Statistics Summary */}
         <div className="mt-16 bg-gradient-to-r from-primary/5 to-accent/5 rounded-2xl p-8 animate-fade-in">
           <div className="text-center mb-8">
-            <h3 className="text-2xl font-bold text-foreground mb-2">Our Journey in Numbers</h3>
-            <p className="text-muted-foreground">Key achievements across our company timeline</p>
+            <h3 className="text-2xl font-bold text-foreground mb-2">Hành trình qua các con số</h3>
+            <p className="text-muted-foreground">Những thành tựu chính trong dòng thời gian của công ty</p>
           </div>
           
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
@@ -288,7 +277,7 @@ const CompanyTimeline = () => {
                 <Icon name="Calendar" size={24} color="white" />
               </div>
               <div className="text-3xl font-bold text-foreground">15+</div>
-              <div className="text-sm text-muted-foreground">Years of Excellence</div>
+              <div className="text-sm text-muted-foreground">Năm hoạt động</div>
             </div>
             
             <div className="text-center space-y-2">
@@ -296,7 +285,7 @@ const CompanyTimeline = () => {
                 <Icon name="Award" size={24} color="white" />
               </div>
               <div className="text-3xl font-bold text-foreground">25+</div>
-              <div className="text-sm text-muted-foreground">Industry Awards</div>
+              <div className="text-sm text-muted-foreground">Giải thưởng</div>
             </div>
             
             <div className="text-center space-y-2">
@@ -304,7 +293,7 @@ const CompanyTimeline = () => {
                 <Icon name="Users" size={24} color="white" />
               </div>
               <div className="text-3xl font-bold text-foreground">2,847</div>
-              <div className="text-sm text-muted-foreground">Team Members</div>
+              <div className="text-sm text-muted-foreground">Nhân viên</div>
             </div>
             
             <div className="text-center space-y-2">
@@ -312,7 +301,7 @@ const CompanyTimeline = () => {
                 <Icon name="Building2" size={24} color="white" />
               </div>
               <div className="text-3xl font-bold text-foreground">12</div>
-              <div className="text-sm text-muted-foreground">Global Offices</div>
+              <div className="text-sm text-muted-foreground">Văn phòng toàn cầu</div>
             </div>
           </div>
         </div>
@@ -322,4 +311,3 @@ const CompanyTimeline = () => {
 };
 
 export default CompanyTimeline;
-
