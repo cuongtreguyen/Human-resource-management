@@ -1,12 +1,11 @@
-import React from 'react';
-import HRApp from './pages/hr/HRDashboard';
+﻿import React from "react";
+import Routes from "./Routes";
 
 function App() {
   return (
-    <div>
-      <HRApp/>
-    </div>
+    <Routes />
   );
 }
 
 export default App;
+
