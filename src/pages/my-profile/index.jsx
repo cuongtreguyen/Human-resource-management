@@ -12,7 +12,7 @@ const MyProfile = () => {
   // Mock user data
   const [user, setUser] = useState({
     id: 1,
-    name: "Sarah Johnson",
+    name: "Nguyễn Văn Cương",
     position: "Senior Product Manager",
     department: "Product Development",
     email: "sarah.johnson@employeehub.com",

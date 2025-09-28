@@ -6,7 +6,7 @@ import Button from './Button';
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false); // ✅ thêm state
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const location = useLocation();
 
   const primaryNavItems = [
@@ -24,22 +24,10 @@ const Header = () => {
 
   const isActivePath = (path) => location?.pathname === path;
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
-
-  const toggleMoreMenu = () => {
-    setIsMoreMenuOpen(!isMoreMenuOpen);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMobileMenuOpen(false);
-  };
-
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-card border-b border-gray-200 shadow-soft">
       <div className="flex items-center justify-between h-16 px-6">
-        {/* Logo Section */}
+        {/* Logo */}
         <div className="flex items-center">
           <Link to="/dashboard" className="flex items-center space-x-3 group">
             <div className="relative">
@@ -61,24 +49,24 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center space-x-1">
-          {primaryNavItems?.map((item) => (
+          {primaryNavItems.map((item) => (
             <Link
-              key={item?.path}
-              to={item?.path}
+              key={item.path}
+              to={item.path}
               className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 hover:bg-muted/50 hover:scale-105 ${
-                isActivePath(item?.path)
+                isActivePath(item.path)
                   ? 'bg-primary/10 text-primary shadow-soft'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Icon
-                name={item?.icon}
+                name={item.icon}
                 size={16}
                 className={`transition-colors duration-300 ${
-                  isActivePath(item?.path) ? 'text-primary' : 'text-current'
+                  isActivePath(item.path) ? 'text-primary' : 'text-current'
                 }`}
               />
-              <span>{item?.name}</span>
+              <span>{item.name}</span>
             </Link>
           ))}
 
@@ -87,7 +75,7 @@ const Header = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleMoreMenu}
+              onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
               className={`flex items-center space-x-2 ${
                 isMoreMenuOpen ? 'bg-muted/50' : ''
               }`}
@@ -97,17 +85,17 @@ const Header = () => {
             </Button>
 
             {isMoreMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-gray-200 rounded-lg shadow-strong animate-fade-in">
+              <div className="absolute right-0 top-full mt-2 w-48 bg-popover border border-gray-200 rounded-lg shadow-strong animate-fade-in z-50">
                 <div className="py-2">
-                  {secondaryNavItems?.map((item) => (
+                  {secondaryNavItems.map((item) => (
                     <Link
-                      key={item?.path}
-                      to={item?.path}
+                      key={item.path}
+                      to={item.path}
                       onClick={() => setIsMoreMenuOpen(false)}
                       className="flex items-center space-x-3 px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors duration-200"
                     >
-                      <Icon name={item?.icon} size={16} />
-                      <span>{item?.name}</span>
+                      <Icon name={item.icon} size={16} />
+                      <span>{item.name}</span>
                     </Link>
                   ))}
                 </div>
@@ -140,7 +128,7 @@ const Header = () => {
             </div>
 
             {isProfileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-popover border border-gray-200 rounded-lg shadow-strong animate-fade-in">
+              <div className="absolute right-0 mt-2 w-48 bg-popover border border-gray-200 rounded-lg shadow-strong animate-fade-in z-50">
                 <div className="py-2">
                   <Link
                     to="/my-profile"
@@ -169,7 +157,7 @@ const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            onClick={toggleMobileMenu}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="lg:hidden"
           >
             <Icon name={isMobileMenuOpen ? 'X' : 'Menu'} size={20} />
@@ -179,40 +167,40 @@ const Header = () => {
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-card border-t border-gray-200 animate-fade-in">
+        <div className="lg:hidden bg-card border-t border-gray-200 animate-fade-in z-50 relative">
           <nav className="px-6 py-4 space-y-2">
-            {primaryNavItems?.map((item) => (
+            {primaryNavItems.map((item) => (
               <Link
-                key={item?.path}
-                to={item?.path}
-                onClick={closeMobileMenu}
+                key={item.path}
+                to={item.path}
+                onClick={() => setIsMobileMenuOpen(false)}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
-                  isActivePath(item?.path)
+                  isActivePath(item.path)
                     ? 'bg-primary/10 text-primary shadow-soft'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                 }`}
               >
                 <Icon
-                  name={item?.icon}
+                  name={item.icon}
                   size={18}
                   className={`transition-colors duration-300 ${
-                    isActivePath(item?.path) ? 'text-primary' : 'text-current'
+                    isActivePath(item.path) ? 'text-primary' : 'text-current'
                   }`}
                 />
-                <span>{item?.name}</span>
+                <span>{item.name}</span>
               </Link>
             ))}
 
             <div className="border-t border-gray-200 pt-4 mt-4">
-              {secondaryNavItems?.map((item) => (
+              {secondaryNavItems.map((item) => (
                 <Link
-                  key={item?.path}
-                  to={item?.path}
-                  onClick={closeMobileMenu}
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors duration-200"
                 >
-                  <Icon name={item?.icon} size={18} />
-                  <span>{item?.name}</span>
+                  <Icon name={item.icon} size={18} />
+                  <span>{item.name}</span>
                 </Link>
               ))}
             </div>
@@ -220,28 +208,15 @@ const Header = () => {
         </div>
       )}
 
-      {/* Overlay for mobile menu */}
-      {isMobileMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm lg:hidden"
-          onClick={closeMobileMenu}
-          style={{ top: '64px' }}
-        ></div>
-      )}
-
-      {/* Overlay for more menu */}
-      {isMoreMenuOpen && (
+      {/* Overlay */}
+      {(isMobileMenuOpen || isMoreMenuOpen || isProfileMenuOpen) && (
         <div
           className="fixed inset-0 z-40"
-          onClick={() => setIsMoreMenuOpen(false)}
-        ></div>
-      )}
-
-      {/* Overlay for profile menu */}
-      {isProfileMenuOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsProfileMenuOpen(false)}
+          onClick={() => {
+            setIsMobileMenuOpen(false);
+            setIsMoreMenuOpen(false);
+            setIsProfileMenuOpen(false);
+          }}
         ></div>
       )}
     </header>

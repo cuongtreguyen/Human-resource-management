@@ -9,21 +9,21 @@ const SearchFilters = ({ onSearch, onFilterChange, filters, onClearFilters }) =>
 
   const departmentOptions = [
     { value: "", label: "Tất cả phòng ban" },
-    { value: "engineering", label: "Công nghệ thông tin" },
-    { value: "design", label: "Thiết kế" },
-    { value: "marketing", label: "Marketing" },
-    { value: "sales", label: "Kinh doanh" },
-    { value: "hr", label: "Nhân sự" },
-    { value: "finance", label: "Kế toán" },
-    { value: "operations", label: "Vận hành" },
+    { value: "Công nghệ thông tin", label: "Công nghệ thông tin" },
+    { value: "Thiết kế", label: "Thiết kế" },
+    { value: "Marketing", label: "Marketing" },
+    { value: "Kinh doanh", label: "Kinh doanh" },
+    { value: "Nhân sự", label: "Nhân sự" },
+    { value: "Kế toán", label: "Kế toán" },
+    { value: "Vận hành", label: "Vận hành" },
   ];
 
   const locationOptions = [
     { value: "", label: "Tất cả địa điểm" },
-    { value: "ho-chi-minh", label: "Hồ Chí Minh" },
-    { value: "ha-noi", label: "Hà Nội" },
-    { value: "da-nang", label: "Đà Nẵng" },
-    { value: "can-tho", label: "Cần Thơ" },
+    { value: "Hồ Chí Minh", label: "Hồ Chí Minh" },
+    { value: "Hà Nội", label: "Hà Nội" },
+    { value: "Đà Nẵng", label: "Đà Nẵng" },
+    { value: "Cần Thơ", label: "Cần Thơ" },
     { value: "remote", label: "Làm việc từ xa" },
   ];
 
@@ -37,13 +37,13 @@ const SearchFilters = ({ onSearch, onFilterChange, filters, onClearFilters }) =>
 
   const skillOptions = [
     { value: "", label: "Tất cả kỹ năng" },
-    { value: "react", label: "React" },
-    { value: "nodejs", label: "Node.js" },
-    { value: "python", label: "Python" },
-    { value: "design", label: "UI/UX Design" },
-    { value: "marketing", label: "Digital Marketing" },
-    { value: "sales", label: "Chiến lược bán hàng" },
-    { value: "project-management", label: "Quản lý dự án" },
+    { value: "React", label: "React" },
+    { value: "Node.js", label: "Node.js" },
+    { value: "Python", label: "Python" },
+    { value: "UI/UX Design", label: "UI/UX Design" },
+    { value: "Digital Marketing", label: "Digital Marketing" },
+    { value: "Chiến lược bán hàng", label: "Chiến lược bán hàng" },
+    { value: "Quản lý dự án", label: "Quản lý dự án" },
   ];
 
   const handleSearchChange = (e) => {
@@ -69,6 +69,7 @@ const SearchFilters = ({ onSearch, onFilterChange, filters, onClearFilters }) =>
             type="search"
             placeholder="Tìm kiếm theo tên, chức vụ..."
             onChange={handleSearchChange}
+            value={filters.search}
             className="w-full"
           />
         </div>
@@ -138,10 +139,8 @@ const SearchFilters = ({ onSearch, onFilterChange, filters, onClearFilters }) =>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => handleFilterChange("department", "engineering")}
-          className={`${
-            filters?.department === "engineering" ? "bg-primary/10 text-primary" : ""
-          }`}
+          onClick={() => handleFilterChange("department", "Công nghệ thông tin")}
+          className={`${filters?.department === "Công nghệ thông tin" ? "bg-primary/10 text-primary" : ""}`}
         >
           <Icon name="Code" size={14} className="mr-1" />
           Công nghệ thông tin
@@ -150,10 +149,8 @@ const SearchFilters = ({ onSearch, onFilterChange, filters, onClearFilters }) =>
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => handleFilterChange("department", "design")}
-          className={`${
-            filters?.department === "design" ? "bg-primary/10 text-primary" : ""
-          }`}
+          onClick={() => handleFilterChange("department", "Thiết kế")}
+          className={`${filters?.department === "Thiết kế" ? "bg-primary/10 text-primary" : ""}`}
         >
           <Icon name="Palette" size={14} className="mr-1" />
           Thiết kế
@@ -163,9 +160,7 @@ const SearchFilters = ({ onSearch, onFilterChange, filters, onClearFilters }) =>
           variant="ghost"
           size="sm"
           onClick={() => handleFilterChange("status", "available")}
-          className={`${
-            filters?.status === "available" ? "bg-success/10 text-success" : ""
-          }`}
+          className={`${filters?.status === "available" ? "bg-success/10 text-success" : ""}`}
         >
           <Icon name="Circle" size={14} className="mr-1 text-success" />
           Đang online
@@ -175,9 +170,7 @@ const SearchFilters = ({ onSearch, onFilterChange, filters, onClearFilters }) =>
           variant="ghost"
           size="sm"
           onClick={() => handleFilterChange("location", "remote")}
-          className={`${
-            filters?.location === "remote" ? "bg-accent/10 text-accent" : ""
-          }`}
+          className={`${filters?.location === "remote" ? "bg-accent/10 text-accent" : ""}`}
         >
           <Icon name="Home" size={14} className="mr-1" />
           Làm việc từ xa
