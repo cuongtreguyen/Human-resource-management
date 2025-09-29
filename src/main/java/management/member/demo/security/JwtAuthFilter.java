@@ -54,6 +54,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         // Trích xuất JWT token từ header
         jwt = authHeader.substring(7);
+        // Chỉ chấp nhận access token và chưa bị thu hồi
+        if (!jwtService.isAccessToken(jwt) || jwtService.isTokenRevoked(jwt)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         username = jwtService.extractUsername(jwt);
 
         // Xác thực token nếu chưa có authentication trong SecurityContext

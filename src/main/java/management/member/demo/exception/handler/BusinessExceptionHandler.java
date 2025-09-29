@@ -15,13 +15,37 @@ public class BusinessExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex, WebRequest request) {
+        HttpStatus status = mapStatus(ex.getErrorCode());
         ErrorResponse error = new ErrorResponse(
-                HttpStatus.BAD_REQUEST.value(),
-                "Business Error",
+                status.value(),
+                ex.getErrorCode() == null ? "Business Error" : ex.getErrorCode(),
                 ex.getMessage(),
                 LocalDateTime.now(),
                 request.getDescription(false)
         );
-        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(error, status);
+    }
+
+    private HttpStatus mapStatus(String code) {
+        if (code == null) {
+            return HttpStatus.BAD_REQUEST;
+        }
+        switch (code) {
+            case "INVALID_CREDENTIALS":
+                return HttpStatus.UNAUTHORIZED;
+            case "ACCOUNT_LOCKED_OR_INACTIVE":
+                return HttpStatus.FORBIDDEN;
+            case "USERNAME_EXISTS":
+            case "EMAIL_EXISTS":
+            case "EMPLOYEE_EMAIL_EXISTS":
+            case "EMPLOYEE_CODE_EXISTS":
+                return HttpStatus.CONFLICT;
+            case "TOKEN_EXPIRED":
+            case "TOKEN_REVOKED":
+            case "INVALID_TOKEN_TYPE":
+                return HttpStatus.UNAUTHORIZED;
+            default:
+                return HttpStatus.BAD_REQUEST;
+        }
     }
 }

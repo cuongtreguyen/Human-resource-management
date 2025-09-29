@@ -17,11 +17,4 @@ public class LoginRequest {
     @Size(min = 6, max = 100, message = "Password must be between 6 and 100 characters")
     private String password;
 
-    // Constructors
-    public LoginRequest() {}
-
-    public LoginRequest(String username, String password) {
-        this.username = username;
-        this.password = password;
-    }
 }
