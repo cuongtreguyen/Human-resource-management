@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+# AWS_Tech
+=======
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -122,3 +125,4 @@ npm run build
 - Styled with Tailwind CSS
 
 Built with ❤️ on Rocket.new
+>>>>>>> develop

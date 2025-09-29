@@ -8,102 +8,102 @@ const EventsCalendar = () => {
   const [rsvpStatus, setRsvpStatus] = useState({});
 
   const viewOptions = [
-    { id: 'upcoming', label: 'Upcoming', icon: 'Calendar' },
-    { id: 'this-month', label: 'This Month', icon: 'CalendarDays' },
-    { id: 'past', label: 'Past Events', icon: 'History' }
+    { id: 'upcoming', label: 'Sắp diễn ra', icon: 'Calendar' },
+    { id: 'this-month', label: 'Tháng này', icon: 'CalendarDays' },
+    { id: 'past', label: 'Đã diễn ra', icon: 'History' }
   ];
 
   const eventsData = [
     {
       id: 1,
-      title: "Annual Innovation Summit 2024",
-      description: "Join us for three days of inspiring talks, workshops, and networking opportunities with industry leaders and innovators.",
+      title: "Hội nghị Đổi mới Sáng tạo 2024",
+      description: "Tham gia 3 ngày hội thảo, workshop và networking với các nhà lãnh đạo và chuyên gia hàng đầu trong ngành.",
       date: "2024-10-15",
-      time: "09:00 AM - 05:00 PM",
-      location: "Main Conference Hall",
-      type: "Conference",
+      time: "09:00 - 17:00",
+      location: "Hội trường chính",
+      type: "Hội nghị",
       category: "upcoming",
       image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       attendees: 245,
       maxAttendees: 300,
       organizer: "Alex Thompson",
-      tags: ["Innovation", "Technology", "Networking"],
+      tags: ["Đổi mới", "Công nghệ", "Kết nối"],
       featured: true
     },
     {
       id: 2,
-      title: "Wellness Wednesday: Yoga & Meditation",
-      description: "Start your Wednesday with mindfulness and movement. All skill levels welcome.",
+      title: "Thứ Tư Sức Khoẻ: Yoga & Thiền",
+      description: "Bắt đầu ngày mới với sự tĩnh tâm và vận động. Mọi cấp độ đều tham gia được.",
       date: "2024-09-25",
-      time: "08:00 AM - 09:00 AM",
-      location: "Wellness Room, 3rd Floor",
-      type: "Wellness",
+      time: "08:00 - 09:00",
+      location: "Phòng Sức Khoẻ, Tầng 3",
+      type: "Sức khoẻ",
       category: "upcoming",
       image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       attendees: 28,
       maxAttendees: 30,
-      organizer: "Dr. Emily Rodriguez",
-      tags: ["Wellness", "Mindfulness", "Health"]
+      organizer: "BS. Emily Rodriguez",
+      tags: ["Sức khoẻ", "Thiền", "Tập luyện"]
     },
     {
       id: 3,
-      title: "Team Building: Escape Room Challenge",
-      description: "Test your problem-solving skills and teamwork in this exciting escape room adventure.",
+      title: "Hoạt động nhóm: Thử thách Escape Room",
+      description: "Rèn luyện kỹ năng giải quyết vấn đề và làm việc nhóm trong trò chơi Escape Room đầy thú vị.",
       date: "2024-09-28",
-      time: "02:00 PM - 04:00 PM",
-      location: "Downtown Escape Rooms",
+      time: "14:00 - 16:00",
+      location: "Escape Room trung tâm",
       type: "Team Building",
       category: "upcoming",
       image: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       attendees: 42,
       maxAttendees: 48,
       organizer: "Jennifer Park",
-      tags: ["Team Building", "Fun", "Problem Solving"]
+      tags: ["Nhóm", "Vui chơi", "Thử thách"]
     },
     {
       id: 4,
-      title: "Quarterly All-Hands Meeting",
-      description: "Company updates, Q3 results, and Q4 planning session with leadership team.",
+      title: "Họp Toàn Công ty Quý IV",
+      description: "Cập nhật kết quả Q3 và kế hoạch Q4 cùng ban lãnh đạo.",
       date: "2024-10-02",
-      time: "10:00 AM - 12:00 PM",
-      location: "Virtual & Main Auditorium",
-      type: "Meeting",
+      time: "10:00 - 12:00",
+      location: "Trực tuyến & Hội trường lớn",
+      type: "Cuộc họp",
       category: "this-month",
       image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       attendees: 892,
       maxAttendees: 1000,
       organizer: "Sarah Johnson",
-      tags: ["Company", "Updates", "Planning"]
+      tags: ["Công ty", "Cập nhật", "Kế hoạch"]
     },
     {
       id: 5,
-      title: "Tech Talk: AI in Modern Workplace",
-      description: "Exploring how artificial intelligence is transforming the way we work and collaborate.",
+      title: "Tech Talk: AI trong Nơi làm việc hiện đại",
+      description: "Khám phá cách AI thay đổi cách chúng ta làm việc và hợp tác.",
       date: "2024-10-08",
-      time: "03:00 PM - 04:30 PM",
-      location: "Tech Hub, 2nd Floor",
-      type: "Learning",
+      time: "15:00 - 16:30",
+      location: "Tech Hub, Tầng 2",
+      type: "Học tập",
       category: "this-month",
       image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       attendees: 67,
       maxAttendees: 80,
       organizer: "David Kumar",
-      tags: ["Technology", "AI", "Learning"]
+      tags: ["Công nghệ", "AI", "Học tập"]
     },
     {
       id: 6,
-      title: "Summer Company Picnic",
-      description: "Annual outdoor celebration with food, games, and family-friendly activities.",
+      title: "Picnic Mùa Hè Công ty",
+      description: "Sự kiện ngoài trời thường niên với ẩm thực, trò chơi và hoạt động cho cả gia đình.",
       date: "2024-08-15",
-      time: "11:00 AM - 06:00 PM",
-      location: "Central Park Pavilion",
-      type: "Social",
+      time: "11:00 - 18:00",
+      location: "Công viên Trung tâm",
+      type: "Xã hội",
       category: "past",
       image: "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       attendees: 456,
       maxAttendees: 500,
-      organizer: "HR Team",
-      tags: ["Social", "Family", "Celebration"]
+      organizer: "Phòng Nhân sự",
+      tags: ["Xã hội", "Gia đình", "Ăn mừng"]
     }
   ];
 
@@ -118,12 +118,12 @@ const EventsCalendar = () => {
 
   const getEventTypeColor = (type) => {
     const colors = {
-      'Conference': 'from-primary to-accent',
-      'Wellness': 'from-success to-accent',
+      'Hội nghị': 'from-primary to-accent',
+      'Sức khoẻ': 'from-success to-accent',
       'Team Building': 'from-warning to-primary',
-      'Meeting': 'from-secondary to-primary',
-      'Learning': 'from-accent to-success',
-      'Social': 'from-warning to-success'
+      'Cuộc họp': 'from-secondary to-primary',
+      'Học tập': 'from-accent to-success',
+      'Xã hội': 'from-warning to-success'
     };
     return colors?.[type] || 'from-primary to-accent';
   };
@@ -136,14 +136,14 @@ const EventsCalendar = () => {
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Icon name="Calendar" size={24} className="text-primary" />
             <span className="text-sm font-medium text-primary uppercase tracking-wider">
-              Events Calendar
+              Lịch sự kiện
             </span>
           </div>
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-            Join Our Amazing Events
+            Tham gia sự kiện tuyệt vời của chúng tôi
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Connect, learn, and grow together through our diverse range of company events and activities
+            Kết nối, học hỏi và phát triển thông qua các sự kiện đa dạng của công ty
           </p>
         </div>
 
@@ -173,7 +173,7 @@ const EventsCalendar = () => {
                   <div className="space-y-6">
                     <div className="flex items-center space-x-2">
                       <div className="px-3 py-1 bg-accent text-white text-xs font-medium rounded-full">
-                        Featured Event
+                        Sự kiện nổi bật
                       </div>
                       <div className={`px-3 py-1 bg-gradient-to-r ${getEventTypeColor(event?.type)} text-white text-xs font-medium rounded-full`}>
                         {event?.type}
@@ -191,7 +191,7 @@ const EventsCalendar = () => {
                     <div className="space-y-3">
                       <div className="flex items-center space-x-3 text-muted-foreground">
                         <Icon name="Calendar" size={16} />
-                        <span>{new Date(event.date)?.toLocaleDateString()} at {event?.time}</span>
+                        <span>{new Date(event.date)?.toLocaleDateString('vi-VN')} lúc {event?.time}</span>
                       </div>
                       <div className="flex items-center space-x-3 text-muted-foreground">
                         <Icon name="MapPin" size={16} />
@@ -199,7 +199,7 @@ const EventsCalendar = () => {
                       </div>
                       <div className="flex items-center space-x-3 text-muted-foreground">
                         <Icon name="Users" size={16} />
-                        <span>{event?.attendees}/{event?.maxAttendees} attendees</span>
+                        <span>{event?.attendees}/{event?.maxAttendees} người tham dự</span>
                       </div>
                     </div>
                     
@@ -223,11 +223,11 @@ const EventsCalendar = () => {
                         onClick={() => handleRSVP(event?.id, 'attending')}
                         className={rsvpStatus?.[event?.id] === 'attending' ? 'bg-success hover:bg-success/90' : ''}
                       >
-                        {rsvpStatus?.[event?.id] === 'attending' ? 'Attending' : 'RSVP'}
+                        {rsvpStatus?.[event?.id] === 'attending' ? 'Đã tham gia' : 'Đăng ký'}
                       </Button>
                       
                       <Button variant="outline" size="lg" iconName="Share" iconPosition="left">
-                        Share Event
+                        Chia sẻ
                       </Button>
                     </div>
                   </div>
@@ -246,7 +246,7 @@ const EventsCalendar = () => {
                           {new Date(event.date)?.getDate()}
                         </div>
                         <div className="text-xs text-muted-foreground uppercase">
-                          {new Date(event.date)?.toLocaleDateString('en-US', { month: 'short' })}
+                          {new Date(event.date)?.toLocaleDateString('vi-VN', { month: 'short' })}
                         </div>
                       </div>
                     </div>
@@ -279,7 +279,7 @@ const EventsCalendar = () => {
                       {new Date(event.date)?.getDate()}
                     </div>
                     <div className="text-xs text-muted-foreground uppercase">
-                      {new Date(event.date)?.toLocaleDateString('en-US', { month: 'short' })}
+                      {new Date(event.date)?.toLocaleDateString('vi-VN', { month: 'short' })}
                     </div>
                   </div>
                 </div>
@@ -308,7 +308,7 @@ const EventsCalendar = () => {
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                     <Icon name="Users" size={14} />
-                    <span>{event?.attendees}/{event?.maxAttendees} attendees</span>
+                    <span>{event?.attendees}/{event?.maxAttendees} người tham dự</span>
                   </div>
                 </div>
                 
@@ -325,7 +325,7 @@ const EventsCalendar = () => {
                 
                 <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                   <div className="text-sm text-muted-foreground">
-                    By {event?.organizer}
+                    Bởi {event?.organizer}
                   </div>
                   
                   {selectedView !== 'past' ? (
@@ -335,11 +335,11 @@ const EventsCalendar = () => {
                       onClick={() => handleRSVP(event?.id, 'attending')}
                       className={rsvpStatus?.[event?.id] === 'attending' ? 'bg-success hover:bg-success/90' : ''}
                     >
-                      {rsvpStatus?.[event?.id] === 'attending' ? 'Attending' : 'RSVP'}
+                      {rsvpStatus?.[event?.id] === 'attending' ? 'Đã tham gia' : 'Đăng ký'}
                     </Button>
                   ) : (
                     <Button variant="ghost" size="sm" iconName="Eye">
-                      View
+                      Xem
                     </Button>
                   )}
                 </div>
@@ -353,10 +353,10 @@ const EventsCalendar = () => {
           <div className="bg-card rounded-xl border border-gray-200 p-8 max-w-md mx-auto">
             <Icon name="Calendar" size={48} className="text-primary mx-auto mb-4" />
             <h3 className="text-xl font-bold text-foreground mb-2">
-              Sync with Your Calendar
+              Đồng bộ với lịch cá nhân
             </h3>
             <p className="text-muted-foreground mb-6">
-              Never miss an event by syncing with your preferred calendar app
+              Đừng bỏ lỡ sự kiện nào bằng cách đồng bộ với ứng dụng lịch bạn dùng
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Button variant="outline" size="sm" iconName="Calendar">
@@ -374,4 +374,3 @@ const EventsCalendar = () => {
 };
 
 export default EventsCalendar;
-

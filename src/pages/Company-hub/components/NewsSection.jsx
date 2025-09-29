@@ -7,86 +7,86 @@ const NewsSection = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const categories = [
-    { id: 'all', label: 'All News', icon: 'Newspaper' },
-    { id: 'company', label: 'Company Updates', icon: 'Building2' },
-    { id: 'achievements', label: 'Achievements', icon: 'Award' },
-    { id: 'culture', label: 'Culture', icon: 'Heart' },
-    { id: 'events', label: 'Events', icon: 'Calendar' }
+    { id: 'all', label: 'Tất cả tin tức', icon: 'Newspaper' },
+    { id: 'company', label: 'Cập nhật công ty', icon: 'Building2' },
+    { id: 'achievements', label: 'Thành tựu', icon: 'Award' },
+    { id: 'culture', label: 'Văn hoá', icon: 'Heart' },
+    { id: 'events', label: 'Sự kiện', icon: 'Calendar' }
   ];
 
   const newsData = [
     {
       id: 1,
       category: 'company',
-      title: "Employee Hub Wins \'Best Workplace Technology\' Award",
-      excerpt: "Our innovative approach to employee engagement has been recognized by the Industry Excellence Awards 2024.",
+      title: "Employee Hub giành giải thưởng 'Công nghệ Nơi làm việc Tốt nhất'",
+      excerpt: "Cách tiếp cận sáng tạo trong việc gắn kết nhân viên của chúng tôi đã được vinh danh tại Industry Excellence Awards 2024.",
       image: "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       author: "Sarah Johnson",
-      authorRole: "CEO",
+      authorRole: "Tổng giám đốc (CEO)",
       publishDate: "2024-09-20",
-      readTime: "3 min read",
-      tags: ["Award", "Recognition", "Innovation"],
+      readTime: "3 phút đọc",
+      tags: ["Giải thưởng", "Ghi nhận", "Đổi mới"],
       featured: true
     },
     {
       id: 2,
       category: 'achievements',
-      title: "Q3 Performance Highlights: Record-Breaking Quarter",
-      excerpt: "Our team achieved unprecedented growth with 150% increase in productivity and 95% employee satisfaction.",
+      title: "Điểm nhấn hiệu suất Q3: Quý kỷ lục",
+      excerpt: "Đội ngũ của chúng tôi đạt mức tăng trưởng chưa từng có với 150% năng suất và 95% sự hài lòng của nhân viên.",
       image: "https://images.unsplash.com/photo-1551434678-e076c223a692?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       author: "Michael Chen",
-      authorRole: "VP Operations",
+      authorRole: "Phó giám đốc vận hành",
       publishDate: "2024-09-18",
-      readTime: "5 min read",
-      tags: ["Performance", "Growth", "Success"]
+      readTime: "5 phút đọc",
+      tags: ["Hiệu suất", "Tăng trưởng", "Thành công"]
     },
     {
       id: 3,
       category: 'culture',
-      title: "Introducing Wellness Wednesday: Mental Health Initiative",
-      excerpt: "New program focuses on employee wellbeing with meditation sessions, fitness classes, and mental health resources.",
+      title: "Giới thiệu Wellness Wednesday: Sáng kiến sức khỏe tinh thần",
+      excerpt: "Chương trình mới tập trung vào sức khỏe nhân viên với các buổi thiền, lớp thể dục và tài nguyên hỗ trợ tinh thần.",
       image: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-      author: "Dr. Emily Rodriguez",
-      authorRole: "Head of HR",
+      author: "TS. Emily Rodriguez",
+      authorRole: "Trưởng phòng Nhân sự",
       publishDate: "2024-09-15",
-      readTime: "4 min read",
-      tags: ["Wellness", "Mental Health", "Initiative"]
+      readTime: "4 phút đọc",
+      tags: ["Sức khoẻ", "Tinh thần", "Sáng kiến"]
     },
     {
       id: 4,
       category: 'events',
-      title: "Annual Innovation Summit 2024: Save the Date",
-      excerpt: "Join us for three days of inspiring talks, workshops, and networking opportunities. Registration opens October 1st.",
+      title: "Hội nghị Đổi mới thường niên 2024: Lưu ngày",
+      excerpt: "Tham gia 3 ngày hội thảo, workshop và networking. Đăng ký mở vào ngày 1/10.",
       image: "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       author: "Alex Thompson",
-      authorRole: "Event Coordinator",
+      authorRole: "Điều phối sự kiện",
       publishDate: "2024-09-12",
-      readTime: "2 min read",
-      tags: ["Event", "Innovation", "Summit"]
+      readTime: "2 phút đọc",
+      tags: ["Sự kiện", "Đổi mới", "Hội nghị"]
     },
     {
       id: 5,
       category: 'company',
-      title: "New Office Space Opens in Austin: Expanding Our Reach",
-      excerpt: "Our newest location features state-of-the-art facilities and collaborative spaces designed for modern work.",
+      title: "Mở văn phòng mới tại Austin: Mở rộng tầm ảnh hưởng",
+      excerpt: "Cơ sở mới nhất của chúng tôi với thiết kế hiện đại và không gian hợp tác cho phong cách làm việc mới.",
       image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       author: "Jennifer Park",
-      authorRole: "Facilities Manager",
+      authorRole: "Quản lý cơ sở vật chất",
       publishDate: "2024-09-10",
-      readTime: "3 min read",
-      tags: ["Expansion", "Office", "Growth"]
+      readTime: "3 phút đọc",
+      tags: ["Mở rộng", "Văn phòng", "Tăng trưởng"]
     },
     {
       id: 6,
       category: 'achievements',
-      title: "Employee Spotlight: Innovation Team\'s AI Breakthrough",
-      excerpt: "Our AI research team develops groundbreaking solution that improves workflow efficiency by 40%.",
+      title: "Điểm sáng nhân viên: Đột phá AI của nhóm Đổi mới",
+      excerpt: "Nhóm nghiên cứu AI phát triển giải pháp cải thiện hiệu suất công việc lên 40%.",
       image: "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
       author: "David Kumar",
-      authorRole: "CTO",
+      authorRole: "Giám đốc công nghệ (CTO)",
       publishDate: "2024-09-08",
-      readTime: "6 min read",
-      tags: ["Innovation", "AI", "Technology"]
+      readTime: "6 phút đọc",
+      tags: ["Đổi mới", "AI", "Công nghệ"]
     }
   ];
 
@@ -105,14 +105,14 @@ const NewsSection = () => {
           <div className="flex items-center justify-center space-x-2 mb-4">
             <Icon name="Newspaper" size={24} className="text-primary" />
             <span className="text-sm font-medium text-primary uppercase tracking-wider">
-              Latest News
+              Tin tức mới nhất
             </span>
           </div>
           <h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
-            Stay Updated with Company News
+            Cập nhật tin tức công ty
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Discover the latest updates, achievements, and stories that shape our company culture
+            Khám phá những cập nhật, thành tựu và câu chuyện định hình văn hoá công ty
           </p>
         </div>
 
@@ -141,11 +141,11 @@ const NewsSection = () => {
                 <div className="space-y-6">
                   <div className="flex items-center space-x-2">
                     <div className="px-3 py-1 bg-accent text-white text-xs font-medium rounded-full">
-                      Featured
+                      Nổi bật
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                       <Icon name="Calendar" size={14} />
-                      <span>{new Date(featuredNews.publishDate)?.toLocaleDateString()}</span>
+                      <span>{new Date(featuredNews.publishDate)?.toLocaleDateString('vi-VN')}</span>
                     </div>
                   </div>
                   
@@ -169,7 +169,7 @@ const NewsSection = () => {
                     </div>
                     
                     <Button variant="default" iconName="ArrowRight" iconPosition="right">
-                      Read More
+                      Đọc thêm
                     </Button>
                   </div>
                 </div>
@@ -220,7 +220,7 @@ const NewsSection = () => {
               <div className="p-6 space-y-4">
                 <div className="flex items-center space-x-2 text-sm text-muted-foreground">
                   <Icon name="Calendar" size={14} />
-                  <span>{new Date(article.publishDate)?.toLocaleDateString()}</span>
+                  <span>{new Date(article.publishDate)?.toLocaleDateString('vi-VN')}</span>
                 </div>
                 
                 <h3 className="text-xl font-bold text-foreground leading-tight hover:text-primary transition-colors duration-200">
@@ -254,7 +254,7 @@ const NewsSection = () => {
                   </div>
                   
                   <Button variant="ghost" size="sm" iconName="ArrowRight">
-                    Read
+                    Đọc
                   </Button>
                 </div>
               </div>
@@ -265,7 +265,7 @@ const NewsSection = () => {
         {/* Load More */}
         <div className="text-center mt-12 animate-fade-in">
           <Button variant="outline" size="lg" iconName="Plus" iconPosition="left">
-            Load More Articles
+            Xem thêm tin tức
           </Button>
         </div>
       </div>
@@ -274,4 +274,3 @@ const NewsSection = () => {
 };
 
 export default NewsSection;
-

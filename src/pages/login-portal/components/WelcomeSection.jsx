@@ -23,7 +23,7 @@ const WelcomeSection = () => {
 
   const testimonials = [
     {
-      name: 'Sarah Johnson',
+      name: 'Nguyễn Văn Cương',
       role: 'HR Director',
       company: 'TechCorp Inc.',
       avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
