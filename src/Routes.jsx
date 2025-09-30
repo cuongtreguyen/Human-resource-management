@@ -24,6 +24,7 @@ import Help from "./pages/help";
 import Admin from "./pages/admin";
 import Reports from "./pages/reports";
 import SubmitReport from "./pages/reports/SubmitReport";
+import HR from "./pages/hr/HR";
 
 const Routes = () => {
   return (
@@ -37,6 +38,7 @@ const Routes = () => {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/team-directory" element={<TeamDirectory />} />
           <Route path="/login-portal" element={<LoginPortal />} />
+          <Route path="/hr" element={<HR />} />
           {/* <Route path="/attendance-management" element={<AttendanceManagement />} /> */}
           <Route path="/payroll-dashboard" element={<PayrollDashboard />} />
           <Route path="/recruitment-portal" element={<RecruitmentPortal />} />
