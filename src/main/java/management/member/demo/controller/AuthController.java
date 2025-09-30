@@ -1,8 +1,11 @@
 package management.member.demo.controller;
 
 import management.member.demo.Service.AuthService;
+import management.member.demo.Service.EmailService;
 import management.member.demo.dto.LoginRequest;
 import management.member.demo.dto.LoginResponse;
+import management.member.demo.dto.ForgotPasswordRequest;
+import management.member.demo.dto.ResetPasswordRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -13,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.time.LocalDateTime;
-import management.member.demo.dto.RegisterRequest;
+
 import management.member.demo.dto.TokenRequest;
 
 /**
@@ -26,10 +29,12 @@ import management.member.demo.dto.TokenRequest;
 public class AuthController {
 
     private final AuthService authService;
+    private final EmailService emailService;
 
     @Autowired
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, EmailService emailService) {
         this.authService = authService;
+        this.emailService = emailService;
     }
 
     /**
@@ -52,27 +57,6 @@ public class AuthController {
         response.setRefreshToken(tokens.getRefreshToken());
         response.setAccessTokenExpiresAt(LocalDateTime.now().plusSeconds(3600));
         return ResponseEntity.ok(response);
-    }
-
-    @PostMapping("/register")
-    @Operation(summary = "Register", description = "Register a new user")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Register success"),
-            @ApiResponse(responseCode = "409", description = "USERNAME_EXISTS/EMAIL_EXISTS")
-    })
-    public ResponseEntity<Map<String, Object>> register(@RequestBody RegisterRequest request) {
-        var user = authService.register(
-                request.getUsername(),
-                request.getPassword(),
-                request.getEmail(),
-                request.getFirstName(),
-                request.getLastName()
-        );
-        return ResponseEntity.ok(Map.of(
-                "id", user.getId(),
-                "username", user.getUsername(),
-                "email", user.getEmail()
-        ));
     }
 
     @PostMapping("/refresh")
@@ -120,5 +104,32 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> me() {
         String username = authService.getCurrentUsername();
         return ResponseEntity.ok(Map.of("username", username == null ? "anonymous" : username));
+    }
+
+    @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot password", description = "Send OTP to email for password reset")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "OTP sent successfully"),
+            @ApiResponse(responseCode = "400", description = "EMAIL_NOT_FOUND")
+    })
+    public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        String otp = authService.sendForgotPasswordOtp(request.getEmail());
+        
+        // Lấy tên đầy đủ từ database để gửi email
+        String fullName = "User"; // Có thể lấy từ database nếu cần
+        emailService.sendForgotPasswordOtp(request.getEmail(), fullName, otp);
+        
+        return ResponseEntity.ok(Map.of("message", "OTP sent to your email"));
+    }
+
+    @PostMapping("/reset-password")
+    @Operation(summary = "Reset password", description = "Reset password using OTP")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Password reset successfully"),
+            @ApiResponse(responseCode = "400", description = "OTP_NOT_FOUND/OTP_EXPIRED/INVALID_OTP/USER_NOT_FOUND")
+    })
+    public ResponseEntity<Map<String, String>> resetPassword(@RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 }

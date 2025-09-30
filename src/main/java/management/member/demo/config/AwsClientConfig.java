@@ -8,6 +8,7 @@ import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.ses.SesClient;
 
 @Configuration
 public class AwsClientConfig {
@@ -31,6 +32,14 @@ public class AwsClientConfig {
     public SqsClient sqsClient() {
         return SqsClient.builder()
                 .region(Region.AP_SOUTHEAST_1) // ví dụ: Singapore
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .build();
+    }
+
+    @Bean
+    public SesClient sesClient() {
+        return SesClient.builder()
+                .region(Region.AP_SOUTHEAST_1)
                 .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
     }

@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.Operation;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/employees")
@@ -52,6 +53,29 @@ public class ManageEmployeeController {
     public ResponseEntity<EmployeeResponse> create(@Valid @RequestBody EmployeeRequest request) {
 		return ResponseEntity.ok(service.create(request));
 	}
+
+    @GetMapping("/search")
+    @Operation(summary = "Search employees", description = "Search employees by multiple criteria")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Search results found"),
+            @ApiResponse(responseCode = "400", description = "SEARCH_CRITERIA_REQUIRED"),
+            @ApiResponse(responseCode = "404", description = "No employees found matching criteria")
+    })
+    public ResponseEntity<List<EmployeeResponse>> search(
+            @RequestParam(required = false) String fullName,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String phoneNumber,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String position,
+            @RequestParam(required = false) BigDecimal salary,
+            @RequestParam(required = false) String skill,
+            @RequestParam(required = false) String certificate,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(service.searchEmployees(fullName, email, phoneNumber, address, 
+                department, position, salary, skill, certificate, status));
+    }
+
 }
 
 

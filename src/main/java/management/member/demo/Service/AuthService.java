@@ -12,6 +12,7 @@ import management.member.demo.security.JwtService;
 import management.member.demo.repository.UserRepository;
 import management.member.demo.entity.User;
 import management.member.demo.exception.BusinessException;
+import management.member.demo.Service.OtpService;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.BadCredentialsException;
 
@@ -31,16 +32,18 @@ public class AuthService {
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final OtpService otpService;
 
     private static final int MAX_FAILED_ATTEMPTS = 5;
 
     @Autowired
-    public AuthService(AuthenticationManager authenticationManager, JwtService jwtService, UserDetailsService userDetailsService, UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(AuthenticationManager authenticationManager, JwtService jwtService, UserDetailsService userDetailsService, UserRepository userRepository, PasswordEncoder passwordEncoder, OtpService otpService) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.otpService = otpService;
     }
 
     /**
@@ -77,28 +80,6 @@ public class AuthService {
         }
     }
 
-    /**
-     * Đăng ký tài khoản mới
-     */
-    public User register(String username, String rawPassword, String email, String firstName, String lastName) {
-        if (userRepository.existsByUsername(username)) {
-            throw new BusinessException("USERNAME_EXISTS", "Username already exists");
-        }
-        if (email != null && !email.isBlank() && userRepository.existsByEmail(email)) {
-            throw new BusinessException("EMAIL_EXISTS", "Email already exists");
-        }
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(rawPassword));
-        user.setEmail(email);
-        user.setFirstName(firstName);
-        user.setLastName(lastName);
-        user.setIsActive(true);
-        user.setIsLocked(false);
-        user.setFailedLoginAttempts(0);
-        user.setLastLogin(null);
-        return userRepository.save(user);
-    }
 
     /**
      * Cấp lại access token từ refresh token hợp lệ
@@ -156,6 +137,49 @@ public class AuthService {
         return user.orElse(null);
     }
 
+    /**
+     * Gửi OTP cho quên mật khẩu
+     */
+    public String sendForgotPasswordOtp(String email) {
+        // Kiểm tra email có tồn tại không
+        if (!userRepository.existsByEmail(email)) {
+            throw new BusinessException("EMAIL_NOT_FOUND", "Email not found in system");
+        }
+
+        // Tạo OTP sử dụng OtpService
+        return otpService.generateOtp(email);
+    }
+
+    /**
+     * Xác thực OTP
+     */
+    public boolean verifyOtp(String email, String otp) {
+        return otpService.verifyOtp(email, otp);
+    }
+
+    /**
+     * Đặt lại mật khẩu với OTP
+     */
+    public void resetPassword(String email, String otp, String newPassword) {
+        // Xác thực OTP trước
+        otpService.verifyOtp(email, otp);
+        
+        // Tìm user và cập nhật mật khẩu
+        Optional<User> userOpt = userRepository.findByUsername(email);
+        if (userOpt.isEmpty()) {
+            throw new BusinessException("USER_NOT_FOUND", "User not found");
+        }
+        
+        User user = userOpt.get();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setFailedLoginAttempts(0);
+        user.setIsLocked(false);
+        userRepository.save(user);
+        
+        // Xóa OTP sau khi đặt lại mật khẩu thành công
+        otpService.removeOtp(email);
+    }
+
     private boolean isUserActiveAndNotLocked(String username) {
         Optional<User> userOpt = userRepository.findByUsername(username);
         if (userOpt.isEmpty()) {
@@ -208,4 +232,5 @@ public class AuthService {
             return refreshToken;
         }
     }
+
 }

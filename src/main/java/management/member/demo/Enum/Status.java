@@ -4,5 +4,6 @@ public enum Status {
     ONLINE,
     OFFLINE,
     BUSY,
-    ABSENT
+    ABSENT,
+    WORKING_REMOTE
 }
