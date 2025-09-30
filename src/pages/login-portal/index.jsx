@@ -13,12 +13,12 @@ const LoginPortal = () => {
   const [socialLoading, setSocialLoading] = useState({});
 
   // Check if user is already authenticated
-  useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      navigate('/dashboard');
-    }
-  }, [navigate]);
+  // useEffect(() => {
+  //   const token = localStorage.getItem('authToken');
+  //   if (token) {
+  //     navigate('/dashboard');
+  //   }
+  // }, [navigate]);
 
   const handleSocialAuth = async (provider) => {
     setSocialLoading(prev => ({ ...prev, [provider]: true }));
