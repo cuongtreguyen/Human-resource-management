@@ -12,6 +12,7 @@ const Header = () => {
   const primaryNavItems = [
     { name: 'Bảng điều khiển', path: '/dashboard', icon: 'LayoutDashboard' },
     { name: 'Quản lý nhân viên', path: '/team-directory', icon: 'Users' },
+    { name: 'Chấm công', path: '/attendance', icon: 'Clock' },
     { name: 'Hồ sơ cá nhân', path: '/my-profile', icon: 'User' },
     { name: 'Trung tâm công ty', path: '/company-hub', icon: 'Building2' },
   ];

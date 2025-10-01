@@ -18,6 +18,14 @@ const Sidebar = ({ isCollapsed = false, onToggleCollapse }) => {
       ]
     },
     {
+      category: 'Chấm công',
+      items: [
+        { name: 'Chấm công', path: '/attendance', icon: 'Clock', description: 'Quản lý chấm công' },
+        { name: 'Lương thưởng', path: '/payroll-dashboard', icon: 'DollarSign', description: 'Quản lý lương' },
+        { name: 'Tuyển dụng', path: '/recruitment-portal', icon: 'UserPlus', description: 'Quản lý tuyển dụng' },
+      ]
+    },
+    {
       category: 'Công cụ',
       items: [
         { name: 'Phân tích', path: '/analytics', icon: 'BarChart3', description: 'Chỉ số hiệu suất' },

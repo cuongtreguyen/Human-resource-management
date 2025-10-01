@@ -25,6 +25,7 @@ import Admin from "./pages/admin";
 import Reports from "./pages/reports";
 import SubmitReport from "./pages/reports/SubmitReport";
 import HR from "./pages/hr/HR";
+import AttendancePage from "./pages/attendance";
 
 const Routes = () => {
   return (
@@ -51,6 +52,10 @@ const Routes = () => {
           <Route path="/reports" element={<Reports />} />
           <Route path="/reports/submit" element={<SubmitReport />} />
 
+            
+            <Route path="/attendance" element={<AttendancePage />} />
+
+          
           <Route path="*" element={<NotFound />} />
         </RouterRoutes>
       </ErrorBoundary>
