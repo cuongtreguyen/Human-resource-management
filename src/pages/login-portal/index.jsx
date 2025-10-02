@@ -312,7 +312,7 @@ const LoginPortal = () => {
               <p><strong>Admin:</strong> admin@employeehub.com / Admin@123</p>
               <p><strong>Manager:</strong> manager@employeehub.com / Manager@123</p>
               <p><strong>Employee:</strong> employee@employeehub.com / Employee@123</p>
-              <p><strong>Hr:</strong> hr@employeehub.com / Hr@123</p>
+              <p><strong>Hr:</strong> hr@employeehub.com / HR@123</p>
             </div>
           </div>
 
