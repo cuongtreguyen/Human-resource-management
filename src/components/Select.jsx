@@ -4,7 +4,6 @@ const Select = ({
   label,
   options = [],
   value,
-  defaultValue,
   onChange,
   placeholder = 'Select an option...',
   error,
@@ -35,7 +34,7 @@ const Select = ({
       )}
       
       <select
-        value={value || defaultValue}
+        value={value}
         onChange={handleChange}
         disabled={disabled}
         className={classes}
