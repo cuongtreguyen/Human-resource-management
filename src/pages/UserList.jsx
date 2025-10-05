@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+import fakeApi from '../services/fakeApi';
 
 // Placeholder admin sidebar component (dark theme)
 const AdminSidebar = () => {
@@ -102,17 +103,9 @@ const AdminSidebar = () => {
 };
 
 const UserList = () => {
-  const [users] = useState([
-    {
-      id: 1,
-      username: 'admin',
-      name: '',
-      email: '',
-      role: 'Administrator',
-      status: 'Active',
-      lastLogin: 'Never'
-    }
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [filters, setFilters] = useState({
     search: '',
@@ -123,8 +116,25 @@ const UserList = () => {
   const roles = ['All Roles', 'Administrator', 'HR Manager', 'Employee', 'Manager'];
   const statuses = ['All Status', 'Active', 'Inactive', 'Locked'];
 
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fakeApi.getUsers();
+      setUsers(response.data);
+    } catch (err) {
+      setError('Failed to load users');
+      console.error('Users error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.username.toLowerCase().includes(filters.predict.toLowerCase()) ||
+    const matchesSearch = user.username.toLowerCase().includes(filters.search.toLowerCase()) ||
                          (user.name && user.name.toLowerCase().includes(filters.search.toLowerCase())) ||
                          (user.email && user.email.toLowerCase().includes(filters.search.toLowerCase()));
     const matchesRole = filters.role === 'All Roles' || user.role === filters.role;
@@ -147,6 +157,43 @@ const UserList = () => {
       status: 'All Status'
     });
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <div className="flex items-center justify-center w-full">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600 mx-auto"></div>
+            <p className="text-gray-600 mt-4">Loading users...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen bg-gray-50">
+        <div className="flex items-center justify-center w-full">
+          <div className="text-center">
+            <div className="text-red-600 mb-4">
+              <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Users</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button 
+              onClick={loadUsers}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

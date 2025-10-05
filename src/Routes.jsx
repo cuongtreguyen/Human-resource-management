@@ -17,6 +17,24 @@ import UserList from './pages/UserList';
 import PayrollList from './pages/PayrollList';
 import PayrollPolicies from './pages/PayrollPolicies';
 
+// Import Chat and Task Management pages
+import Chat from './pages/Chat';
+import TaskManagement from './pages/TaskManagement';
+
+// Import Reports, Documents, and Settings pages
+import Reports from './pages/Reports';
+import Documents from './pages/Documents';
+import Settings from './pages/Settings';
+import EmployeeDetails from './pages/EmployeeDetails';
+import EditEmployee from './pages/EditEmployee';
+import Test from './pages/Test';
+import RoleManagement from './pages/RoleManagement';
+import LeaveManagement from './pages/LeaveManagement';
+import LeaveRequest from './pages/LeaveRequest';
+import TaskDelegation from './pages/TaskDelegation';
+import NotificationCenter from './pages/NotificationCenter';
+import WorkflowManager from './pages/WorkflowManager';
+
 // Placeholder components for other pages
 
 const AttendanceSummary = () => (
@@ -46,14 +64,6 @@ const CreateRequest = () => (
   </div>
 );
 
-const LeaveManagement = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Leave Management</h1>
-      <p className="text-gray-600">Leave management page coming soon...</p>
-    </div>
-  </div>
-);
 
 const CreateLeave = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -91,14 +101,6 @@ const ApplicationsList = () => (
   </div>
 );
 
-const RoleManagement = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Role Management</h1>
-      <p className="text-gray-600">Role management page coming soon...</p>
-    </div>
-  </div>
-);
 
 const LogsMonitor = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -118,11 +120,11 @@ const Profile = () => (
   </div>
 );
 
-const Chat = () => (
+const TaskManagementPlaceholder = () => (
   <div className="min-h-screen flex items-center justify-center">
     <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Internal Chat</h1>
-      <p className="text-gray-600">Internal chat page coming soon...</p>
+      <h1 className="text-3xl font-bold text-gray-900 mb-4">Task Management</h1>
+      <p className="text-gray-600">Task management page coming soon...</p>
     </div>
   </div>
 );
@@ -139,6 +141,8 @@ const AppRoutes = () => {
       {/* Employee Routes */}
       <Route path="/employees" element={<EmployeeList />} />
       <Route path="/employees/add" element={<AddEmployee />} />
+      <Route path="/employees/view/:id" element={<EmployeeDetails />} />
+      <Route path="/employees/edit/:id" element={<EditEmployee />} />
       <Route path="/employees/export" element={<div>Export Data</div>} />
       
       {/* Attendance Routes */}
@@ -156,7 +160,12 @@ const AppRoutes = () => {
       
       {/* Leave Routes */}
       <Route path="/leaves" element={<LeaveManagement />} />
-      <Route path="/leaves/create" element={<CreateLeave />} />
+      <Route path="/leaves/create" element={<LeaveRequest />} />
+      <Route path="/leaves/delegation" element={<TaskDelegation />} />
+      <Route path="/leaves/workflow" element={<WorkflowManager />} />
+      
+      {/* Notification Routes */}
+      <Route path="/notifications" element={<NotificationCenter />} />
       
       {/* Recruitment Routes */}
       <Route path="/recruitment" element={<RecruitmentManagement />} />
@@ -171,7 +180,16 @@ const AppRoutes = () => {
       {/* User Routes */}
       <Route path="/profile" element={<Profile />} />
       <Route path="/chat" element={<Chat />} />
+      <Route path="/tasks" element={<TaskManagement />} />
       <Route path="/face-recognition" element={<FaceRecognition />} />
+      
+      {/* Reports, Documents, and Settings Routes */}
+      <Route path="/reports" element={<Reports />} />
+      <Route path="/documents" element={<Documents />} />
+      <Route path="/settings" element={<Settings />} />
+      
+      {/* Test Route */}
+      <Route path="/test" element={<Test />} />
       
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

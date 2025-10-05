@@ -1,17 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3 } from 'lucide-react';
+import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Shield, Bell } from 'lucide-react';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Employees', href: '/employees', icon: Users },
     { name: 'Add Employee', href: '/employees/add', icon: UserPlus },
+    { name: 'Face Recognition', href: '/face-recognition', icon: User },
     { name: 'Attendance', href: '/attendance', icon: Clock },
     { name: 'Create Attendance', href: '/attendance/create', icon: Calendar },
     { name: 'Payroll', href: '/payroll', icon: DollarSign },
+    { name: 'Leave Management', href: '/leaves', icon: Calendar },
+    { name: 'Task Delegation', href: '/leaves/delegation', icon: Users },
+    { name: 'Notifications', href: '/notifications', icon: Bell },
+    { name: 'Chat', href: '/chat', icon: MessageCircle },
+    { name: 'Task Management', href: '/tasks', icon: CheckSquare },
     { name: 'Documents', href: '/documents', icon: FileText },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
+    { name: 'Role Management', href: '/admin/roles', icon: Shield },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 
@@ -87,3 +94,5 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
 };
 
 export default Sidebar;
+
+

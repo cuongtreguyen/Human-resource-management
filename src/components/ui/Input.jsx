@@ -20,12 +20,6 @@ const Input = ({
   
   const classes = `${baseClasses} ${errorClasses} ${className}`;
   
-  const handleChange = (e) => {
-    if (onChange) {
-      onChange(e.target.value);
-    }
-  };
-  
   return (
     <div className="form-group">
       {label && (
@@ -47,7 +41,7 @@ const Input = ({
         <input
           type={type}
           value={value}
-          onChange={handleChange}
+          onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
           className={`${classes} ${icon ? 'pl-10' : ''}`}

@@ -1,14 +1,47 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
-import { Camera, Upload, Users, CheckCircle, AlertCircle } from 'lucide-react';
+import Input from '../components/ui/Input';
+import { Camera, Upload, Users, CheckCircle, AlertCircle, X, User, Brain, Eye, Clock, AlertTriangle } from 'lucide-react';
 
 const FaceRecognition = () => {
+  const [activeTab, setActiveTab] = useState('register');
   const [recognizedFaces, setRecognizedFaces] = useState([]);
   const [isCameraActive, setIsCameraActive] = useState(false);
+  const [systemStatus, setSystemStatus] = useState('disconnected');
+  const [userId, setUserId] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [capturedPhotos, setCapturedPhotos] = useState([]);
+  const [isTraining, setIsTraining] = useState(false);
+  const [isRecognizing, setIsRecognizing] = useState(false);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+
+  // Check system status
+  useEffect(() => {
+    const checkSystemStatus = async () => {
+      try {
+        // Check Python API
+        const pythonResponse = await fetch('http://localhost:5000/api/status');
+        if (pythonResponse.ok) {
+          const pythonData = await pythonResponse.json();
+          console.log('Python API Status:', pythonData);
+          setSystemStatus(pythonData.status === 'idle' || pythonData.status === 'success' ? 'connected' : 'running');
+        } else {
+          console.log('Python API not responding');
+          setSystemStatus('disconnected');
+        }
+      } catch (error) {
+        console.log('Python API Error:', error);
+        setSystemStatus('disconnected');
+      }
+    };
+    
+    checkSystemStatus();
+    const interval = setInterval(checkSystemStatus, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const startCamera = async () => {
     try {
@@ -42,184 +75,396 @@ const FaceRecognition = () => {
       canvas.height = video.videoHeight;
       context.drawImage(video, 0, 0);
 
-      // Simulate face recognition
-      const mockRecognition = {
+      const photoData = canvas.toDataURL('image/jpeg');
+      const newPhoto = {
         id: Date.now(),
-        name: 'John Doe',
-        confidence: Math.floor(Math.random() * 30) + 70, // 70-100%
-        timestamp: new Date().toISOString(),
-        department: 'Development'
+        data: photoData,
+        userId: userId,
+        name: fullName,
+        timestamp: new Date().toISOString()
       };
 
-      setRecognizedFaces(prev => [mockRecognition, ...prev]);
+      setCapturedPhotos(prev => [...prev, newPhoto]);
     }
   };
 
-  const sampleData = [
-    { id: 1, name: 'John Doe', confidence: 98, timestamp: '2024-01-10T09:00:00', department: 'Development' },
-    { id: 2, name: 'Jane Smith', confidence: 95, timestamp: '2024-01-10T09:15:00', department: 'Marketing' },
-    { id: 3, name: 'Mike Johnson', confidence: 87, timestamp: '2024-01-10T09:30:00', department: 'HR' },
-  ];
+  const trainModel = async () => {
+    if (!userId || !fullName) {
+      alert('Please enter User ID and Full Name first');
+      return;
+    }
+
+    setIsTraining(true);
+    try {
+      // Use Python API to take photos
+      const response = await fetch('http://localhost:5000/api/take-photos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: userId,
+          name: fullName
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        alert(`Photo capture started for ${fullName}! The system will automatically take 50 photos.`);
+        // Clear form after starting photo capture
+        setUserId('');
+        setFullName('');
+        setCapturedPhotos([]);
+      } else {
+        alert(`Photo capture failed: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Photo capture error:', error);
+      alert('Photo capture failed. Please check if the Python API is running.');
+    } finally {
+      setIsTraining(false);
+    }
+  };
+
+  const checkIn = async () => {
+    setIsRecognizing(true);
+    try {
+      // Use Python check-in API
+      const response = await fetch('http://localhost:5000/api/checkin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        alert('Check-in started! Please look at the camera.');
+      } else {
+        alert(`Check-in failed: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Check-in error:', error);
+      alert('Check-in failed. Please check if the Python API is running.');
+    } finally {
+      setIsRecognizing(false);
+    }
+  };
+
+  const trainModelAfterPhotos = async () => {
+    setIsTraining(true);
+    try {
+      // Train the model after photos are taken
+      const response = await fetch('http://localhost:5000/api/train', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        alert('Model training started! This will process all captured photos.');
+      } else {
+        alert(`Training failed: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Training error:', error);
+      alert('Training failed. Please check if the Python API is running.');
+    } finally {
+      setIsTraining(false);
+    }
+  };
+
+  // Handle keyboard events for photo capture
+  useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.key === 's' && isCameraActive && activeTab === 'register') {
+        capturePhoto();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => document.removeEventListener('keydown', handleKeyPress);
+  }, [isCameraActive, activeTab]);
+
 
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
           <div className="animate-fade-in">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8">
-              Face Recognition System
-            </h1>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Camera Controls */}
-              <Card title="Camera Control" subtitle="Capture and recognize faces">
-                <div className="space-y-6">
-                  {/* Video Feed */}
-                  <div className="relative">
-                    <video
-                      ref={videoRef}
-                      className="w-full max-w-lg mx-auto bg-gray-900 rounded-lg"
-                      autoPlay
-                      muted
-                      style={{ display: isCameraActive ? 'block' : 'none' }}
-                    />
-                    <canvas
-                      ref={canvasRef}
-                      className="w-full max-w-lg mx-auto rounded-lg"
-                      style={{ display: 'none' }}
-                    />
-                    {!isCameraActive && (
-                      <div className="w-full max-w-lg mx-auto h-64 bg-gray-200 rounded-lg flex items-center justify-center">
-                        <Camera className="h-12 w-12 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Controls */}
-                  <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                    {!isCameraActive ? (
-                      <Button 
-                        onClick={startCamera}
-                        className="flex items-center gap-2"
-                      >
-                        <Camera className="h-4 w-4" />
-                        Start Camera
-                      </Button>
-                    ) : (
-                      <>
-                        <Button 
-                          onClick={capturePhoto}
-                          variant="primary"
-                          className="flex items-center gap-2"
-                        >
-                          <Upload className="h-4 w-4" />
-                          Capture Face
-                        </Button>
-                        <Button 
-                          onClick={stopCamera}
-                          variant="secondary"
-                        >
-                          Stop Camera
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </Card>
-
-              {/* Recognition Results */}
-              <Card title="Recent Recognitions" subtitle="Latest face recognition results">
-                <div className="space-y-4">
-                  {recognizedFaces.length === 0 ? (
-                    <div className="text-center py-12 text-gray-500">
-                      <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                      <p>No faces recognized yet</p>
-                      <p className="text-sm">Start the camera and capture faces to see results</p>
-                    </div>
-                  ) : (
-                    recognizedFaces.map((face) => (
-                      <div key={face.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex-shrink-0">
-                            {face.confidence >= 90 ? (
-                              <CheckCircle className="h-8 w-8 text-green-500" />
-                            ) : (
-                              <AlertCircle className="h-8 w-8 text-yellow-500" />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="font-medium text-gray-900">{face.name}</h3>
-                            <p className="text-sm text-gray-500">{face.department}</p>
-                            <p className="text-xs text-gray-400">
-                              {new Date(face.timestamp).toLocaleString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            face.confidence >= 90 
-                              ? 'bg-green-100 text-green-800' 
-                              : face.confidence >= 80 
-                              ? 'bg-yellow-100 text-yellow-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {face.confidence}%
-                          </span>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </Card>
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+                Face Recognition System
+              </h1>
+              <p className="text-lg text-gray-600">
+                Biometric attendance management
+              </p>
             </div>
 
-            {/* Sample Data */}
-            <Card title="Today's Attendance" subtitle="Recent attendance records" className="mt-8">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Employee
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Department
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Confidence
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Time
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {sampleData.map((record) => (
-                      <tr key={record.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {record.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {record.department}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            record.confidence >= 90 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {record.confidence}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {new Date(record.timestamp).toLocaleTimeString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Panel */}
+              <div className="space-y-6">
+                {/* Face Recognition Card */}
+                <Card className="bg-gradient-to-br from-purple-600 to-purple-700 text-white">
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <User className="h-8 w-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">Face Recognition</h3>
+                    <p className="text-purple-100">Attendance System</p>
+                  </div>
+                </Card>
+
+                {/* System Status */}
+                <Card title="SYSTEM STATUS">
+                  <div className={`p-4 rounded-lg ${
+                    systemStatus === 'connected' 
+                      ? 'bg-green-50 border border-green-200' 
+                      : systemStatus === 'running'
+                      ? 'bg-blue-50 border border-blue-200'
+                      : 'bg-red-50 border border-red-200'
+                  }`}>
+                    <div className="flex items-center">
+                      {systemStatus === 'connected' ? (
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                      ) : systemStatus === 'running' ? (
+                        <Brain className="h-5 w-5 text-blue-500 mr-2" />
+                      ) : (
+                        <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                      )}
+                      <span className={`font-medium ${
+                        systemStatus === 'connected' ? 'text-green-800' : 
+                        systemStatus === 'running' ? 'text-blue-800' : 'text-red-800'
+                      }`}>
+                        {systemStatus === 'connected' 
+                          ? 'Python API Connected - Ready' 
+                          : systemStatus === 'running'
+                          ? 'Python API Running - Processing...'
+                          : 'Could not connect to Python API on port 5000'
+                        }
+                      </span>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Instructions */}
+                <Card title="INSTRUCTIONS">
+                  <div className="space-y-3">
+                    <div className="flex items-start">
+                      <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium mr-3 mt-0.5">1</span>
+                      <p className="text-gray-700">Register with your ID and name</p>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium mr-3 mt-0.5">2</span>
+                      <p className="text-gray-700">Take photos by pressing 's' key when camera is active</p>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium mr-3 mt-0.5">3</span>
+                      <p className="text-gray-700">Train the model with your photos</p>
+                    </div>
+                    <div className="flex items-start">
+                      <span className="flex-shrink-0 w-6 h-6 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-sm font-medium mr-3 mt-0.5">4</span>
+                      <p className="text-gray-700">Start recognition to check in/out</p>
+                    </div>
+                  </div>
+                </Card>
               </div>
-            </Card>
+
+              {/* Right Panel */}
+              <div>
+                <Card>
+                  {/* Tabs */}
+                  <div className="flex border-b border-gray-200 mb-6">
+                    <button
+                      onClick={() => setActiveTab('register')}
+                      className={`px-4 py-2 font-medium text-sm ${
+                        activeTab === 'register'
+                          ? 'text-purple-600 border-b-2 border-purple-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Register User
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('train')}
+                      className={`px-4 py-2 font-medium text-sm ${
+                        activeTab === 'train'
+                          ? 'text-purple-600 border-b-2 border-purple-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Train Model
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('recognize')}
+                      className={`px-4 py-2 font-medium text-sm ${
+                        activeTab === 'recognize'
+                          ? 'text-purple-600 border-b-2 border-purple-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      Recognize
+                    </button>
+                  </div>
+
+                  {/* Tab Content */}
+                  {activeTab === 'register' && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Register New User</h3>
+                        
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              User ID
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Enter a number between 1-10000"
+                              value={userId}
+                              onChange={(e) => setUserId(e.target.value)}
+                              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Full Name
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="Enter your name if you're a new user"
+                              value={fullName}
+                              onChange={(e) => setFullName(e.target.value)}
+                              className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Instructions */}
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <p className="text-purple-800 text-sm">
+                          When the camera starts, press the s key to capture a photo. Take multiple photos from different angles for better recognition.
+                        </p>
+                      </div>
+
+                      {/* Camera Controls */}
+                      <div className="flex gap-3">
+                        <Button 
+                          onClick={() => setIsCameraActive(true)}
+                          disabled={!userId || !fullName}
+                          className="flex items-center gap-2"
+                        >
+                          <Camera className="h-4 w-4" />
+                          Start Camera
+                        </Button>
+                        <Button 
+                          onClick={() => setIsCameraActive(false)}
+                          disabled={!isCameraActive}
+                          className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                          Stop Camera
+                        </Button>
+                      </div>
+
+                      {/* Status Display */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div className="flex items-center">
+                          <Brain className="h-5 w-5 text-blue-600 mr-2" />
+                          <span className="text-blue-800 font-medium">
+                            {systemStatus === 'running' ? 'System is capturing photos...' : 'Ready to capture photos'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'train' && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Train Recognition Model</h3>
+                        
+                        {/* Warning Box */}
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                          <div className="flex items-center">
+                            <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+                            <span className="text-yellow-800 font-medium">
+                              Important: Training the model may take some time depending on the number of photos. The system will be unavailable during training.
+                            </span>
+                          </div>
+                        </div>
+
+                        <p className="text-gray-600 mb-4">
+                          After taking photos, you need to train the model to recognize your face. This process analyzes all the photos and creates a recognition profile for each registered user.
+                        </p>
+
+                        <Button 
+                          onClick={trainModelAfterPhotos}
+                          disabled={isTraining}
+                          className="w-full flex items-center justify-center gap-2"
+                        >
+                          <Brain className="h-4 w-4" />
+                          {isTraining ? 'Training Model...' : 'Start Training'}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'recognize' && (
+                    <div className="space-y-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Face Recognition</h3>
+                        
+                        {/* Info Box */}
+                        <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+                          <div className="flex items-center">
+                            <CheckCircle className="h-8 w-8 text-purple-600 mr-3" />
+                            <span className="text-purple-800">
+                              Start recognition to automatically check in/out when your face is detected. The system will record attendance with timestamp when a registered face is recognized.
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-3">
+                          <Button 
+                            onClick={() => {/* Stop recognition */}}
+                            className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+                          >
+                            <X className="h-4 w-4" />
+                            Stop Recognition
+                          </Button>
+                          <Button 
+                            onClick={checkIn}
+                            disabled={isRecognizing}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                          >
+                            <Clock className="h-4 w-4" />
+                            Clock In
+                          </Button>
+                          <Button 
+                            onClick={checkIn}
+                            disabled={isRecognizing}
+                            className="flex items-center gap-2 bg-green-600 hover:bg-green-700"
+                          >
+                            <Clock className="h-4 w-4" />
+                            Clock Out
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>
