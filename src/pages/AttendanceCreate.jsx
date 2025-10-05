@@ -1,13 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Select from '../components/ui/Select';
+import fakeApi from '../services/fakeApi';
 
 const AttendanceCreate = () => {
+  const navigate = useNavigate();
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [employeeList, setEmployeeList] = useState([]);
   const [attendanceSheet, setAttendanceSheet] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [employees, setEmployees] = useState([]);
+
+  useEffect(() => {
+    loadEmployees();
+  }, []);
+
+  const loadEmployees = async () => {
+    try {
+      const response = await fakeApi.getEmployees();
+      setEmployees(response.data);
+    } catch (err) {
+      console.error('Failed to load employees:', err);
+    }
+  };
 
   const departments = ['All Departments', 'Development', 'Marketing', 'HR', 'Finance', 'Operations'];
 
@@ -21,10 +39,10 @@ const AttendanceCreate = () => {
   const handleDepartmentChange = (value) => {
     setSelectedDepartment(value);
     if (value !== 'All Departments') {
-      const filteredEmployees = mockEmployees.filter(emp => emp.department === value);
+      const filteredEmployees = employees.filter(emp => emp.department === value);
       setEmployeeList(filteredEmployees);
     } else {
-      setEmployeeList(mockEmployees);
+      setEmployeeList(employees);
     }
   };
 
@@ -57,10 +75,34 @@ const AttendanceCreate = () => {
     );
   };
 
-  const saveAttendance = () => {
-    console.log('Saving attendance:', attendanceSheet);
-    // Here you would normally save to backend
-    alert('Attendance saved successfully!');
+  const saveAttendance = async () => {
+    try {
+      setLoading(true);
+      
+      // Save each attendance record
+      for (const record of attendanceSheet) {
+        await fakeApi.createAttendanceRecord({
+          employeeId: record.employeeId,
+          date: record.date,
+          checkIn: record.clockIn,
+          checkOut: record.clockOut,
+          status: record.status,
+          overtime: parseFloat(record.overtime) || 0
+        });
+      }
+      
+      alert('Attendance records saved successfully!');
+      navigate('/attendance');
+    } catch (err) {
+      alert('Failed to save attendance records');
+      console.error('Save attendance error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoBack = () => {
+    navigate('/attendance');
   };
 
   return (
@@ -73,17 +115,29 @@ const AttendanceCreate = () => {
             <p className="text-purple-100 mt-1">Select a department and add employees to the attendance sheet</p>
           </div>
           <div className="flex space-x-3">
-            <Button variant="secondary" size="md">
+            <Button variant="secondary" size="md" onClick={handleGoBack}>
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
               ← Back
             </Button>
-            <Button variant="success" size="md" onClick={saveAttendance}>
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 1m0 0l-3-1m3 1V7m0 0V3" />
-              </svg>
-              Save Attendance
+            <Button 
+              variant="success" 
+              size="md" 
+              onClick={saveAttendance}
+              disabled={loading || attendanceSheet.length === 0}
+            >
+              {loading ? (
+                <svg className="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 1m0 0l-3-1m3 1V7m0 0V3" />
+                </svg>
+              )}
+              {loading ? 'Saving...' : 'Save Attendance'}
             </Button>
           </div>
         </div>

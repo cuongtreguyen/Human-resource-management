@@ -18,7 +18,7 @@ const Header = ({ onLogout, onMenuClick }) => {
           {/* Page title */}
           <div className="hidden lg:block ml-4">
             <h2 className="text-xl font-semibold text-gray-900">
-              HR Management System
+              EMPLOYEE HUB
             </h2>
           </div>
         </div>
@@ -59,3 +59,5 @@ const Header = ({ onLogout, onMenuClick }) => {
 };
 
 export default Header;
+
+

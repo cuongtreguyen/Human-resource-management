@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+import fakeApi from '../services/fakeApi';
 import { Calendar, Clock, Users, TrendingUp, Eye, Edit, Save, Filter, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Modal Attendance Details Component
@@ -251,12 +252,32 @@ const AttendanceList = () => {
   const [showAttendanceDetails, setShowAttendanceDetails] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [attendanceData, setAttendanceData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    department: 'Phòng phát triển Phần mềm',
+    department: 'All Departments',
     month: 'March',
-    year: '2025',
-    display: '1 records'
+    year: '2024',
+    display: 'All Records'
   });
+
+  useEffect(() => {
+    loadAttendanceData();
+  }, []);
+
+  const loadAttendanceData = async () => {
+    try {
+      setLoading(true);
+      const response = await fakeApi.getAttendanceRecords();
+      setAttendanceData(response.data);
+    } catch (err) {
+      setError('Failed to load attendance records');
+      console.error('Attendance data error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const employeeSummaryData = [
     {
@@ -346,9 +367,12 @@ const AttendanceList = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
                   <Select
                     options={[
-                      { value: 'Phòng phát triển Phần mềm', label: 'Phòng phát triển Phần mềm' },
-                      { value: 'Phòng Marketing', label: 'Phòng Marketing' },
-                      { value: 'Phòng HR', label: 'Phòng HR' }
+                      { value: 'dev', label: 'Phòng phát triển Phần mềm' },
+                      { value: 'marketing', label: 'Phòng Marketing' },
+                      {  value: 'sales', label: 'Phòng Kinh doanh' },
+                      { value: 'customer', label: 'Phòng Chăm Sóc khách hàng' },
+                      { value: 'Phòng Hành chính', label: 'Phòng Hành chính'},
+                      { value: 'finance', label: 'Phòng Tài chính' }
                     ]}
                     defaultValue={filters.department}
                     onChange={(value) => setFilters({...filters, department: value})}

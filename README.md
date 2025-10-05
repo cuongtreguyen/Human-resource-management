@@ -1,128 +1,222 @@
-<<<<<<< HEAD
-# AWS_Tech
-=======
-# React + Vite
+# Human Resource Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
-# React
-
-A modern React-based project utilizing the latest frontend technologies and tools for building responsive web applications.
+A comprehensive HR management system with **Face Recognition Attendance** built with React and Python.
 
 ## 🚀 Features
 
-- **React 18** - React version with improved rendering and concurrent features
-- **Vite** - Lightning-fast build tool and development server
-- **Redux Toolkit** - State management with simplified Redux setup
-- **TailwindCSS** - Utility-first CSS framework with extensive customization
-- **React Router v6** - Declarative routing for React applications
-- **Data Visualization** - Integrated D3.js and Recharts for powerful data visualization
-- **Form Management** - React Hook Form for efficient form handling
-- **Animation** - Framer Motion for smooth UI animations
-- **Testing** - Jest and React Testing Library setup
+### Core HR Features
+- **Employee Management** - Add, edit, and manage employee information
+- **Attendance Tracking** - Track employee attendance with face recognition
+- **Payroll Management** - Handle salary calculations and policies
+- **User Management** - Admin and user role management
+- **Reports & Analytics** - Generate attendance and payroll reports
+- **Document Management** - Store and manage HR documents
+- **Task Management** - Assign and track employee tasks
+- **Internal Chat** - Communication system for employees
+
+### Face Recognition System
+- **Biometric Attendance** - Check in/out using face recognition
+- **User Registration** - Register employees with face photos
+- **Real-time Recognition** - Live face detection and recognition
+- **Attendance Recording** - Automatic attendance logging
+- **Confidence Scoring** - Accuracy measurement for recognition
+
+## 🛠️ Technology Stack
+
+### Frontend
+- **React 19** - Latest React with concurrent features
+- **Vite** - Lightning-fast build tool
+- **TailwindCSS** - Utility-first CSS framework
+- **React Router** - Client-side routing
+- **Lucide React** - Beautiful icons
+- **Framer Motion** - Smooth animations
+
+### Backend
+- **Python Flask** - Web framework
+- **OpenCV** - Computer vision library
+- **face_recognition** - Face detection and recognition
+- **NumPy** - Numerical computing
+- **Pillow** - Image processing
 
 ## 📋 Prerequisites
 
-- Node.js (v14.x or higher)
-- npm or yarn
+- **Node.js** (v16.x or higher)
+- **Python 3.8+**
+- **npm** or **yarn**
+- **pip** (Python package manager)
 
-## 🛠️ Installation
+## 🚀 Quick Start
 
-1. Install dependencies:
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
-   
-2. Start the development server:
-   ```bash
-   npm start
-   # or
-   yarn start
-   ```
+### 1. Frontend Setup
+
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173`
+
+### 2. Backend Setup
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start the Flask API
+python app.py
+```
+
+The backend API will be available at `http://localhost:5000`
+
+### 3. Alternative Backend Startup
+
+**Windows:**
+```bash
+cd backend
+start.bat
+```
+
+**Linux/Mac:**
+```bash
+cd backend
+chmod +x start.sh
+./start.sh
+```
 
 ## 📁 Project Structure
 
 ```
-react_app/
-├── public/             # Static assets
+manager-employer/
 ├── src/
-│   ├── components/     # Reusable UI components
-│   ├── pages/          # Page components
-│   ├── styles/         # Global styles and Tailwind configuration
-│   ├── App.jsx         # Main application component
-│   ├── Routes.jsx      # Application routes
-│   └── index.jsx       # Application entry point
-├── .env                # Environment variables
-├── index.html          # HTML template
-├── package.json        # Project dependencies and scripts
-├── tailwind.config.js  # Tailwind CSS configuration
-└── vite.config.js      # Vite configuration
+│   ├── components/          # Reusable UI components
+│   │   ├── ui/             # Basic UI components
+│   │   └── layout/         # Layout components
+│   ├── pages/              # Page components
+│   │   ├── FaceRecognition.jsx  # Face recognition system
+│   │   ├── Dashboard.jsx       # Main dashboard
+│   │   ├── EmployeeList.jsx    # Employee management
+│   │   └── ...               # Other pages
+│   ├── services/           # API services
+│   ├── styles/             # Global styles
+│   └── utils/              # Utility functions
+├── backend/                 # Python Flask API
+│   ├── app.py              # Main Flask application
+│   ├── requirements.txt    # Python dependencies
+│   ├── start.sh            # Linux/Mac startup script
+│   └── start.bat           # Windows startup script
+├── public/                 # Static assets
+└── dist/                   # Built application
 ```
 
-## 🧩 Adding Routes
+## 🎯 Face Recognition System
 
-To add new routes to the application, update the `Routes.jsx` file:
+### How It Works
 
-```jsx
-import { useRoutes } from "react-router-dom";
-import HomePage from "pages/HomePage";
-import AboutPage from "pages/AboutPage";
+1. **User Registration**
+   - Enter User ID and Full Name
+   - Take multiple photos from different angles
+   - Press 's' key to capture photos
+   - Register user with face encodings
 
-const ProjectRoutes = () => {
-  let element = useRoutes([
-    { path: "/", element: <HomePage /> },
-    { path: "/about", element: <AboutPage /> },
-    // Add more routes as needed
-  ]);
+2. **Face Recognition**
+   - Start camera for live recognition
+   - System detects and recognizes faces
+   - Records attendance automatically
+   - Shows confidence score
 
-  return element;
-};
+3. **Attendance Management**
+   - Automatic check-in/out recording
+   - Real-time recognition results
+   - Attendance history tracking
+
+### API Endpoints
+
+- `GET /api/status` - Check API status
+- `POST /api/register` - Register new user
+- `POST /api/recognize` - Recognize face
+- `POST /api/attendance` - Record attendance
+- `GET /api/users` - Get registered users
+
+## 🎨 UI Features
+
+- **Modern Design** - Clean and professional interface
+- **Responsive Layout** - Works on desktop and mobile
+- **Dark/Light Theme** - Customizable appearance
+- **Real-time Updates** - Live data synchronization
+- **Interactive Components** - Smooth user interactions
+
+## 📱 Usage
+
+### For Administrators
+1. Access the dashboard to view system overview
+2. Manage employees and their information
+3. Configure face recognition settings
+4. Generate reports and analytics
+5. Monitor attendance patterns
+
+### For Employees
+1. Register with face recognition system
+2. Check in/out using face recognition
+3. View personal attendance records
+4. Access internal chat and tasks
+5. Update personal information
+
+## 🔧 Configuration
+
+### Environment Variables
+Create a `.env` file in the root directory:
+
+```env
+VITE_API_URL=http://localhost:5000
+VITE_APP_NAME=HR Management System
 ```
 
-## 🎨 Styling
-
-This project uses Tailwind CSS for styling. The configuration includes:
-
-- Forms plugin for form styling
-- Typography plugin for text styling
-- Aspect ratio plugin for responsive elements
-- Container queries for component-specific responsive design
-- Fluid typography for responsive text
-- Animation utilities
-
-## 📱 Responsive Design
-
-The app is built with responsive design using Tailwind CSS breakpoints.
-
+### Face Recognition Settings
+- Adjust confidence threshold in backend
+- Configure camera resolution
+- Set recognition accuracy parameters
 
 ## 📦 Deployment
 
-Build the application for production:
-
+### Frontend Deployment
 ```bash
 npm run build
 ```
 
+### Backend Deployment
+```bash
+# Install production dependencies
+pip install gunicorn
+
+# Run with Gunicorn
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
 ## 🙏 Acknowledgments
 
-- Built with [Rocket.new](https://rocket.new)
-- Powered by React and Vite
-- Styled with Tailwind CSS
+- Built with React and Python
+- Face recognition powered by OpenCV and face_recognition
+- UI components with TailwindCSS
+- Icons by Lucide React
 
-Built with ❤️ on Rocket.new
->>>>>>> develop
+---
+
+**Built with ❤️ for modern HR management**

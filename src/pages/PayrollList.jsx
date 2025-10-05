@@ -4,6 +4,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+import fakeApi from '../services/fakeApi';
 import { 
   DollarSign, 
   Calculator, 
@@ -396,6 +397,25 @@ const PayrollList = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
   const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    loadPayrollData();
+  }, []);
+
+  const loadPayrollData = async () => {
+    try {
+      setLoading(true);
+      const response = await fakeApi.getPayrollRecords();
+      setPayrollRecords(response.data);
+    } catch (err) {
+      setError('Failed to load payroll records');
+      console.error('Payroll data error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Sample employees data for payroll
   const employees = [
@@ -806,3 +826,4 @@ const PayrollList = () => {
 };
 
 export default PayrollList;
+
