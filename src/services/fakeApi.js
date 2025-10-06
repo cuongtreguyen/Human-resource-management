@@ -296,9 +296,9 @@ class FakeApiService {
       },
       {
         id: 'user002',
-        username: 'hr_manager',
-        email: 'hr@company.com',
-        role: 'hr_manager',
+        username: 'accountant',
+        email: 'accountant@company.com',
+        role: 'accountant',
         status: 'active',
         lastLogin: '2024-01-15T09:15:00Z',
         permissions: ['read', 'write']
@@ -311,6 +311,15 @@ class FakeApiService {
         status: 'active',
         lastLogin: '2024-01-14T16:45:00Z',
         permissions: ['read']
+      },
+      {
+        id: 'user004',
+        username: 'manager_user',
+        email: 'manager@company.com',
+        role: 'manager',
+        status: 'active',
+        lastLogin: '2024-01-15T08:30:00Z',
+        permissions: ['read', 'write']
       }
     ];
     return this.delayResponse({ data: users, success: true });

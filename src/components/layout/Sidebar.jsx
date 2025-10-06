@@ -1,25 +1,65 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Shield, Bell, Camera } from 'lucide-react';
+import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Shield, Bell, UserCheck, Activity } from 'lucide-react';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
-    { name: 'Employees', href: '/employees', icon: Users },
-    { name: 'Face Recognition', href: '/face-recognition', icon: User },
-    { name: 'Attendance', href: '/attendance', icon: Clock },
-    { name: 'Create Attendance', href: '/attendance/create', icon: Calendar },
-    { name: 'Payroll', href: '/payroll', icon: DollarSign },
-    { name: 'Leave Management', href: '/leaves', icon: Calendar },
-    { name: 'Task Delegation', href: '/leaves/delegation', icon: Users },
-    { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Chat', href: '/chat', icon: MessageCircle },
-    { name: 'Task Management', href: '/tasks', icon: CheckSquare },
-    { name: 'Documents', href: '/documents', icon: FileText },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'Role Management', href: '/admin/roles', icon: Shield },
-    { name: 'Camera Test', href: '/camera-test', icon: Camera },
-    { name: 'Settings', href: '/settings', icon: Settings },
+  const navigationGroups = [
+    {
+      title: 'DASHBOARD',
+      items: [
+        { name: 'Dashboard', href: '/dashboard', icon: Home },
+      ]
+    },
+    {
+      title: 'USER MANAGEMENT',
+      items: [
+        { name: 'Internal Chat', href: '/chat', icon: MessageCircle },
+        { name: 'Face Recognition Portal', href: '/face-recognition', icon: User },
+      ]
+    },
+    {
+      title: 'EMPLOYEE MANAGEMENT',
+      items: [
+        { name: 'Employee List', href: '/employees', icon: Users },
+        { name: 'Add Employee', href: '/employees/add', icon: UserPlus },
+        { name: 'Export Data', href: '/employees/export', icon: FileText },
+      ]
+    },
+    {
+      title: 'ATTENDANCE MANAGEMENT',
+      items: [
+        { name: 'Attendance List', href: '/attendance', icon: Clock },
+        { name: 'Attendance Creation', href: '/attendance/create', icon: Calendar },
+      ]
+    },
+    {
+      title: 'PAYROLL MANAGEMENT',
+      items: [
+        { name: 'Payroll List', href: '/payroll', icon: DollarSign },
+        { name: 'Financial Policy', href: '/payroll/policies', icon: FileText },
+      ]
+    },
+    {
+      title: 'LEAVE MANAGEMENT',
+      items: [
+        { name: 'Leave Management', href: '/leaves', icon: Calendar },
+        { name: 'Create Leave', href: '/leaves/create', icon: UserPlus },
+        { name: 'Task Delegation', href: '/leaves/delegation', icon: Users },
+      ]
+    },
+    {
+      title: 'SYSTEM MANAGEMENT',
+      items: [
+        { name: 'Task Management', href: '/tasks', icon: CheckSquare },
+        { name: 'Documents', href: '/documents', icon: FileText },
+        { name: 'Reports', href: '/reports', icon: BarChart3 },
+        { name: 'Notifications', href: '/notifications', icon: Bell },
+        { name: 'Role Management', href: '/admin/roles', icon: Shield },
+        { name: 'User List', href: '/admin/users', icon: UserCheck },
+        { name: 'Logs Monitor', href: '/admin/logs', icon: Activity },
+        { name: 'Settings', href: '/settings', icon: Settings },
+      ]
+    }
   ];
 
   return (
@@ -47,30 +87,42 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
         </div>
 
         <nav className="mt-8 px-4">
-          <div className="space-y-2">
-            {navigation.map((item) => {
-              const isActive = currentPath === item.href;
-              return (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon
-                    className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                      isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
-                    }`}
-                    aria-hidden="true"
-                  />
-                  {item.name}
-                </Link>
-              );
-            })}
+          <div className="space-y-6">
+            {navigationGroups.map((group) => (
+              <div key={group.title}>
+                {/* Group Title */}
+                <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  {group.title}
+                </h3>
+                
+                {/* Group Items */}
+                <div className="space-y-1">
+                  {group.items.map((item) => {
+                    const isActive = currentPath === item.href;
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${
+                          isActive
+                            ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
+                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                        }`}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <item.icon
+                          className={`mr-3 h-5 w-5 flex-shrink-0 ${
+                            isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        {item.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </nav>
 

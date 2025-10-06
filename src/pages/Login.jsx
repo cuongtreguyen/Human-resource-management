@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, Mail, Shield, Users, TrendingUp } from 'lucide-react';
+import { setRole } from '../utils/auth';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -11,6 +12,35 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [particles, setParticles] = useState([]);
+  const [error, setError] = useState('');
+
+  // Mock users with different roles
+  const mockUsers = {
+    employee: {
+      email: "employee@company.com",
+      password: "employee123",
+      role: "employee",
+      route: "/employee"
+    },
+    manager: {
+      email: "manager@company.com",
+      password: "manager123",
+      role: "manager",
+      route: "/dashboard"
+    },
+    accountant: {
+      email: "accountant@company.com",
+      password: "accountant123",
+      role: "accountant",
+      route: "/dashboard"
+    },
+    admin: {
+      email: "admin@company.com",
+      password: "admin123",
+      role: "admin",
+      route: "/dashboard"
+    }
+  };
 
   // Initialize floating particles
   useEffect(() => {
@@ -37,11 +67,22 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
     // Simulate API call
     setTimeout(() => {
-      if (formData.email && formData.password) {
-        navigate('/dashboard');
+      // Find user by email and password
+      const user = Object.values(mockUsers).find(
+        u => u.email === formData.email && u.password === formData.password
+      );
+      
+      if (user) {
+        // Set role in localStorage
+        setRole(user.role);
+        // Navigate to appropriate route based on role
+        navigate(user.route);
+      } else {
+        setError('Invalid email or password. Please try again.');
       }
       setIsLoading(false);
     }, 1500);
@@ -53,6 +94,7 @@ const Login = () => {
       [e.target.name]: e.target.value
     });
   };
+
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900">
@@ -291,10 +333,10 @@ const Login = () => {
         {/* Ocean Conservation Text */}
         <div className="absolute top-8 right-8 text-white text-right z-20">
           <div className="text-2xl font-bold mb-2 animate-fade-in">
-            TO PROTECT OUR OCEANS
+           
           </div>
           <div className="text-sm text-gray-300 animate-fade-in-delay">
-            for the well-being
+           
           </div>
           <div className="text-sm text-gray-300 animate-fade-in-delay-2">
             of future generations
@@ -303,8 +345,7 @@ const Login = () => {
         
         {/* DESTROYER Text (partially visible) */}
         <div className="absolute top-4 left-4 text-white z-20">
-          <div className="text-6xl font-bold opacity-30 animate-pulse-slow">
-            DESTROYER
+          <div className="text-6xl font-bold opacity-30 animate-pulse-slow">      
           </div>
         </div>
       </div>
@@ -329,6 +370,7 @@ const Login = () => {
 
             {/* Login Form */}
             <div className="bg-white rounded-3xl p-8 shadow-2xl animate-slide-up-delay-2">
+
               <form className="space-y-6" onSubmit={handleSubmit}>
                 {/* Email Field */}
                 <div className="space-y-2">
@@ -380,6 +422,13 @@ const Login = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Error Message */}
+                {error && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">{error}</p>
+                  </div>
+                )}
 
                 {/* Remember Me and Forgot Password */}
                 <div className="flex items-center justify-between">
