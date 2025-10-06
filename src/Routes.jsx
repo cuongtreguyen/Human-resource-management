@@ -27,8 +27,7 @@ import Documents from "./pages/Documents";
 import Settings from "./pages/Settings";
 import EmployeeDetails from "./pages/EmployeeDetails";
 import EditEmployee from "./pages/EditEmployee";
-import EmployeePortal from "./pages/EmployeePortal";
-import RoleSelector from "./pages/RoleSelector";
+import EmployeePortal from "./pages/employee/EmployeePortal";
 import EmployeeAttendance from "./pages/employee/Attendance";
 import EmployeeLeave from "./pages/employee/Leave";
 import EmployeePayroll from "./pages/employee/Payroll";
@@ -150,7 +149,6 @@ const AppRoutes = () => {
 
       {/* Dashboard */}
       <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/role" element={<RoleSelector />} />
 
       {/* Employee Routes */}
       <Route path="/employees" element={<EmployeeList />} />
