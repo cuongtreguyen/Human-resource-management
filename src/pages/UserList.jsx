@@ -13,7 +13,6 @@ const AdminSidebar = () => {
       category: 'EMPLOYEE MANAGEMENT',
       items: [
         { name: 'Employee List', icon: '👥', path: '/employees' },
-        { name: 'Add Employee', icon: '➕', path: '/employees/add' },
         { name: 'Export Data', icon: '📊', path: '/employees/export' }
       ]
     },

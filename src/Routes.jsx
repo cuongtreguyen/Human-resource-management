@@ -7,7 +7,6 @@ import Dashboard from './pages/Dashboard';
 
 // Employee pages
 import EmployeeList from './pages/EmployeeList';
-import AddEmployee from './pages/AddEmployee';
 import FaceRecognition from './pages/FaceRecognition';
 import AttendanceList from './pages/AttendanceList';
 import AttendanceCreate from './pages/AttendanceCreate';
@@ -34,6 +33,7 @@ import LeaveRequest from './pages/LeaveRequest';
 import TaskDelegation from './pages/TaskDelegation';
 import NotificationCenter from './pages/NotificationCenter';
 import WorkflowManager from './pages/WorkflowManager';
+import CameraTest from './pages/CameraTest';
 
 // Placeholder components for other pages
 
@@ -140,7 +140,6 @@ const AppRoutes = () => {
       
       {/* Employee Routes */}
       <Route path="/employees" element={<EmployeeList />} />
-      <Route path="/employees/add" element={<AddEmployee />} />
       <Route path="/employees/view/:id" element={<EmployeeDetails />} />
       <Route path="/employees/edit/:id" element={<EditEmployee />} />
       <Route path="/employees/export" element={<div>Export Data</div>} />
@@ -151,8 +150,8 @@ const AppRoutes = () => {
       <Route path="/attendance/summary" element={<AttendanceSummary />} />
       
       {/* Payroll Routes */}
-      <Route path="/payroll" element={<PayrollList />} />
-      <Route path="/payroll/policies" element={<PayrollPolicies />} />
+            <Route path="/payroll" element={<PayrollList />} />
+            <Route path="/payroll/policies" element={<PayrollPolicies />} />
       
       {/* Request Routes */}
       <Route path="/requests" element={<RequestList />} />
@@ -188,8 +187,9 @@ const AppRoutes = () => {
       <Route path="/documents" element={<Documents />} />
       <Route path="/settings" element={<Settings />} />
       
-      {/* Test Route */}
+      {/* Test Routes */}
       <Route path="/test" element={<Test />} />
+      <Route path="/camera-test" element={<CameraTest />} />
       
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />

@@ -41,7 +41,7 @@ const Input = ({
         <input
           type={type}
           value={value}
-          onChange={onChange}
+          onChange={(e) => onChange && onChange(e.target.value)}
           placeholder={placeholder}
           disabled={disabled}
           className={`${classes} ${icon ? 'pl-10' : ''}`}

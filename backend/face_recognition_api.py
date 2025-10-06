@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
 import subprocess
 import threading
 import os
@@ -16,7 +15,6 @@ logger = setup_logger('resume_api')
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173'])
 
 current_process = None
 system_status = {
@@ -370,61 +368,6 @@ def stop_process():
         return jsonify({
             'status': 'error',
             'message': f'Failed to stop process: {str(e)}'
-        })
-
-@app.route('/api/checkin', methods=['POST'])
-def checkin():
-    """Simple check-in endpoint"""
-    logger.info("Received check-in request")
-    global current_process, system_status
-
-    try:
-        system_status = {
-            "status": "running",
-            "message": "Checking in...",
-            "last_updated": time.time()
-        }
-
-        def run_checkin():
-            global current_process, system_status
-            try:
-                # Run face recognition for check-in
-                current_process = subprocess.Popen(['python', 'face_recognition.py'])
-                current_process.wait()
-
-                if current_process.returncode == 0:
-                    current_time = time.strftime('%Y-%m-%d %H:%M:%S')
-                    system_status = {
-                        "status": "success",
-                        "message": f"Check-in successful at {current_time}",
-                        "last_updated": time.time()
-                    }
-                else:
-                    system_status = {
-                        "status": "error",
-                        "message": "Check-in failed - Face not recognized",
-                        "last_updated": time.time()
-                    }
-            except Exception as e:
-                system_status = {
-                    "status": "error",
-                    "message": f"Check-in error: {str(e)}",
-                    "last_updated": time.time()
-                }
-
-        thread = threading.Thread(target=run_checkin)
-        thread.daemon = True
-        thread.start()
-
-        return jsonify({
-            'status': 'success',
-            'message': 'Check-in process started'
-        })
-
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'Failed to start check-in: {str(e)}'
         })
 
 if __name__ == '__main__':

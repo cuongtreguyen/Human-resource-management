@@ -1,12 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Shield, Bell } from 'lucide-react';
+import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Shield, Bell, Camera } from 'lucide-react';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Employees', href: '/employees', icon: Users },
-    { name: 'Add Employee', href: '/employees/add', icon: UserPlus },
     { name: 'Face Recognition', href: '/face-recognition', icon: User },
     { name: 'Attendance', href: '/attendance', icon: Clock },
     { name: 'Create Attendance', href: '/attendance/create', icon: Calendar },
@@ -19,6 +18,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
     { name: 'Documents', href: '/documents', icon: FileText },
     { name: 'Reports', href: '/reports', icon: BarChart3 },
     { name: 'Role Management', href: '/admin/roles', icon: Shield },
+    { name: 'Camera Test', href: '/camera-test', icon: Camera },
     { name: 'Settings', href: '/settings', icon: Settings },
   ];
 

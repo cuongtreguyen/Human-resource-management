@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  face-recognition-api:
+    build: ./backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/uploads:/app/uploads
+      - ./backend/datasets:/app/datasets
+      - ./backend/trainer:/app/trainer
+    environment:
+      - FLASK_ENV=development
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
+    networks:
+      - face-recognition-network
+
+networks:
+  face-recognition-network:
+    driver: bridge

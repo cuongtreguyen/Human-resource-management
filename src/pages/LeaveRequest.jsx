@@ -24,6 +24,7 @@ const LeaveRequest = () => {
   const [employees, setEmployees] = useState([]);
   const [currentTasks, setCurrentTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     loadEmployees();
@@ -49,10 +50,67 @@ const LeaveRequest = () => {
   };
 
   const handleInputChange = (field, value) => {
+    // Ensure value is always a string for text inputs
+    const processedValue = typeof value === 'string' ? value : String(value || '');
+    
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: processedValue
     }));
+    
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.leaveType) {
+      newErrors.leaveType = 'Vui lòng chọn loại nghỉ phép';
+    }
+    
+    if (!formData.startDate) {
+      newErrors.startDate = 'Vui lòng chọn ngày bắt đầu';
+    }
+    
+    if (!formData.endDate) {
+      newErrors.endDate = 'Vui lòng chọn ngày kết thúc';
+    }
+    
+    if (formData.startDate && formData.endDate) {
+      const startDate = new Date(formData.startDate);
+      const endDate = new Date(formData.endDate);
+      
+      if (endDate < startDate) {
+        newErrors.endDate = 'Ngày kết thúc phải sau ngày bắt đầu';
+      }
+      
+      // Check if dates are in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (startDate < today) {
+        newErrors.startDate = 'Ngày bắt đầu không được là ngày trong quá khứ';
+      }
+    }
+    
+    if (!formData.reason.trim()) {
+      newErrors.reason = 'Vui lòng nhập lý do nghỉ phép';
+    }
+    
+    if (!formData.emergencyContact.trim()) {
+      newErrors.emergencyContact = 'Vui lòng nhập số điện thoại liên hệ khẩn cấp';
+    } else if (!/^[0-9+\-\s()]+$/.test(formData.emergencyContact)) {
+      newErrors.emergencyContact = 'Số điện thoại không hợp lệ';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleTaskSelect = (taskId, isSelected) => {
@@ -68,6 +126,12 @@ const LeaveRequest = () => {
     if (formData.startDate && formData.endDate) {
       const start = new Date(formData.startDate);
       const end = new Date(formData.endDate);
+      
+      // Handle same day leave
+      if (start.getTime() === end.getTime()) {
+        return 1;
+      }
+      
       const diffTime = Math.abs(end - start);
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
       return diffDays;
@@ -143,6 +207,12 @@ const LeaveRequest = () => {
   };
 
   const handleSubmit = async () => {
+    // Validate form before submission
+    if (!validateForm()) {
+      alert('Vui lòng kiểm tra lại thông tin đã nhập');
+      return;
+    }
+
     try {
       setLoading(true);
       
@@ -215,6 +285,8 @@ const LeaveRequest = () => {
                     ]}
                     value={formData.leaveType}
                     onChange={(value) => handleInputChange('leaveType', value)}
+                    error={errors.leaveType}
+                    required
                   />
                   
                   <Input
@@ -222,6 +294,8 @@ const LeaveRequest = () => {
                     type="date"
                     value={formData.startDate}
                     onChange={(value) => handleInputChange('startDate', value)}
+                    error={errors.startDate}
+                    required
                   />
                   
                   <Input
@@ -229,27 +303,36 @@ const LeaveRequest = () => {
                     type="date"
                     value={formData.endDate}
                     onChange={(value) => handleInputChange('endDate', value)}
+                    error={errors.endDate}
+                    required
                   />
                   
                   <Input
                     label="Liên hệ khẩn cấp"
-                    value={formData.emergencyContact}
+                    value={formData.emergencyContact || ''}
                     onChange={(value) => handleInputChange('emergencyContact', value)}
                     placeholder="Số điện thoại liên hệ"
+                    error={errors.emergencyContact}
+                    required
                   />
                 </div>
                 
                 <div className="mt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lý do nghỉ phép
+                    Lý do nghỉ phép <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className={`block w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.reason ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300'
+                    }`}
                     rows="3"
                     value={formData.reason}
                     onChange={(e) => handleInputChange('reason', e.target.value)}
                     placeholder="Mô tả chi tiết lý do nghỉ phép..."
                   />
+                  {errors.reason && (
+                    <p className="mt-1 text-sm text-red-600">{errors.reason}</p>
+                  )}
                 </div>
               </Card>
 
@@ -310,7 +393,8 @@ const LeaveRequest = () => {
                 <Button 
                   variant="primary" 
                   onClick={handleSubmit}
-                  disabled={loading || !formData.leaveType || !formData.startDate || !formData.endDate}
+                  disabled={loading}
+                  loading={loading}
                 >
                   {loading ? 'Đang gửi...' : 'Gửi đơn nghỉ phép'}
                 </Button>
@@ -336,7 +420,14 @@ const LeaveRequest = () => {
                   {leaveDays > 0 && (
                     <div className="text-center p-4 bg-gray-50 rounded-lg">
                       <div className="text-2xl font-bold text-gray-900">{leaveDays}</div>
-                      <div className="text-sm text-gray-600">ngày nghỉ phép</div>
+                      <div className="text-sm text-gray-600">
+                        {leaveDays === 1 ? 'ngày nghỉ phép' : 'ngày nghỉ phép'}
+                      </div>
+                      {formData.startDate && formData.endDate && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(formData.startDate).toLocaleDateString('vi-VN')} - {new Date(formData.endDate).toLocaleDateString('vi-VN')}
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -344,7 +435,7 @@ const LeaveRequest = () => {
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                       <h4 className="font-medium text-blue-900">Công việc cần bàn giao</h4>
                       <p className="text-sm text-blue-700 mt-1">
-                        {formData.tasks.length} task(s) được chọn
+                        {formData.tasks.length} công việc được chọn
                       </p>
                     </div>
                   )}
