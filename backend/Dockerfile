@@ -1,13 +1,21 @@
-FROM python:3.9-slim
+# 1️⃣ Base image Python 3.10
+FROM python:3.10-bullseye
 
-# Install system dependencies
+# 2️⃣ Cài gói hệ thống cần thiết
 RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    gfortran \
+    libatlas-base-dev \
+    liblapack-dev \
+    libjpeg-dev \
+    libpng-dev \
+    libtiff-dev \
     libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender-dev \
     libgomp1 \
-    libglib2.0-0 \
     libgtk-3-0 \
     libavcodec-dev \
     libavformat-dev \
@@ -15,30 +23,21 @@ RUN apt-get update && apt-get install -y \
     libv4l-dev \
     libxvidcore-dev \
     libx264-dev \
-    libjpeg-dev \
-    libpng-dev \
-    libtiff-dev \
-    libatlas-base-dev \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+ && python -m pip install --upgrade pip setuptools wheel \
+ && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# 3️⃣ Cài dlib bằng wheel (không build từ source)
+RUN pip install --no-cache-dir dlib==19.24.0
+
+# 4️⃣ Copy requirements.txt và cài package khác
+COPY requirements.txt .
+# Đảm bảo Pillow phiên bản ổn định với Python 3.10
+RUN pip install --no-cache-dir -r requirements.txt --use-pep517
+
+# 5️⃣ Copy toàn bộ source code
+COPY . /app
 WORKDIR /app
 
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY . .
-
-# Create necessary directories
-RUN mkdir -p data/faces data/models data/attendance uploads datasets trainer
-
-# Expose port
-EXPOSE 5000
-
-# Run the application
+# 6️⃣ Lệnh chạy ứng dụng
 CMD ["python", "app.py"]

@@ -1,22 +1,13 @@
-version: '3.8'
+version: "3.9"
 
 services:
   face-recognition-api:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: face-recognition-api
     ports:
       - "5000:5000"
     volumes:
-      - ./backend/data:/app/data
-      - ./backend/uploads:/app/uploads
-      - ./backend/datasets:/app/datasets
-      - ./backend/trainer:/app/trainer
-    environment:
-      - FLASK_ENV=development
-      - PYTHONUNBUFFERED=1
+      - ./backend:/app
     restart: unless-stopped
-    networks:
-      - face-recognition-network
-
-networks:
-  face-recognition-network:
-    driver: bridge
