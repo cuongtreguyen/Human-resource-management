@@ -1,498 +1,403 @@
-import os
 import cv2
-import face_recognition
 import numpy as np
+import os
+import sys
+import time
 import json
-import base64
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from PIL import Image
-import io
-import pickle
+import requests
 from datetime import datetime
-import sqlite3
+from collections import Counter
 
-app = Flask(__name__)
-CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173'])
+def setup_paths():
+    """
+    Gets all the important file paths needed for the program.
 
-# Create directories for storing data
-os.makedirs('data/faces', exist_ok=True)
-os.makedirs('data/models', exist_ok=True)
-os.makedirs('data/attendance', exist_ok=True)
-os.makedirs('data/database', exist_ok=True)
+    Returns:
+        dict: Dictionary containing all necessary paths
+    """
+    script_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Database setup
-DB_PATH = 'data/database/attendance.db'
+    paths = {
+        "script_dir": script_dir,
+        "trainer_path": os.path.join(script_dir, 'trainer'),
+        "dataset_path": os.path.join(script_dir, 'datasets'),
+        "model_path": os.path.join(script_dir, 'trainer', 'trainer.yml'),
+        "cascade_path": os.path.join(script_dir, 'haarcascade_frontalface_default.xml'),
+        "attendance_path": os.path.join(script_dir, 'attendance')
+    }
 
-def init_database():
-    """Initialize SQLite database for attendance tracking"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    # Create employees table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS employees (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_code TEXT UNIQUE NOT NULL,
-            full_name TEXT NOT NULL,
-            department TEXT,
-            position TEXT,
-            face_encoding BLOB,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    
-    # Create attendance table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS attendance (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            employee_id INTEGER,
-            date DATE NOT NULL,
-            check_in TIME,
-            check_out TIME,
-            status TEXT DEFAULT 'Present',
-            confidence REAL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (employee_id) REFERENCES employees (id)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+    return paths
 
-# Global variables to store face encodings and names
-known_face_encodings = []
-known_face_names = []
-face_model_file = 'data/models/face_model.pkl'
+def check_files(paths):
+    """
+    Checks if necessary files exist and downloads them if needed.
 
-def load_face_model():
-    """Load the trained face recognition model"""
-    global known_face_encodings, known_face_names
-    try:
-        if os.path.exists(face_model_file):
-            with open(face_model_file, 'rb') as f:
-                data = pickle.load(f)
-                known_face_encodings = data['encodings']
-                known_face_names = data['names']
-            print(f"Loaded {len(known_face_names)} known faces")
-        else:
-            print("No face model found, starting fresh")
-    except Exception as e:
-        print(f"Error loading face model: {e}")
-        known_face_encodings = []
-        known_face_names = []
+    Args:
+        paths (dict): Dictionary of file paths
 
-def save_face_model():
-    """Save the trained face recognition model"""
-    try:
-        data = {
-            'encodings': known_face_encodings,
-            'names': known_face_names
-        }
-        with open(face_model_file, 'wb') as f:
-            pickle.dump(data, f)
-        print(f"Saved face model with {len(known_face_names)} faces")
-    except Exception as e:
-        print(f"Error saving face model: {e}")
-
-def base64_to_image(base64_string):
-    """Convert base64 string to PIL Image"""
-    try:
-        # Remove data URL prefix if present
-        if ',' in base64_string:
-            base64_string = base64_string.split(',')[1]
-        
-        image_data = base64.b64decode(base64_string)
-        image = Image.open(io.BytesIO(image_data))
-        return image
-    except Exception as e:
-        print(f"Error converting base64 to image: {e}")
-        return None
-
-def image_to_face_encoding(image):
-    """Extract face encoding from image"""
-    try:
-        # Convert PIL image to numpy array
-        img_array = np.array(image)
-        
-        # Convert RGB to BGR for face_recognition
-        if len(img_array.shape) == 3:
-            img_array = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
-        
-        # Find face locations
-        face_locations = face_recognition.face_locations(img_array)
-        
-        if len(face_locations) == 0:
-            return None
-        
-        # Get face encodings
-        face_encodings = face_recognition.face_encodings(img_array, face_locations)
-        
-        if len(face_encodings) > 0:
-            return face_encodings[0]  # Return first face found
-        
-        return None
-    except Exception as e:
-        print(f"Error extracting face encoding: {e}")
-        return None
-
-def save_employee_to_db(employee_code, full_name, department, position, face_encoding):
-    """Save employee to database"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    try:
-        cursor.execute('''
-            INSERT OR REPLACE INTO employees (employee_code, full_name, department, position, face_encoding)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (employee_code, full_name, department, position, face_encoding))
-        
-        conn.commit()
-        employee_id = cursor.lastrowid
-        return employee_id
-    except Exception as e:
-        print(f"Error saving employee: {e}")
-        return None
-    finally:
-        conn.close()
-
-def record_attendance(employee_id, check_type='check_in'):
-    """Record attendance in database"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
-    try:
-        today = datetime.now().date()
-        current_time = datetime.now().time()
-        
-        # Check if attendance record exists for today
-        cursor.execute('''
-            SELECT id, check_in, check_out FROM attendance 
-            WHERE employee_id = ? AND date = ?
-        ''', (employee_id, today))
-        
-        record = cursor.fetchone()
-        
-        if record:
-            record_id, check_in, check_out = record
-            if check_type == 'check_in' and not check_in:
-                cursor.execute('''
-                    UPDATE attendance SET check_in = ? WHERE id = ?
-                ''', (current_time, record_id))
-            elif check_type == 'check_out' and not check_out:
-                cursor.execute('''
-                    UPDATE attendance SET check_out = ? WHERE id = ?
-                ''', (current_time, record_id))
-        else:
-            # Create new attendance record
-            check_in = current_time if check_type == 'check_in' else None
-            check_out = current_time if check_type == 'check_out' else None
-            
-            cursor.execute('''
-                INSERT INTO attendance (employee_id, date, check_in, check_out)
-                VALUES (?, ?, ?, ?)
-            ''', (employee_id, today, check_in, check_out))
-        
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"Error recording attendance: {e}")
+    Returns:
+        bool: True if all files are ready, False if there's a problem
+    """
+    if not os.path.exists(paths["model_path"]):
+        print("Error: Model file not found. Please train the model first.")
         return False
-    finally:
-        conn.close()
 
-@app.route('/api/status', methods=['GET'])
-def get_status():
-    """Check API status"""
-    return jsonify({
-        'status': 'connected',
-        'message': 'Face Recognition API is running',
-        'known_faces': len(known_face_names),
-        'timestamp': datetime.now().isoformat()
-    })
+    if not os.path.exists(paths["cascade_path"]):
+        print(f"Error: Face detection file not found. Downloading it now...")
+        import urllib.request
+        url = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
+        urllib.request.urlretrieve(url, paths["cascade_path"])
+        print(f"Downloaded face detection file successfully!")
 
-@app.route('/api/register', methods=['POST'])
-def register_user():
-    """Register a new user with face photos"""
+    return True
+
+def load_user_names(dataset_path):
+    """
+    Loads the names of all users from their info files.
+
+    Args:
+        dataset_path (str): Path to the datasets folder
+
+    Returns:
+        dict: Dictionary mapping user IDs to their names
+    """
+    user_names = {}
+
+    for user_id in os.listdir(dataset_path):
+        user_path = os.path.join(dataset_path, user_id)
+        if os.path.isdir(user_path):
+            info_path = os.path.join(user_path, "info.txt")
+            if os.path.exists(info_path):
+                with open(info_path, 'r') as info_file:
+                    for line in info_file:
+                        if line.startswith("Name:"):
+                            user_names[int(user_id)] = line.replace("Name:", "").strip()
+                            break
+
+    return user_names
+
+def setup_attendance(paths):
+    """
+    Sets up the attendance tracking system.
+
+    Args:
+        paths (dict): Dictionary of file paths
+
+    Returns:
+        tuple: Attendance file path and existing attendance data
+    """
+    os.makedirs(paths["attendance_path"], exist_ok=True)
+
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    attendance_file = os.path.join(paths["attendance_path"], f"attendance_{current_date}.json")
+
+    attendance_data = {}
+    if os.path.exists(attendance_file):
+        with open(attendance_file, 'r') as f:
+            try:
+                attendance_data = json.load(f)
+            except json.JSONDecodeError:
+                attendance_data = {}
+
+    return attendance_file, attendance_data
+
+def detect_faces(gray_image, cascade_path):
+    """
+    Detects faces in the grayscale image.
+
+    Args:
+        gray_image (numpy.ndarray): Grayscale image
+        cascade_path (str): Path to the face detection cascade file
+
+    Returns:
+        list: List of face locations (x, y, width, height)
+    """
+    face_detector = cv2.CascadeClassifier(cascade_path)
+
+    faces = face_detector.detectMultiScale(
+        gray_image,
+        scaleFactor=1.1,
+        minNeighbors=4,
+        minSize=(30, 30),
+        flags=cv2.CASCADE_SCALE_IMAGE
+    )
+
+    return faces
+
+def preprocess_face(gray_image, x, y, w, h):
+    """
+    Prepares a face image for better recognition.
+
+    Args:
+        gray_image (numpy.ndarray): Grayscale image
+        x, y, w, h: Face coordinates and dimensions
+
+    Returns:
+        numpy.ndarray: Processed face image
+    """
+    face_roi = gray_image[y:y+h, x:x+w]
+    face_roi = cv2.GaussianBlur(face_roi, (5, 5), 0)
+    return face_roi
+
+def recognize_face(recognizer, face_roi, recent_predictions, face_key, prediction_window):
+    """
+    Recognizes a face using the trained model.
+
+    Args:
+        recognizer: Face recognizer model
+        face_roi (numpy.ndarray): Face image
+        recent_predictions (dict): Dictionary of recent predictions
+        face_key (str): Key for this face
+        prediction_window (int): Number of frames to average
+
+    Returns:
+        tuple: User ID, confidence, and confidence text
+    """
     try:
-        data = request.json
-        employee_code = data.get('employee_code')
-        full_name = data.get('full_name')
-        department = data.get('department', '')
-        position = data.get('position', '')
-        photos = data.get('photos', [])
-        
-        if not employee_code or not full_name or not photos:
-            return jsonify({'error': 'Missing required fields'}), 400
-        
-        # Process each photo
-        face_encodings = []
-        for photo in photos:
-            image = base64_to_image(photo)
-            if image:
-                encoding = image_to_face_encoding(image)
-                if encoding is not None:
-                    face_encodings.append(encoding)
-        
-        if len(face_encodings) == 0:
-            return jsonify({'error': 'No faces detected in photos'}), 400
-        
-        # Average the encodings for better accuracy
-        avg_encoding = np.mean(face_encodings, axis=0)
-        
-        # Save to database
-        face_encoding_blob = pickle.dumps(avg_encoding)
-        employee_id = save_employee_to_db(employee_code, full_name, department, position, face_encoding_blob)
-        
-        if not employee_id:
-            return jsonify({'error': 'Failed to save employee to database'}), 500
-        
-        # Add to known faces for recognition
-        known_face_encodings.append(avg_encoding)
-        known_face_names.append(f"{employee_code}_{full_name}")
-        
-        # Save the model
-        save_face_model()
-        
-        return jsonify({
-            'success': True,
-            'message': f'Employee {full_name} registered successfully',
-            'faces_detected': len(face_encodings),
-            'employee_id': employee_id,
-            'total_users': len(known_face_names)
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        id, confidence = recognizer.predict(face_roi)
 
-@app.route('/api/recognize', methods=['POST'])
-def recognize_face():
-    """Recognize a face and record attendance"""
-    try:
-        data = request.json
-        photo = data.get('photo')
-        check_type = data.get('check_type', 'check_in')  # 'check_in' or 'check_out'
-        
-        if not photo:
-            return jsonify({'error': 'No photo provided'}), 400
-        
-        image = base64_to_image(photo)
-        if not image:
-            return jsonify({'error': 'Invalid image format'}), 400
-        
-        face_encoding = image_to_face_encoding(image)
-        if face_encoding is None:
-            return jsonify({'error': 'No face detected'}), 400
-        
-        # Compare with known faces
-        if len(known_face_encodings) == 0:
-            return jsonify({'error': 'No registered faces found'}), 400
-        
-        # Calculate face distances
-        face_distances = face_recognition.face_distance(known_face_encodings, face_encoding)
-        
-        # Find the best match
-        best_match_index = np.argmin(face_distances)
-        best_distance = face_distances[best_match_index]
-        
-        # Convert distance to confidence (lower distance = higher confidence)
-        confidence = max(0, (1 - best_distance) * 100)
-        
-        if confidence > 50:  # Threshold for recognition
-            recognized_name = known_face_names[best_match_index]
-            employee_code, full_name = recognized_name.split('_', 1)
-            
-            # Get employee ID from database
-            conn = sqlite3.connect(DB_PATH)
-            cursor = conn.cursor()
-            cursor.execute('SELECT id FROM employees WHERE employee_code = ?', (employee_code,))
-            result = cursor.fetchone()
-            conn.close()
-            
-            if result:
-                employee_id = result[0]
-                
-                # Record attendance
-                attendance_success = record_attendance(employee_id, check_type)
-                
-                return jsonify({
-                    'success': True,
-                    'recognized': True,
-                    'employee_code': employee_code,
-                    'name': full_name,
-                    'confidence': round(confidence, 2),
-                    'attendance_recorded': attendance_success,
-                    'check_type': check_type,
-                    'timestamp': datetime.now().isoformat()
-                })
-            else:
-                return jsonify({
-                    'success': False,
-                    'recognized': True,
-                    'error': 'Employee not found in database'
-                })
+        if face_key not in recent_predictions:
+            recent_predictions[face_key] = []
+
+        if np.isfinite(confidence):
+            recent_predictions[face_key].append((id, confidence))
+            if len(recent_predictions[face_key]) > prediction_window:
+                recent_predictions[face_key].pop(0)
+
+        if recent_predictions[face_key]:
+            ids = [pred[0] for pred in recent_predictions[face_key]]
+            confidences = [pred[1] for pred in recent_predictions[face_key]]
+
+            most_common_id = Counter(ids).most_common(1)[0][0]
+            avg_confidence = sum(confidences) / len(confidences)
+
+            id = most_common_id
+            confidence = avg_confidence
+
+            if not np.isfinite(confidence):
+                confidence = 100
+
+            confidence_value = max(0, min(100, 100 - confidence))
+            confidence_text = f"{int(confidence_value)}%"
+
+            return id, confidence, confidence_text
         else:
-            return jsonify({
-                'success': True,
-                'recognized': False,
-                'confidence': round(confidence, 2),
-                'message': 'Face not recognized'
-            })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+            return None, None, "0%"
 
-@app.route('/api/employees', methods=['GET'])
-def get_employees():
-    """Get list of registered employees"""
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT employee_code, full_name, department, position, created_at 
-            FROM employees ORDER BY created_at DESC
-        ''')
-        
-        employees = []
-        for row in cursor.fetchall():
-            employees.append({
-                'employee_code': row[0],
-                'full_name': row[1],
-                'department': row[2],
-                'position': row[3],
-                'created_at': row[4]
-            })
-        
-        conn.close()
-        
-        return jsonify({
-            'success': True,
-            'employees': employees,
-            'total': len(employees)
-        })
-        
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error during recognition: {str(e)}")
+        return None, None, "Error"
 
-@app.route('/api/attendance', methods=['GET'])
-def get_attendance():
-    """Get attendance records"""
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        # Get query parameters
-        date = request.args.get('date')
-        employee_code = request.args.get('employee_code')
-        
-        query = '''
-            SELECT a.id, e.employee_code, e.full_name, e.department, 
-                   a.date, a.check_in, a.check_out, a.status, a.confidence
-            FROM attendance a
-            JOIN employees e ON a.employee_id = e.id
-        '''
-        
-        params = []
-        conditions = []
-        
-        if date:
-            conditions.append('a.date = ?')
-            params.append(date)
-        
-        if employee_code:
-            conditions.append('e.employee_code = ?')
-            params.append(employee_code)
-        
-        if conditions:
-            query += ' WHERE ' + ' AND '.join(conditions)
-        
-        query += ' ORDER BY a.date DESC, a.created_at DESC'
-        
-        cursor.execute(query, params)
-        
-        attendance_records = []
-        for row in cursor.fetchall():
-            attendance_records.append({
-                'id': row[0],
-                'employee_code': row[1],
-                'full_name': row[2],
-                'department': row[3],
-                'date': row[4],
-                'check_in': row[5],
-                'check_out': row[6],
-                'status': row[7],
-                'confidence': row[8]
-            })
-        
-        conn.close()
-        
-        return jsonify({
-            'success': True,
-            'attendance': attendance_records,
-            'total': len(attendance_records)
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+def update_attendance(id, name, attendance_data, attendance_file, recognized_users, confidence_text, recognition_type):
+    """
+    Updates the attendance record for a recognized user and sends data to Spring Boot API.
 
-@app.route('/api/attendance/today', methods=['GET'])
-def get_today_attendance():
-    """Get today's attendance records"""
-    try:
-        today = datetime.now().date()
-        
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        
-        cursor.execute('''
-            SELECT a.id, e.employee_code, e.full_name, e.department, 
-                   a.check_in, a.check_out, a.status, a.confidence
-            FROM attendance a
-            JOIN employees e ON a.employee_id = e.id
-            WHERE a.date = ?
-            ORDER BY a.check_in ASC
-        ''', (today,))
-        
-        attendance_records = []
-        for row in cursor.fetchall():
-            attendance_records.append({
-                'id': row[0],
-                'employee_code': row[1],
-                'full_name': row[2],
-                'department': row[3],
-                'check_in': row[4],
-                'check_out': row[5],
-                'status': row[6],
-                'confidence': row[7]
-            })
-        
-        conn.close()
-        
-        return jsonify({
-            'success': True,
-            'attendance': attendance_records,
-            'date': str(today),
-            'total': len(attendance_records)
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    Args:
+        id: User ID
+        name (str): User name
+        attendance_data (dict): Current attendance data
+        attendance_file (str): Path to attendance file
+        recognized_users (set): Set of already recognized users
+        confidence_text (str): Confidence level as text
+        recognition_type (str): type of attendance
 
-if __name__ == '__main__':
-    # Initialize database
-    init_database()
-    
-    # Load existing face model on startup
-    load_face_model()
-    
-    print("Starting Face Recognition API...")
-    print("Available endpoints:")
-    print("- GET  /api/status")
-    print("- POST /api/register")
-    print("- POST /api/recognize")
-    print("- GET  /api/employees")
-    print("- GET  /api/attendance")
-    print("- GET  /api/attendance/today")
-    
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    Returns:
+        tuple: Updated set of recognized users and boolean indicating if API call was successful
+    """
+    api_success = False
+    recognized_name = None
+
+    if id not in recognized_users:
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        date_str = datetime.now().strftime("%Y-%m-%d")
+
+        if str(id) not in attendance_data:
+            attendance_data[str(id)] = {
+                "name": name,
+                "check_in": timestamp,
+                "check_out": None
+            }
+        else:
+            attendance_data[str(id)]["check_out"] = timestamp
+
+        with open(attendance_file, 'w') as f:
+            json.dump(attendance_data, f, indent=4)
+
+        recognized_users.add(id)
+        recognized_name = name
+        print(f"Recognized: {name} (ID: {id}) - {confidence_text}")
+
+        try:
+            recognition_data = {
+                "id": str(id),
+                "name": name,
+                "timestamp": f"{date_str} {timestamp}",
+                "confidence": confidence_text,
+                "type": recognition_type
+            }
+
+            print(f"Sending recognition data to API: {recognition_data}")
+
+            response = requests.post(
+                "http://localhost:8081/api/face-recognition/recognition-success",
+                json=recognition_data,
+                timeout=1
+            )
+
+            print(f"Response status: {response.status_code}")
+            print(f"Response content: {response.text}")
+
+            if response.status_code == 200:
+                print("Recognition data sent to Spring Boot API successfully")
+                api_success = True
+            else:
+                print(f"Failed to send recognition data: {response.status_code} - {response.text}")
+
+        except Exception as e:
+            print(f"Error sending recognition data to Spring Boot API: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+    return recognized_users, api_success, recognized_name
+
+def recognize_faces():
+    """
+    Main function that runs the face recognition system.
+    This program:
+    1. Opens your camera
+    2. Looks for faces
+    3. Tries to recognize who each face belongs to
+    4. Records when people arrive and leave
+    5. Shows a success message when recognition is successful
+    6. Automatically stops after 3 seconds of successful recognition
+
+    Returns:
+        bool: True if recognition completed successfully
+    """
+
+    recognition_type = "default"
+    if len(sys.argv) > 1:
+        recognition_type = sys.argv[1]
+    paths = setup_paths()
+
+    if not check_files(paths):
+        return False
+
+    recognizer = cv2.face.LBPHFaceRecognizer_create()
+    recognizer.read(paths["model_path"])
+
+    cam = cv2.VideoCapture(0)
+    cam.set(3, 640)
+    cam.set(4, 480)
+
+    min_confidence = 80
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    user_names = load_user_names(paths["dataset_path"])
+
+    attendance_file, attendance_data = setup_attendance(paths)
+
+    recognized_users = set()
+    recent_predictions = {}
+    prediction_window = 10
+
+    api_success = False
+    recognized_name = None
+    success_time = None
+
+    print("Starting face recognition...")
+    print("Press 'q' to quit or wait for successful recognition")
+
+    ret, img = cam.read()
+    if ret:
+        cv2.imshow('Face Recognition', img)
+        cv2.waitKey(1)
+        time.sleep(0.5)
+
+    while True:
+        ret, img = cam.read()
+        if not ret:
+            print("Failed to grab frame")
+            break
+
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.equalizeHist(gray)
+
+        display_img = img.copy()
+
+        if api_success:
+            elapsed = time.time() - success_time
+            remaining = max(0, 5 - elapsed)
+
+            overlay = display_img.copy()
+            cv2.rectangle(overlay, (0, 0), (display_img.shape[1], display_img.shape[0]), (0, 0, 0), -1)
+
+            success_text = f"Attendance recorded: {recognized_name}"
+            closing_text = f"Close after {int(remaining)}s"
+
+            text_size = cv2.getTextSize(success_text, font, 1, 2)[0]
+            text_x = (display_img.shape[1] - text_size[0]) // 2
+            text_y = (display_img.shape[0] + text_size[1]) // 2 - 30
+
+            close_size = cv2.getTextSize(closing_text, font, 0.7, 1)[0]
+            close_x = (display_img.shape[1] - close_size[0]) // 2
+            close_y = text_y + 40
+
+            cv2.putText(overlay, success_text, (text_x, text_y), font, 1, (0, 255, 0), 2)
+            cv2.putText(overlay, closing_text, (close_x, close_y), font, 0.7, (255, 255, 255), 1)
+
+            alpha = 0.7
+            cv2.addWeighted(overlay, alpha, display_img, 1 - alpha, 0, display_img)
+
+            cv2.imshow('Face Recognition', display_img)
+
+            if elapsed >= 5:
+                print("Closing after successful recognition")
+                break
+        else:
+            faces = detect_faces(gray, paths["cascade_path"])
+
+            for (x, y, w, h) in faces:
+                cv2.rectangle(display_img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+                face_roi = preprocess_face(gray, x, y, w, h)
+
+                face_key = f"{x}_{y}_{w}_{h}"
+                id, confidence, confidence_text = recognize_face(recognizer, face_roi, recent_predictions, face_key, prediction_window)
+
+                if id is not None and confidence is not None:
+                    if confidence < min_confidence:
+                        if id in user_names:
+                            name = user_names[id]
+                        else:
+                            name = f"User {id}"
+
+                        recognized_users, current_api_success, current_name = update_attendance(id, name, attendance_data, attendance_file, recognized_users, confidence_text, recognition_type)
+
+                        if current_api_success:
+                            api_success = True
+                            recognized_name = current_name
+                            success_time = time.time()
+                    else:
+                        name = "Unknown"
+                else:
+                    name = "Unknown"
+
+                cv2.putText(display_img, name, (x+5, y-5), font, 1, (255, 255, 255), 2)
+                cv2.putText(display_img, confidence_text, (x+5, y+h-5), font, 1, (255, 255, 0), 1)
+
+            cv2.imshow('Face Recognition', display_img)
+
+        k = cv2.waitKey(10) & 0xff
+        if k == ord('q'):
+            print("Recognition stopped by user")
+            break
+
+    cam.release()
+    cv2.destroyAllWindows()
+
+    return True
+
+if __name__ == "__main__":
+    recognize_faces()

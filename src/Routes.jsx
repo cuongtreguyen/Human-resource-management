@@ -128,6 +128,11 @@ const AppRoutes = () => {
       } />
       
       {/* Employee Routes */}
+      <Route path="/face-recognition" element={
+        <ProtectedRoute allowedRoles={['admin', 'manager']}>
+          <FaceRecognition />
+        </ProtectedRoute>
+      } />
       <Route path="/employees" element={
         <ProtectedRoute allowedRoles={['admin', 'manager']}>
           <EmployeeList />
@@ -228,7 +233,7 @@ const AppRoutes = () => {
       {/* Admin Routes */}
       <Route path="/admin/users" element={<UserList />} />
       <Route path="/admin/roles" element={
-        <ProtectedRoute allowedRoles={['admin']}>
+        <ProtectedRoute allowedRoles={['admin', 'manager']}>
           <RoleManagement />
         </ProtectedRoute>
       } />
@@ -306,7 +311,6 @@ const AppRoutes = () => {
       <Route path="/profile" element={<Profile />} />
       <Route path="/chat" element={<Chat />} />
       <Route path="/tasks" element={<TaskManagement />} />
-      <Route path="/face-recognition" element={<FaceRecognition />} />
       
       {/* Reports, Documents, and Settings Routes */}
       <Route path="/reports" element={<Reports />} />
