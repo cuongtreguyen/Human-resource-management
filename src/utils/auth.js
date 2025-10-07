@@ -1,30 +1,33 @@
-// Simple role-based auth helpers using localStorage
+// Auth utility functions
 
-const ROLE_KEY = 'app.role'; // 'admin' | 'employee'
+export const getRole = () => {
+  return localStorage.getItem('userRole');
+};
 
-export function getRole() {
-  const role = typeof window !== 'undefined' ? window.localStorage.getItem(ROLE_KEY) : null;
-  return role || null;
-}
+export const setRole = (role) => {
+  localStorage.setItem('userRole', role);
+};
 
-export function setRole(role) {
-  if (typeof window !== 'undefined') {
-    window.localStorage.setItem(ROLE_KEY, role);
-  }
-}
+export const clearRole = () => {
+  localStorage.removeItem('userRole');
+};
 
-export function clearRole() {
-  if (typeof window !== 'undefined') {
-    window.localStorage.removeItem(ROLE_KEY);
-  }
-}
+export const isAuthenticated = () => {
+  return !!getRole();
+};
 
-export function isAdmin() {
+export const isAdmin = () => {
   return getRole() === 'admin';
-}
+};
 
-export function isEmployee() {
+export const isEmployee = () => {
   return getRole() === 'employee';
-}
+};
 
+export const isManager = () => {
+  return getRole() === 'manager';
+};
 
+export const isAccountant = () => {
+  return getRole() === 'accountant';
+};

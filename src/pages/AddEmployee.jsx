@@ -1,25 +1,43 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import fakeApi from '../services/fakeApi';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Select from '../components/ui/Select';
+import { User, Phone, MapPin, Users, Calendar, Check, X, Upload } from 'lucide-react';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [activeTab, setActiveTab] = useState('personal');
+  const [saving, setSaving] = useState(false);
+  
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
+    // Personal Information
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    gender: '',
+    idNumber: '',
+    taxCode: '',
+    personalEmail: '',
     phone: '',
-    department: 'Development',
-    designation: '',
-    joiningDate: '',
-    employmentStatus: 'Active',
-    address: ''
+    permanentAddress: '',
+    temporaryAddress: '',
+    maritalStatus: '',
+    
+    // Employment Details
+    department: '',
+    position: '',
+    employeeCode: '',
+    companyEmail: '',
+    contractCode: '',
+    contractType: '',
+    baseSalary: '',
+    signDate: '',
+    startDate: '',
+    endDate: ''
   });
-
-  const departments = ['Development', 'Marketing', 'HR', 'Finance', 'Operations', 'Sales', 'Support'];
-  const employmentStatuses = ['Active', 'Inactive', 'Contract', 'Probation'];
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -30,207 +48,388 @@ const AddEmployee = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSaving(true);
     
-    try {
-      // Format data for API
-      const employeeData = {
-        name: formData.fullName,
-        email: formData.email,
-        position: formData.designation,
-        department: formData.department,
-        phone: formData.phone,
-        hireDate: formData.joiningDate,
-        status: formData.employmentStatus.toLowerCase(),
-        address: formData.address
-      };
-
-      const response = await fakeApi.createEmployee(employeeData);
-      alert('Employee created successfully!');
+    // Simulate API call
+    setTimeout(() => {
+      setSaving(false);
       navigate('/employees');
-    } catch (err) {
-      alert('Failed to create employee');
-      console.error('Create employee error:', err);
-    } finally {
-      setLoading(false);
-    }
+    }, 2000);
   };
 
-  const handleGoBack = () => {
+  const handleCancel = () => {
     navigate('/employees');
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setSelectedFile(file);
-  };
+  const tabs = [
+    { id: 'personal', label: 'Personal Information' },
+    { id: 'employment', label: 'Employment Details' },
+    { id: 'dependents', label: 'Dependents' }
+  ];
+
+  const departments = [
+    'IT Department',
+    'Human Resources',
+    'Finance',
+    'Marketing',
+    'Sales',
+    'Operations'
+  ];
+
+  const positions = [
+    'Software Developer',
+    'HR Manager',
+    'Accountant',
+    'Marketing Specialist',
+    'Sales Representative',
+    'Operations Manager'
+  ];
+
+  const contractTypes = [
+    'Full-time',
+    'Part-time',
+    'Contract',
+    'Internship'
+  ];
 
   return (
     <Layout>
-      {/* Modal-style overlay */}
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-      {/* Header */}
-          <div className="flex justify-between items-center p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Add Employee</h2>
-                  <button
-              onClick={handleGoBack}
-              className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
-            >
-              ×
-                  </button>
+      <div className="flex gap-6">
+        {/* Left Sidebar */}
+        <div className="w-80 space-y-6">
+          {/* Employee Profile */}
+          <Card>
+            <div className="text-center">
+              <div className="w-32 h-32 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <User className="w-16 h-16 text-purple-500" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">New Employee</h2>
+              <p className="text-sm text-purple-600">Upload a photo and fill in the details</p>
             </div>
+          </Card>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Full Name */}
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                <input
-                  type="text"
-                        required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="Enter full name"
-                  value={formData.fullName}
-                  onChange={(e) => handleInputChange('fullName', e.target.value)}
-                />
-                  </div>
-
-              {/* Email */}
-                  <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                <input
-                        type="email"
-                        required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="example@email.com"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                />
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                <input
-                        type="tel"
-                        required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="+919876543210"
-                        value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                      />
-                    </div>
-
-              {/* Department */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Department *</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                  value={formData.department}
-                  onChange={(e) => handleInputChange('department', e.target.value)}
-                >
-                  {departments.map(dept => (
-                    <option key={dept} value={dept}>{dept}</option>
-                  ))}
-                </select>
-                  </div>
-
-              {/* Designation */}
-                  <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Designation *</label>
-                        <input
-                  type="text"
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                  placeholder="e.g. Software Engineer"
-                  value={formData.designation}
-                  onChange={(e) => handleInputChange('designation', e.target.value)}
-                />
-                </div>
-
-              {/* Joining Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray- Bru mb-2">Joining Date *</label>
-                <input
-                    type="date"
-                    required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                  value={formData.joiningDate}
-                  onChange={(e) => handleInputChange('joiningDate', e.target.value)}
-                />
-              </div>
-
-              {/* Employment Status */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Employment Status *</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                  value={formData.employmentStatus}
-                  onChange={(e) => handleInputChange('employmentStatus', e.target.value)}
-                >
-                  {employmentStatuses.map(status => (
-                    <option key={status} value={status}>{status}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Address */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Address *</label>
-              <textarea
-                    required
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 resize-vertical"
-                placeholder="Enter address"
-                value={formData.address}
-                onChange={(e) => handleInputChange('address', e.target.value)}
-                  />
-                </div>
-
-            {/* Profile Photo */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Profile Photo</label>
-              <div className="flex items-center space-x-4">
-                <button
-                  type="button"
-                  className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  onClick={() => document.getElementById('file-upload').click()}
-                >
-                  Chọn tệp
-                </button>
-                <input
-                  id="file-upload"
-                  type="file"
-                  className="hidden"
-                  accept="image/*"
-                  onChange={handleFileChange}
-                />
-                <span className="text-sm text-gray-500">
-                  {selectedFile ? selectedFile.name : "Không có tệp nào được chọn"}
-                </span>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={loading}
-                className="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+          {/* Actions */}
+          <Card>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+            <div className="space-y-3">
+              <Button
+                onClick={handleSubmit}
+                disabled={saving}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
               >
-                {loading && (
-                  <svg className="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-B5" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                )}
-                Add Employee
-              </button>
+                <Check className="w-4 h-4 mr-2" />
+                {saving ? 'Creating...' : 'Create Employee'}
+              </Button>
+              <Button
+                onClick={handleCancel}
+                variant="outline"
+                className="w-full"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancel
+              </Button>
+            </div>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1">
+          <Card>
+            {/* Tabs */}
+            <div className="border-b border-gray-200 mb-6">
+              <nav className="-mb-px flex space-x-8">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                      activeTab === tab.id
+                        ? 'border-purple-500 text-purple-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === 'personal' && (
+              <div className="space-y-6">
+                <h1 className="text-2xl font-bold text-gray-900">Personal Information</h1>
+                <p className="text-gray-600">Basic personal information</p>
+
+                {/* Personal Details */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Personal Details</h3>
+                    <User className="w-4 h-4 ml-2 text-purple-500" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">Basic personal information</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="First Name"
+                      value={formData.firstName}
+                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      placeholder="Enter first name"
+                    />
+                    <Input
+                      label="Last Name"
+                      value={formData.lastName}
+                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      placeholder="Enter last name"
+                    />
+                    <Input
+                      label="Date of Birth"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                    />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                      <div className="flex space-x-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="male"
+                            checked={formData.gender === 'male'}
+                            onChange={(e) => handleInputChange('gender', e.target.value)}
+                            className="mr-2"
+                          />
+                          Male
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="gender"
+                            value="female"
+                            checked={formData.gender === 'female'}
+                            onChange={(e) => handleInputChange('gender', e.target.value)}
+                            className="mr-2"
+                          />
+                          Female
+                        </label>
+                      </div>
+                    </div>
+                    <Input
+                      label="ID Number"
+                      value={formData.idNumber}
+                      onChange={(e) => handleInputChange('idNumber', e.target.value)}
+                      placeholder="Enter ID number"
+                    />
+                    <Input
+                      label="Tax Code"
+                      value={formData.taxCode}
+                      onChange={(e) => handleInputChange('taxCode', e.target.value)}
+                      placeholder="Enter tax code"
+                    />
+                  </div>
                 </div>
-            </form>
+
+                {/* Contact & Address */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Contact & Address</h3>
+                    <Phone className="w-4 h-4 ml-2 text-purple-500" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">How to reach the employee</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Personal Email"
+                      type="email"
+                      value={formData.personalEmail}
+                      onChange={(e) => handleInputChange('personalEmail', e.target.value)}
+                      placeholder="Enter personal email"
+                    />
+                    <Input
+                      label="Phone"
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      placeholder="Enter phone number"
+                    />
+                    <Input
+                      label="Permanent Address"
+                      value={formData.permanentAddress}
+                      onChange={(e) => handleInputChange('permanentAddress', e.target.value)}
+                      placeholder="Enter permanent address"
+                    />
+                    <Input
+                      label="Temporary Address"
+                      value={formData.temporaryAddress}
+                      onChange={(e) => handleInputChange('temporaryAddress', e.target.value)}
+                      placeholder="Enter temporary address"
+                    />
+                  </div>
+                </div>
+
+                {/* Marital Status */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Marital Status</h3>
+                    <Users className="w-4 h-4 ml-2 text-purple-500" />
+                  </div>
+                  
+                  <div className="flex space-x-4">
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="maritalStatus"
+                        value="single"
+                        checked={formData.maritalStatus === 'single'}
+                        onChange={(e) => handleInputChange('maritalStatus', e.target.value)}
+                        className="mr-2"
+                      />
+                      Single
+                    </label>
+                    <label className="flex items-center">
+                      <input
+                        type="radio"
+                        name="maritalStatus"
+                        value="married"
+                        checked={formData.maritalStatus === 'married'}
+                        onChange={(e) => handleInputChange('maritalStatus', e.target.value)}
+                        className="mr-2"
+                      />
+                      Married
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'employment' && (
+              <div className="space-y-6">
+                <h1 className="text-2xl font-bold text-gray-900">Employment Details</h1>
+                <p className="text-gray-600">Employment contract information</p>
+
+                {/* Company Information */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Company Information</h3>
+                    <User className="w-4 h-4 ml-2 text-purple-500" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">Department and position details</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Select
+                      label="Department"
+                      value={formData.department}
+                      onChange={(e) => handleInputChange('department', e.target.value)}
+                      options={departments.map(dept => ({ value: dept, label: dept }))}
+                      placeholder="-- Select Department --"
+                    />
+                    <Select
+                      label="Position"
+                      value={formData.position}
+                      onChange={(e) => handleInputChange('position', e.target.value)}
+                      options={positions.map(pos => ({ value: pos, label: pos }))}
+                      placeholder="-- Select Position --"
+                    />
+                    <Input
+                      label="Employee Code"
+                      value={formData.employeeCode}
+                      onChange={(e) => handleInputChange('employeeCode', e.target.value)}
+                      placeholder="Enter employee code"
+                    />
+                    <Input
+                      label="Company Email"
+                      type="email"
+                      value={formData.companyEmail}
+                      onChange={(e) => handleInputChange('companyEmail', e.target.value)}
+                      placeholder="Enter company email"
+                    />
+                  </div>
+                </div>
+
+                {/* Contract Details */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Contract Details</h3>
+                    <User className="w-4 h-4 ml-2 text-purple-500" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">Employment contract information</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Contract Code"
+                      value={formData.contractCode}
+                      onChange={(e) => handleInputChange('contractCode', e.target.value)}
+                      placeholder="Enter contract code"
+                    />
+                    <Select
+                      label="Contract Type"
+                      value={formData.contractType}
+                      onChange={(e) => handleInputChange('contractType', e.target.value)}
+                      options={contractTypes.map(type => ({ value: type, label: type }))}
+                      placeholder="-- Select Contract Type --"
+                    />
+                    <Input
+                      label="Base Salary"
+                      value={formData.baseSalary}
+                      onChange={(e) => handleInputChange('baseSalary', e.target.value)}
+                      placeholder="Enter base salary"
+                    />
+                    <Input
+                      label="Sign Date"
+                      type="date"
+                      value={formData.signDate}
+                      onChange={(e) => handleInputChange('signDate', e.target.value)}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">Enter amount in millions (e.g. 10 for 10 million)</p>
+                </div>
+
+                {/* Contract Period */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Contract Period</h3>
+                    <Calendar className="w-4 h-4 ml-2 text-purple-500" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">Contract validity dates</p>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Start Date"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) => handleInputChange('startDate', e.target.value)}
+                    />
+                    <Input
+                      label="End Date"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) => handleInputChange('endDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'dependents' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Dependents</h1>
+                    <p className="text-gray-600">Family members and tax dependents</p>
+                  </div>
+                  <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Add Dependent
+                  </Button>
+                </div>
+
+                {/* Empty State */}
+                <div className="text-center py-12">
+                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No dependents added yet</p>
+                </div>
+              </div>
+            )}
+          </Card>
         </div>
       </div>
     </Layout>

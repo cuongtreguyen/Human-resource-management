@@ -7,7 +7,6 @@ import Select from '../components/ui/Select';
 import fakeApi from '../services/fakeApi';
 import { 
   DollarSign, 
-  Calculator, 
   Download, 
   Eye, 
   Edit, 
@@ -19,18 +18,186 @@ import {
   Mail,
   FileText,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
+
+// Payroll Details Modal
+const PayrollDetailsModal = ({ isOpen, onClose, payrollData }) => {
+  if (!isOpen || !payrollData) return null;
+
+  const { employee, payroll } = payrollData;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="bg-purple-600 text-white p-6 rounded-t-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold">📊 Payroll Details</h2>
+              <p className="text-purple-100">Chi tiết lương của {employee.name}</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white hover:text-purple-200 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Employee Info */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">👤 Thông tin nhân viên</h3>
+              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tên:</span>
+                  <span className="font-medium">{employee.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Email:</span>
+                  <span className="font-medium">{employee.email}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Phòng ban:</span>
+                  <span className="font-medium">{employee.department}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Chức vụ:</span>
+                  <span className="font-medium">{employee.position}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Payroll Summary */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">💰 Tổng quan lương</h3>
+              <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tháng:</span>
+                  <span className="font-medium">{payroll.month}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Lương cơ bản:</span>
+                  <span className="font-medium">{payroll.basicSalary?.toLocaleString()} VND</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Lương thực nhận:</span>
+                  <span className="font-medium text-green-600">{payroll.netSalary?.toLocaleString()} VND</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Trạng thái:</span>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${
+                    payroll.status === 'paid' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {payroll.status}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed Breakdown */}
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">📋 Chi tiết tính toán</h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Earnings */}
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-3">💰 Thu nhập</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Lương cơ bản:</span>
+                    <span>{payroll.basicSalary?.toLocaleString()} VND</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Phụ cấp:</span>
+                    <span>{payroll.allowances?.toLocaleString() || '0'} VND</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Thưởng:</span>
+                    <span>{payroll.bonuses?.toLocaleString() || '0'} VND</span>
+                  </div>
+                  <hr />
+                  <div className="flex justify-between font-medium text-green-600">
+                    <span>Tổng thu nhập:</span>
+                    <span>{payroll.grossIncome?.toLocaleString()} VND</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deductions */}
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 className="font-semibold text-red-800 mb-3">💸 Khấu trừ</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>BHXH (8%):</span>
+                    <span>{payroll.socialInsurance?.toLocaleString() || '0'} VND</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>BHYT (1.5%):</span>
+                    <span>{payroll.healthInsurance?.toLocaleString() || '0'} VND</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>BHTN (1%):</span>
+                    <span>{payroll.unemploymentInsurance?.toLocaleString() || '0'} VND</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Khấu trừ chung:</span>
+                    <span>{payroll.deductions?.toLocaleString() || '0'} VND</span>
+                  </div>
+                  <hr />
+                  <div className="flex justify-between font-medium text-red-600">
+                    <span>Tổng khấu trừ:</span>
+                    <span>{((payroll.socialInsurance || 0) + (payroll.healthInsurance || 0) + (payroll.unemploymentInsurance || 0) + (payroll.deductions || 0)).toLocaleString()} VND</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Net Salary */}
+            <div className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-800 mb-3">✅ Lương thực nhận</h4>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-blue-600">
+                  {payroll.netSalary?.toLocaleString()} VND
+                </div>
+                <div className="text-sm text-gray-600 mt-2">Sau khi trừ tất cả các khoản khấu trừ</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-end">
+          <Button 
+            onClick={onClose} 
+            variant="secondary"
+          >
+            Đóng
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Payroll Calculation Modal
 const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => {
   const [formData, setFormData] = useState({
-    basicSalary: employee?.basicSalary || 0,
-    workingDays: employee?.workingDays || 20,
-    lateDays: employee?.lateDays || 0,
-    overtimeHours: employee?.overtimeHours || 0,
-    bonuses: 0,
-    allowances:  []
+    basicSalary: 10000000,
+    workingDays: 30,
+    lateDays: 5,
+    overtimeHours: 2,
+    allowances: 1000000,
+    deductions: 0,
+    bonuses: 200000
   });
 
   const [calculatedPayroll, setCalculatedPayroll] = useState(null);
@@ -38,68 +205,82 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
   useEffect(() => {
     if (employee) {
       setFormData({
-        basicSalary: employee.basicSalary || 0,
-        workingDays: employee.workingDays || 20,
-        lateDays: employee.lateDays || 0,
-        overtimeHours: employee.overtimeHours || 0,
-        bonuses: employee.bonuses || 0,
-        allowances: employee.allowances || []
+        basicSalary: employee.basicSalary || 10000000,
+        workingDays: employee.workingDays || 30,
+        lateDays: employee.lateDays || 5,
+        overtimeHours: employee.overtimeHours || 2,
+        allowances: employee.allowances?.reduce((sum, allowance) => sum + allowance.amount, 0) || 1000000,
+        deductions: 0,
+        bonuses: employee.bonuses || 200000
       });
     }
   }, [employee]);
 
   const calculatePayroll = () => {
-    if (!employee) return;
+    console.log('Calculate Payroll clicked!');
+    console.log('Employee:', employee);
+    console.log('Form Data:', formData);
+    
+    const basicSalary = Number(formData.basicSalary) || 10000000;
+    const workingDays = Number(formData.workingDays) || 30;
+    const lateDays = Number(formData.lateDays) || 5;
+    const overtimeHours = Number(formData.overtimeHours) || 2;
+    const allowances = Number(formData.allowances) || 1000000;
+    const deductions = Number(formData.deductions) || 0;
+    const bonuses = Number(formData.bonuses) || 200000;
 
-    const basicSalary = Number(formData.basicSalary);
-    const workingDays = Number(formData.workingDays);
-    const lateDays = Number(formData.lateDays);
-    const overtimeHours = Number(formData.overtimeHours);
-    const bonuses = Number(formData.bonuses);
+    // 💰 Tính lương cơ bản (đã điều chỉnh theo ngày làm việc)
+    const dailySalary = basicSalary / 22; // Lương theo ngày
+    const actualWorkingDays = workingDays - lateDays * 0.5; // Trừ 50% lương cho mỗi ngày đi trễ
+    const adjustedBasicSalary = dailySalary * actualWorkingDays;
 
-    // Tính toán theo quy định tư nhân
-    const dailySalary = basicSalary / 22; // 22 ngày công chuẩn
-    const actualWorkingDays = workingDays - lateDays * 0.5; // Trừ 50% ngày công cho ngày đi muộn
-    const grossSalary = dailySalary * actualWorkingDays;
-    
-    // Phụ cấp làm thêm giờ (150% lương giờ chuẩn)
-    const hourlyRate = dailySalary / 8; // 8 giờ/ngày
-    const overtimePay = overtimeHours * hourlyRate * 1.5;
-    
-    const allowances = formData.allowances.reduce((sum, allowance) => sum + allowance.amount, 0);
-    
-    // Tổng thu nhập
-    const totalEarnings = grossSalary + overtimePay + allowances + bonuses;
-    
-    // Thuế thu nhập cá nhân cho doanh nghiệp tư nhân (5% trên thu nhập > 11 triệu)
-    const taxableIncome = Math.max(0, totalEarnings - 11000000);
+    // ⏰ Tính lương làm thêm giờ
+    const hourlyRate = dailySalary / 8; // Lương theo giờ
+    const overtimePay = overtimeHours * hourlyRate * 1.5; // Làm thêm giờ tính 150%
+
+    // 💰 Tính tổng thu nhập
+    const grossIncome = adjustedBasicSalary + overtimePay + allowances + bonuses;
+
+    // 🧾 Bảo hiểm (BHXH 8% + BHYT 1.5% + BHTN 1% = 10.5%)
+    const socialInsurance = basicSalary * 0.08; // BHXH 8%
+    const healthInsurance = basicSalary * 0.015; // BHYT 1.5%
+    const unemploymentInsurance = basicSalary * 0.01; // BHTN 1%
+    const totalInsurance = socialInsurance + healthInsurance + unemploymentInsurance;
+
+    // 💼 Thuế TNCN (5% cho thu nhập trên 11,000,000 VND)
+    const taxableIncome = Math.max(0, grossIncome - 11000000);
     const personalIncomeTax = taxableIncome * 0.05;
-    
-    // Bảo hiểm (10.5% lương cơ bản cho lao động)
-    const insurance = basicSalary * 0.105;
-    
-    // Tính tổng khấu trừ
-    const totalDeductions = personalIncomeTax + insurance;
-    
-    // Lương thực lĩnh
-    const netSalary = totalEarnings - totalDeductions;
+
+    // ⚠️ Khấu trừ chung (phạt đi trễ, nghỉ không phép)
+    const generalDeductions = deductions;
+
+    // ✅ Lương thực nhận
+    const netSalary = grossIncome - totalInsurance - personalIncomeTax - generalDeductions;
 
     const calculation = {
-      basicSalary,
-      dailySalary: Math.round(dailySalary),
-      actualWorkingDays: Math.round(actualWorkingDays * 10) / 10,
-      grossSalary: Math.round(grossSalary),
-      overtimeHours,
+      // Input data
+      basicSalary: basicSalary,
+      workingDays: workingDays,
+      lateDays: lateDays,
+      overtimeHours: overtimeHours,
+      allowances: allowances,
+      bonuses: bonuses,
+      deductions: deductions,
+      
+      // Calculated amounts
+      adjustedBasicSalary: Math.round(adjustedBasicSalary),
       overtimePay: Math.round(overtimePay),
-      allowances: Math.round(allowances),
-      bonuses: Math.round(bonuses),
-      totalEarnings: Math.round(totalEarnings),
+      grossIncome: Math.round(grossIncome),
+      socialInsurance: Math.round(socialInsurance),
+      healthInsurance: Math.round(healthInsurance),
+      unemploymentInsurance: Math.round(unemploymentInsurance),
+      totalInsurance: Math.round(totalInsurance),
       personalIncomeTax: Math.round(personalIncomeTax),
-      insurance: Math.round(insurance),
-      totalDeductions: Math.round(totalDeductions),
+      generalDeductions: Math.round(generalDeductions),
       netSalary: Math.round(netSalary)
     };
 
+    console.log('Calculation result:', calculation);
     setCalculatedPayroll(calculation);
   };
 
@@ -119,7 +300,7 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">Payroll Calculation</h2>
+              <h2 className="text-xl font-semibold">🧮 Payroll Calculation</h2>
               <p className="text-purple-100">Calculate salary for {employee?.name}</p>
             </div>
             <Button onClick={onClose} variant="ghost" className="text-white hover:bg-purple-600">
@@ -129,136 +310,205 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
         </div>
 
         <div className="flex h-[calc(90vh-96px)]">
-          {/* Calculation Form */}
+          {/* Input Form */}
           <div className="w-1/2 p-6 border-r border-gray-200 overflow-y-auto">
-            <form className="space-y-4">
+            <h2 className="text-xl font-semibold mb-4">📝 Input Data</h2>
+            <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Basic Salary (VND)</label>
-                <Input
-                  type="number"
+                <input
+                  type="text"
                   value={formData.basicSalary}
-                  onChange={(e) => setFormData({...formData, basicSalary: Number(e.target.value)})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({...formData, basicSalary: Number(value) || 0});
+                  }}
                   placeholder="Enter basic salary"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Working Days</label>
-                <Input
-                  type="number"
+                <input
+                  type="text"
                   value={formData.workingDays}
-                  onChange={(e) => setFormData({...formData, workingDays: Number(e.target.value)})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({...formData, workingDays: Number(value) || 0});
+                  }}
                   placeholder="Working days in month"
-                  max={30}
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Late Days</label>
-                <Input
-                  type="number"
+                <input
+                  type="text"
                   value={formData.lateDays}
-                  onChange={(e) => setFormData({...formData, lateDays: Number(e.target.value)})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({...formData, lateDays: Number(value) || 0});
+                  }}
                   placeholder="Number of late days"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Overtime Hours</label>
-                <Input
-                  type="number"
+                <input
+                  type="text"
                   value={formData.overtimeHours}
-                  onChange={(e) => setFormData({...formData, overtimeHours: Number(e.target.value)})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({...formData, overtimeHours: Number(value) || 0});
+                  }}
                   placeholder="Total overtime hours"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">💸 Phụ cấp (VND)</label>
+                <input
+                  type="text"
+                  value={formData.allowances}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({...formData, allowances: Number(value) || 0});
+                  }}
+                  placeholder="Phụ cấp ăn trưa, điện thoại, xăng xe..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">⚠️ Khấu trừ chung (VND)</label>
+                <input
+                  type="text"
+                  value={formData.deductions}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({...formData, deductions: Number(value) || 0});
+                  }}
+                  placeholder="Phạt đi trễ, nghỉ không phép..."
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Bonuses (VND)</label>
-                <Input
-                  type="number"
+                <input
+                  type="text"
                   value={formData.bonuses}
-                  onChange={(e) => setFormData({...formData, bonuses: Number(e.target.value)})}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({...formData, bonuses: Number(value) || 0});
+                  }}
                   placeholder="Additional bonuses"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
 
-              <Button 
+              <button 
                 onClick={calculatePayroll} 
-                variant="primary" 
-                icon={<Calculator className="h-4 w-4" />}
-                className="w-full"
+                className="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2 font-medium"
               >
-                Calculate Payroll
-              </Button>
-            </form>
+                🧮 Calculate Payroll
+              </button>
+            </div>
           </div>
 
-          {/* Calculation Results */}
+          {/* Results */}
           <div className="w-1/2 p-6 overflow-y-auto">
+            <h2 className="text-xl font-semibold mb-4">📊 Calculation Results</h2>
+            
             {calculatedPayroll ? (
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Calculation Results</h3>
                 
                 {/* Earnings */}
-                <Card title="💰 Earnings" className="bg-green-50 border-green-200">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-green-800 mb-3">💰 Thu nhập</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Daily Salary:</span>
-                      <span>{calculatedPayroll.dailySalary.toLocaleString()} VND</span>
+                      <span>💰 Lương cơ bản:</span>
+                      <span>{calculatedPayroll.adjustedBasicSalary.toLocaleString()} VND</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Gross Salary:</span>
-                      <span className="font-medium">{calculatedPayroll.grossSalary.toLocaleString()} VND</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Overtime Pay:</span>
+                      <span>⏰ Làm thêm giờ:</span>
                       <span>{calculatedPayroll.overtimePay.toLocaleString()} VND</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Allowances:</span>
+                      <span>💸 Phụ cấp:</span>
                       <span>{calculatedPayroll.allowances.toLocaleString()} VND</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Bonuses:</span>
+                      <span>🎁 Thưởng:</span>
                       <span>{calculatedPayroll.bonuses.toLocaleString()} VND</span>
                     </div>
                     <hr />
                     <div className="flex justify-between font-medium text-green-600">
-                      <span>Total Earnings:</span>
-                      <span>{calculatedPayroll.totalEarnings.toLocaleString()} VND</span>
+                      <span>Tổng thu nhập:</span>
+                      <span>{calculatedPayroll.grossIncome.toLocaleString()} VND</span>
                     </div>
                   </div>
-                </Card>
+                </div>
 
                 {/* Deductions */}
-                <Card title="💸 Deductions" className="bg-red-50 border-red-200">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-red-800 mb-3">💸 Khấu trừ</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Personal Income Tax:</span>
-                      <span>{calculatedPayroll.personalIncomeTax.toLocaleString()} VND</span>
+                      <span>⚠️ Khấu trừ chung:</span>
+                      <span>{calculatedPayroll.generalDeductions.toLocaleString()} VND</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Insurance:</span>
-                      <span>{calculatedPayroll.insurance.toLocaleString()} VND</span>
+                      <span>🧾 Bảo hiểm (10.5%):</span>
+                      <span>{calculatedPayroll.totalInsurance.toLocaleString()} VND</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>💼 Thuế TNCN:</span>
+                      <span>{calculatedPayroll.personalIncomeTax.toLocaleString()} VND</span>
                     </div>
                     <hr />
                     <div className="flex justify-between font-medium text-red-600">
-                      <span>Total Deductions:</span>
-                      <span>{calculatedPayroll.totalDeductions.toLocaleString()} VND</span>
+                      <span>Tổng khấu trừ:</span>
+                      <span>{(calculatedPayroll.totalInsurance + calculatedPayroll.personalIncomeTax + calculatedPayroll.generalDeductions).toLocaleString()} VND</span>
                     </div>
                   </div>
-                </Card>
+                </div>
 
                 {/* Net Salary */}
-                <Card title="🎯 Net Salary" className="bg-blue-50 border-blue-200">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-blue-800 mb-3">✅ Lương thực nhận</h3>
                   <div className="text-center">
                     <div className="text-3xl font-bold text-blue-600">
                       {calculatedPayroll.netSalary.toLocaleString()} VND
                     </div>
-                    <div className="text-sm text-gray-600 mt-2">Take home amount</div>
+                    <div className="text-sm text-gray-600 mt-2">Sau khi trừ tất cả các khoản khấu trừ</div>
                   </div>
-                </Card>
+                </div>
+
+                {/* Details */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-gray-800 mb-3">📋 Công thức tính toán</h3>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="bg-white p-3 rounded border">
+                      <div className="font-medium text-gray-800 mb-2">Công thức:</div>
+                      <div className="text-sm">
+                        Lương thực nhận = Lương cơ bản + Phụ cấp + Thưởng - (BHXH + BHYT + BHTN + Khấu trừ chung)
+                      </div>
+                    </div>
+                    <div className="bg-white p-3 rounded border">
+                      <div className="font-medium text-gray-800 mb-2">Tính toán cụ thể:</div>
+                      <div className="text-sm">
+                        {calculatedPayroll.basicSalary.toLocaleString()} + {calculatedPayroll.allowances.toLocaleString()} + {calculatedPayroll.bonuses.toLocaleString()} - ({calculatedPayroll.socialInsurance.toLocaleString()} + {calculatedPayroll.healthInsurance.toLocaleString()} + {calculatedPayroll.unemploymentInsurance.toLocaleString()} + {calculatedPayroll.generalDeductions.toLocaleString()}) = {calculatedPayroll.netSalary.toLocaleString()} VND
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <Button 
                   onClick={handleSubmit} 
@@ -269,10 +519,10 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
                 </Button>
               </div>
             ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                <div className="text-center">
-                  <Calculator className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p>Perform calculation to see results</p>
+              <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+                <div className="text-center text-gray-500">
+                  <div className="text-6xl mb-4">🧮</div>
+                  <p className="text-lg">Perform calculation to see results</p>
                 </div>
               </div>
             )}
@@ -396,6 +646,8 @@ const PayrollList = () => {
   const [showPoliciesModal, setShowPoliciesModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [showPayrollDetailsModal, setShowPayrollDetailsModal] = useState(false);
+  const [selectedPayrollDetails, setSelectedPayrollDetails] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -480,35 +732,39 @@ const PayrollList = () => {
   // Generate payroll record for an employee
   const generatePayrollRecord = (employee) => {
     const basicSalary = employee.basicSalary;
-    const dailySalary = basicSalary / 22;
-    const actualWorkingDays = employee.workingDays - employee.lateDays * 0.5;
-    const grossSalary = dailySalary * actualWorkingDays;
-    
-    const hourlyRate = dailySalary / 8;
-    const overtimePay = employee.overtimeHours * hourlyRate * 1.5;
-    
-    const allowances = employee.allowances.reduce((sum, allowance) => sum + allowance.amount, 0);
-    
-    const totalEarnings = grossSalary + overtimePay + allowances + employee.bonuses;
-    
-    const taxableIncome = Math.max(0, totalEarnings - 11000000);
-    const personalIncomeTax = taxableIncome * 0.05;
-    
-    const insurance = basicSalary * 0.105;
-    
-    const totalDeductions = personalIncomeTax + insurance;
-    
-    const netSalary = totalEarnings - totalDeductions;
+    const allowances = employee.allowances?.reduce((sum, allowance) => sum + allowance.amount, 0) || 0;
+    const bonuses = employee.bonuses || 0;
+    const deductions = 0; // Không có deductions trong employee data
+
+    // 💰 Tính tổng thu nhập
+    const grossIncome = basicSalary + allowances + bonuses;
+
+    // 🧾 Bảo hiểm (BHXH 8% + BHYT 1.5% + BHTN 1% = 10.5%)
+    const socialInsurance = basicSalary * 0.08; // BHXH 8%
+    const healthInsurance = basicSalary * 0.015; // BHYT 1.5%
+    const unemploymentInsurance = basicSalary * 0.01; // BHTN 1%
+    const totalInsurance = socialInsurance + healthInsurance + unemploymentInsurance;
+
+    // ⚠️ Khấu trừ chung (phạt đi trễ, nghỉ không phép)
+    const generalDeductions = deductions;
+
+    // ✅ Lương thực nhận
+    const netSalary = grossIncome - totalInsurance - generalDeductions;
 
     return {
+      id: employee.id,
+      employeeId: employee.id, // Thêm employeeId để có thể tìm employee
       ...employee,
-      dailySalary: Math.round(dailySalary),
-      grossSalary: Math.round(grossSalary),
-      overtimePay: Math.round(overtimePay),
-      totalEarnings: Math.round(totalEarnings),
-      personalIncomeTax: Math.round(personalIncomeTax),
-      insurance: Math.round(insurance),
-      totalDeductions: Math.round(totalDeductions),
+      basicSalary: basicSalary,
+      allowances: allowances,
+      bonuses: bonuses,
+      deductions: deductions,
+      grossIncome: Math.round(grossIncome),
+      socialInsurance: Math.round(socialInsurance),
+      healthInsurance: Math.round(healthInsurance),
+      unemploymentInsurance: Math.round(unemploymentInsurance),
+      totalInsurance: Math.round(totalInsurance),
+      generalDeductions: Math.round(generalDeductions),
       netSalary: Math.round(netSalary),
       month: selectedMonth,
       status: 'Paid',
@@ -556,6 +812,20 @@ const PayrollList = () => {
     setShowPayrollModal(true);
   };
 
+  const openPayrollDetailsModal = (employee) => {
+    // Tìm payroll record của employee này
+    const payrollRecord = payrollRecords.find(record => record.employeeId === employee.id);
+    if (payrollRecord) {
+      setSelectedPayrollDetails({
+        employee: employee,
+        payroll: payrollRecord
+      });
+      setShowPayrollDetailsModal(true);
+    } else {
+      alert('Chưa có dữ liệu payroll cho nhân viên này');
+    }
+  };
+
   // Export payroll data
   const exportPayrollData = () => {
     const filteredPayrolls = payrollRecords.filter(payroll => {
@@ -598,8 +868,8 @@ const PayrollList = () => {
   const payrollStats = payrollRecords.length > 0 ? payrollRecords.reduce((stats, payroll) => ({
     totalEmployees: stats.totalEmployees + 1,
     totalPayroll: stats.totalPayroll + payroll.netSalary,
-    totalTax: stats.totalTax + payroll.personalIncomeTax,
-    totalInsurance: stats.totalInsurance + payroll.insurance
+    totalTax: stats.totalTax + (payroll.socialInsurance + payroll.healthInsurance + payroll.unemploymentInsurance),
+    totalInsurance: stats.totalInsurance + (payroll.socialInsurance + payroll.healthInsurance + payroll.unemploymentInsurance)
   }), { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 }) : 
   { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 };
 
@@ -673,9 +943,8 @@ const PayrollList = () => {
                   onClick={() => generateAllPayrolls()}
                   variant="primary"
                   className="w-full"
-                  icon={<Calculator className="h-4 w-4" />}
                 >
-                  Generate Payrolls
+                  🧮 Generate Payrolls
                 </Button>
               </div>
             </div>
@@ -702,7 +971,7 @@ const PayrollList = () => {
             <Card title="Total Tax" icon={<TrendingUp className="h-5 w-5 text-orange-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-orange-600">
-                  {(payrollStats.totalTax / 1000000).toFixed(1)}M VND
+                  {payrollStats.totalTax > 0 ? `${(payrollStats.totalTax / 1000000).toFixed(1)}M VND` : '0 VND'}
                 </div>
                 <div className="text-sm text-gray-500">Tax collected</div>
               </div>
@@ -711,7 +980,7 @@ const PayrollList = () => {
             <Card title="Total Insurance" icon={<Building className="h-5 w-5 text-purple-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {(payrollStats.totalInsurance / 1000000).toFixed(1)}M VND
+                  {payrollStats.totalInsurance > 0 ? `${(payrollStats.totalInsurance / 1000000).toFixed(1)}M VND` : '0 VND'}
                 </div>
                 <div className="text-sm text-gray-500">Social insurance</div>
               </div>
@@ -746,22 +1015,22 @@ const PayrollList = () => {
                 </thead>
                 <tbody>
                   {payrollRecords.map((payroll) => {
-                    const employee = employees.find(e => e.id === payroll.id);
+                    const employee = employees.find(e => e.id === payroll.employeeId);
                     return (
                       <tr key={payroll.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                              {employee?.name.charAt(0)}
+                              {employee?.name?.charAt(0) || '?'}
                             </div>
                             <div>
-                              <div className="font-medium text-gray-900">{employee?.name}</div>
-                              <div className="text-sm text-gray-500">{employee?.email}</div>
+                              <div className="font-medium text-gray-900">{employee?.name || 'Unknown Employee'}</div>
+                              <div className="text-sm text-gray-500">{employee?.email || 'No email'}</div>
                             </div>
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="text-sm text-gray-700">{payroll.department}</div>
+                          <div className="text-sm text-gray-700">{employee?.department || payroll.department || 'N/A'}</div>
                         </td>
                         <td className="py-3 px-4">
                           <div className="font-medium text-gray-900">
@@ -789,11 +1058,12 @@ const PayrollList = () => {
                               size="sm"
                               onClick={() => openPayrollModal(employee)}
                             >
-                              <Calculator className="h-4 w-4" />
+                              🧮
                             </Button>
                             <Button 
                               variant="secondary" 
                               size="sm"
+                              onClick={() => openPayrollDetailsModal(employee)}
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
@@ -814,6 +1084,12 @@ const PayrollList = () => {
           onClose={() => setShowPayrollModal(false)}
           onCalculate={handleCalculatePayroll}
           employee={selectedEmployee}
+        />
+
+        <PayrollDetailsModal
+          isOpen={showPayrollDetailsModal}
+          onClose={() => setShowPayrollDetailsModal(false)}
+          payrollData={selectedPayrollDetails}
         />
 
         <PayrollPoliciesModal

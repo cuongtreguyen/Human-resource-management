@@ -62,6 +62,26 @@ const EmployeePortal = () => {
       desc: "Cập nhật thông tin",
       action: () => navigate("/employee/profile"),
     },
+    {
+      title: "Đánh giá hiệu suất",
+      desc: "Xem kết quả đánh giá",
+      action: () => navigate("/employee/performance"),
+    },
+    {
+      title: "Đào tạo",
+      desc: "Khóa học & phát triển",
+      action: () => navigate("/employee/training"),
+    },
+    {
+      title: "Phúc lợi",
+      desc: "Bảo hiểm & phúc lợi",
+      action: () => navigate("/employee/benefits"),
+    },
+    {
+      title: "Hỗ trợ",
+      desc: "FAQ & ticket hỗ trợ",
+      action: () => navigate("/employee/support"),
+    },
   ];
 
   if (loading) {
@@ -171,7 +191,7 @@ const EmployeePortal = () => {
 
         {/* Quick actions grid */}
         <Card title="Tác vụ nhanh">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {quickActions.map((qa) => (
               <button
                 key={qa.title}
@@ -280,7 +300,7 @@ const EmployeePortal = () => {
               <div className="mt-4">
                 <Button
                   variant="secondary"
-                  onClick={() => navigate("/profile")}
+                  onClick={() => navigate("/employee/profile")}
                 >
                   Cập nhật hồ sơ
                 </Button>

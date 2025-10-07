@@ -19,6 +19,7 @@ const TaskManagement = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [showAddEvent, setShowAddEvent] = useState(false);
   const [selectedView, setSelectedView] = useState('month');
+  const [eventFilter, setEventFilter] = useState('all');
 
   const [newTask, setNewTask] = useState({
     title: '',
@@ -217,6 +218,19 @@ const TaskManagement = () => {
       }));
       setShowAddEvent(true);
     }
+  };
+
+  const handleDateClick = (date) => {
+    setNewEvent(prev => ({
+      ...prev,
+      startDate: date.toISOString().split('T')[0],
+      endDate: date.toISOString().split('T')[0]
+    }));
+    setShowAddEvent(true);
+  };
+
+  const handleEventClick = (event) => {
+    alert(`Event: ${event.title}\nType: ${event.type}\nDate: ${new Date(event.startDate).toLocaleDateString('vi-VN')}\nAssignee: ${event.assignee}`);
   };
 
   const handleDragOver = (e) => {
@@ -631,6 +645,24 @@ const TaskManagement = () => {
                 </button>
                 
                 <h3 className="text-white font-medium mb-4">Draggable Events</h3>
+                
+                {/* Event Filter */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Filter Events</label>
+                  <select
+                    value={eventFilter}
+                    onChange={(e) => setEventFilter(e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="all">All Events ({timelineData?.events.length || 0})</option>
+                    <option value="development">Development ({timelineData?.events.filter(e => e.type === 'development').length || 0})</option>
+                    <option value="design">Design ({timelineData?.events.filter(e => e.type === 'design').length || 0})</option>
+                    <option value="meeting">Meeting ({timelineData?.events.filter(e => e.type === 'meeting').length || 0})</option>
+                    <option value="review">Review ({timelineData?.events.filter(e => e.type === 'review').length || 0})</option>
+                    <option value="training">Training ({timelineData?.events.filter(e => e.type === 'training').length || 0})</option>
+                  </select>
+                </div>
+                
                 <div className="space-y-3">
                   {[
                     { name: 'Development', type: 'development', color: '#3B82F6', icon: '💻' },
@@ -678,17 +710,21 @@ const TaskManagement = () => {
                     const dayEvents = timelineData?.events.filter(event => {
                       const eventStart = new Date(event.startDate);
                       const eventEnd = new Date(event.endDate);
-                      return date >= eventStart && date <= eventEnd;
+                      const isInDateRange = date >= eventStart && date <= eventEnd;
+                      const matchesFilter = eventFilter === 'all' || event.type === eventFilter;
+                      return isInDateRange && matchesFilter;
                     }) || [];
 
                     return (
                       <div 
                         key={i}
-                        className={`min-h-24 p-2 border border-gray-600 rounded-lg ${
+                        className={`min-h-24 p-2 border border-gray-600 rounded-lg cursor-pointer ${
                           isCurrentMonth ? 'bg-gray-800 hover:bg-gray-750' : 'bg-gray-900'
                         } ${isToday ? 'bg-blue-900 border-blue-500 ring-2 ring-blue-500' : ''} transition-all duration-200`}
                         onDrop={(e) => handleDrop(e, date)}
                         onDragOver={handleDragOver}
+                        onClick={() => handleDateClick(date)}
+                        title={`${date.toLocaleDateString('vi-VN')} - ${dayEvents.length} events`}
                       >
                         <div className={`text-sm font-medium ${isCurrentMonth ? 'text-white' : 'text-gray-500'}`}>
                           {day}
@@ -697,8 +733,13 @@ const TaskManagement = () => {
                           {dayEvents.slice(0, 2).map(event => (
                             <div 
                               key={event.id}
-                              className="text-xs p-1 rounded text-white truncate shadow-sm"
+                              className="text-xs p-1 rounded text-white truncate shadow-sm cursor-pointer hover:opacity-80 transition-opacity"
                               style={{ backgroundColor: event.color }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEventClick(event);
+                              }}
+                              title={`${event.title} - ${event.type} - ${event.assignee}`}
                             >
                               {event.title}
                             </div>

@@ -27,7 +27,7 @@ const AttendanceCreate = () => {
     }
   };
 
-  const departments = ['All Departments', 'Development', 'Marketing', 'HR', 'Finance', 'Operations'];
+  const departments = ['All Departments', 'Development', 'Marketing','Finance', 'Operations'];
 
   const mockEmployees = [
     { id: 1, name: 'John Doe', department: 'Development' },

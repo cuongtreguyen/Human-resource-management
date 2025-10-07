@@ -2,14 +2,14 @@ class ResumeParser:
     """Simple resume parser placeholder"""
     
     def __init__(self):
-        pass
+        self.name = "ResumeParser"
     
     def parse(self, file_path):
-        """Parse resume file"""
+        """Parse resume file and return basic info"""
         return {
-            "name": "Unknown",
-            "email": "unknown@example.com",
-            "phone": "000-000-0000",
-            "skills": [],
-            "experience": []
+            "name": "Sample Name",
+            "email": "sample@email.com",
+            "phone": "123-456-7890",
+            "skills": ["Python", "JavaScript", "React"],
+            "experience": "2 years"
         }

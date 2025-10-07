@@ -72,5 +72,3 @@ const EmployeeChat = () => {
 };
 
 export default EmployeeChat;
-
-

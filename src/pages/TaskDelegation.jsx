@@ -5,6 +5,8 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
+import DelegationGuide from '../components/DelegationGuide';
+import DelegationDetailModal from '../components/DelegationDetailModal';
 import { 
   Users, 
   Clock, 
@@ -15,7 +17,10 @@ import {
   FileText,
   ArrowRight,
   Bell,
-  Eye
+  Eye,
+  BookOpen,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import fakeApi from '../services/fakeApi';
 
@@ -26,6 +31,9 @@ const TaskDelegation = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [showGuide, setShowGuide] = useState(false);
+  const [selectedDelegation, setSelectedDelegation] = useState(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -145,7 +153,20 @@ const TaskDelegation = () => {
           : delegation
       );
       setDelegations(updatedDelegations);
-      alert('Cập nhật tiến độ thành công!');
+      
+      // Show success message
+      const progressText = progress === 100 ? 'hoàn thành' : `${progress}%`;
+      alert(`Cập nhật tiến độ thành công! Công việc đã đạt ${progressText}`);
+      
+      // Auto-complete if progress is 100%
+      if (progress === 100) {
+        const finalDelegations = updatedDelegations.map(delegation => 
+          delegation.id === delegationId 
+            ? { ...delegation, status: 'completed' }
+            : delegation
+        );
+        setDelegations(finalDelegations);
+      }
     } catch (err) {
       alert('Có lỗi xảy ra khi cập nhật tiến độ');
     }
@@ -163,6 +184,16 @@ const TaskDelegation = () => {
     } catch (err) {
       alert('Có lỗi xảy ra khi hoàn thành bàn giao');
     }
+  };
+
+  const handleViewDetails = (delegation) => {
+    setSelectedDelegation(delegation);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedDelegation(null);
   };
 
   if (loading) {
@@ -189,15 +220,33 @@ const TaskDelegation = () => {
                 <h1 className="text-3xl font-bold">Quản lý bàn giao công việc</h1>
                 <p className="text-purple-100 mt-1">Theo dõi và quản lý việc bàn giao công việc khi nghỉ phép</p>
               </div>
-              <Button 
-                variant="secondary" 
-                size="md" 
-                onClick={() => navigate('/leaves')}
-              >
-                ← Quay lại
-              </Button>
+              <div className="flex space-x-3">
+                <Button 
+                  variant="secondary" 
+                  size="md" 
+                  onClick={() => setShowGuide(!showGuide)}
+                  className="flex items-center space-x-2"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>{showGuide ? 'Ẩn hướng dẫn' : 'Xem hướng dẫn'}</span>
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  size="md" 
+                  onClick={() => navigate('/leaves')}
+                >
+                  ← Quay lại
+                </Button>
+              </div>
             </div>
           </div>
+
+          {/* Delegation Guide */}
+          {showGuide && (
+            <div className="mb-6">
+              <DelegationGuide />
+            </div>
+          )}
 
           {/* Statistics */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -257,6 +306,20 @@ const TaskDelegation = () => {
 
           {/* Delegation List */}
           <Card title="Danh sách bàn giao công việc">
+            {/* Quick Explanation */}
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-blue-900 mb-1">Cách đọc bảng dữ liệu</h4>
+                  <p className="text-sm text-blue-800">
+                    Bảng này hiển thị <strong>kết quả</strong> của việc bàn giao công việc. 
+                    Để thực hiện bàn giao mới, hãy nhấn nút <strong>"Xem hướng dẫn"</strong> ở trên để xem quy trình chi tiết.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -355,10 +418,16 @@ const TaskDelegation = () => {
                             size="sm"
                             onClick={() => {
                               const newProgress = prompt('Nhập tiến độ mới (0-100):', delegation.progress);
-                              if (newProgress && !isNaN(newProgress)) {
-                                handleUpdateProgress(delegation.id, parseInt(newProgress));
+                              if (newProgress !== null) {
+                                const progress = parseInt(newProgress);
+                                if (!isNaN(progress) && progress >= 0 && progress <= 100) {
+                                  handleUpdateProgress(delegation.id, progress);
+                                } else {
+                                  alert('Vui lòng nhập số từ 0 đến 100');
+                                }
                               }
                             }}
+                            title="Cập nhật tiến độ công việc"
                           >
                             <Clock className="h-4 w-4" />
                           </Button>
@@ -368,6 +437,7 @@ const TaskDelegation = () => {
                               variant="primary" 
                               size="sm"
                               onClick={() => handleCompleteDelegation(delegation.id)}
+                              title="Đánh dấu hoàn thành"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
@@ -376,6 +446,8 @@ const TaskDelegation = () => {
                           <Button 
                             variant="secondary" 
                             size="sm"
+                            title="Xem chi tiết bàn giao"
+                            onClick={() => handleViewDetails(delegation)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -389,6 +461,13 @@ const TaskDelegation = () => {
           </Card>
         </div>
       </div>
+
+      {/* Detail Modal */}
+      <DelegationDetailModal
+        delegation={selectedDelegation}
+        isOpen={showDetailModal}
+        onClose={handleCloseDetailModal}
+      />
     </Layout>
   );
 };

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
+import FaceRecognitionWidget from '../components/FaceRecognitionWidget';
 import fakeApi from '../services/fakeApi';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showFaceRecognition, setShowFaceRecognition] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -205,13 +207,23 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Test Navigation */}
+          {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Test New Features</h3>
+              <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
             </div>
             <div className="p-6">
               <div className="flex space-x-4">
+                <button
+                  onClick={() => setShowFaceRecognition(true)}
+                  className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 flex items-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  <span>Face Recognition</span>
+                </button>
                 <Link 
                   to="/chat" 
                   className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2"
@@ -274,6 +286,12 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      
+      {/* Face Recognition Widget */}
+      <FaceRecognitionWidget 
+        isOpen={showFaceRecognition} 
+        onClose={() => setShowFaceRecognition(false)} 
+      />
     </Layout>
   );
 };
