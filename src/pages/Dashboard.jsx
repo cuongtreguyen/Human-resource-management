@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
+import FaceRecognitionWidget from '../components/FaceRecognitionWidget';
 import fakeApi from '../services/fakeApi';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showFaceRecognition, setShowFaceRecognition] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -286,6 +288,14 @@ const Dashboard = () => {
         </div>
       </div>
       
+<<<<<<< HEAD
+=======
+      {/* Face Recognition Widget */}
+      <FaceRecognitionWidget 
+        isOpen={showFaceRecognition} 
+        onClose={() => setShowFaceRecognition(false)} 
+      />
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
     </Layout>
   );
 };

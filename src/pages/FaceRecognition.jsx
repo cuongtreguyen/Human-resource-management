@@ -228,6 +228,7 @@ const FaceRecognition = () => {
     }
   };
 
+<<<<<<< HEAD
   const handleTrain = async () => {
     setIsLoading(true);
     
@@ -237,14 +238,42 @@ const FaceRecognition = () => {
     } catch (error) {
       console.error('Training failed:', error);
       alert('Huấn luyện thất bại. Vui lòng thử lại.');
+=======
+  const trainModel = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:5000/api/train', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert('Model training completed successfully!');
+      } else {
+        alert(`Training failed: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Training error:', error);
+      alert('Training failed. Please check if the API is running.');
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
     } finally {
       setIsLoading(false);
     }
   };
 
+<<<<<<< HEAD
   const handleRecognize = async () => {
     if (!capturedImage) {
       alert('Vui lòng chụp ảnh khuôn mặt trước khi nhận diện!');
+=======
+  const recognizeFace = async (checkType = 'check_in') => {
+    if (!isCameraActive) {
+      alert('Please start camera first');
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
       return;
     }
 
@@ -284,6 +313,7 @@ const FaceRecognition = () => {
   };
 
   return (
+<<<<<<< HEAD
     <Layout>
       <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -317,8 +347,75 @@ const FaceRecognition = () => {
                     <span>Database:</span>
                     <span className="text-green-600">Connected</span>
                   </div>
+=======
+    <div className="min-h-screen bg-white">
+            {/* Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-2xl font-bold mb-1">Face Recognition System</h1>
+          <p className="text-purple-100 text-sm">Biometric attendance management</p>
+        </div>
+      </div>
+
+      <div className="flex min-h-screen">
+        {/* Left Sidebar */}
+        <div className="w-64 bg-white border-r border-gray-200 p-4">
+          <div className="space-y-6">
+            {/* Logo */}
+            <div className="text-center">
+              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                <Camera className="h-6 w-6 text-purple-600" />
+              </div>
+              <h2 className="text-base font-bold text-gray-900">Face Recognition</h2>
+              <p className="text-xs text-purple-600">Attendance System</p>
+            </div>
+
+                {/* System Status */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">
+                SYSTEM STATUS
+              </h3>
+              <div className={`p-3 rounded-lg ${
+                    systemStatus === 'connected' 
+                      ? 'bg-green-50 border border-green-200' 
+                      : 'bg-red-50 border border-red-200'
+                  }`}>
+                    <div className="flex items-center">
+                  <div className={`w-2 h-2 rounded-full mr-2 ${
+                    systemStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'
+                  }`}></div>
+                  <span className={`text-sm font-medium ${
+                        systemStatus === 'connected' ? 'text-green-800' : 'text-red-800'
+                      }`}>
+                        {systemStatus === 'connected' 
+                      ? 'System connected and ready' 
+                      : 'Cannot connect to recognition system'
+                        }
+                      </span>
                     </div>
+                      </div>
+                    </div>
+
+            {/* Instructions */}
+            <div>
+              <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-3">
+                INSTRUCTIONS
+              </h3>
+                  <div className="space-y-3">
+                {[
+                  "Register with your ID and name",
+                  "Take photos by pressing 's' key when camera is active",
+                  "Train the model with your photos",
+                  "Start recognition to check in/out"
+                ].map((instruction, index) => (
+                  <div key={index} className="flex items-start">
+                    <div className="w-6 h-6 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
+                      {index + 1}
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed">{instruction}</p>
                   </div>
+<<<<<<< HEAD
 
               {/* Instructions */}
               <div className="bg-white p-6 rounded-lg shadow">
@@ -335,12 +432,24 @@ const FaceRecognition = () => {
             {/* Main Content */}
             <div className="lg:col-span-2">
               <div className="bg-white p-6 rounded-lg shadow">
+=======
+                ))}
+              </div>
+            </div>
+          </div>
+              </div>
+
+        {/* Main Content */}
+        <div className="flex-1 p-6">
+          <div className="max-w-6xl mx-auto">
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
                   {/* Tabs */}
                 <div className="flex space-x-4 mb-6">
                     <button
                       onClick={() => setActiveTab('register')}
                     className={`px-4 py-2 rounded-lg font-medium ${
                         activeTab === 'register'
+<<<<<<< HEAD
                         ? 'bg-purple-600 text-white' 
                         : 'bg-gray-200 text-gray-700'
                     }`}
@@ -366,12 +475,44 @@ const FaceRecognition = () => {
                     }`}
                   >
                     Recognize
+=======
+                          ? 'text-purple-600 border-b-2 border-purple-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                Register User
+              </button>
+              <button
+                onClick={() => setActiveTab('train')}
+                className={`px-4 py-2 font-medium text-sm ${
+                  activeTab === 'train'
+                    ? 'text-purple-600 border-b-2 border-purple-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Train Model
+                    </button>
+                    <button
+                onClick={() => setActiveTab('recognize')}
+                      className={`px-4 py-2 font-medium text-sm ${
+                  activeTab === 'recognize'
+                          ? 'text-purple-600 border-b-2 border-purple-600'
+                          : 'text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                Recognize
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
                     </button>
                   </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column - Main Content */}
+              <div>
 
                   {/* Tab Content */}
                   {activeTab === 'register' && (
                   <div className="space-y-4">
+<<<<<<< HEAD
                     <h3 className="text-lg font-semibold">Register New Employee</h3>
                         
                     <div className="grid grid-cols-2 gap-4">
@@ -379,6 +520,18 @@ const FaceRecognition = () => {
                         <label className="block text-sm font-medium mb-1">Employee Code</label>
                         <input
                               type="text"
+=======
+                    <h2 className="text-xl font-bold text-gray-900">Register New User</h2>
+                        
+                    <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                          User ID
+                            </label>
+                            <Input
+                              type="text"
+                          placeholder="Enter a number between 1-10000"
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
                               value={employeeCode}
                               onChange={(e) => setEmployeeCode(e.target.value)}
                           className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -390,12 +543,17 @@ const FaceRecognition = () => {
                         <label className="block text-sm font-medium mb-1">Full Name</label>
                         <input
                               type="text"
+<<<<<<< HEAD
+=======
+                          placeholder="Enter your name if you're a new user"
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
                               value={fullName}
                               onChange={(e) => setFullName(e.target.value)}
                           className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                           placeholder="Nguyễn Văn A"
                             />
                           </div>
+<<<<<<< HEAD
                           
                           <div>
                         <label className="block text-sm font-medium mb-1">Department</label>
@@ -433,6 +591,40 @@ const FaceRecognition = () => {
                             <Video className="mr-2" size={20} />
                             Bật Camera
                           </button>
+=======
+                          </div>
+                          
+                    {/* Info Box */}
+                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <div className="w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center mr-3 mt-0.5">
+                          <span className="text-white text-xs font-bold">i</span>
+                          </div>
+                        <p className="text-sm text-purple-800">
+                          When the camera starts, press the 's' key to capture a photo. Take multiple photos from different angles for better recognition.
+                        </p>
+                        </div>
+                      </div>
+
+                      {/* Camera Controls */}
+                    <div className="flex gap-3">
+                        <Button 
+                          onClick={startCamera}
+                          disabled={!employeeCode || !fullName}
+                        className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+                        >
+                          <Camera className="h-4 w-4" />
+                          Start Camera
+                        </Button>
+                        <Button 
+                          onClick={stopCamera}
+                          disabled={!isCameraActive}
+                          className="flex items-center gap-2 bg-red-600 hover:bg-red-700"
+                        >
+                          <X className="h-4 w-4" />
+                          Stop Camera
+                        </Button>
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
                       </div>
                       )}
 
@@ -503,6 +695,7 @@ const FaceRecognition = () => {
                         </div>
                       )}
 
+<<<<<<< HEAD
                       <canvas ref={canvasRef} className="hidden" />
                     </div>
 
@@ -511,6 +704,13 @@ const FaceRecognition = () => {
                         onClick={handleRegister}
                         disabled={isLoading || !capturedImage}
                         className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 flex items-center"
+=======
+                      {/* Register Button */}
+                      <Button 
+                        onClick={registerEmployee}
+                        disabled={isLoading || !employeeCode || !fullName || capturedPhotos.length === 0}
+                      className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700"
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
                       >
                         <Camera className="mr-2" size={20} />
                         {isLoading ? 'Registering...' : 'Register Face'}
@@ -521,6 +721,7 @@ const FaceRecognition = () => {
 
                 {activeTab === 'train' && (
                   <div className="space-y-4">
+<<<<<<< HEAD
                     <h3 className="text-lg font-semibold">Train Recognition Model</h3>
                     <p className="text-gray-600">Huấn luyện mô hình nhận diện khuôn mặt với dữ liệu mới</p>
                     
@@ -628,15 +829,187 @@ const FaceRecognition = () => {
                     <div key={employee.id} className="text-sm">
                       <div className="font-medium">{employee.name}</div>
                       <div className="text-gray-500">{employee.code} - {employee.department}</div>
+=======
+                    <h2 className="text-xl font-bold text-gray-900">Train Recognition Model</h2>
+                    
+                    {/* Warning Box */}
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <div className="flex items-start">
+                        <AlertTriangle className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+                      <div>
+                          <h4 className="font-medium text-yellow-800 mb-1">Important</h4>
+                          <p className="text-sm text-yellow-700">
+                            Training the model may take some time depending on the number of photos. The system will be unavailable during training.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-gray-700">
+                      After taking photos, you need to train the model to recognize your face. This process analyzes all the photos and creates a recognition profile for each registered user.
+                    </p>
+
+                    <div className="flex justify-end">
+                          <Button 
+                        onClick={trainModel}
+                        disabled={isLoading}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                          >
+                        <Brain className="h-4 w-4" />
+                        {isLoading ? 'Training...' : 'Start Training'}
+                          </Button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'recognize' && (
+                  <div className="space-y-4">
+                    <h2 className="text-xl font-bold text-gray-900">Face Recognition</h2>
+                    
+                    <div className="bg-gray-50 rounded-lg p-6 text-center">
+                      <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Camera className="h-8 w-8 text-purple-600" />
+                      </div>
+                      
+                      <p className="text-gray-700 mb-2">
+                        Start recognition to automatically check in/out when your face is detected.
+                      </p>
+                      <p className="text-gray-600 text-sm mb-6">
+                        The system will record attendance with timestamp when a registered face is recognized.
+                      </p>
+
+                      <div className="flex gap-3 justify-center">
+                          <Button 
+                            onClick={stopCamera}
+                            disabled={!isCameraActive}
+                          className="flex items-center gap-2 bg-gray-500 hover:bg-gray-600"
+                          >
+                            <X className="h-4 w-4" />
+                          Stop Recognition
+                          </Button>
+                          <Button 
+                            onClick={() => recognizeFace('check_in')}
+                            disabled={isLoading || !isCameraActive}
+                          className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700"
+                          >
+                            <Clock className="h-4 w-4" />
+                          Clock In
+                          </Button>
+                          <Button 
+                            onClick={() => recognizeFace('check_out')}
+                            disabled={isLoading || !isCameraActive}
+                          className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600"
+                          >
+                            <Clock className="h-4 w-4" />
+                          Clock Out
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+              </div>
+
+              {/* Right Column - Statistics */}
+              <div className="space-y-4">
+                {/* Recognition Result */}
+                {recognitionResult && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-base font-semibold text-gray-900 mb-3">RECOGNITION RESULT</h3>
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center mb-2">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                        <span className="font-medium text-green-800">Face Recognized!</span>
+                      </div>
+                      <div className="text-sm text-green-700">
+                        <p><strong>Name:</strong> {recognitionResult.name}</p>
+                        <p><strong>Employee Code:</strong> {recognitionResult.employee_code}</p>
+                        <p><strong>Confidence:</strong> {recognitionResult.confidence}%</p>
+                        <p><strong>Action:</strong> {recognitionResult.check_type === 'check_in' ? 'Check In' : 'Check Out'}</p>
+                        <p><strong>Time:</strong> {new Date(recognitionResult.timestamp).toLocaleString()}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Statistics */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-base font-semibold text-gray-900 mb-3">STATISTICS</h3>
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Registered Employees:</span>
+                      <span className="font-semibold">{registeredEmployees.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Today's Attendance:</span>
+                      <span className="font-semibold">{todayAttendance.length}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Captured Photos:</span>
+                      <span className="font-semibold">{capturedPhotos.length}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Today's Attendance */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-base font-semibold text-gray-900 mb-3">TODAY'S ATTENDANCE</h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {todayAttendance.length === 0 ? (
+                      <p className="text-gray-500 text-sm">No attendance records today</p>
+                    ) : (
+                      todayAttendance.map((record) => (
+                        <div key={record.id} className="p-2 bg-gray-50 rounded text-sm">
+                          <div className="font-medium">{record.full_name}</div>
+                          <div className="text-gray-600">
+                            {record.check_in && `In: ${record.check_in}`}
+                            {record.check_out && ` | Out: ${record.check_out}`}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Button 
+                    onClick={loadTodayAttendance}
+                    className="w-full mt-3 flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh
+                  </Button>
+                </div>
+
+                {/* Registered Employees */}
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h3 className="text-base font-semibold text-gray-900 mb-3">REGISTERED EMPLOYEES</h3>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {registeredEmployees.length === 0 ? (
+                      <p className="text-gray-500 text-sm">No employees registered</p>
+                    ) : (
+                      registeredEmployees.map((employee) => (
+                        <div key={employee.employee_code} className="p-2 bg-gray-50 rounded text-sm">
+                          <div className="font-medium">{employee.full_name}</div>
+                          <div className="text-gray-600">
+                            {employee.employee_code} | {employee.department}
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
                           </div>
                   ))}
                   </div>
+<<<<<<< HEAD
+=======
+                  <Button 
+                    onClick={loadEmployees}
+                    className="w-full mt-3 flex items-center justify-center gap-2"
+                  >
+                    <RefreshCw className="h-4 w-4" />
+                    Refresh
+                  </Button>
+                </div>
+>>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
               </div>
             </div>
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 };
 

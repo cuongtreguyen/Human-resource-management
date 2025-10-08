@@ -3,7 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Import pages
-import Login from './pages/Login';
+import Login from './pages/login/Login';
 import Dashboard from './pages/Dashboard';
 
 // Employee pages

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, Mail, Shield, Users, TrendingUp } from 'lucide-react';
-import { setRole } from '../utils/auth';
+import { setRole } from '../../utils/auth';
 
 const Login = () => {
   const navigate = useNavigate();
