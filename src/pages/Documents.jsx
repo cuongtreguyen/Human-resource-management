@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Layout from '../components/layout/Layout';
-import fakeApi from '../services/fakeApi';
 
 const Documents = () => {
   const [documents, setDocuments] = useState([]);
@@ -19,7 +18,7 @@ const Documents = () => {
     { id: 'reports', name: 'Reports', icon: '📊' }
   ];
 
-  const mockDocuments = [
+  const mockDocuments = useMemo(() => [
     {
       id: 1,
       name: 'Employee Contract Template.pdf',
@@ -65,11 +64,11 @@ const Documents = () => {
       uploadedBy: 'Manager',
       downloads: 56
     }
-  ];
+  ], []);
 
   useEffect(() => {
     setDocuments(mockDocuments);
-  }, []);
+  }, [mockDocuments]);
 
   const handleFileUpload = (e) => {
     e.preventDefault();

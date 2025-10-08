@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 
 const PayrollPolicies = () => {
-  const [policies, setPolicies] = useState([]);
+  const [, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 

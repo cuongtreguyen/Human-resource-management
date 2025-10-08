@@ -29,7 +29,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
         } else {
           setSystemStatus('disconnected');
         }
-      } catch (error) {
+      } catch {
         setSystemStatus('disconnected');
       }
     };

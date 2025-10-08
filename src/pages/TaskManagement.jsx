@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Layout from '../components/layout/Layout';
 import fakeApi from '../services/fakeApi';
 
@@ -6,7 +6,7 @@ const TaskManagement = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
-  const [selectedTask, setSelectedTask] = useState(null);
+  const [, setSelectedTask] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [assignees, setAssignees] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
@@ -46,7 +46,7 @@ const TaskManagement = () => {
     loadNotifications();
     loadTimelineData();
     loadAnalyticsData();
-  }, []);
+  }, [loadTasks, loadAssignees, loadNotifications, loadTimelineData, loadAnalyticsData]);
 
   useEffect(() => {
     // Load progress for each task
@@ -58,34 +58,34 @@ const TaskManagement = () => {
   useEffect(() => {
     // Reload timeline when month/year changes
     loadTimelineData();
-  }, [currentMonth, currentYear]);
+  }, [currentMonth, currentYear, loadTimelineData]);
 
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       const response = await fakeApi.getTasks();
       setTasks(response.data);
     } catch (error) {
       console.error('Error loading tasks:', error);
     }
-  };
+  }, []);
 
-  const loadAssignees = async () => {
+  const loadAssignees = useCallback(async () => {
     try {
       const response = await fakeApi.getTaskAssignees();
       setAssignees(response.data);
     } catch (error) {
       console.error('Error loading assignees:', error);
     }
-  };
+  }, []);
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       const response = await fakeApi.getTaskNotifications();
       setNotifications(response.data);
     } catch (error) {
       console.error('Error loading notifications:', error);
     }
-  };
+  }, []);
 
   const loadTaskProgress = async (taskId) => {
     try {
@@ -99,23 +99,23 @@ const TaskManagement = () => {
     }
   };
 
-  const loadTimelineData = async () => {
+  const loadTimelineData = useCallback(async () => {
     try {
       const response = await fakeApi.getTaskTimeline(currentYear, currentMonth);
       setTimelineData(response.data);
     } catch (error) {
       console.error('Error loading timeline data:', error);
     }
-  };
+  }, [currentYear, currentMonth]);
 
-  const loadAnalyticsData = async () => {
+  const loadAnalyticsData = useCallback(async () => {
     try {
       const response = await fakeApi.getTaskAnalytics();
       setAnalyticsData(response.data);
     } catch (error) {
       console.error('Error loading analytics data:', error);
     }
-  };
+  }, []);
 
   const navigateMonth = (direction) => {
     if (direction === 'prev') {
@@ -269,9 +269,9 @@ const TaskManagement = () => {
     }
   };
 
-  const handleUpdateTaskStatus = async (taskId, newStatus) => {
+  const _handleUpdateTaskStatus = async (taskId, newStatus) => {
     try {
-      const response = await fakeApi.updateTask(taskId, { status: newStatus });
+      await fakeApi.updateTask(taskId, { status: newStatus });
       setTasks(prev => prev.map(task => 
         task.id === taskId ? { ...task, status: newStatus } : task
       ));

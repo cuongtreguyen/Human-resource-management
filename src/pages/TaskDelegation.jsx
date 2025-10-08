@@ -27,8 +27,8 @@ import fakeApi from '../services/fakeApi';
 const TaskDelegation = () => {
   const navigate = useNavigate();
   const [delegations, setDelegations] = useState([]);
-  const [employees, setEmployees] = useState([]);
-  const [tasks, setTasks] = useState([]);
+  const [, setEmployees] = useState([]);
+  const [, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [showGuide, setShowGuide] = useState(false);
@@ -104,8 +104,8 @@ const TaskDelegation = () => {
           progress: 0
         }
       ]);
-    } catch (err) {
-      console.error('Error loading data:', err);
+    } catch {
+      console.error('Error loading data');
     } finally {
       setLoading(false);
     }
@@ -167,7 +167,7 @@ const TaskDelegation = () => {
         );
         setDelegations(finalDelegations);
       }
-    } catch (err) {
+    } catch {
       alert('Có lỗi xảy ra khi cập nhật tiến độ');
     }
   };
@@ -181,7 +181,7 @@ const TaskDelegation = () => {
       );
       setDelegations(updatedDelegations);
       alert('Hoàn thành bàn giao công việc!');
-    } catch (err) {
+    } catch {
       alert('Có lỗi xảy ra khi hoàn thành bàn giao');
     }
   };

@@ -225,10 +225,10 @@ const LogsMonitor = () => {
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Activities</h3>
             <div className="h-64 flex items-end justify-between gap-2">
-              {['30/09', '01/10', '02/10', '03/10', '04/10', '05/10', '06/10'].map((date, index) => {
+              {['30/09', '01/10', '02/10', '03/10', '04/10', '05/10', '06/10'].map((date) => {
                 const dayLogs = logs.filter(log => formatDate(log.timestamp) === date);
                 const maxHeight = Math.max(...chartData.map(d => d.value));
-                const height = dayLogs.length > 0 ? (dayLogs.length / maxHeight) * 200 : 0;
+                // Calculate height for chart visualization - removed unused variable
                 
                 return (
                   <div key={date} className="flex-1 flex flex-col items-center">

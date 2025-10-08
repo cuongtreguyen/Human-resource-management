@@ -18,7 +18,7 @@ import {
   Bell,
   FileText
 } from 'lucide-react';
-import fakeApi from '../services/fakeApi';
+// Removed unused import
 
 const WorkflowManager = () => {
   const navigate = useNavigate();
@@ -131,8 +131,8 @@ const WorkflowManager = () => {
           status: 'active'
         }
       ]);
-    } catch (err) {
-      console.error('Error loading workflows:', err);
+    } catch {
+      console.error('Error loading workflows');
     } finally {
       setLoading(false);
     }
@@ -204,7 +204,7 @@ const WorkflowManager = () => {
         alert('Workflow đã được thực thi thành công!');
       }, 2000);
       
-    } catch (err) {
+    } catch {
       alert('Có lỗi xảy ra khi thực thi workflow');
     }
   };

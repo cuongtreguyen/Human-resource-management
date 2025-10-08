@@ -252,9 +252,9 @@ const AttendanceList = () => {
   const [showAttendanceDetails, setShowAttendanceDetails] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [attendanceData, setAttendanceData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [, setAttendanceData] = useState([]);
+  const [, setLoading] = useState(true);
+  const [, setError] = useState(null);
   const [filters, setFilters] = useState({
     department: 'All Departments',
     month: 'March',

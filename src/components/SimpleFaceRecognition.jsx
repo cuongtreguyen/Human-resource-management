@@ -4,7 +4,7 @@ import faceRecognitionApi from '../services/faceRecognitionApi';
 
 const SimpleFaceRecognition = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('register');
-  const [systemStatus, setSystemStatus] = useState('connected');
+  const [, setSystemStatus] = useState('connected');
   const [employeeCode, setEmployeeCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [department, setDepartment] = useState('');
@@ -63,7 +63,7 @@ const SimpleFaceRecognition = ({ isOpen, onClose }) => {
       // In real implementation, you would capture from camera
       const mockFaceImage = new File([''], 'face.jpg', { type: 'image/jpeg' });
       
-      const result = await faceRecognitionApi.registerEmployee({
+      await faceRecognitionApi.registerEmployee({
         employeeCode,
         fullName,
         department,
@@ -93,7 +93,7 @@ const SimpleFaceRecognition = ({ isOpen, onClose }) => {
     setIsLoading(true);
     
     try {
-      const result = await faceRecognitionApi.trainModel();
+      await faceRecognitionApi.trainModel();
       alert('Huấn luyện mô hình thành công!');
     } catch (error) {
       console.error('Training failed:', error);
@@ -111,17 +111,17 @@ const SimpleFaceRecognition = ({ isOpen, onClose }) => {
       // In real implementation, you would capture from camera
       const mockFaceImage = new File([''], 'face.jpg', { type: 'image/jpeg' });
       
-      const result = await faceRecognitionApi.recognizeFace(mockFaceImage);
+      const recognitionResult = await faceRecognitionApi.recognizeFace(mockFaceImage);
       
-      if (result.success) {
+      if (recognitionResult.success) {
         setRecognitionResult({
-          employee: result.employee,
-          confidence: result.confidence,
+          employee: recognitionResult.employee,
+          confidence: recognitionResult.confidence,
           timestamp: new Date().toLocaleTimeString()
         });
         
         // Record attendance
-        await faceRecognitionApi.recordAttendance(result.employee.id);
+        await faceRecognitionApi.recordAttendance(recognitionResult.employee.id);
         
         // Refresh attendance list
         const attendance = await faceRecognitionApi.getTodayAttendance();

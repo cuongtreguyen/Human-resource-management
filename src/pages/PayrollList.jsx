@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
@@ -649,8 +649,8 @@ const PayrollList = () => {
   const [showPayrollDetailsModal, setShowPayrollDetailsModal] = useState(false);
   const [selectedPayrollDetails, setSelectedPayrollDetails] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [, setLoading] = useState(true);
+  const [, setError] = useState(null);
 
   useEffect(() => {
     loadPayrollData();
@@ -670,7 +670,7 @@ const PayrollList = () => {
   };
 
   // Sample employees data for payroll
-  const employees = [
+  const employees = useMemo(() => [
     {
       id: 1,
       name: 'Nguyễn Văn Bình',
@@ -727,10 +727,10 @@ const PayrollList = () => {
       bonuses: 800000,
       allowances: [{ name: 'Transportation', amount: 300000 }, { name: 'Learning', amount: 1000000 }]
     }
-  ];
+  ], []);
 
   // Generate payroll record for an employee
-  const generatePayrollRecord = (employee) => {
+  const generatePayrollRecord = useCallback((employee) => {
     const basicSalary = employee.basicSalary;
     const allowances = employee.allowances?.reduce((sum, allowance) => sum + allowance.amount, 0) || 0;
     const bonuses = employee.bonuses || 0;
@@ -770,13 +770,13 @@ const PayrollList = () => {
       status: 'Paid',
       paidDate: new Date().toLocaleDateString()
     };
-  };
+  }, [selectedMonth]);
 
   // Generate all payroll records
-  const generateAllPayrolls = () => {
+  const generateAllPayrolls = useCallback(() => {
     const payrolls = employees.map(employee => generatePayrollRecord(employee));
     setPayrollRecords(payrolls);
-  };
+  }, [employees, generatePayrollRecord]);
 
   // Handle payroll calculation for specific employee
   const handleCalculatePayroll = (payrollData) => {
@@ -875,7 +875,7 @@ const PayrollList = () => {
 
   useEffect(() => {
     generateAllPayrolls();
-  }, []);
+  }, [generateAllPayrolls]);
 
   return (
     <Layout>

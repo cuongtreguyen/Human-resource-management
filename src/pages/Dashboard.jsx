@@ -288,14 +288,11 @@ const Dashboard = () => {
         </div>
       </div>
       
-<<<<<<< HEAD
-=======
       {/* Face Recognition Widget */}
       <FaceRecognitionWidget 
         isOpen={showFaceRecognition} 
         onClose={() => setShowFaceRecognition(false)} 
       />
->>>>>>> 6bf6499acae205ede4c040761fc4ea1e3d34088a
     </Layout>
   );
 };
