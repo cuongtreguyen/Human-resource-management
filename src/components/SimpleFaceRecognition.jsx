@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Camera, User, Brain, Eye, CheckCircle, AlertCircle, Users, Clock } from 'lucide-react';
+import { X, Camera, User, Eye, CheckCircle, AlertCircle, Users, Clock } from 'lucide-react';
 import faceRecognitionApi from '../services/faceRecognitionApi';
 
 const SimpleFaceRecognition = ({ isOpen, onClose }) => {
@@ -89,19 +89,6 @@ const SimpleFaceRecognition = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleTrain = async () => {
-    setIsLoading(true);
-    
-    try {
-      await faceRecognitionApi.trainModel();
-      alert('Huấn luyện mô hình thành công!');
-    } catch (error) {
-      console.error('Training failed:', error);
-      alert('Huấn luyện thất bại. Vui lòng thử lại.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleRecognize = async () => {
     setIsLoading(true);
@@ -210,16 +197,6 @@ const SimpleFaceRecognition = ({ isOpen, onClose }) => {
                   Register User
                 </button>
                 <button
-                  onClick={() => setActiveTab('train')}
-                  className={`px-4 py-2 rounded-lg font-medium ${
-                    activeTab === 'train' 
-                      ? 'bg-purple-600 text-white' 
-                      : 'bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  Train Model
-                </button>
-                <button
                   onClick={() => setActiveTab('recognize')}
                   className={`px-4 py-2 rounded-lg font-medium ${
                     activeTab === 'recognize' 
@@ -295,21 +272,6 @@ const SimpleFaceRecognition = ({ isOpen, onClose }) => {
                 </div>
               )}
 
-              {activeTab === 'train' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Train Recognition Model</h3>
-                  <p className="text-gray-600">Huấn luyện mô hình nhận diện khuôn mặt với dữ liệu mới</p>
-                  
-                  <button
-                    onClick={handleTrain}
-                    disabled={isLoading}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
-                  >
-                    <Brain className="mr-2" size={20} />
-                    {isLoading ? 'Training...' : 'Start Training'}
-                  </button>
-                </div>
-              )}
 
               {activeTab === 'recognize' && (
                 <div className="space-y-4">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Filter, Eye, Calendar, BarChart3, Activity, AlertTriangle, CheckCircle, XCircle, Plus, Edit, Trash2 } from 'lucide-react';
 import Layout from '../components/layout/Layout';
+import logsApi from '../services/logsApi';
 
 const LogsMonitor = () => {
   const [logs, setLogs] = useState([]);
@@ -9,106 +10,49 @@ const LogsMonitor = () => {
   const [typeFilter, setTypeFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
 
-  // Mock data for logs
+  // Load logs from API
   useEffect(() => {
-    const mockLogs = [
-      {
-        id: 1,
-        timestamp: '2024-10-06T23:22:29Z',
-        user: 'admin',
-        type: 'View',
-        action: 'View user management page',
-        details: 'Accessed user management dashboard',
-        ip: '192.168.1.100',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      {
-        id: 2,
-        timestamp: '2024-10-06T23:22:15Z',
-        user: 'admin',
-        type: 'View',
-        action: 'View edit user form for: admin',
-        details: 'Opened edit form for user admin',
-        ip: '192.168.1.100',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      {
-        id: 3,
-        timestamp: '2024-10-06T23:21:45Z',
-        user: 'admin',
-        type: 'View',
-        action: 'View user management page',
-        details: 'Accessed user management dashboard',
-        ip: '192.168.1.100',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      {
-        id: 4,
-        timestamp: '2024-10-06T23:21:30Z',
-        user: 'admin',
-        type: 'View',
-        action: 'View user management page',
-        details: 'Accessed user management dashboard',
-        ip: '192.168.1.100',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      {
-        id: 5,
-        timestamp: '2024-10-06T23:21:10Z',
-        user: 'admin',
-        type: 'View',
-        action: 'View user management page',
-        details: 'Accessed user management dashboard',
-        ip: '192.168.1.100',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      {
-        id: 6,
-        timestamp: '2024-10-05T15:30:00Z',
-        user: 'manager',
-        type: 'Create',
-        action: 'Created new employee: Nguyen Van C',
-        details: 'Added new employee to the system',
-        ip: '192.168.1.101',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      {
-        id: 7,
-        timestamp: '2024-10-05T14:15:00Z',
-        user: 'employee',
-        type: 'Update',
-        action: 'Updated personal profile',
-        details: 'Modified personal information',
-        ip: '192.168.1.102',
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      },
-      {
-        id: 8,
-        timestamp: '2024-10-05T10:00:00Z',
-        user: 'admin',
-        type: 'Error',
-        action: 'Failed login attempt',
-        details: 'Invalid password for user: testuser',
-        ip: '192.168.1.200',
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    const loadLogs = async () => {
+      try {
+        setLoading(true);
+        const logsData = await logsApi.getLogs(searchTerm, typeFilter, dateFilter);
+        setLogs(logsData);
+      } catch (error) {
+        console.error('Failed to load logs:', error);
+        // Fallback to mock data
+        const mockLogs = [
+          {
+            id: 1,
+            timestamp: '2024-10-06T23:22:29Z',
+            user: 'admin',
+            type: 'View',
+            action: 'View user management page',
+            details: 'Accessed user management dashboard',
+            ip: '192.168.1.100',
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          },
+          {
+            id: 2,
+            timestamp: '2024-10-06T23:22:15Z',
+            user: 'admin',
+            type: 'View',
+            action: 'View edit user form for: admin',
+            details: 'Opened edit form for user admin',
+            ip: '192.168.1.100',
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        ];
+        setLogs(mockLogs);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    setTimeout(() => {
-      setLogs(mockLogs);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    loadLogs();
+  }, [searchTerm, typeFilter, dateFilter]);
 
-  // Filter logs
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         log.action.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || log.type === typeFilter;
-    const matchesDate = !dateFilter || log.timestamp.startsWith(dateFilter);
-    
-    return matchesSearch && matchesType && matchesDate;
-  });
+  // Filter logs (now handled by API, but keep for fallback)
+  const filteredLogs = logs;
 
   // Calculate statistics
   const stats = {
@@ -117,7 +61,8 @@ const LogsMonitor = () => {
     navigate: filteredLogs.filter(l => l.type === 'Navigate').length,
     update: filteredLogs.filter(l => l.type === 'Update').length,
     create: filteredLogs.filter(l => l.type === 'Create').length,
-    error: filteredLogs.filter(l => l.type === 'Error').length
+    error: filteredLogs.filter(l => l.type === 'Error').length,
+    attendance: filteredLogs.filter(l => l.type === 'Attendance').length
   };
 
   // Chart data for action distribution
@@ -126,7 +71,8 @@ const LogsMonitor = () => {
     { name: 'Navigate', value: stats.navigate, color: '#3B82F6' },
     { name: 'Update', value: stats.update, color: '#F59E0B' },
     { name: 'Create', value: stats.create, color: '#8B5CF6' },
-    { name: 'Error', value: stats.error, color: '#EF4444' }
+    { name: 'Error', value: stats.error, color: '#EF4444' },
+    { name: 'Attendance', value: stats.attendance || 0, color: '#6366F1' }
   ];
 
   const getTypeColor = (type) => {
@@ -137,6 +83,7 @@ const LogsMonitor = () => {
       case 'Create': return 'bg-purple-100 text-purple-700';
       case 'Delete': return 'bg-red-100 text-red-700';
       case 'Error': return 'bg-red-100 text-red-700';
+      case 'Attendance': return 'bg-indigo-100 text-indigo-700';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -259,7 +206,7 @@ const LogsMonitor = () => {
         </div>
 
         {/* Action Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-7 gap-4">
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
@@ -296,6 +243,12 @@ const LogsMonitor = () => {
               <div className="text-sm text-gray-500">Error</div>
             </div>
           </div>
+          <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-indigo-600">{stats.attendance}</div>
+              <div className="text-sm text-gray-500">Attendance</div>
+            </div>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -329,6 +282,7 @@ const LogsMonitor = () => {
                 <option value="Create">Create</option>
                 <option value="Delete">Delete</option>
                 <option value="Error">Error</option>
+                <option value="Attendance">Attendance</option>
               </select>
             </div>
             

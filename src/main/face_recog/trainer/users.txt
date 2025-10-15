@@ -1,0 +1,20 @@
+Total users: 3
+Total samples: 79
+User IDs: 1, 2, 3
+
+User Details:
+User 1:
+  Name: van minh
+  ID: 1
+  Date: 2025-10-12 12:56:40
+  Photos: 60
+User 2:
+  Name: van minh
+  ID: 2
+  Date: 2025-10-12 17:20:30
+  Photos: 60
+User 3:
+  Name: van dat
+  ID: 3
+  Date: 2025-10-12 18:35:37
+  Photos: 60

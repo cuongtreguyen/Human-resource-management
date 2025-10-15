@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Import pages
 import Login from './pages/login/Login';
 import Dashboard from './pages/Dashboard';
+import FaceRecognitionPortal from './pages/FaceRecognitionPortal';
 
 // Employee pages
 import EmployeeList from './pages/EmployeeList';
@@ -131,6 +132,11 @@ const AppRoutes = () => {
       <Route path="/face-recognition" element={
         <ProtectedRoute allowedRoles={['admin', 'manager']}>
           <FaceRecognition />
+        </ProtectedRoute>
+      } />
+      <Route path="/face-recognition-portal" element={
+        <ProtectedRoute allowedRoles={['admin', 'manager', 'employee']}>
+          <FaceRecognitionPortal />
         </ProtectedRoute>
       } />
       <Route path="/employees" element={
