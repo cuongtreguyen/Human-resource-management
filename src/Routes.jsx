@@ -316,7 +316,11 @@ const AppRoutes = () => {
       {/* User Routes */}
       <Route path="/profile" element={<Profile />} />
       <Route path="/chat" element={<Chat />} />
-      <Route path="/tasks" element={<TaskManagement />} />
+      <Route path="/tasks" element={
+        <ProtectedRoute allowedRoles={['admin', 'manager', 'employee']}>
+          <TaskManagement />
+        </ProtectedRoute>
+      } />
       
       {/* Reports, Documents, and Settings Routes */}
       <Route path="/reports" element={<Reports />} />

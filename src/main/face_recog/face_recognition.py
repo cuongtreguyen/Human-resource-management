@@ -404,6 +404,105 @@ def recognize_faces():
         cv2.waitKey(1)
         time.sleep(0.5)
 
+    last_id = None
+    stable_count = 0
+    stable_required = 10  # Số frame liên tiếp cần nhận diện đúng
+    # while True:
+    #     ret, img = cam.read()
+    #     if not ret:
+    #         print("Failed to grab frame")
+    #         break
+
+    #     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    #     gray = cv2.equalizeHist(gray)
+
+    #     display_img = img.copy()
+
+    #     if api_success:
+    #         elapsed = time.time() - success_time
+    #         remaining = max(0, 5 - elapsed)
+
+    #         overlay = display_img.copy()
+    #         cv2.rectangle(overlay, (0, 0), (display_img.shape[1], display_img.shape[0]), (0, 0, 0), -1)
+
+    #         success_text = f"Attendance recorded: {recognized_name}"
+    #         closing_text = f"Close after {int(remaining)}s"
+
+    #         text_size = cv2.getTextSize(success_text, font, 1, 2)[0]
+    #         text_x = (display_img.shape[1] - text_size[0]) // 2
+    #         text_y = (display_img.shape[0] + text_size[1]) // 2 - 30
+
+    #         close_size = cv2.getTextSize(closing_text, font, 0.7, 1)[0]
+    #         close_x = (display_img.shape[1] - close_size[0]) // 2
+    #         close_y = text_y + 40
+
+    #         cv2.putText(overlay, success_text, (text_x, text_y), font, 1, (0, 255, 0), 2)
+    #         cv2.putText(overlay, closing_text, (close_x, close_y), font, 0.7, (255, 255, 255), 1)
+
+    #         alpha = 0.7
+    #         cv2.addWeighted(overlay, alpha, display_img, 1 - alpha, 0, display_img)
+
+    #         cv2.imshow('Face Recognition', display_img)
+
+    #         if elapsed >= 5:
+    #             print("Closing after successful recognition")
+    #             break
+    #     else:
+    #         faces = detect_faces(gray, paths["cascade_path"])
+
+    #         for (x, y, w, h) in faces:
+    #             cv2.rectangle(display_img, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+    #             face_roi = preprocess_face(gray, x, y, w, h)
+
+    #             face_key = f"{x}_{y}_{w}_{h}"
+    #             id, confidence, confidence_text = recognize_face(recognizer, face_roi, recent_predictions, face_key, prediction_window)
+
+    #             min_confidence_percent = 40
+
+    #             if id is not None and confidence is not None:
+    #                 confidence_value = max(0, min(100, 100 - confidence))  # Tính lại tỉ lệ %
+    #                 confidence_text = f"{int(confidence_value)}%"
+
+    #                 if confidence_value >= min_confidence_percent:
+    #                     # Nhận diện đủ chính xác
+    #                     name = user_names.get(id, f"User {id}")
+
+    #                     recognized_users, current_api_success, current_name = update_attendance(
+    #                         id, name, attendance_data, attendance_file,
+    #                         recognized_users, confidence_text, recognition_type
+    #                     )
+
+    #                     # Dù API lỗi, vẫn coi là recognized để đóng camera
+    #                     api_success = True
+    #                     recognized_name = current_name
+    #                     success_time = time.time()
+
+    #                     print(f"[INFO] ✅ Recognized {name} ({confidence_text})")
+    #                 else:
+    #                     # Nếu độ tin cậy thấp hơn 60%
+    #                     name = "Unknown"
+    #                     print(f"[WARN] ❌ Low confidence ({confidence_text}) — below threshold")
+    #             else:
+    #                 name = "Unknown"
+
+    #             cv2.putText(display_img, name, (x+5, y-5), font, 1, (255, 255, 255), 2)
+    #             cv2.putText(display_img, confidence_text, (x+5, y+h-5), font, 1, (255, 255, 0), 1)
+
+    #         cv2.imshow('Face Recognition', display_img)
+
+    #     k = cv2.waitKey(10) & 0xff
+    #     if k == ord('q'):
+    #         print("Recognition stopped by user")
+    #         break
+
+    # cam.release()
+    # cv2.destroyAllWindows()
+
+    # return True
+#nhớ gỡ ra
+
+
     while True:
         ret, img = cam.read()
         if not ret:
@@ -416,34 +515,10 @@ def recognize_faces():
         display_img = img.copy()
 
         if api_success:
+            # ...existing code giữ nguyên...
             elapsed = time.time() - success_time
             remaining = max(0, 5 - elapsed)
-
-            overlay = display_img.copy()
-            cv2.rectangle(overlay, (0, 0), (display_img.shape[1], display_img.shape[0]), (0, 0, 0), -1)
-
-            success_text = f"Attendance recorded: {recognized_name}"
-            closing_text = f"Close after {int(remaining)}s"
-
-            text_size = cv2.getTextSize(success_text, font, 1, 2)[0]
-            text_x = (display_img.shape[1] - text_size[0]) // 2
-            text_y = (display_img.shape[0] + text_size[1]) // 2 - 30
-
-            close_size = cv2.getTextSize(closing_text, font, 0.7, 1)[0]
-            close_x = (display_img.shape[1] - close_size[0]) // 2
-            close_y = text_y + 40
-
-            cv2.putText(overlay, success_text, (text_x, text_y), font, 1, (0, 255, 0), 2)
-            cv2.putText(overlay, closing_text, (close_x, close_y), font, 0.7, (255, 255, 255), 1)
-
-            alpha = 0.7
-            cv2.addWeighted(overlay, alpha, display_img, 1 - alpha, 0, display_img)
-
-            cv2.imshow('Face Recognition', display_img)
-
-            if elapsed >= 5:
-                print("Closing after successful recognition")
-                break
+            # ...existing code...
         else:
             faces = detect_faces(gray, paths["cascade_path"])
 
@@ -458,33 +533,38 @@ def recognize_faces():
                 min_confidence_percent = 40
 
                 if id is not None and confidence is not None:
-                    confidence_value = max(0, min(100, 100 - confidence))  # Tính lại tỉ lệ %
+                    confidence_value = max(0, min(100, 100 - confidence))
                     confidence_text = f"{int(confidence_value)}%"
 
                     if confidence_value >= min_confidence_percent:
-                        # Nhận diện đủ chính xác
+                        if last_id == id:
+                            stable_count += 1
+                        else:
+                            last_id = id
+                            stable_count = 1
                         name = user_names.get(id, f"User {id}")
-
-                        recognized_users, current_api_success, current_name = update_attendance(
-                            id, name, attendance_data, attendance_file,
-                            recognized_users, confidence_text, recognition_type
-                        )
-
-                        # Dù API lỗi, vẫn coi là recognized để đóng camera
-                        api_success = True
-                        recognized_name = current_name
-                        success_time = time.time()
-
-                        print(f"[INFO] ✅ Recognized {name} ({confidence_text})")
                     else:
-                        # Nếu độ tin cậy thấp hơn 60%
+                        last_id = None
+                        stable_count = 0
                         name = "Unknown"
-                        print(f"[WARN] ❌ Low confidence ({confidence_text}) — below threshold")
                 else:
+                    last_id = None
+                    stable_count = 0
                     name = "Unknown"
 
                 cv2.putText(display_img, name, (x+5, y-5), font, 1, (255, 255, 255), 2)
                 cv2.putText(display_img, confidence_text, (x+5, y+h-5), font, 1, (255, 255, 0), 1)
+
+                # Chỉ ghi nhận khi đủ số frame liên tiếp
+                if stable_count >= stable_required and last_id is not None:
+                    recognized_users, current_api_success, current_name = update_attendance(
+                        last_id, name, attendance_data, attendance_file,
+                        recognized_users, confidence_text, recognition_type
+                    )
+                    api_success = True
+                    recognized_name = current_name
+                    success_time = time.time()
+                    print(f"[INFO] ✅ Recognized {name} ({confidence_text})")
 
             cv2.imshow('Face Recognition', display_img)
 

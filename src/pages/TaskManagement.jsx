@@ -40,26 +40,6 @@ const TaskManagement = () => {
     description: ''
   });
 
-  useEffect(() => {
-    loadTasks();
-    loadAssignees();
-    loadNotifications();
-    loadTimelineData();
-    loadAnalyticsData();
-  }, [loadTasks, loadAssignees, loadNotifications, loadTimelineData, loadAnalyticsData]);
-
-  useEffect(() => {
-    // Load progress for each task
-    tasks.forEach(task => {
-      loadTaskProgress(task.id);
-    });
-  }, [tasks]);
-
-  useEffect(() => {
-    // Reload timeline when month/year changes
-    loadTimelineData();
-  }, [currentMonth, currentYear, loadTimelineData]);
-
   const loadTasks = useCallback(async () => {
     try {
       const response = await fakeApi.getTasks();
@@ -116,6 +96,26 @@ const TaskManagement = () => {
       console.error('Error loading analytics data:', error);
     }
   }, []);
+
+  useEffect(() => {
+    loadTasks();
+    loadAssignees();
+    loadNotifications();
+    loadTimelineData();
+    loadAnalyticsData();
+  }, [loadTasks, loadAssignees, loadNotifications, loadTimelineData, loadAnalyticsData]);
+
+  useEffect(() => {
+    // Load progress for each task
+    tasks.forEach(task => {
+      loadTaskProgress(task.id);
+    });
+  }, [tasks]);
+
+  useEffect(() => {
+    // Reload timeline when month/year changes
+    loadTimelineData();
+  }, [currentMonth, currentYear, loadTimelineData]);
 
   const navigateMonth = (direction) => {
     if (direction === 'prev') {
