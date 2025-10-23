@@ -24,7 +24,7 @@ import fakeApi from '../services/fakeApi';
 const LeaveManagement = () => {
   const navigate = useNavigate();
   const [leaveRequests, setLeaveRequests] = useState([]);
-  const [employees, setEmployees] = useState([]);
+  const [, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -43,8 +43,8 @@ const LeaveManagement = () => {
       
       setEmployees(employeesRes.data);
       setLeaveRequests(leaveRequestsRes.data);
-    } catch (err) {
-      console.error('Error loading data:', err);
+    } catch {
+      console.error('Error loading data');
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ const LeaveManagement = () => {
       );
       setLeaveRequests(updatedRequests);
       alert('Đã duyệt đơn nghỉ phép!');
-    } catch (err) {
+    } catch {
       alert('Có lỗi xảy ra khi duyệt đơn');
     }
   };
@@ -103,7 +103,7 @@ const LeaveManagement = () => {
       );
       setLeaveRequests(updatedRequests);
       alert('Đã từ chối đơn nghỉ phép!');
-    } catch (err) {
+    } catch {
       alert('Có lỗi xảy ra khi từ chối đơn');
     }
   };

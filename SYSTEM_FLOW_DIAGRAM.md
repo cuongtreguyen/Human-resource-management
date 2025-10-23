@@ -794,4 +794,4 @@ Audit Logging – Theo dõi mọi hành động của người dùng.
 Giai đoạn	Tính năng chính
 Phase 1	Đăng nhập, quản lý nhân viên, chấm công cơ bản, cấu trúc DB
 Phase 2	Tích hợp nhận diện khuôn mặt, tính lương, nghỉ phép, audit log
-Phase 3	Thông báo real-time, báo cáo nâng cao, quản lý file, tối ưu hiệu năng
+Phase 3	Thông báo real-time, báo cáo nâng cao, quản lý file, tối ưu hiệu năngimage.png

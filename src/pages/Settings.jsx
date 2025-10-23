@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
-import fakeApi from '../services/fakeApi';
 
 const Settings = () => {
   const [settings, setSettings] = useState({

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, TrendingUp, Target, Award, Star, BarChart3, Calendar } from 'lucide-react';
 import EmployeeLayout from '../../components/layout/EmployeeLayout';
-import fakeApi from '../../services/fakeApi';
+// Removed unused import
 
 const EmployeePerformanceReview = () => {
   const [performanceData, setPerformanceData] = useState(null);

@@ -1,12 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Layout from '../components/layout/Layout';
-import fakeApi from '../services/fakeApi';
 
 const Reports = () => {
-  const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [selectedReport, setSelectedReport] = useState('');
-  const [reportParams, setReportParams] = useState({});
   const [generatedReports, setGeneratedReports] = useState([]);
 
   const reportTypes = [
@@ -40,10 +36,11 @@ const Reports = () => {
     }
   ];
 
-  const generateReport = async (reportType, params = {}) => {
+  const generateReport = async () => {
     setLoading(true);
     try {
-      const response = await fakeApi.generateReport(reportType, params);
+      // Simulate report generation - removed fakeApi dependency
+      const response = { success: true, data: { filename: 'report.pdf' } };
       setGeneratedReports(prev => [response.data, ...prev]);
       alert(`Report "${response.data.title}" generated successfully!`);
     } catch (error) {

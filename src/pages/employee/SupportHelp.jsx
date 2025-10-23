@@ -80,7 +80,7 @@ const EmployeeSupportHelp = () => {
     }
   ];
 
-  const categories = ['all', 'Technical', 'Payroll', 'Leave', 'General', 'Benefits'];
+  // Categories for FAQ filtering - removed unused variable
   
   const filteredFaq = faqData.filter(faq => {
     const matchesSearch = faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||

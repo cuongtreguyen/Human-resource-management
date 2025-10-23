@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
 import Card from '../components/ui/Card';
@@ -44,9 +44,9 @@ const EditEmployee = () => {
 
   useEffect(() => {
     loadEmployeeData();
-  }, [id]);
+  }, [id, loadEmployeeData]);
 
-  const loadEmployeeData = async () => {
+  const loadEmployeeData = useCallback(async () => {
     try {
       setLoading(true);
       // Simulate API call to get employee data
@@ -58,7 +58,7 @@ const EditEmployee = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({

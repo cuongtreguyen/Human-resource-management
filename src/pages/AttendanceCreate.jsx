@@ -29,12 +29,7 @@ const AttendanceCreate = () => {
 
   const departments = ['All Departments', 'Development', 'Marketing','Finance', 'Operations'];
 
-  const mockEmployees = [
-    { id: 1, name: 'John Doe', department: 'Development' },
-    { id: 2, name: 'Jane Smith', department: 'Development' },
-    { id: 3, name: 'Mike Johnson', department: 'Marketing' },
-    { id: 4, name: 'Sarah Wilson', department: 'HR' }
-  ];
+  // Mock employees data - removed unused variable
 
   const handleDepartmentChange = (value) => {
     setSelectedDepartment(value);

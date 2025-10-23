@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { 
   ChevronRight, 
   ChevronDown, 
@@ -25,7 +24,8 @@ const DelegationGuide = () => {
   };
 
   const handleCreateLeaveRequest = () => {
-    navigate('/leave-request');
+    // Navigate to leave request page
+    window.location.href = '/leave-request';
   };
 
   const handleCreateTemplate = () => {

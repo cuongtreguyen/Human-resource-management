@@ -517,7 +517,7 @@ class FakeApiService {
   }
 
   // Reports APIs
-  async generateReport(type, params) {
+  async generateReport(type) {
     const reports = {
       employee_summary: { title: 'Employee Summary Report', filename: 'employee_summary.pdf' },
       attendance_summary: { title: 'Attendance Summary Report', filename: 'attendance_summary.pdf' },
@@ -546,7 +546,7 @@ class FakeApiService {
     const employees = employeesResponse.data;
     
     // Thêm thông tin chat cho mỗi nhân viên
-    const contacts = employees.map((employee, index) => ({
+    const contacts = employees.map((employee) => ({
       id: employee.id,
       name: employee.name,
       avatar: employee.avatar,
