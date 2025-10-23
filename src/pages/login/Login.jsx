@@ -330,18 +330,6 @@ const Login = () => {
           <div className="absolute top-2/3 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-300 to-transparent animate-current-flow-reverse"></div>
         </div>
         
-        {/* Ocean Conservation Text */}
-        <div className="absolute top-8 right-8 text-white text-right z-20">
-          <div className="text-2xl font-bold mb-2 animate-fade-in">
-           
-          </div>
-          <div className="text-sm text-gray-300 animate-fade-in-delay">
-           
-          </div>
-          <div className="text-sm text-gray-300 animate-fade-in-delay-2">
-            of future generations
-          </div>
-        </div>
         
         {/* DESTROYER Text (partially visible) */}
         <div className="absolute top-4 left-4 text-white z-20">
