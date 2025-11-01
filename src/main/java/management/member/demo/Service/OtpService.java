@@ -1,6 +1,6 @@
 package management.member.demo.Service;
 
-import management.member.demo.exception.BusinessException;
+import management.member.demo.exception.base.BusinessException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 

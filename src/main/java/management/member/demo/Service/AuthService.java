@@ -11,8 +11,7 @@ import org.springframework.stereotype.Service;
 import management.member.demo.security.JwtService;
 import management.member.demo.repository.UserRepository;
 import management.member.demo.entity.User;
-import management.member.demo.exception.BusinessException;
-import management.member.demo.Service.OtpService;
+import management.member.demo.exception.base.BusinessException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.BadCredentialsException;
 
@@ -232,5 +231,4 @@ public class AuthService {
             return refreshToken;
         }
     }
-
 }

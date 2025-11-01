@@ -1,4 +1,4 @@
-package management.member.demo.exception;
+package management.member.demo.exception.specifiic;
 
 public class ResourceNotFoundException extends RuntimeException {
     private final String resourceName;

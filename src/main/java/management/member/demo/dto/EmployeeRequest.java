@@ -2,52 +2,56 @@ package management.member.demo.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import management.member.demo.Enum.EmployeeStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-
+@Data
+@Builder
 @Getter
 @Setter
 public class EmployeeRequest {
     @NotBlank
-    @Size(max = 150)
-    private String fullName;
+    @Size(max = 100)
+    private String firstName;
 
-    @Size(max = 255)
-    private String profilePicture;
+    @NotBlank
+    @Size(max = 100)
+    private String lastName;
 
     @Email
+    @NotBlank
     @Size(max = 120)
     private String email;
 
     @Size(max = 30)
-    private String phoneNumber;
+    private String phone;
 
-    @Size(max = 255)
-    private String address;
-
-    private LocalDate startDate;
-
+    @NotBlank
     @Size(max = 50)
-    private String employeeId;
+    private String employeeCode;
 
+    @NotBlank
     @Size(max = 100)
     private String department;
 
+    @NotBlank
     @Size(max = 100)
     private String position;
 
-    private BigDecimal salary;
+    @NotNull
+    private LocalDate hireDate;
 
-    @Size(max = 1000)
-    private String skill;
-
-    @Size(max = 1000)
-    private String certificate;
-
+    @NotBlank
     @Size(max = 50)
-    private String status;
+    private EmployeeStatus status;
+
+    @NotNull
+    private BigDecimal baseSalary;
 }

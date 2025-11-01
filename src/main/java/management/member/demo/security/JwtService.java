@@ -8,7 +8,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
-import management.member.demo.exception.BusinessException;
+import management.member.demo.exception.base.BusinessException;
 
 import java.util.Date;
 import java.util.HashMap;

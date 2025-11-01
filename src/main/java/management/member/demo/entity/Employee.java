@@ -3,9 +3,11 @@ package management.member.demo.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import management.member.demo.Enum.EmployeeStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,61 +22,62 @@ public class Employee {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	/** Họ và tên đầy đủ */
+	/** Họ */
 	@NotBlank
-	@Size(max = 150)
-	private String fullName;
+	@Size(max = 100)
+	@Column(name = "first_name")
+	private String firstName;
 
-	/** Ảnh đại diện (URL) */
-	@Size(max = 255)
-	private String profilePicture;
+	/** Tên */
+	@NotBlank
+	@Size(max = 100)
+	@Column(name = "last_name")
+	private String lastName;
 
 	/** Email công việc */
 	@Email
+	@NotBlank
 	@Size(max = 120)
 	@Column(unique = true)
 	private String email;
 
 	/** Số điện thoại */
 	@Size(max = 30)
-	private String phoneNumber;
+	private String phone;
 
 	/** Địa chỉ */
 	@Size(max = 255)
 	private String address;
 
-	/** Ngày bắt đầu làm việc */
-	private LocalDate startDate;
-
-	/** Mã nhân viên nội bộ */
+	/** Mã nhân viên */
+	@NotBlank
 	@Size(max = 50)
 	@Column(name = "employee_code", unique = true)
-	private String employeeId;
+	private String employeeCode;
 
 	/** Phòng ban */
+	@NotBlank
 	@Size(max = 100)
 	private String department;
 
 	/** Chức vụ */
+	@NotBlank
 	@Size(max = 100)
 	private String position;
 
-	/** Mức lương hiện tại */
-	@Column(precision = 19, scale = 2)
-	private BigDecimal salary;
+	/** Ngày bắt đầu làm việc */
+	@NotNull
+	@Column(name = "hire_date")
+	private LocalDate hireDate;
 
-	/** Kỹ năng (danh sách phân tách bằng dấu phẩy) */
-	@Size(max = 1000)
-	@Column(name = "skills")
-	private String skill;
+	/** Trạng thái */
+	@NotNull
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status")
+	private EmployeeStatus status;
 
-	/** Chứng chỉ (danh sách phân tách bằng dấu phẩy) */
-	@Size(max = 1000)
-	@Column(name = "certificates")
-	private String certificate;
-
-	/** Trạng thái làm việc (ACTIVE/INACTIVE/ON_LEAVE...) */
-	@Size(max = 50)
-	@Column(name = "employment_status")
-	private String status;
+	/** Lương cơ bản */
+	@NotNull
+	@Column(name = "base_salary", precision = 19, scale = 2)
+	private BigDecimal baseSalary;
 }
