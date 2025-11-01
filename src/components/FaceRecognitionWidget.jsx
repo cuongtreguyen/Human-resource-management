@@ -23,7 +23,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
   useEffect(() => {
     const checkSystemStatus = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/status');
+        const response = await fetch('http://127.0.0.1:5000/api/status');
         if (response.ok) {
           setSystemStatus('connected');
         } else {
@@ -51,7 +51,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
 
   const loadEmployees = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/employees');
+      const response = await fetch('http://127.0.0.1:5000/api/employees');
       if (response.ok) {
         const data = await response.json();
         setRegisteredEmployees(data.employees || []);
@@ -63,7 +63,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
 
   const loadTodayAttendance = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/attendance/today');
+      const response = await fetch('http://127.0.0.1:5000/api/attendance/today');
       if (response.ok) {
         const data = await response.json();
         setTodayAttendance(data.attendance || []);
@@ -153,7 +153,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/register', {
+      const response = await fetch('http://127.0.0.1:5000/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -188,7 +188,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
   const trainModel = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/train', {
+      const response = await fetch('http://127.0.0.1:5000/api/train', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -229,7 +229,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
 
         const photoData = canvas.toDataURL('image/jpeg');
 
-        const response = await fetch('http://localhost:5000/api/recognize', {
+        const response = await fetch('http://127.0.0.1:5000/api/recognize', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

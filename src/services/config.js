@@ -2,7 +2,7 @@
 // Nơi cấu hình base URL cho Python (Flask) và Java (Spring Boot)
 
 export const PY_API =
-  (import.meta?.env?.VITE_PY_API) || 'http://localhost:5000/api';
+  (import.meta?.env?.VITE_PY_API) || 'http://127.0.0.1:5000';
 
 export const JAVA_API =
   (import.meta?.env?.VITE_JAVA_API) || 'http://localhost:8080/api';

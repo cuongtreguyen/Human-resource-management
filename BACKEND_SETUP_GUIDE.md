@@ -36,23 +36,6 @@ spring.datasource.password=your_password
 -- Import dữ liệu mẫu
 ```
 
-## 🐍 Về Python (nếu cần)
-
-### **Python không bắt buộc cho dự án này:**
-- Backend sử dụng **Spring Boot + Java**
-- Face Recognition sử dụng **OpenCV Java** (đã có trong pom.xml)
-- Không cần Python riêng biệt
-
-### **Nếu muốn dùng Python cho Face Recognition:**
-```bash
-# Cài đặt Python
-pip install opencv-python
-pip install face-recognition
-pip install flask
-
-# Chạy Python server
-python face_recognition_server.py
-```
 
 ## 🔗 Kết nối Frontend với Backend
 
