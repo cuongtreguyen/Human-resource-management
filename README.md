@@ -50,6 +50,47 @@ npm run dev
 
 The frontend will be available at `http://localhost:5173`
 
+<<<<<<< HEAD
+=======
+### 2. Backend Setup
+
+The backend is now in a separate `backend/` directory and can run independently.
+
+**Option 1: Using startup scripts (Recommended)**
+
+**Windows:**
+```bash
+start-face-recognition-backend.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x start-face-recognition-backend.sh
+./start-face-recognition-backend.sh
+```
+
+**Option 2: Manual setup**
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Start the Flask API
+python face_recognition_api.py
+```
+
+**Option 3: Using Docker**
+
+```bash
+docker-compose up
+```
+
+The backend API will be available at `http://localhost:5000`
+
+>>>>>>> ccac82d (feat: Add Face Recognition features and Simple Face Recognition component)
 ## 📁 Project Structure
 
 ```
@@ -66,6 +107,21 @@ manager-employer/
 │   ├── services/           # API services
 │   ├── styles/             # Global styles
 │   └── utils/              # Utility functions
+<<<<<<< HEAD
+=======
+├── backend/                 # Python Flask Backend (chạy độc lập)
+│   ├── face_recognition_api.py  # Main Flask application
+│   ├── face_recognition.py      # Face recognition script
+│   ├── take_photo.py            # Photo capture script
+│   ├── train_model.py           # Model training script
+│   ├── requirements.txt        # Python dependencies
+│   ├── Dockerfile              # Docker configuration
+│   ├── README.md               # Backend documentation
+│   ├── datasets/               # Training datasets
+│   ├── trainer/                # Trained models
+│   ├── attendance/             # Attendance records
+│   └── logs/                   # Application logs
+>>>>>>> ccac82d (feat: Add Face Recognition features and Simple Face Recognition component)
 ├── public/                 # Static assets
 └── dist/                   # Built application
 ```

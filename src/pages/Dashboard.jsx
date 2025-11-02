@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
-import FaceRecognitionWidget from '../components/FaceRecognitionWidget';
+import { FaceRecognitionWidget } from '../components/features';
 import fakeApi from '../services/fakeApi';
 
 const Dashboard = () => {

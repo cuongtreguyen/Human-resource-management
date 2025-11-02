@@ -5,8 +5,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
-import DelegationGuide from '../components/DelegationGuide';
-import DelegationDetailModal from '../components/DelegationDetailModal';
+import { DelegationGuide, DelegationDetailModal } from '../components/features';
 import { 
   Users, 
   Clock, 
