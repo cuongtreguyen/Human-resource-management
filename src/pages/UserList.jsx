@@ -3,12 +3,24 @@ import { Search, Filter, Edit, Eye, Lock, Unlock, Trash2, Plus, Download, Users,
 import Layout from '../components/layout/Layout';
 import fakeApi from '../services/fakeApi';
 
+
+import ViewUserModal from "../components/common/modal/ViewUserModal.jsx";
+import EditUserModal from "../components/common/modal/EditUserModal.jsx";
+import DeleteConfirmationModal from "../components/common/modal/DeleteConfirmationModal.jsx";
+
 const UserList = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  
+  // --- STATE QUẢN LÝ MODAL ---
+  const [selectedUser, setSelectedUser] = useState(null); // Sửa từ 'selectedUsers' -> 'selectedUser'
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -27,8 +39,8 @@ const UserList = () => {
   // Filter users based on search and filters
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase()));
+                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
     const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
     
@@ -43,10 +55,51 @@ const UserList = () => {
     totalRoles: new Set(users.map(u => u.role)).size
   };
 
+  // --- CÁC HÀM XỬ LÝ MODAL ---
+
+  const handleOpenViewModal = (user) => {
+    setSelectedUser(user);
+    setIsViewModalOpen(true);
+  };
+
+  const handleOpenEditModal = (user) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+  };
+  
+  const handleOpenDeleteModal = (user) => {
+    setSelectedUser(user); // Dùng chung state selectedUser
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleCloseModals = () => {
+    setSelectedUser(null);
+    setIsViewModalOpen(false);
+    setIsEditModalOpen(false);
+    setIsDeleteModalOpen(false);
+  };
+
+  // [FIX] Di chuyển hàm này ra khỏi handleCloseModals
+  const handleSaveUser = async (updatedUserData) => {
+    try {
+      // Gọi API thật ở đây, ví dụ: await fakeApi.updateUser(updatedUserData.id, updatedUserData);
+      
+      // Cập nhật lại state 'users' với dữ liệu mới
+      setUsers(users.map(user => 
+        user.id === updatedUserData.id ? updatedUserData : user
+      ));
+      handleCloseModals(); // Đóng modal sau khi lưu thành công
+    } catch (error) {
+      console.error('Error saving user:', error);
+    }
+  };
+
+  // --- CÁC HÀM XỬ LÝ ACTION ---
+
   const handleToggleUserStatus = async (userId, currentStatus) => {
     try {
       const newStatus = currentStatus === 'active' ? 'locked' : 'active';
-      // Simulate API call
+      // Gọi API thật ở đây, ví dụ: await fakeApi.updateUserStatus(userId, newStatus);
       setUsers(users.map(user => 
         user.id === userId ? { ...user, status: newStatus } : user
       ));
@@ -55,17 +108,18 @@ const UserList = () => {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        // Simulate API call
-        setUsers(users.filter(user => user.id !== userId));
-      } catch (error) {
-        console.error('Error deleting user:', error);
-      }
+  const handleConfirmDelete = async () => {
+    if (!selectedUser) return;
+    try {
+      // Gọi API thật ở đây, ví dụ: await fakeApi.deleteUser(selectedUser.id);
+      setUsers(users.filter(user => user.id !== selectedUser.id));
+      handleCloseModals(); // Đóng modal xóa
+    } catch (error) {
+      console.error('Error deleting user:', error);
     }
   };
 
+  // ... các hàm helper getRoleColor, getStatusColor, formatLastLogin giữ nguyên ...
   const getRoleColor = (role) => {
     switch (role) {
       case 'admin': return 'bg-red-100 text-red-700';
@@ -268,10 +322,20 @@ const UserList = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
-                          <button className="text-blue-600 hover:text-blue-700 p-1 rounded">
+                          
+                          {/* --- GẮN SỰ KIỆN ONCLICK --- */}
+                          <button 
+                            onClick={() => handleOpenViewModal(user)}
+                            className="text-blue-600 hover:text-blue-700 p-1 rounded" 
+                            title="View Details"
+                          >
                             <Eye size={16} />
                           </button>
-                          <button className="text-green-600 hover:text-green-700 p-1 rounded">
+                          <button 
+                            onClick={() => handleOpenEditModal(user)}
+                            className="text-green-600 hover:text-green-700 p-1 rounded" 
+                            title="Edit User"
+                          >
                             <Edit size={16} />
                           </button>
                           <button 
@@ -281,12 +345,14 @@ const UserList = () => {
                                 ? 'text-red-600 hover:text-red-700' 
                                 : 'text-green-600 hover:text-green-700'
                             }`}
+                            title={user.status === 'active' ? 'Lock Account' : 'Unlock Account'}
                           >
                             {user.status === 'active' ? <Lock size={16} /> : <Unlock size={16} />}
                           </button>
                           <button 
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="text-red-600 hover:text-red-700 p-1 rounded"
+                            onClick={() => handleOpenDeleteModal(user)}
+                            className="text-red-600 hover:text-red-700 p-1 rounded" 
+                            title="Delete User"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -315,6 +381,31 @@ const UserList = () => {
           </div>
         </div>
       </div>
+
+      {/* --- RENDER CÁC MODAL Ở ĐÂY --- */}
+      {isViewModalOpen && selectedUser && (
+        <ViewUserModal 
+          user={selectedUser} 
+          onClose={handleCloseModals} 
+        />
+      )}
+
+      {isEditModalOpen && selectedUser && (
+        <EditUserModal 
+          user={selectedUser} 
+          onClose={handleCloseModals}
+          onSave={handleSaveUser}
+        />
+      )}
+
+      {isDeleteModalOpen && selectedUser && (
+        <DeleteConfirmationModal
+          user={selectedUser}
+          onClose={handleCloseModals}
+          onConfirm={handleConfirmDelete}
+        />
+      )}
+
     </Layout>
   );
 };
