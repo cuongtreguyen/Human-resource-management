@@ -1,6 +1,6 @@
 # Human Resource Management System
 
-A comprehensive HR management system with **Face Recognition Attendance** built with React and Python.
+A comprehensive HR management system with **Face Recognition Attendance** built with React.
 
 ## 🚀 Features
 
@@ -31,23 +31,14 @@ A comprehensive HR management system with **Face Recognition Attendance** built 
 - **Lucide React** - Beautiful icons
 - **Framer Motion** - Smooth animations
 
-### Backend
-- **Python Flask** - Web framework
-- **OpenCV** - Computer vision library
-- **face_recognition** - Face detection and recognition
-- **NumPy** - Numerical computing
-- **Pillow** - Image processing
-
 ## 📋 Prerequisites
 
 - **Node.js** (v16.x or higher)
-- **Python 3.8+**
 - **npm** or **yarn**
-- **pip** (Python package manager)
 
 ## 🚀 Quick Start
 
-### 1. Frontend Setup
+### Frontend Setup
 
 ```bash
 # Install dependencies
@@ -59,7 +50,26 @@ npm run dev
 
 The frontend will be available at `http://localhost:5173`
 
+<<<<<<< HEAD
+=======
 ### 2. Backend Setup
+
+The backend is now in a separate `backend/` directory and can run independently.
+
+**Option 1: Using startup scripts (Recommended)**
+
+**Windows:**
+```bash
+start-face-recognition-backend.bat
+```
+
+**Linux/Mac:**
+```bash
+chmod +x start-face-recognition-backend.sh
+./start-face-recognition-backend.sh
+```
+
+**Option 2: Manual setup**
 
 ```bash
 # Navigate to backend directory
@@ -69,26 +79,18 @@ cd backend
 pip install -r requirements.txt
 
 # Start the Flask API
-python app.py
+python face_recognition_api.py
+```
+
+**Option 3: Using Docker**
+
+```bash
+docker-compose up
 ```
 
 The backend API will be available at `http://localhost:5000`
 
-### 3. Alternative Backend Startup
-
-**Windows:**
-```bash
-cd backend
-start.bat
-```
-
-**Linux/Mac:**
-```bash
-cd backend
-chmod +x start.sh
-./start.sh
-```
-
+>>>>>>> ccac82d (feat: Add Face Recognition features and Simple Face Recognition component)
 ## 📁 Project Structure
 
 ```
@@ -105,11 +107,21 @@ manager-employer/
 │   ├── services/           # API services
 │   ├── styles/             # Global styles
 │   └── utils/              # Utility functions
-├── backend/                 # Python Flask API
-│   ├── app.py              # Main Flask application
-│   ├── requirements.txt    # Python dependencies
-│   ├── start.sh            # Linux/Mac startup script
-│   └── start.bat           # Windows startup script
+<<<<<<< HEAD
+=======
+├── backend/                 # Python Flask Backend (chạy độc lập)
+│   ├── face_recognition_api.py  # Main Flask application
+│   ├── face_recognition.py      # Face recognition script
+│   ├── take_photo.py            # Photo capture script
+│   ├── train_model.py           # Model training script
+│   ├── requirements.txt        # Python dependencies
+│   ├── Dockerfile              # Docker configuration
+│   ├── README.md               # Backend documentation
+│   ├── datasets/               # Training datasets
+│   ├── trainer/                # Trained models
+│   ├── attendance/             # Attendance records
+│   └── logs/                   # Application logs
+>>>>>>> ccac82d (feat: Add Face Recognition features and Simple Face Recognition component)
 ├── public/                 # Static assets
 └── dist/                   # Built application
 ```
@@ -121,7 +133,6 @@ manager-employer/
 1. **User Registration**
    - Enter User ID and Full Name
    - Take multiple photos from different angles
-   - Press 's' key to capture photos
    - Register user with face encodings
 
 2. **Face Recognition**
@@ -134,14 +145,6 @@ manager-employer/
    - Automatic check-in/out recording
    - Real-time recognition results
    - Attendance history tracking
-
-### API Endpoints
-
-- `GET /api/status` - Check API status
-- `POST /api/register` - Register new user
-- `POST /api/recognize` - Recognize face
-- `POST /api/attendance` - Record attendance
-- `GET /api/users` - Get registered users
 
 ## 🎨 UI Features
 
@@ -173,29 +176,15 @@ manager-employer/
 Create a `.env` file in the root directory:
 
 ```env
-VITE_API_URL=http://localhost:5000
+VITE_API_URL=http://localhost:8080
 VITE_APP_NAME=HR Management System
 ```
-
-### Face Recognition Settings
-- Adjust confidence threshold in backend
-- Configure camera resolution
-- Set recognition accuracy parameters
 
 ## 📦 Deployment
 
 ### Frontend Deployment
 ```bash
 npm run build
-```
-
-### Backend Deployment
-```bash
-# Install production dependencies
-pip install gunicorn
-
-# Run with Gunicorn
-gunicorn -w 4 -b 0.0.0.0:5000 app:app
 ```
 
 ## 🤝 Contributing
@@ -212,8 +201,6 @@ This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- Built with React and Python
-- Face recognition powered by OpenCV and face_recognition
 - UI components with TailwindCSS
 - Icons by Lucide React
 

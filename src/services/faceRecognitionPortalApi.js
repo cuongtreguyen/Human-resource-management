@@ -1,7 +1,7 @@
 // Face Recognition Portal API Service
 // Connects to Python Flask backend
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'http://127.0.0.1:5000/';
 
 class FaceRecognitionPortalApi {
   // Check system status
@@ -25,16 +25,22 @@ class FaceRecognitionPortalApi {
   // Start photo capture for a user
   async takePhotos(userId, userName) {
     try {
-      // For demo purposes, return success immediately
-      console.log('Starting photo capture for:', { userId, userName });
+      const response = await fetch(`${API_BASE_URL}api/take-photos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: userId,
+          name: userName
+        })
+      });
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
-      return {
-        status: 'success',
-        message: 'Photo capture started successfully. Press "s" key to take photos.'
-      };
+      return await response.json();
     } catch (error) {
       console.error('Error starting photo capture:', error);
       return {
@@ -48,16 +54,18 @@ class FaceRecognitionPortalApi {
   // Start face recognition
   async startRecognition(type = 'check_in') {
     try {
-      // For demo purposes, return success immediately
-      console.log('Starting face recognition for:', type);
+      const response = await fetch(`${API_BASE_URL}api/recognize?type=${type}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       
-      // Simulate recognition delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
-      return {
-        status: 'success',
-        message: `Face recognition started for ${type}. System will automatically detect faces.`
-      };
+      return await response.json();
     } catch (error) {
       console.error('Error starting recognition:', error);
       return {
@@ -70,16 +78,18 @@ class FaceRecognitionPortalApi {
   // Stop current process
   async stopProcess() {
     try {
-      // For demo purposes, return success immediately
-      console.log('Stopping current process...');
+      const response = await fetch(`${API_BASE_URL}api/stop`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
       
-      // Simulate stop delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       
-      return {
-        status: 'success',
-        message: 'Process stopped successfully.'
-      };
+      return await response.json();
     } catch (error) {
       console.error('Error stopping process:', error);
       return {
@@ -165,18 +175,18 @@ class FaceRecognitionPortalApi {
   // Train model
   async trainModel() {
     try {
-      const response = await fetch(`${this.baseUrl}/train`, {
+      const response = await fetch(`${API_BASE_URL}api/train`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
       
-      if (response.ok) {
-        return await response.json();
-      } else {
-        throw new Error(`HTTP ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+      
+      return await response.json();
     } catch (error) {
       console.error('Train model failed:', error);
       return {

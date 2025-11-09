@@ -15,7 +15,7 @@ REM Navigate to the face recognition directory
 cd /d "%~dp0"
 
 REM Check if we're in the right directory
-if not exist "src\main\face_recog\face_recognition_api.py" (
+if not exist "backend\face_recognition_api.py" (
     echo Face recognition API not found
     echo Please make sure you're running this from the project root
     pause
@@ -24,7 +24,8 @@ if not exist "src\main\face_recog\face_recognition_api.py" (
 
 REM Install required packages if needed
 echo Installing required packages...
-pip install flask opencv-python pillow numpy requests werkzeug
+cd backend
+pip install -r requirements.txt
 
 REM Start the Flask API
 echo.
@@ -32,7 +33,6 @@ echo Starting Face Recognition API on http://localhost:5000
 echo Press Ctrl+C to stop the server
 echo.
 
-cd "src\main\face_recog"
 python face_recognition_api.py
 
 pause
