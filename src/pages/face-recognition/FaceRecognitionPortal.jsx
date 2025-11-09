@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Camera, User, Eye, CheckCircle, AlertCircle, Users, Clock, Video, Square, Info, Play, Square as StopIcon } from 'lucide-react';
-import faceRecognitionPortalApi from '../services/faceRecognitionPortalApi';
+import faceRecognitionPortalApi from '../../services/faceRecognitionPortalApi';
 
 const FaceRecognitionPortal = () => {
   const [activeTab, setActiveTab] = useState('register');

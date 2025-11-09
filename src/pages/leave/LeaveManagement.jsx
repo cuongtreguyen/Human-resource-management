@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import Input from '../components/ui/Input';
-import Select from '../components/ui/Select';
+import Layout from '../../components/layout/Layout';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Select from '../../components/ui/Select';
 import { 
   Calendar, 
   User, 
@@ -19,7 +19,7 @@ import {
   TrendingUp,
   Users
 } from 'lucide-react';
-import fakeApi from '../services/fakeApi';
+import fakeApi from '../../services/fakeApi';
 
 const LeaveManagement = () => {
   const navigate = useNavigate();

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Filter, Edit, Eye, Lock, Unlock, Trash2, Plus, Download, Users, Shield, AlertCircle, CheckCircle } from 'lucide-react';
-import Layout from '../components/layout/Layout';
-import fakeApi from '../services/fakeApi';
+import Layout from '../../components/layout/Layout';
+import fakeApi from '../../services/fakeApi';
 
 
-import ViewUserModal from "../components/common/modal/ViewUserModal.jsx";
-import EditUserModal from "../components/common/modal/EditUserModal.jsx";
-import DeleteConfirmationModal from "../components/common/modal/DeleteConfirmationModal.jsx";
+import ViewUserModal from "../../components/common/modal/ViewUserModal.jsx";
+import EditUserModal from "../../components/common/modal/EditUserModal.jsx";
+import DeleteConfirmationModal from "../../components/common/modal/DeleteConfirmationModal.jsx";
 
 const UserList = () => {
   const [users, setUsers] = useState([]);

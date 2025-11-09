@@ -1,8 +1,8 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
+import Layout from '../../components/layout/Layout';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
 
 const EmployeeDetails = () => {
   const { id } = useParams();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import Layout from '../components/layout/Layout';
-import fakeApi from '../services/fakeApi';
+import Layout from '../../components/layout/Layout';
+import fakeApi from '../../services/fakeApi';
 
 const TaskManagement = () => {
   const [tasks, setTasks] = useState([]);

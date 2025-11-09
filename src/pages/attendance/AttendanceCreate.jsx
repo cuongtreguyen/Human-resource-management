@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import Select from '../components/ui/Select';
-import fakeApi from '../services/fakeApi';
+import Layout from '../../components/layout/Layout';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Select from '../../components/ui/Select';
+import fakeApi from '../../services/fakeApi';
 
 const AttendanceCreate = () => {
   const navigate = useNavigate();

@@ -5,40 +5,48 @@ import { ProtectedRoute } from './components/common';
 // Import pages
 import Login from './pages/login/Login';
 import Dashboard from './pages/Dashboard';
-import FaceRecognitionPortal from './pages/FaceRecognitionPortal';
 
 // Employee pages
-import EmployeeList from './pages/EmployeeList';
-import FaceRecognition from './pages/FaceRecognition';
-import AttendanceList from './pages/AttendanceList';
-import AttendanceCreate from './pages/AttendanceCreate';
-import UserList from './pages/UserList';
+import EmployeeList from './pages/employee/EmployeeList';
+import AddEmployee from './pages/employee/AddEmployee';
+import EditEmployee from './pages/employee/EditEmployee';
+import EmployeeDetails from './pages/employee/EmployeeDetails';
 
-// Import Payroll pages
-import PayrollList from './pages/PayrollList';
-import PayrollPolicies from './pages/PayrollPolicies';
+// Face Recognition pages
+import FaceRecognition from './pages/face-recognition/FaceRecognition';
+import FaceRecognitionPortal from './pages/face-recognition/FaceRecognitionPortal';
 
-// Import Chat and Task Management pages
+// Attendance pages
+import AttendanceList from './pages/attendance/AttendanceList';
+import AttendanceCreate from './pages/attendance/AttendanceCreate';
+
+// Payroll pages
+import PayrollList from './pages/payroll/PayrollList';
+import PayrollPolicies from './pages/payroll/PayrollPolicies';
+
+// Leave pages
+import LeaveManagement from './pages/leave/LeaveManagement';
+import LeaveRequest from './pages/leave/LeaveRequest';
+
+// Task pages
+import TaskManagement from './pages/task/TaskManagement';
+import TaskDelegation from './pages/task/TaskDelegation';
+
+// Admin pages
+import UserList from './pages/admin/UserList';
+import RoleManagement from './pages/admin/RoleManagement';
+import LogsMonitor from './pages/admin/LogsMonitor';
+import TestUserList from './pages/admin/TestUserList';
+
+// Other pages
 import Chat from './pages/Chat';
-import TaskManagement from './pages/TaskManagement';
-
-// Import Reports, Documents, and Settings pages
 import Reports from './pages/Reports';
 import Documents from './pages/Documents';
 import Settings from './pages/Settings';
-import EmployeeDetails from './pages/EmployeeDetails';
-import EditEmployee from './pages/EditEmployee';
-import AddEmployee from './pages/AddEmployee';
 import ExportData from './pages/ExportData';
 import Test from './pages/Test';
-import RoleManagement from './pages/RoleManagement';
-import LeaveManagement from './pages/LeaveManagement';
-import LeaveRequest from './pages/LeaveRequest';
-import TaskDelegation from './pages/TaskDelegation';
 import NotificationCenter from './pages/NotificationCenter';
 import WorkflowManager from './pages/WorkflowManager';
-import TestUserList from './pages/TestUserList';
-import LogsMonitor from './pages/LogsMonitor';
 
 // Employee Portal pages
 import EmployeePortal from './pages/employee/EmployeePortal';
@@ -55,65 +63,16 @@ import EmployeeTrainingDevelopment from './pages/employee/TrainingDevelopment';
 import EmployeeBenefitsInsurance from './pages/employee/BenefitsInsurance';
 import EmployeeSupportHelp from './pages/employee/SupportHelp';
 
-// Placeholder components for other pages
+// Recruitment pages
+import RecruitmentManagement from './pages/recruitment/RecruitmentManagement';
+import PositionsList from './pages/recruitment/PositionsList';
+import ApplicationsList from './pages/recruitment/ApplicationsList';
 
+// Leave pages
+import CreateLeave from './pages/leave/CreateLeave';
 
-
-const CreateLeave = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Create Leave</h1>
-      <p className="text-gray-600">Create leave page coming soon...</p>
-    </div>
-  </div>
-);
-
-const RecruitmentManagement = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Recruitment Management</h1>
-      <p className="text-gray-600">Recruitment page coming soon...</p>
-    </div>
-  </div>
-);
-
-const PositionsList = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Positions List</h1>
-      <p className="text-gray-600">Positions list page coming soon...</p>
-    </div>
-  </div>
-);
-
-const ApplicationsList = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Applications List</h1>
-      <p className="text-gray-600">Applications list page coming soon...</p>
-    </div>
-  </div>
-);
-
-
-
-const Profile = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">My Profile</h1>
-      <p className="text-gray-600">Profile page coming soon...</p>
-    </div>
-  </div>
-);
-
-const TaskManagementPlaceholder = () => (
-  <div className="min-h-screen flex items-center justify-center">
-    <div className="text-center">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">Task Management</h1>
-      <p className="text-gray-600">Task management page coming soon...</p>
-    </div>
-  </div>
-);
+// Profile page
+import Profile from './pages/Profile';
 
 const AppRoutes = () => {
   return (

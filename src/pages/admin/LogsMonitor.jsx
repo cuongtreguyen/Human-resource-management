@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search, Filter, Eye, Calendar, BarChart3, Activity, AlertTriangle, CheckCircle, XCircle, Plus, Edit, Trash2 } from 'lucide-react';
-import Layout from '../components/layout/Layout';
-import logsApi from '../services/logsApi';
+import Layout from '../../components/layout/Layout';
+import logsApi from '../../services/logsApi';
 
 const LogsMonitor = () => {
   const [logs, setLogs] = useState([]);

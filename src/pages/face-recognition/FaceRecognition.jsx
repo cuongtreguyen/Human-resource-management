@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import Layout from '../components/layout/Layout';
+import Layout from '../../components/layout/Layout';
 import {
   Camera,
   User,
@@ -11,7 +11,7 @@ import {
   Info,
   Square as StopIcon,
 } from 'lucide-react';
-import faceRecognitionApi from '../services/faceRecognitionApi';
+import faceRecognitionApi from '../../services/faceRecognitionApi';
 
 const FaceRecognition = () => {
   const [activeTab, setActiveTab] = useState('register');
