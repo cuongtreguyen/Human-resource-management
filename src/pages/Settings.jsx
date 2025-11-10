@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Layout from '../components/layout/Layout';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
@@ -320,59 +319,57 @@ const Settings = () => {
   );
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-gray-900">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-white">System Settings</h1>
-              <p className="text-gray-400 text-sm">Dashboard / Settings</p>
-            </div>
-            <button
-              onClick={handleSaveSettings}
-              disabled={loading}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 flex items-center space-x-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-              <span>{loading ? 'Saving...' : 'Save Settings'}</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="p-6">
-          {/* Tabs */}
-          <div className="mb-6">
-            <div className="flex space-x-1 bg-gray-800 rounded-lg p-1">
-              {tabs.map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:text-white hover:bg-gray-700'
-                  }`}
-                >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Tab Content */}
+    <div className="min-h-screen bg-gray-900">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-4">
+        <div className="flex justify-between items-center">
           <div>
-            {activeTab === 'general' && renderGeneralSettings()}
-            {activeTab === 'notifications' && renderNotificationSettings()}
-            {activeTab === 'security' && renderSecuritySettings()}
-            {activeTab === 'system' && renderSystemSettings()}
+            <h1 className="text-2xl font-bold text-white">System Settings</h1>
+            <p className="text-gray-400 text-sm">Dashboard / Settings</p>
           </div>
+          <button
+            onClick={handleSaveSettings}
+            disabled={loading}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 flex items-center space-x-2 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{loading ? 'Saving...' : 'Save Settings'}</span>
+          </button>
         </div>
       </div>
-    </Layout>
+
+      <div className="p-6">
+        {/* Tabs */}
+        <div className="mb-6">
+          <div className="flex space-x-1 bg-gray-800 rounded-lg p-1">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  activeTab === tab.id
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div>
+          {activeTab === 'general' && renderGeneralSettings()}
+          {activeTab === 'notifications' && renderNotificationSettings()}
+          {activeTab === 'security' && renderSecuritySettings()}
+          {activeTab === 'system' && renderSystemSettings()}
+        </div>
+      </div>
+    </div>
   );
 };
 

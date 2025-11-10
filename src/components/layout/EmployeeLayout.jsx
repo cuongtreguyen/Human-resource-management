@@ -3,7 +3,7 @@
 
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Calendar, 
@@ -22,6 +22,7 @@ import { clearRole } from '../../utils/auth';
 
 const EmployeeLayout = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const menuItems = [
     { icon: Home, label: 'Trang chủ', path: '/employee' },
@@ -56,7 +57,7 @@ const EmployeeLayout = ({ children }) => {
           <nav className="mt-6 px-4 space-y-2">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
-              const isActive = window.location.pathname === item.path;
+              const isActive = location.pathname === item.path;
               return (
                 <button
                   key={index}
@@ -128,7 +129,7 @@ const EmployeeLayout = ({ children }) => {
         </div>
 
         {/* Page content */}
-        <main className="p-4 lg:p-8">{children}</main>
+        <main className="p-4 lg:p-8">{children || <Outlet />}</main>
       </div>
     </div>
   );

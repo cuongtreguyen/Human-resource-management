@@ -5,7 +5,7 @@ const DepartmentDistribution = ({ departments = [] }) => {
     const colors = [
       'bg-blue-500',
       'bg-green-500',
-      'bg-purple-500',
+      'bg-purple-500', 
       'bg-orange-500'
     ];
     return colors[index % 4];

@@ -1,6 +1,8 @@
 ﻿import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/common';
+import Layout from './components/layout/Layout';
+import EmployeeLayout from './components/layout/EmployeeLayout';
 
 // Import pages
 import Login from './pages/login/Login';
@@ -68,9 +70,6 @@ import RecruitmentManagement from './pages/recruitment/RecruitmentManagement';
 import PositionsList from './pages/recruitment/PositionsList';
 import ApplicationsList from './pages/recruitment/ApplicationsList';
 
-// Leave pages
-import CreateLeave from './pages/leave/CreateLeave';
-
 // Profile page
 import Profile from './pages/Profile';
 
@@ -79,216 +78,239 @@ const AppRoutes = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
-      
-      {/* Dashboard */}
-      <Route path="/dashboard" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager', 'accountant']}>
-          <Dashboard />
-        </ProtectedRoute>
-      } />
-      
-      {/* Employee Routes */}
-      <Route path="/face-recognition" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <FaceRecognition />
-        </ProtectedRoute>
-      } />
-      <Route path="/face-recognition-portal" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager', 'employee']}>
-          <FaceRecognitionPortal />
-        </ProtectedRoute>
-      } />
-      <Route path="/employees" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <EmployeeList />
-        </ProtectedRoute>
-      } />
-      <Route path="/employees/add" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <AddEmployee />
-        </ProtectedRoute>
-      } />
-      <Route path="/employees/view/:id" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <EmployeeDetails />
-        </ProtectedRoute>
-      } />
-      <Route path="/employees/edit/:id" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <EditEmployee />
-        </ProtectedRoute>
-      } />
-      <Route path="/employees/export" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <ExportData />
-        </ProtectedRoute>
-      } />
-      
-      {/* Attendance Routes */}
-      <Route path="/attendance" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <AttendanceList />
-        </ProtectedRoute>
-      } />
-      <Route path="/attendance/create" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <AttendanceCreate />
-        </ProtectedRoute>
-      } />
-      
-      {/* Payroll Routes */}
-      <Route path="/payroll" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager', 'accountant']}>
-          <PayrollList />
-        </ProtectedRoute>
-      } />
-      <Route path="/payroll/policies" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager', 'accountant']}>
-          <PayrollPolicies />
-        </ProtectedRoute>
-      } />
-      
-      
-      {/* Leave Routes */}
-      <Route path="/leaves" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <LeaveManagement />
-        </ProtectedRoute>
-      } />
-      <Route path="/leaves/create" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <LeaveRequest />
-        </ProtectedRoute>
-      } />
-      <Route path="/leaves/delegation" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <TaskDelegation />
-        </ProtectedRoute>
-      } />
-      <Route path="/leaves/workflow" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <WorkflowManager />
-        </ProtectedRoute>
-      } />
-      
-      {/* Notification Routes */}
-      <Route path="/notifications" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <NotificationCenter />
-        </ProtectedRoute>
-      } />
-      
-      {/* Recruitment Routes */}
-      <Route path="/recruitment" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <RecruitmentManagement />
-        </ProtectedRoute>
-      } />
-      <Route path="/recruitment/positions" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <PositionsList />
-        </ProtectedRoute>
-      } />
-      <Route path="/recruitment/applications" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <ApplicationsList />
-        </ProtectedRoute>
-      } />
-      
-      {/* Admin Routes */}
-      <Route path="/admin/users" element={<UserList />} />
-      <Route path="/admin/roles" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager']}>
-          <RoleManagement />
-        </ProtectedRoute>
-      } />
-      <Route path="/admin/logs" element={<LogsMonitor />} />
-      <Route path="/admin/users-test" element={<TestUserList />} />
-      
-      {/* Employee Portal Routes */}
-      <Route path="/employee" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeePortal />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/attendance" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeAttendance />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/attendance/summary" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeAttendanceSummary />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/leave" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeLeave />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/payroll" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeePayroll />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/tasks" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeTasks />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/documents" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeDocuments />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/profile" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeProfile />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/chat" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeChat />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/performance" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeePerformanceReview />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/training" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeTrainingDevelopment />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/benefits" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeBenefitsInsurance />
-        </ProtectedRoute>
-      } />
-      <Route path="/employee/support" element={
-        <ProtectedRoute allowedRoles={['employee']}>
-          <EmployeeSupportHelp />
-        </ProtectedRoute>
-      } />
-      
-      {/* User Routes */}
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/chat" element={<Chat />} />
-      <Route path="/tasks" element={
-        <ProtectedRoute allowedRoles={['admin', 'manager', 'employee']}>
-          <TaskManagement />
-        </ProtectedRoute>
-      } />
-      
-      {/* Reports, Documents, and Settings Routes */}
-      <Route path="/reports" element={<Reports />} />
-      <Route path="/documents" element={<Documents />} />
-      <Route path="/settings" element={<Settings />} />
-      
-      {/* Test Routes */}
-      <Route path="/test" element={<Test />} />
-      
+
+      {/* Admin Area */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <Layout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/dashboard" element={<Dashboard />} />
+
+        <Route
+          path="/face-recognition"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <FaceRecognition />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/employees"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <EmployeeList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employees/add"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AddEmployee />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employees/view/:id"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <EmployeeDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employees/edit/:id"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <EditEmployee />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/employees/export"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ExportData />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AttendanceList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/attendance/create"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <AttendanceCreate />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/payroll"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <PayrollList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payroll/policies"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <PayrollPolicies />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/leaves"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <LeaveManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaves/create"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <LeaveRequest />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaves/delegation"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <TaskDelegation />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/leaves/workflow"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <WorkflowManager />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/notifications"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <NotificationCenter />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/recruitment"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <RecruitmentManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recruitment/positions"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <PositionsList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/recruitment/applications"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ApplicationsList />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route path="/admin/users" element={<UserList />} />
+        <Route
+          path="/admin/roles"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <RoleManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/admin/logs" element={<LogsMonitor />} />
+        <Route path="/admin/users-test" element={<TestUserList />} />
+
+        <Route path="/chat" element={<Chat />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/reports" element={<Reports />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/test" element={<Test />} />
+        <Route
+          path="/tasks"
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <TaskManagement />
+            </ProtectedRoute>
+          }
+        />
+      </Route>
+
+      {/* Employee Portal */}
+      <Route
+        path="/employee"
+        element={
+          <ProtectedRoute allowedRoles={['employee']}>
+            <EmployeeLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<EmployeePortal />} />
+        <Route path="attendance" element={<EmployeeAttendance />} />
+        <Route
+          path="attendance/summary"
+          element={<EmployeeAttendanceSummary />}
+        />
+        <Route path="leave" element={<EmployeeLeave />} />
+        <Route path="payroll" element={<EmployeePayroll />} />
+        <Route path="tasks" element={<EmployeeTasks />} />
+        <Route path="documents" element={<EmployeeDocuments />} />
+        <Route path="profile" element={<EmployeeProfile />} />
+        <Route path="chat" element={<EmployeeChat />} />
+        <Route
+          path="performance"
+          element={<EmployeePerformanceReview />}
+        />
+        <Route
+          path="training"
+          element={<EmployeeTrainingDevelopment />}
+        />
+        <Route path="benefits" element={<EmployeeBenefitsInsurance />} />
+        <Route path="support" element={<EmployeeSupportHelp />} />
+      </Route>
+
+      {/* Shared Feature Routes */}
+      <Route
+        path="/face-recognition-portal"
+        element={
+          <ProtectedRoute allowedRoles={['admin', 'employee']}>
+            <FaceRecognitionPortal />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Default Route */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />

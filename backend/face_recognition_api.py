@@ -642,7 +642,7 @@ def take_photos():
     def run_process():
         global current_process, system_status
         try:
-            cmd = ['py', os.path.join(BASE_DIR, 'take_photo.py'), str(user_id)]
+            cmd = [sys.executable, os.path.join(BASE_DIR, 'take_photo.py'), str(user_id)]
             if user_name:
                 cmd.append(user_name)
             logger.info("Executing: %s", " ".join(cmd))

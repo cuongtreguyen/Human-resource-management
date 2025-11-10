@@ -13,7 +13,13 @@ const AttendanceList = () => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.sessionStorage.getItem('adminAttendanceDate');
+      if (stored) return stored;
+    }
+    return new Date().toISOString().split('T')[0];
+  });
 
   useEffect(() => {
     loadAttendanceData();
@@ -75,8 +81,8 @@ const AttendanceList = () => {
       setError(null);
       
       console.log('Loading attendance for date:', selectedDate);
-      
-      const flaskResponse = await fetch(`${PY_API}/attendance/daily?date=${selectedDate}`);
+
+      const flaskResponse = await fetch(`${PY_API}/api/attendance/daily?date=${selectedDate}`);
       
       if (flaskResponse.ok) {
         const flaskData = await flaskResponse.json();
@@ -117,15 +123,17 @@ const AttendanceList = () => {
               <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Chọn ngày để xem dữ liệu chấm công</label>
-                  <Input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => {
-                      setSelectedDate(e.target.value);
-                      loadAttendanceData();
+                <Input
+                  type="date"
+                  value={selectedDate}
+                  onChange={(value) => {
+                      setSelectedDate(value);
+                      if (typeof window !== 'undefined') {
+                        window.sessionStorage.setItem('adminAttendanceDate', value);
+                      }
                     }}
-                    className="w-full"
-                  />
+                  className="w-full"
+                />
                 </div>
                 <div className="text-sm text-gray-600">
                   <div>Ngày đang xem: <span className="font-medium">{selectedDate}</span></div>
