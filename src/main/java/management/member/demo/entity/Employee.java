@@ -80,4 +80,6 @@ public class Employee {
 	@NotNull
 	@Column(name = "base_salary", precision = 19, scale = 2)
 	private BigDecimal baseSalary;
+
+	private int remainingLeaveDays = 12;
 }
