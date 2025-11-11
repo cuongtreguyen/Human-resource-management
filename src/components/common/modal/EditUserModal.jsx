@@ -54,8 +54,6 @@ const EditUserModal = ({ user, onClose, onSave }) => {
               className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               <option value="admin">Administrator</option>
-              <option value="manager">Manager</option>
-              <option value="accountant">Accountant</option>
               <option value="employee">Employee</option>
             </select>
           </div>

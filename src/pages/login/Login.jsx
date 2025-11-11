@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Lock, Eye, EyeOff, Mail, Shield, Users, TrendingUp } from 'lucide-react';
-import { setRole } from '../../utils/auth';
+import { setRole, setUserInfo, clearUserInfo } from '../../utils/auth';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,25 +20,18 @@ const Login = () => {
       email: "employee@company.com",
       password: "employee123",
       role: "employee",
-      route: "/employee"
-    },
-    manager: {
-      email: "manager@company.com",
-      password: "manager123",
-      role: "manager",
-      route: "/dashboard"
-    },
-    accountant: {
-      email: "accountant@company.com",
-      password: "accountant123",
-      role: "accountant",
-      route: "/dashboard"
+      route: "/employee",
+      info: {
+        employeeId: '1',
+        name: 'Trần Ngọc Hải'
+      }
     },
     admin: {
       email: "admin@company.com",
       password: "admin123",
       role: "admin",
-      route: "/dashboard"
+      route: "/dashboard",
+      info: null
     }
   };
 
@@ -79,6 +72,11 @@ const Login = () => {
       if (user) {
         // Set role in localStorage
         setRole(user.role);
+        if (user.info) {
+          setUserInfo(user.info);
+        } else {
+          clearUserInfo();
+        }
         // Navigate to appropriate route based on role
         navigate(user.route);
       } else {

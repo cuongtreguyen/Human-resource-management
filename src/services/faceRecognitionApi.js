@@ -86,6 +86,21 @@ class FaceRecognitionApi {
     }
   }
 
+  async getEmployeeAttendance(employeeId) {
+    if (!employeeId) {
+      throw new Error('employeeId is required');
+    }
+    const res = await http(
+      `${PY_API}/api/attendance/employee/${encodeURIComponent(employeeId)}`,
+      {},
+      10000
+    );
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+    return await res.json();
+  }
+
   // --- Dữ liệu demo/phụ trợ ---
   async getRegisteredEmployees() {
     try {
