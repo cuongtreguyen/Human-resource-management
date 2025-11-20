@@ -292,7 +292,7 @@ const EmployeePortal = () => {
                 </div>
 
                 {/* Tasks list */}
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                   {tasks
                     .filter(task => taskFilter === 'all' || task.status === taskFilter)
                     .map(task => {
@@ -338,65 +338,75 @@ const EmployeePortal = () => {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3 }}
-                          className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                          className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all duration-200"
                         >
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex-1">
-                              <h3 className="font-medium text-gray-900 text-sm mb-1">{task.title}</h3>
-                              <p className="text-gray-600 text-xs line-clamp-2">{task.description}</p>
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1 pr-3">
+                              <h3 className="font-semibold text-gray-900 text-base mb-2 leading-tight">{task.title}</h3>
+                              <p className="text-gray-600 text-sm line-clamp-2 leading-relaxed">{task.description}</p>
                             </div>
-                            <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getStatusColor(task.status)} ml-3 whitespace-nowrap`}>
+                            <span className={`px-3 py-1.5 text-xs font-medium rounded-full border ${getStatusColor(task.status)} whitespace-nowrap flex-shrink-0`}>
                               {getStatusText(task.status)}
                             </span>
                           </div>
                           
                           {/* Progress Bar */}
                           {progress && (
-                            <div className="mb-3">
-                              <div className="flex justify-between items-center mb-1">
-                                <span className="text-xs text-gray-500">Tiến độ</span>
-                                <span className="text-xs text-gray-500">{progress.currentProgress}%</span>
+                            <div className="mb-4 bg-gray-50 rounded-lg p-3">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="text-xs font-medium text-gray-600">Tiến độ</span>
+                                <span className="text-sm font-bold text-purple-600">{progress.currentProgress}%</span>
                               </div>
-                              <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                                 <div
-                                  className="bg-purple-600 h-2 rounded-full transition-all duration-300"
+                                  className="bg-gradient-to-r from-purple-600 to-indigo-600 h-2.5 rounded-full transition-all duration-500 shadow-sm"
                                   style={{ width: `${progress.currentProgress}%` }}
                                 ></div>
                               </div>
                             </div>
                           )}
                           
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+                          <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
                             <div className="flex items-center space-x-2">
-                              {task.assignee?.avatar && (
+                              {task.assignee?.avatar ? (
                                 <img
                                   src={task.assignee.avatar}
                                   alt={task.assignee.name}
-                                  className="w-6 h-6 rounded-full object-cover"
+                                  className="w-7 h-7 rounded-full object-cover border-2 border-purple-100"
                                 />
+                              ) : (
+                                <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center">
+                                  <User size={14} className="text-gray-400" />
+                                </div>
                               )}
-                              <span className="text-xs text-gray-500">{task.assignee?.name || 'Chưa giao'}</span>
+                              <span className="text-sm text-gray-700 font-medium">{task.assignee?.name || 'Chưa giao'}</span>
                             </div>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
+                            <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${getPriorityColor(task.priority)}`}>
                               {getPriorityText(task.priority)}
                             </span>
                           </div>
                           
                           {task.startDate && task.endDate && (
-                            <div className="mt-2 text-xs text-gray-500">
-                              <div>Bắt đầu: {task.startDate}</div>
-                              <div>Kết thúc: {task.endDate}</div>
+                            <div className="mb-3 flex items-center gap-4 text-xs text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <Calendar size={14} />
+                                <span>Bắt đầu: {task.startDate}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Calendar size={14} />
+                                <span>Kết thúc: {task.endDate}</span>
+                              </div>
                             </div>
                           )}
 
                           {/* Action Buttons */}
-                          <div className="mt-4 flex gap-2 pt-3 border-t border-gray-100">
+                          <div className="flex gap-2 pt-3 border-t border-gray-100">
                             <button
                               onClick={() => {
                                 setSelectedTask(task);
                                 setShowTaskDetail(true);
                               }}
-                              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-medium text-gray-700"
+                              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg border-2 border-gray-300 hover:border-purple-400 hover:bg-purple-50 transition-all duration-200 font-medium text-gray-700 hover:text-purple-700"
                             >
                               <Eye size={16} />
                               Chi tiết
@@ -410,7 +420,7 @@ const EmployeePortal = () => {
                                   setUpdateNote('');
                                   setShowTaskUpdate(true);
                                 }}
-                                className="flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium"
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 font-medium shadow-sm hover:shadow-md"
                               >
                                 <Edit size={16} />
                                 Cập nhật
