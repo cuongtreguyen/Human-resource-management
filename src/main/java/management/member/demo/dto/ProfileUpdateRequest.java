@@ -18,15 +18,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ProfileUpdateRequest {
     
-    /** Họ */
-    @NotBlank(message = "Họ không được để trống")
-    @Size(max = 100, message = "Họ không được vượt quá 100 ký tự")
-    private String firstName;
-    
-    /** Tên */
-    @NotBlank(message = "Tên không được để trống")
-    @Size(max = 100, message = "Tên không được vượt quá 100 ký tự")
-    private String lastName;
+    /** Họ và tên */
+    @NotBlank(message = "Họ và tên không được để trống")
+    @Size(max = 200, message = "Họ và tên không được vượt quá 200 ký tự")
+    private String fullName;
     
     /** Email công việc */
     @Email(message = "Email không hợp lệ")

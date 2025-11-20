@@ -18,12 +18,8 @@ import java.time.LocalDate;
 @Setter
 public class EmployeeRequest {
     @NotBlank
-    @Size(max = 100)
-    private String firstName;
-
-    @NotBlank
-    @Size(max = 100)
-    private String lastName;
+    @Size(max = 200)
+    private String fullName;
 
     @Email
     @NotBlank

@@ -16,8 +16,7 @@ public enum ErrorCode {
     INVALID_REQUEST("INVALID_REQUEST", "Thông tin yêu cầu không được để trống"),
     
     // Employee field validation errors
-    INVALID_FIRST_NAME("INVALID_FIRST_NAME", "Họ không được để trống"),
-    INVALID_LAST_NAME("INVALID_LAST_NAME", "Tên không được để trống"),
+    INVALID_FULL_NAME("INVALID_FULL_NAME", "Họ và tên không được để trống"),
     INVALID_EMAIL("INVALID_EMAIL", "Email không được để trống"),
     INVALID_EMPLOYEE_CODE("INVALID_EMPLOYEE_CODE", "Mã nhân viên không được để trống"),
     INVALID_DEPARTMENT("INVALID_DEPARTMENT", "Phòng ban không được để trống"),
@@ -57,6 +56,10 @@ public enum ErrorCode {
     INVALID_PAYROLL_STATUS("INVALID_PAYROLL_STATUS", "Trạng thái bảng lương không được để trống"),
     INVALID_PAYROLL_STATUS_VALUE("INVALID_PAYROLL_STATUS_VALUE", "Trạng thái bảng lương không hợp lệ. Các giá trị hợp lệ: PENDING, PAID, FAILED, CANCELLED"),
     INVALID_PAYROLL_OPERATION("INVALID_PAYROLL_OPERATION", "Không thể thực hiện thao tác này với trạng thái hiện tại của bảng lương"),
+    
+    // Employee Benefits errors
+    EMPLOYEE_BENEFITS_NOT_FOUND("EMPLOYEE_BENEFITS_NOT_FOUND", "Không tìm thấy phúc lợi nhân viên"),
+    INVALID_EMPLOYEE_BENEFITS_ID("INVALID_EMPLOYEE_BENEFITS_ID", "ID phúc lợi nhân viên không hợp lệ"),
     
     // Security/Authentication errors
     AUTHENTICATION_FAILED("AUTHENTICATION_FAILED", "Xác thực thất bại"),

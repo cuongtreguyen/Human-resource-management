@@ -19,8 +19,7 @@ import java.time.LocalDate;
 public class ProfileResponse {
     // Thông tin cơ bản
     private Long id;
-    private String firstName;
-    private String lastName;
+    private String fullName;
     private String email;
     private String phone;
     private String address; // Có thể null hoặc "Chưa cập nhật"

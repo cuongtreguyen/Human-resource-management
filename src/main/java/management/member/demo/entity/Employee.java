@@ -22,17 +22,11 @@ public class Employee {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	/** Họ */
+	/** Họ và tên */
 	@NotBlank
-	@Size(max = 100)
-	@Column(name = "first_name")
-	private String firstName;
-
-	/** Tên */
-	@NotBlank
-	@Size(max = 100)
-	@Column(name = "last_name")
-	private String lastName;
+	@Size(max = 200)
+	@Column(name = "full_name")
+	private String fullName;
 
 	/** Email công việc */
 	@Email

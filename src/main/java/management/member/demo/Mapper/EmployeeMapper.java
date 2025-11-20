@@ -19,8 +19,7 @@ public class EmployeeMapper {
     public EmployeeResponse toResponse(Employee employee) {
         return EmployeeResponse.builder()
                 .id(employee.getId())
-                .firstName(employee.getFirstName())
-                .lastName(employee.getLastName())
+                .fullName(employee.getFullName())
                 .email(employee.getEmail())
                 .phone(employee.getPhone())
                 .employeeCode(employee.getEmployeeCode())
@@ -38,8 +37,7 @@ public class EmployeeMapper {
     public ProfileResponse toProfileResponse(Employee employee) {
         return ProfileResponse.builder()
                 .id(employee.getId())
-                .firstName(employee.getFirstName())
-                .lastName(employee.getLastName())
+                .fullName(employee.getFullName())
                 .email(employee.getEmail())
                 .phone(employee.getPhone())
                 .address(employee.getAddress())
@@ -56,8 +54,7 @@ public class EmployeeMapper {
      * Chỉ update thông tin liên hệ, không update thông tin công việc
      */
     public void updateProfileFromRequest(Employee employee, ProfileUpdateRequest request) {
-        employee.setFirstName(request.getFirstName());
-        employee.setLastName(request.getLastName());
+        employee.setFullName(request.getFullName());
         employee.setEmail(request.getEmail());
         employee.setPhone(request.getPhone());
         employee.setAddress(request.getAddress());
@@ -68,8 +65,7 @@ public class EmployeeMapper {
      * Map EmployeeRequest DTO sang Employee entity (chỉ mapping, không validate)
      */
     public void updateEmployeeFromRequest(Employee employee, EmployeeRequest request) {
-        employee.setFirstName(request.getFirstName());
-        employee.setLastName(request.getLastName());
+        employee.setFullName(request.getFullName());
         employee.setEmail(request.getEmail());
         employee.setPhone(request.getPhone());
         employee.setEmployeeCode(request.getEmployeeCode());

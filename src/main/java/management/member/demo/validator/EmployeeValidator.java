@@ -46,8 +46,7 @@ public class EmployeeValidator {
      */
     public void validateEmployeeRequest(EmployeeRequest request) {
         validateRequest(request);
-        validateFirstName(request.getFirstName());
-        validateLastName(request.getLastName());
+        validateFullName(request.getFullName());
         validateEmail(request.getEmail());
         validateEmployeeCode(request.getEmployeeCode());
         validateDepartment(request.getDepartment());
@@ -58,20 +57,11 @@ public class EmployeeValidator {
     }
 
     /**
-     * Validate firstName
+     * Validate fullName
      */
-    public void validateFirstName(String firstName) {
-        if (firstName == null || firstName.trim().isEmpty()) {
-            throw ErrorCode.INVALID_FIRST_NAME.toException();
-        }
-    }
-
-    /**
-     * Validate lastName
-     */
-    public void validateLastName(String lastName) {
-        if (lastName == null || lastName.trim().isEmpty()) {
-            throw ErrorCode.INVALID_LAST_NAME.toException();
+    public void validateFullName(String fullName) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            throw ErrorCode.INVALID_FULL_NAME.toException();
         }
     }
 
@@ -148,8 +138,7 @@ public class EmployeeValidator {
         if (request == null) {
             throw ErrorCode.INVALID_REQUEST.toException();
         }
-        validateFirstName(request.getFirstName());
-        validateLastName(request.getLastName());
+        validateFullName(request.getFullName());
         validateEmail(request.getEmail());
         // phone và address là optional, không cần validate
     }
