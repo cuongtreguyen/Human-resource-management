@@ -1,7 +1,7 @@
 package management.member.demo.Enum;
 
 public enum TaskStatus {
-    AWAITING,
+    PENDING,
     IN_PROGRESS,
     COMPLETED,
     CANCELLED

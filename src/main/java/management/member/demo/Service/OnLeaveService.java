@@ -95,4 +95,13 @@ public class OnLeaveService {
                 "usedLeaveDays", Long.valueOf(usedLeaveDays)
         );
     }
+
+    public OnLeaveResponse updateOnLeaveStatus(Long id, OnLeaveStatus status) {
+        OnLeave onLeave = onLeaveRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("OnLeave request not found"));
+
+        onLeave.setOnLeaveStatus(status);
+        OnLeave updatedOnLeave = onLeaveRepository.save(onLeave);
+        return onLeaveMapper.toOnLeaveResponse(updatedOnLeave);
+    }
 }

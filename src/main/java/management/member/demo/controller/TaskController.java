@@ -6,10 +6,13 @@ import management.member.demo.Service.TaskService;
 import management.member.demo.dto.TaskRequest;
 import management.member.demo.dto.TaskResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/task")
@@ -23,7 +26,7 @@ public class TaskController {
         return ResponseEntity.ok(service.createTask(request));
     }
 
-    @PostMapping("/updateTaskStatusByID/{id}")
+    @PutMapping("/updateTaskStatusByID/{id}")
     public ResponseEntity<TaskResponse> updateTaskStatus(@PathVariable Long id, @RequestParam("status")TaskStatus status){
         return ResponseEntity.ok(service.updateTaskStatus(id, status));
     }
@@ -34,12 +37,37 @@ public class TaskController {
     }
 
     @GetMapping("/countTaskByStatus")
-    public ResponseEntity<Long> countTaskByStatus(@RequestParam("status")TaskStatus status){
+    public ResponseEntity<Long> countTaskByStatus(@RequestParam(required = false) TaskStatus status){
         return ResponseEntity.ok(service.countTaskByStatus(status));
     }
 
     @GetMapping("viewTaskDetailsByID/{id}")
     public ResponseEntity<TaskResponse> viewTaskDetailsByID(@PathVariable Long id){
         return ResponseEntity.ok(service.viewTaskDetails(id));
+    }
+
+    @GetMapping("/employee-completion-percent")
+    public ResponseEntity<List<Map<String, Object>>> getEmployeeCompletionPercent(
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate",   required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        return ResponseEntity.ok(service.employeeCompletionPercentAsMaps(startDate, endDate));
+    }
+
+    @GetMapping("/employee-efficiency")
+    public ResponseEntity<List<Map<String, Object>>> getEmployeeEfficiency(
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate",   required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        return ResponseEntity.ok(service.employeeEfficiencyAsMaps(startDate, endDate));
+    }
+
+    @GetMapping("/average-days")
+    public ResponseEntity<Double> getAverageDaysForCompletedTasks(
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate",   required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        double avg = service.averageDaysForCompleted(startDate, endDate);
+        return ResponseEntity.ok(avg);
     }
 }
