@@ -64,6 +64,7 @@ const AppRoutes = () => {
       {/* Admin Area */}
       <Route element={<AdminRoute><Layout /></AdminRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
+
         <Route path="/face-recognition" element={<FaceRecognition />} />
         
         {/* Employees */}
@@ -95,8 +96,8 @@ const AppRoutes = () => {
         {/* Admin */}
         <Route path="/admin/users" element={<UserList />} />
         <Route path="/admin/roles" element={<RoleManagement />} />
+
         <Route path="/admin/logs" element={<LogsMonitor />} />
-        <Route path="/admin/users-test" element={<TestUserList />} />
 
         {/* Other */}
         <Route path="/notifications" element={<NotificationCenter />} />

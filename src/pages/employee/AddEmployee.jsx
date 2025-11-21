@@ -5,12 +5,13 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { User, Phone, MapPin, Users, Calendar, Check, X, Upload } from 'lucide-react';
+import { User, Phone, Check, X } from 'lucide-react';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('personal');
   const [saving, setSaving] = useState(false);
+  const [errors, setErrors] = useState({});
   
   const [formData, setFormData] = useState({
     // Personal Information
@@ -24,7 +25,6 @@ const AddEmployee = () => {
     phone: '',
     permanentAddress: '',
     temporaryAddress: '',
-    maritalStatus: '',
     
     // Employment Details
     department: '',
@@ -34,9 +34,7 @@ const AddEmployee = () => {
     contractCode: '',
     contractType: '',
     baseSalary: '',
-    signDate: '',
-    startDate: '',
-    endDate: ''
+    signDate: ''
   });
 
   const handleInputChange = (field, value) => {
@@ -44,17 +42,116 @@ const AddEmployee = () => {
       ...prev,
       [field]: value
     }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[field];
+        return newErrors;
+      });
+    }
+  };
+
+  // Validate required fields
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Personal Information - Required fields
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required';
+    }
+    if (!formData.gender) {
+      newErrors.gender = 'Gender is required';
+    }
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    }
+    if (!formData.personalEmail.trim()) {
+      newErrors.personalEmail = 'Personal email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personalEmail)) {
+      newErrors.personalEmail = 'Please enter a valid email address';
+    }
+
+    // Employment Details - Required fields
+    if (!formData.department) {
+      newErrors.department = 'Department is required';
+    }
+    if (!formData.position) {
+      newErrors.position = 'Position is required';
+    }
+    if (!formData.employeeCode.trim()) {
+      newErrors.employeeCode = 'Employee code is required';
+    }
+    if (!formData.companyEmail.trim()) {
+      newErrors.companyEmail = 'Company email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.companyEmail)) {
+      newErrors.companyEmail = 'Please enter a valid email address';
+    }
+    if (!formData.contractType) {
+      newErrors.contractType = 'Contract type is required';
+    }
+
+    setErrors(newErrors);
+    
+    // Return both validation result and errors for tab switching
+    return {
+      isValid: Object.keys(newErrors).length === 0,
+      errors: newErrors
+    };
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    // Validate form before submitting
+    const validation = validateForm();
+    if (!validation.isValid) {
+      // Switch to the first tab with errors
+      const newErrors = validation.errors;
+      const hasPersonalErrors = newErrors.firstName || newErrors.lastName || newErrors.dateOfBirth || newErrors.gender || newErrors.phone || newErrors.personalEmail;
+      const hasEmploymentErrors = newErrors.department || newErrors.position || newErrors.employeeCode || newErrors.companyEmail || newErrors.contractType;
+      
+      if (hasPersonalErrors) {
+        setActiveTab('personal');
+      } else if (hasEmploymentErrors) {
+        setActiveTab('employment');
+      }
+      return;
+    }
+
     setSaving(true);
     
     // Simulate API call
     setTimeout(() => {
       setSaving(false);
+      console.log('New employee payload', formData);
       navigate('/employees');
     }, 2000);
+  };
+
+  // Check if form is valid (for enabling/disabling button)
+  const isFormValid = () => {
+    return formData.firstName.trim() &&
+           formData.lastName.trim() &&
+           formData.dateOfBirth &&
+           formData.gender &&
+           formData.phone.trim() &&
+           formData.personalEmail.trim() &&
+           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personalEmail) &&
+           formData.department &&
+           formData.position &&
+           formData.employeeCode.trim() &&
+           formData.companyEmail.trim() &&
+           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.companyEmail) &&
+           formData.contractType;
   };
 
   const handleCancel = () => {
@@ -63,8 +160,7 @@ const AddEmployee = () => {
 
   const tabs = [
     { id: 'personal', label: 'Personal Information' },
-    { id: 'employment', label: 'Employment Details' },
-    { id: 'dependents', label: 'Dependents' }
+    { id: 'employment', label: 'Employment Details' }
   ];
 
   const departments = [
@@ -92,6 +188,7 @@ const AddEmployee = () => {
     'Internship'
   ];
 
+
   return (
     <Layout>
       <div className="flex gap-6">
@@ -114,12 +211,17 @@ const AddEmployee = () => {
             <div className="space-y-3">
               <Button
                 onClick={handleSubmit}
-                disabled={saving}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                disabled={saving || !isFormValid()}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Check className="w-4 h-4 mr-2" />
                 {saving ? 'Creating...' : 'Create Employee'}
               </Button>
+              {!isFormValid() && (
+                <p className="text-xs text-amber-600 mt-2 text-center">
+                  Please fill in all required fields
+                </p>
+              )}
               <Button
                 onClick={handleCancel}
                 variant="outline"
@@ -172,23 +274,31 @@ const AddEmployee = () => {
                     <Input
                       label="First Name"
                       value={formData.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
+                      onChange={(value) => handleInputChange('firstName', value)}
                       placeholder="Enter first name"
+                      required
+                      error={errors.firstName}
                     />
                     <Input
                       label="Last Name"
                       value={formData.lastName}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
+                      onChange={(value) => handleInputChange('lastName', value)}
                       placeholder="Enter last name"
+                      required
+                      error={errors.lastName}
                     />
                     <Input
                       label="Date of Birth"
                       type="date"
                       value={formData.dateOfBirth}
-                      onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                      onChange={(value) => handleInputChange('dateOfBirth', value)}
+                      required
+                      error={errors.dateOfBirth}
                     />
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Gender <span className="text-red-500">*</span>
+                      </label>
                       <div className="flex space-x-4">
                         <label className="flex items-center">
                           <input
@@ -213,18 +323,23 @@ const AddEmployee = () => {
                           Female
                         </label>
                       </div>
+                      {errors.gender && (
+                        <p className="text-sm text-red-600 mt-1">{errors.gender}</p>
+                      )}
                     </div>
                     <Input
                       label="ID Number"
                       value={formData.idNumber}
-                      onChange={(e) => handleInputChange('idNumber', e.target.value)}
-                      placeholder="Enter ID number"
+                      onChange={(value) => handleInputChange('idNumber', value)}
+                      placeholder="Enter ID number (CMND/CCCD)"
+                      helperText="Số CMND/CCCD của nhân viên (9 hoặc 12 chữ số)"
                     />
                     <Input
                       label="Tax Code"
                       value={formData.taxCode}
-                      onChange={(e) => handleInputChange('taxCode', e.target.value)}
+                      onChange={(value) => handleInputChange('taxCode', value)}
                       placeholder="Enter tax code"
+                      helperText="Mã số thuế cá nhân (MST) - dùng để khai báo thuế thu nhập cá nhân"
                     />
                   </div>
                 </div>
@@ -242,62 +357,34 @@ const AddEmployee = () => {
                       label="Personal Email"
                       type="email"
                       value={formData.personalEmail}
-                      onChange={(e) => handleInputChange('personalEmail', e.target.value)}
+                      onChange={(value) => handleInputChange('personalEmail', value)}
                       placeholder="Enter personal email"
+                      required
+                      error={errors.personalEmail}
                     />
                     <Input
                       label="Phone"
                       value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
+                      onChange={(value) => handleInputChange('phone', value)}
                       placeholder="Enter phone number"
+                      required
+                      error={errors.phone}
                     />
                     <Input
                       label="Permanent Address"
                       value={formData.permanentAddress}
-                      onChange={(e) => handleInputChange('permanentAddress', e.target.value)}
+                      onChange={(value) => handleInputChange('permanentAddress', value)}
                       placeholder="Enter permanent address"
                     />
                     <Input
                       label="Temporary Address"
                       value={formData.temporaryAddress}
-                      onChange={(e) => handleInputChange('temporaryAddress', e.target.value)}
+                      onChange={(value) => handleInputChange('temporaryAddress', value)}
                       placeholder="Enter temporary address"
                     />
                   </div>
                 </div>
 
-                {/* Marital Status */}
-                <div>
-                  <div className="flex items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Marital Status</h3>
-                    <Users className="w-4 h-4 ml-2 text-purple-500" />
-                  </div>
-                  
-                  <div className="flex space-x-4">
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="maritalStatus"
-                        value="single"
-                        checked={formData.maritalStatus === 'single'}
-                        onChange={(e) => handleInputChange('maritalStatus', e.target.value)}
-                        className="mr-2"
-                      />
-                      Single
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="radio"
-                        name="maritalStatus"
-                        value="married"
-                        checked={formData.maritalStatus === 'married'}
-                        onChange={(e) => handleInputChange('maritalStatus', e.target.value)}
-                        className="mr-2"
-                      />
-                      Married
-                    </label>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -315,32 +402,44 @@ const AddEmployee = () => {
                   <p className="text-sm text-gray-600 mb-4">Department and position details</p>
                   
                   <div className="grid grid-cols-2 gap-4">
-                    <Select
-                      label="Department"
-                      value={formData.department}
-                      onChange={(e) => handleInputChange('department', e.target.value)}
-                      options={departments.map(dept => ({ value: dept, label: dept }))}
-                      placeholder="-- Select Department --"
-                    />
-                    <Select
-                      label="Position"
-                      value={formData.position}
-                      onChange={(e) => handleInputChange('position', e.target.value)}
-                      options={positions.map(pos => ({ value: pos, label: pos }))}
-                      placeholder="-- Select Position --"
-                    />
+                    <div>
+                      <Select
+                        label="Department"
+                        value={formData.department}
+                        onChange={(value) => handleInputChange('department', value)}
+                        options={departments.map(dept => ({ value: dept, label: dept }))}
+                        placeholder="-- Select Department --"
+                        required
+                        error={errors.department}
+                      />
+                    </div>
+                    <div>
+                      <Select
+                        label="Position"
+                        value={formData.position}
+                        onChange={(value) => handleInputChange('position', value)}
+                        options={positions.map(pos => ({ value: pos, label: pos }))}
+                        placeholder="-- Select Position --"
+                        required
+                        error={errors.position}
+                      />
+                    </div>
                     <Input
                       label="Employee Code"
                       value={formData.employeeCode}
-                      onChange={(e) => handleInputChange('employeeCode', e.target.value)}
+                      onChange={(value) => handleInputChange('employeeCode', value)}
                       placeholder="Enter employee code"
+                      required
+                      error={errors.employeeCode}
                     />
                     <Input
                       label="Company Email"
                       type="email"
                       value={formData.companyEmail}
-                      onChange={(e) => handleInputChange('companyEmail', e.target.value)}
+                      onChange={(value) => handleInputChange('companyEmail', value)}
                       placeholder="Enter company email"
+                      required
+                      error={errors.companyEmail}
                     />
                   </div>
                 </div>
@@ -357,78 +456,39 @@ const AddEmployee = () => {
                     <Input
                       label="Contract Code"
                       value={formData.contractCode}
-                      onChange={(e) => handleInputChange('contractCode', e.target.value)}
+                      onChange={(value) => handleInputChange('contractCode', value)}
                       placeholder="Enter contract code"
                     />
-                    <Select
-                      label="Contract Type"
-                      value={formData.contractType}
-                      onChange={(e) => handleInputChange('contractType', e.target.value)}
-                      options={contractTypes.map(type => ({ value: type, label: type }))}
-                      placeholder="-- Select Contract Type --"
-                    />
+                    <div>
+                      <Select
+                        label="Contract Type"
+                        value={formData.contractType}
+                        onChange={(value) => handleInputChange('contractType', value)}
+                        options={contractTypes.map(type => ({ value: type, label: type }))}
+                        placeholder="-- Select Contract Type --"
+                        required
+                        error={errors.contractType}
+                      />
+                    </div>
                     <Input
                       label="Base Salary"
                       value={formData.baseSalary}
-                      onChange={(e) => handleInputChange('baseSalary', e.target.value)}
+                      onChange={(value) => handleInputChange('baseSalary', value)}
                       placeholder="Enter base salary"
                     />
                     <Input
                       label="Sign Date"
                       type="date"
                       value={formData.signDate}
-                      onChange={(e) => handleInputChange('signDate', e.target.value)}
+                      onChange={(value) => handleInputChange('signDate', value)}
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-2">Enter amount in millions (e.g. 10 for 10 million)</p>
                 </div>
 
-                {/* Contract Period */}
-                <div>
-                  <div className="flex items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Contract Period</h3>
-                    <Calendar className="w-4 h-4 ml-2 text-purple-500" />
-                  </div>
-                  <p className="text-sm text-gray-600 mb-4">Contract validity dates</p>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="Start Date"
-                      type="date"
-                      value={formData.startDate}
-                      onChange={(e) => handleInputChange('startDate', e.target.value)}
-                    />
-                    <Input
-                      label="End Date"
-                      type="date"
-                      value={formData.endDate}
-                      onChange={(e) => handleInputChange('endDate', e.target.value)}
-                    />
-                  </div>
-                </div>
               </div>
             )}
 
-            {activeTab === 'dependents' && (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Dependents</h1>
-                    <p className="text-gray-600">Family members and tax dependents</p>
-                  </div>
-                  <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                    <Upload className="w-4 h-4 mr-2" />
-                    Add Dependent
-                  </Button>
-                </div>
-
-                {/* Empty State */}
-                <div className="text-center py-12">
-                  <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">No dependents added yet</p>
-                </div>
-              </div>
-            )}
           </Card>
         </div>
       </div>

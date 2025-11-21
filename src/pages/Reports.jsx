@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Reports = () => {
   const [loading, setLoading] = useState(false);
   const [generatedReports, setGeneratedReports] = useState([]);
+  const navigate = useNavigate();
 
   const reportTypes = [
     {
@@ -10,28 +12,36 @@ const Reports = () => {
       name: 'Employee Summary Report',
       description: 'Tổng hợp thông tin nhân viên',
       icon: '👥',
-      color: 'blue'
+      color: 'blue',
+      route: '/employees',
+      source: 'src/pages/employee/EmployeeList.jsx'
     },
     {
       id: 'attendance_summary',
       name: 'Attendance Summary Report',
       description: 'Báo cáo chấm công tổng hợp',
       icon: '⏰',
-      color: 'green'
+      color: 'green',
+      route: '/attendance',
+      source: 'src/pages/attendance/AttendanceList.jsx'
     },
     {
       id: 'payroll_summary',
       name: 'Payroll Summary Report',
       description: 'Báo cáo lương và phúc lợi',
       icon: '💰',
-      color: 'yellow'
+      color: 'yellow',
+      route: '/payroll',
+      source: 'src/pages/payroll/PayrollList.jsx'
     },
     {
       id: 'department_analysis',
       name: 'Department Analysis Report',
       description: 'Phân tích hiệu suất phòng ban',
       icon: '📊',
-      color: 'purple'
+      color: 'purple',
+      route: '/dashboard',
+      source: 'src/pages/Dashboard.jsx'
     }
   ];
 
@@ -99,13 +109,22 @@ const Reports = () => {
                 <div className="text-center">
                   <div className="text-4xl mb-4">{report.icon}</div>
                   <h3 className="text-lg font-semibold text-white mb-2">{report.name}</h3>
-                  <p className="text-gray-400 text-sm mb-4">{report.description}</p>
+                  <p className="text-gray-400 text-sm mb-2">{report.description}</p>
+                  <p className="text-xs text-gray-500 mb-4">
+                    Route: <span className="text-blue-300">{report.route}</span>
+                  </p>
                   <button
                     onClick={() => generateReport(report.id)}
                     disabled={loading}
                     className={`w-full px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 ${getColorClasses(report.color)} disabled:opacity-50`}
                   >
                     {loading ? 'Generating...' : 'Generate Report'}
+                  </button>
+                  <button
+                    onClick={() => navigate(report.route)}
+                    className="w-full mt-3 px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-800 transition-all text-sm"
+                  >
+                    Open module
                   </button>
                 </div>
               </div>
@@ -220,6 +239,31 @@ const Reports = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Source Mapping */}
+        <div className="mt-12">
+          <h2 className="text-xl font-semibold text-white mb-6">Report & Analytics Source Mapping</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {reportTypes.map((report) => (
+              <div key={report.id} className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-5 shadow-lg">
+                <p className="text-sm text-gray-400">Function</p>
+                <p className="text-lg font-semibold text-white">{report.name}</p>
+                <p className="text-sm text-gray-400 mt-3">
+                  Route: <span className="text-blue-300">{report.route}</span>
+                </p>
+                <p className="text-sm text-gray-400 mt-1 break-all">
+                  Source: <code className="text-xs text-gray-300">{report.source}</code>
+                </p>
+                <button
+                  onClick={() => navigate(report.route)}
+                  className="mt-4 w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 hover:bg-gray-700 transition-all"
+                >
+                  Go to {report.name.split(' ')[0]} page
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </div>
