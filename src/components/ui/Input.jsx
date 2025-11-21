@@ -41,7 +41,13 @@ const Input = ({
         <input
           type={type}
           value={value}
-          onChange={(e) => onChange && onChange(e.target.value)}
+          onChange={(e) => {
+            if (onChange) {
+              // Pass the value for backward compatibility with existing code
+              // For date inputs, e.target.value returns YYYY-MM-DD format which works correctly
+              onChange(e.target.value);
+            }
+          }}
           placeholder={placeholder}
           disabled={disabled}
           className={`${classes} ${icon ? 'pl-10' : ''}`}

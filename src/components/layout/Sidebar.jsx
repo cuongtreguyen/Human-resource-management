@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Shield, Bell, UserCheck, Activity } from 'lucide-react';
+import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Bell, Activity, Heart } from 'lucide-react';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
   const navigationGroups = [
@@ -54,8 +54,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
         { name: 'Documents', href: '/documents', icon: FileText },
         { name: 'Reports', href: '/reports', icon: BarChart3 },
         { name: 'Notifications', href: '/notifications', icon: Bell },
-        { name: 'Role Management', href: '/admin/roles', icon: Shield },
-        { name: 'User List', href: '/admin/users', icon: UserCheck },
+        { name: 'Benefits & Insurance', href: '/admin/benefits', icon: Heart },
         { name: 'Logs Monitor', href: '/admin/logs', icon: Activity },
         { name: 'Settings', href: '/settings', icon: Settings },
       ]

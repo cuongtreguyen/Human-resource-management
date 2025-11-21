@@ -6,13 +6,11 @@ const TaskManagement = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
-  const [, setSelectedTask] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [assignees, setAssignees] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState('timeline');
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [taskProgress, setTaskProgress] = useState({});
   const [timelineData, setTimelineData] = useState(null);
   const [analyticsData, setAnalyticsData] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
@@ -67,18 +65,6 @@ const TaskManagement = () => {
     }
   }, []);
 
-  const loadTaskProgress = async (taskId) => {
-    try {
-      const response = await fakeApi.getTaskProgress(taskId);
-      setTaskProgress(prev => ({
-        ...prev,
-        [taskId]: response.data
-      }));
-    } catch (error) {
-      console.error('Error loading task progress:', error);
-    }
-  };
-
   const loadTimelineData = useCallback(async () => {
     try {
       const response = await fakeApi.getTaskTimeline(currentYear, currentMonth);
@@ -104,13 +90,6 @@ const TaskManagement = () => {
     loadTimelineData();
     loadAnalyticsData();
   }, [loadTasks, loadAssignees, loadNotifications, loadTimelineData, loadAnalyticsData]);
-
-  useEffect(() => {
-    // Load progress for each task
-    tasks.forEach(task => {
-      loadTaskProgress(task.id);
-    });
-  }, [tasks]);
 
   useEffect(() => {
     // Reload timeline when month/year changes
@@ -280,150 +259,6 @@ const TaskManagement = () => {
     }
   };
 
-  const handleDeleteTask = async (taskId) => {
-    if (window.confirm('Are you sure you want to delete this task?')) {
-      try {
-        await fakeApi.deleteTask(taskId);
-        setTasks(prev => prev.filter(task => task.id !== taskId));
-      } catch (error) {
-        console.error('Error deleting task:', error);
-      }
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'new': return 'border-blue-500';
-      case 'in-progress': return 'border-teal-500';
-      case 'pending': return 'border-orange-500';
-      case 'complete': return 'border-green-500';
-      default: return 'border-gray-500';
-    }
-  };
-
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const filteredTasks = tasks.filter(task =>
-    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    task.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const tasksByStatus = {
-    new: filteredTasks.filter(task => task.status === 'new'),
-    'in-progress': filteredTasks.filter(task => task.status === 'in-progress'),
-    pending: filteredTasks.filter(task => task.status === 'pending'),
-    complete: filteredTasks.filter(task => task.status === 'complete')
-  };
-
-  const TaskCard = ({ task }) => {
-    const progress = taskProgress[task.id];
-    
-    return (
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 hover:shadow-md transition-shadow">
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-medium text-gray-900 text-sm">{task.title}</h3>
-          <div className="flex items-center space-x-1">
-            <button 
-              onClick={() => setSelectedTask(task)}
-              className="p-1 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-            </button>
-            <button 
-              onClick={() => handleDeleteTask(task.id)}
-              className="p-1 text-gray-400 hover:text-red-600"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-        
-        <p className="text-gray-600 text-xs mb-3 line-clamp-2">{task.description}</p>
-        
-        {/* Progress Bar */}
-        {progress && (
-          <div className="mb-3">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-xs text-gray-500">Progress</span>
-              <span className="text-xs text-gray-500">{progress.currentProgress}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${progress.currentProgress}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <img
-              src={task.assignee.avatar}
-              alt={task.assignee.name}
-              className="w-6 h-6 rounded-full object-cover"
-            />
-            <span className="text-xs text-gray-500">{task.assignee.name}</span>
-          </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)}`}>
-            {task.priority}
-          </span>
-        </div>
-        
-        {task.startDate && task.endDate && (
-          <div className="mt-2 text-xs text-gray-500">
-            <div>Start: {task.startDate}</div>
-            <div>End: {task.endDate}</div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const StatusColumn = ({ status, title, tasks }) => (
-    <div className="flex-1 bg-gray-50 rounded-lg p-4">
-      <div className={`border-t-4 ${getStatusColor(status)} pt-4`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900">{title}</h3>
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={() => setShowAddTask(true)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </button>
-            <button className="text-gray-400 hover:text-gray-600">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-        
-        <div className="space-y-3">
-          {tasks.map(task => (
-            <div key={task.id} onDragStart={(e) => e.dataTransfer.setData('taskId', task.id)} draggable>
-              <TaskCard task={task} />
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <Layout>
       <div className="min-h-screen bg-gray-900">
@@ -449,7 +284,6 @@ const TaskManagement = () => {
         <div className="flex items-center justify-between mt-4">
           <div className="flex space-x-8">
             {[
-              { id: 'overview', name: 'Overview' },
               { id: 'timeline', name: 'Timeline' },
               { id: 'calculate', name: 'Calculate' }
             ].map(tab => (
@@ -543,31 +377,6 @@ const TaskManagement = () => {
 
       {/* Content based on active tab */}
       <div className="p-6">
-        {activeTab === 'overview' && (
-          <div className="flex space-x-6">
-            <StatusColumn 
-              status="new" 
-              title="New Task" 
-              tasks={tasksByStatus.new} 
-            />
-            <StatusColumn 
-              status="in-progress" 
-              title="In Progress" 
-              tasks={tasksByStatus['in-progress']} 
-            />
-            <StatusColumn 
-              status="pending" 
-              title="Pending" 
-              tasks={tasksByStatus.pending} 
-            />
-            <StatusColumn 
-              status="complete" 
-              title="Complete" 
-              tasks={tasksByStatus.complete} 
-            />
-          </div>
-        )}
-
         {activeTab === 'timeline' && (
           <div className="bg-gray-900 rounded-lg shadow-xl border border-gray-700">
             {/* Timeline Header */}

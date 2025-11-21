@@ -35,10 +35,8 @@ import TaskManagement from './pages/task/TaskManagement';
 import TaskDelegation from './pages/task/TaskDelegation';
 
 // Admin pages
-import UserList from './pages/admin/UserList';
-import RoleManagement from './pages/admin/RoleManagement';
 import LogsMonitor from './pages/admin/LogsMonitor';
-import TestUserList from './pages/admin/TestUserList';
+import AdminBenefits from './pages/admin/AdminBenefits';
 
 // Other pages
 import Chat from './pages/Chat';
@@ -240,17 +238,15 @@ const AppRoutes = () => {
           }
         />
 
-        <Route path="/admin/users" element={<UserList />} />
         <Route
-          path="/admin/roles"
+          path="/admin/benefits"
           element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <RoleManagement />
+              <AdminBenefits />
             </ProtectedRoute>
           }
         />
         <Route path="/admin/logs" element={<LogsMonitor />} />
-        <Route path="/admin/users-test" element={<TestUserList />} />
 
         <Route path="/chat" element={<Chat />} />
         <Route path="/profile" element={<Profile />} />
