@@ -31,4 +31,5 @@ public class Task {
     @Enumerated(EnumType.STRING)
     TaskStatus taskStatus;
     LocalDate createdAt;
+    LocalDate endedAt;
 }
