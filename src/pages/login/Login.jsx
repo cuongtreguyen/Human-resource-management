@@ -1,18 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Lock, Eye, EyeOff, Mail, Shield, Users, TrendingUp } from 'lucide-react';
-import { setRole, setUserInfo, clearUserInfo } from '../../utils/auth';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  User,
+  Lock,
+  Eye,
+  EyeOff,
+  Mail,
+  Shield,
+  Users,
+  TrendingUp,
+} from "lucide-react";
+import { setRole, setUserInfo, clearUserInfo } from "../../utils/auth";
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [particles, setParticles] = useState([]);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
   // Mock users with different roles
   const mockUsers = {
@@ -22,17 +31,17 @@ const Login = () => {
       role: "employee",
       route: "/employee",
       info: {
-        employeeId: '1',
-        name: 'Trần Ngọc Hải'
-      }
+        employeeId: "1",
+        name: "Trần Ngọc Hải",
+      },
     },
     admin: {
       email: "admin@company.com",
       password: "admin123",
       role: "admin",
       route: "/dashboard",
-      info: null
-    }
+      info: null,
+    },
   };
 
   // Initialize floating particles
@@ -48,7 +57,7 @@ const Login = () => {
           speed: Math.random() * 2 + 0.5,
           opacity: Math.random() * 0.7 + 0.3,
           delay: Math.random() * 5000,
-          color: `hsl(${Math.random() * 60 + 200}, 70%, 60%)` // Blue to purple range
+          color: `hsl(${Math.random() * 60 + 200}, 70%, 60%)`, // Blue to purple range
         });
       }
       setParticles(newParticles);
@@ -60,15 +69,15 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError('');
-    
+    setError("");
+
     // Simulate API call
     setTimeout(() => {
       // Find user by email and password
       const user = Object.values(mockUsers).find(
-        u => u.email === formData.email && u.password === formData.password
+        (u) => u.email === formData.email && u.password === formData.password
       );
-      
+
       if (user) {
         // Set role in localStorage
         setRole(user.role);
@@ -80,7 +89,7 @@ const Login = () => {
         // Navigate to appropriate route based on role
         navigate(user.route);
       } else {
-        setError('Invalid email or password. Please try again.');
+        setError("Invalid email or password. Please try again.");
       }
       setIsLoading(false);
     }, 1500);
@@ -89,10 +98,9 @@ const Login = () => {
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
-
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-slate-900 via-purple-900 to-slate-900">
@@ -100,7 +108,7 @@ const Login = () => {
       <div className="absolute inset-0">
         {/* Deep Ocean Gradient */}
         <div className="absolute inset-0 bg-gradient-to-b from-black via-blue-900 to-blue-950"></div>
-        
+
         {/* Ocean Depth Lines */}
         <div className="absolute inset-0 opacity-20">
           {Array.from({ length: 20 }).map((_, i) => (
@@ -110,12 +118,12 @@ const Login = () => {
               style={{
                 top: `${i * 5}%`,
                 animationDelay: `${i * 200}ms`,
-                animationDuration: '4s'
+                animationDuration: "4s",
               }}
             />
           ))}
         </div>
-        
+
         {/* Detailed Whale SVG */}
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="relative w-full h-full max-w-6xl max-h-6xl animate-whale-swim">
@@ -123,7 +131,7 @@ const Login = () => {
               viewBox="0 0 1200 900"
               className="w-full h-full opacity-75"
               style={{
-                filter: 'drop-shadow(0 0 40px rgba(255, 0, 100, 0.7))'
+                filter: "drop-shadow(0 0 40px rgba(255, 0, 100, 0.7))",
               }}
             >
               {/* Whale Body - More Detailed */}
@@ -137,7 +145,7 @@ const Login = () => {
                   fill="url(#whaleGradient)"
                   className="animate-whale-glow"
                 />
-                
+
                 {/* Whale Head - More detailed */}
                 <ellipse
                   cx="-120"
@@ -146,7 +154,7 @@ const Login = () => {
                   ry="50"
                   fill="url(#whaleGradient)"
                 />
-                
+
                 {/* Whale Snout/Rostrum */}
                 <ellipse
                   cx="-180"
@@ -155,7 +163,7 @@ const Login = () => {
                   ry="25"
                   fill="url(#whaleGradient)"
                 />
-                
+
                 {/* Whale Tail - More detailed */}
                 <ellipse
                   cx="150"
@@ -164,7 +172,7 @@ const Login = () => {
                   ry="35"
                   fill="url(#whaleGradient)"
                 />
-                
+
                 {/* Tail Fluke */}
                 <ellipse
                   cx="200"
@@ -173,7 +181,7 @@ const Login = () => {
                   ry="20"
                   fill="url(#whaleGradient)"
                 />
-                
+
                 {/* Large Pectoral Fin */}
                 <ellipse
                   cx="-30"
@@ -183,7 +191,7 @@ const Login = () => {
                   fill="url(#whaleGradient)"
                   transform="rotate(25)"
                 />
-                
+
                 {/* Dorsal Fin - More prominent */}
                 <ellipse
                   cx="30"
@@ -192,21 +200,11 @@ const Login = () => {
                   ry="12"
                   fill="url(#whaleGradient)"
                 />
-                
+
                 {/* Eye - More detailed */}
-                <circle
-                  cx="-140"
-                  cy="-25"
-                  r="4"
-                  fill="#000"
-                />
-                <circle
-                  cx="-138"
-                  cy="-23"
-                  r="1.5"
-                  fill="#fff"
-                />
-                
+                <circle cx="-140" cy="-25" r="4" fill="#000" />
+                <circle cx="-138" cy="-23" r="1.5" fill="#fff" />
+
                 {/* Ventral Pleats - More detailed and realistic */}
                 {Array.from({ length: 12 }).map((_, i) => (
                   <g key={i}>
@@ -230,26 +228,36 @@ const Login = () => {
                     />
                   </g>
                 ))}
-                
+
                 {/* Gradient Definition - More vibrant */}
                 <defs>
-                  <linearGradient id="whaleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <linearGradient
+                    id="whaleGradient"
+                    x1="0%"
+                    y1="0%"
+                    x2="100%"
+                    y2="100%"
+                  >
                     <stop offset="0%" stopColor="#ff0066" stopOpacity="0.95" />
                     <stop offset="30%" stopColor="#ff3366" stopOpacity="0.9" />
                     <stop offset="60%" stopColor="#ff6699" stopOpacity="0.85" />
-                    <stop offset="100%" stopColor="#cc0044" stopOpacity="0.95" />
+                    <stop
+                      offset="100%"
+                      stopColor="#cc0044"
+                      stopOpacity="0.95"
+                    />
                   </linearGradient>
-                  
+
                   {/* Glow filter for whale */}
                   <filter id="whaleGlow">
-                    <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-                    <feMerge> 
-                      <feMergeNode in="coloredBlur"/>
-                      <feMergeNode in="SourceGraphic"/>
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                    <feMerge>
+                      <feMergeNode in="coloredBlur" />
+                      <feMergeNode in="SourceGraphic" />
                     </feMerge>
                   </filter>
                 </defs>
-                
+
                 {/* Additional glow effect */}
                 <ellipse
                   cx="0"
@@ -265,7 +273,7 @@ const Login = () => {
             </svg>
           </div>
         </div>
-        
+
         {/* School of Fish */}
         <div className="absolute inset-0">
           {/* Red Fish School */}
@@ -277,13 +285,13 @@ const Login = () => {
                 left: `${60 + Math.random() * 30}%`,
                 top: `${20 + Math.random() * 40}%`,
                 animationDelay: `${i * 300}ms`,
-                animationDuration: `${8 + Math.random() * 4}s`
+                animationDuration: `${8 + Math.random() * 4}s`,
               }}
             >
               <div className="w-3 h-2 bg-red-500 rounded-full transform rotate-45 animate-pulse"></div>
             </div>
           ))}
-          
+
           {/* Blue Fish School */}
           {Array.from({ length: 10 }).map((_, i) => (
             <div
@@ -293,14 +301,14 @@ const Login = () => {
                 left: `${10 + Math.random() * 40}%`,
                 top: `${50 + Math.random() * 30}%`,
                 animationDelay: `${i * 400}ms`,
-                animationDuration: `${6 + Math.random() * 3}s`
+                animationDuration: `${6 + Math.random() * 3}s`,
               }}
             >
               <div className="w-2 h-1.5 bg-blue-400 rounded-full transform -rotate-45 animate-pulse"></div>
             </div>
           ))}
         </div>
-        
+
         {/* Floating Particles (Bubbles and Glowing Dots) */}
         {particles.map((particle) => (
           <div
@@ -311,43 +319,35 @@ const Login = () => {
               top: `${particle.y}%`,
               width: `${particle.size}px`,
               height: `${particle.size}px`,
-              backgroundColor: particle.id % 3 === 0 ? 'rgba(255, 255, 255, 0.3)' : 
-                           particle.id % 3 === 1 ? 'rgba(255, 0, 100, 0.4)' : 
-                           'rgba(100, 200, 255, 0.3)',
+              backgroundColor:
+                particle.id % 3 === 0
+                  ? "rgba(255, 255, 255, 0.3)"
+                  : particle.id % 3 === 1
+                  ? "rgba(255, 0, 100, 0.4)"
+                  : "rgba(100, 200, 255, 0.3)",
               opacity: particle.opacity,
               animationDelay: `${particle.delay}ms`,
               animationDuration: `${particle.speed * 15}s`,
-              boxShadow: particle.id % 3 === 1 ? '0 0 10px rgba(255, 0, 100, 0.5)' : 'none'
+              boxShadow:
+                particle.id % 3 === 1
+                  ? "0 0 10px rgba(255, 0, 100, 0.5)"
+                  : "none",
             }}
           />
         ))}
-        
+
         {/* Ocean Currents */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-1/4 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-400 to-transparent animate-current-flow"></div>
           <div className="absolute top-2/3 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-300 to-transparent animate-current-flow-reverse"></div>
         </div>
-        
-        {/* Ocean Conservation Text */}
-        <div className="absolute top-8 right-8 text-white text-right z-20">
-          <div className="text-2xl font-bold mb-2 animate-fade-in">
-           
-          </div>
-          <div className="text-sm text-gray-300 animate-fade-in-delay">
-           
-          </div>
-          <div className="text-sm text-gray-300 animate-fade-in-delay-2">
-            of future generations
-          </div>
-        </div>
-        
+
         {/* DESTROYER Text (partially visible) */}
         <div className="absolute top-4 left-4 text-white z-20">
-          <div className="text-6xl font-bold opacity-30 animate-pulse-slow">      
-          </div>
+          <div className="text-6xl font-bold opacity-30 animate-pulse-slow"></div>
         </div>
       </div>
-          
+
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex">
         {/* Left Side - Login Form */}
@@ -368,11 +368,13 @@ const Login = () => {
 
             {/* Login Form */}
             <div className="bg-white rounded-3xl p-8 shadow-2xl animate-slide-up-delay-2">
-
               <form className="space-y-6" onSubmit={handleSubmit}>
                 {/* Email Field */}
                 <div className="space-y-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-blue-600">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-blue-600"
+                  >
                     Email address
                   </label>
                   <div className="relative group">
@@ -392,14 +394,17 @@ const Login = () => {
 
                 {/* Password Field */}
                 <div className="space-y-2">
-                  <label htmlFor="password" className="block text-sm font-medium text-blue-600">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-blue-600"
+                  >
                     Password
                   </label>
                   <div className="relative group">
                     <input
                       id="password"
                       name="password"
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       autoComplete="current-password"
                       required
                       className="w-full px-4 pr-12 py-4 bg-gray-100 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
@@ -437,12 +442,18 @@ const Login = () => {
                       type="checkbox"
                       className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                    <label
+                      htmlFor="remember-me"
+                      className="ml-2 block text-sm text-gray-700"
+                    >
                       Remember me
                     </label>
                   </div>
                   <div className="text-sm">
-                    <a href="#" className="font-medium text-purple-600 hover:text-purple-500 transition-colors">
+                    <a
+                      href="#"
+                      className="font-medium text-purple-600 hover:text-purple-500 transition-colors"
+                    >
                       Forgot password?
                     </a>
                   </div>
@@ -461,7 +472,7 @@ const Login = () => {
                         Signing in...
                       </div>
                     ) : (
-                      'Sign in'
+                      "Sign in"
                     )}
                   </button>
                 </div>
@@ -495,8 +506,12 @@ const Login = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Employee Management</h3>
-                  <p className="text-gray-400">Comprehensive employee data and profile management</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    Employee Management
+                  </h3>
+                  <p className="text-gray-400">
+                    Comprehensive employee data and profile management
+                  </p>
                 </div>
               </div>
 
@@ -507,8 +522,12 @@ const Login = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Analytics & Reports</h3>
-                  <p className="text-gray-400">Real-time insights and detailed performance reports</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    Analytics & Reports
+                  </h3>
+                  <p className="text-gray-400">
+                    Real-time insights and detailed performance reports
+                  </p>
                 </div>
               </div>
 
@@ -519,8 +538,12 @@ const Login = () => {
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-white">Secure & Reliable</h3>
-                  <p className="text-gray-400">Enterprise-grade security with 99.9% uptime</p>
+                  <h3 className="text-lg font-semibold text-white">
+                    Secure & Reliable
+                  </h3>
+                  <p className="text-gray-400">
+                    Enterprise-grade security with 99.9% uptime
+                  </p>
                 </div>
               </div>
             </div>
@@ -547,67 +570,100 @@ const Login = () => {
       {/* Custom CSS for animations */}
       <style jsx>{`
         @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(180deg); }
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-20px) rotate(180deg);
+          }
         }
-        
+
         @keyframes fade-in {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        
+
         @keyframes fade-in-right {
-          from { opacity: 0; transform: translateX(30px); }
-          to { opacity: 1; transform: translateX(0); }
+          from {
+            opacity: 0;
+            transform: translateX(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
         }
-        
+
         @keyframes slide-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
-        
+
         @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
+          0%,
+          100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
         }
-        
+
         @keyframes pulse-slow {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.8; }
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.8;
+          }
         }
-        
+
         .animate-float {
           animation: float 6s ease-in-out infinite;
         }
-        
+
         .animate-fade-in {
           animation: fade-in 1s ease-out;
         }
-        
+
         .animate-fade-in-right {
           animation: fade-in-right 1s ease-out;
         }
-        
+
         .animate-slide-up {
           animation: slide-up 0.8s ease-out;
         }
-        
+
         .animate-slide-up-delay {
           animation: slide-up 0.8s ease-out 0.2s both;
         }
-        
+
         .animate-slide-up-delay-2 {
           animation: slide-up 0.8s ease-out 0.4s both;
         }
-        
+
         .animate-slide-up-delay-3 {
           animation: slide-up 0.8s ease-out 0.6s both;
         }
-        
+
         .animate-bounce-slow {
           animation: bounce-slow 3s ease-in-out infinite;
         }
-        
+
         .animate-pulse-slow {
           animation: pulse-slow 2s ease-in-out infinite;
         }
