@@ -21,14 +21,19 @@ import LeaveManagement from './pages/leave/LeaveManagement';
 import LeaveRequest from './pages/leave/LeaveRequest';
 import TaskManagement from './pages/task/TaskManagement';
 import TaskDelegation from './pages/task/TaskDelegation';
-
-// Admin pages
+<<<<<<<<< Temporary merge branch 1
 import UserList from './pages/admin/UserList';
 import RoleManagement from './pages/admin/RoleManagement';
 import LogsMonitor from './pages/admin/LogsMonitor';
 import TestUserList from './pages/admin/TestUserList';
+=========
+
+// Admin pages
+import LogsMonitor from './pages/admin/LogsMonitor';
+import AdminBenefits from './pages/admin/AdminBenefits';
 
 // Other pages
+>>>>>>>>> Temporary merge branch 2
 import Chat from './pages/Chat';
 import Reports from './pages/Reports';
 import Documents from './pages/Documents';
@@ -68,167 +73,48 @@ const AppRoutes = () => {
       {/* Admin Area */}
       <Route element={<AdminRoute><Layout /></AdminRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/face-recognition" element={<FaceRecognition />} />
+        
+        {/* Employees */}
+        <Route path="/employees" element={<EmployeeList />} />
+        <Route path="/employees/add" element={<AddEmployee />} />
+        <Route path="/employees/view/:id" element={<EmployeeDetails />} />
+        <Route path="/employees/edit/:id" element={<EditEmployee />} />
+        <Route path="/employees/export" element={<ExportData />} />
 
-        <Route
-          path="/face-recognition"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <FaceRecognition />
-            </ProtectedRoute>
-          }
-        />
+        {/* Attendance */}
+        <Route path="/attendance" element={<AttendanceList />} />
+        <Route path="/attendance/create" element={<AttendanceCreate />} />
 
-        <Route
-          path="/employees"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <EmployeeList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/employees/add"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AddEmployee />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/employees/view/:id"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <EmployeeDetails />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/employees/edit/:id"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <EditEmployee />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/employees/export"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ExportData />
-            </ProtectedRoute>
-          }
-        />
+        {/* Payroll */}
+        <Route path="/payroll" element={<PayrollList />} />
+        <Route path="/payroll/policies" element={<PayrollPolicies />} />
 
-        <Route
-          path="/attendance"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AttendanceList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/attendance/create"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AttendanceCreate />
-            </ProtectedRoute>
-          }
-        />
+        {/* Leaves */}
+        <Route path="/leaves" element={<LeaveManagement />} />
+        <Route path="/leaves/create" element={<LeaveRequest />} />
+        <Route path="/leaves/delegation" element={<TaskDelegation />} />
+        <Route path="/leaves/workflow" element={<WorkflowManager />} />
 
-        <Route
-          path="/payroll"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <PayrollList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/payroll/policies"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <PayrollPolicies />
-            </ProtectedRoute>
-          }
-        />
+        {/* Recruitment */}
+        <Route path="/recruitment" element={<RecruitmentManagement />} />
+        <Route path="/recruitment/positions" element={<PositionsList />} />
+        <Route path="/recruitment/applications" element={<ApplicationsList />} />
 
-        <Route
-          path="/leaves"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <LeaveManagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/leaves/create"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <LeaveRequest />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/leaves/delegation"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <TaskDelegation />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/leaves/workflow"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <WorkflowManager />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/notifications"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <NotificationCenter />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/recruitment"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <RecruitmentManagement />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recruitment/positions"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <PositionsList />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recruitment/applications"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <ApplicationsList />
-            </ProtectedRoute>
-          }
-        />
-
+<<<<<<<<< Temporary merge branch 1
+        {/* Admin */}
         <Route path="/admin/users" element={<UserList />} />
+        <Route path="/admin/roles" element={<RoleManagement />} />
+=========
         <Route
-          path="/admin/roles"
+          path="/admin/benefits"
           element={
             <ProtectedRoute allowedRoles={['admin']}>
-              <RoleManagement />
+              <AdminBenefits />
             </ProtectedRoute>
           }
         />
+>>>>>>>>> Temporary merge branch 2
         <Route path="/admin/logs" element={<LogsMonitor />} />
 
         {/* Other */}
