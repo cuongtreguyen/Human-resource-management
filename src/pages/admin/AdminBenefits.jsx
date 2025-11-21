@@ -1,5 +1,4 @@
 import React from 'react';
-import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import {
@@ -16,8 +15,8 @@ import {
 const benefitPrograms = [
   {
     id: 1,
-    name: 'Corporate Health Care',
-    coverage: '100% inpatient, 80% outpatient',
+    name: 'Bảo hiểm sức khỏe doanh nghiệp',
+    allowance: '100% nội trú, 80% ngoại trú',
     budget: 480000000,
     owner: 'HR Team',
     participants: 128,
@@ -26,8 +25,8 @@ const benefitPrograms = [
   },
   {
     id: 2,
-    name: 'Meal Allowance',
-    coverage: '35,000 VNĐ / working day',
+    name: 'Phụ cấp ăn trưa',
+    allowance: '35,000 VNĐ / ngày làm việc',
     budget: 220000000,
     owner: 'Payroll',
     participants: 154,
@@ -36,8 +35,8 @@ const benefitPrograms = [
   },
   {
     id: 3,
-    name: 'Transportation Support',
-    coverage: '700,000 VNĐ / month',
+    name: 'Phụ cấp đi lại',
+    allowance: '700,000 VNĐ / tháng',
     budget: 96000000,
     owner: 'Operations',
     participants: 86,
@@ -114,7 +113,6 @@ const AdminBenefits = () => {
   const totalParticipants = benefitPrograms.reduce((sum, item) => sum + item.participants, 0);
 
   return (
-    <Layout>
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-start justify-between gap-6 flex-wrap">
@@ -200,13 +198,13 @@ const AdminBenefits = () => {
             <table className="w-full">
               <thead>
                 <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                  <th className="pb-3">Program</th>
-                  <th className="pb-3">Coverage</th>
-                  <th className="pb-3">Owner</th>
-                  <th className="pb-3">Participants</th>
-                  <th className="pb-3">Budget</th>
-                  <th className="pb-3">Status</th>
-                  <th className="pb-3">Next Review</th>
+                  <th className="pb-3">Chương trình</th>
+                  <th className="pb-3">Mức hỗ trợ</th>
+                  <th className="pb-3">Phụ trách</th>
+                  <th className="pb-3">Số người</th>
+                  <th className="pb-3">Ngân sách</th>
+                  <th className="pb-3">Trạng thái</th>
+                  <th className="pb-3">Đánh giá tiếp</th>
                 </tr>
               </thead>
               <tbody>
@@ -215,7 +213,7 @@ const AdminBenefits = () => {
                     <td className="py-4">
                       <p className="font-medium text-gray-900">{program.name}</p>
                     </td>
-                    <td className="py-4 text-gray-600 text-sm">{program.coverage}</td>
+                    <td className="py-4 text-gray-600 text-sm">{program.allowance}</td>
                     <td className="py-4 text-gray-600 text-sm">{program.owner}</td>
                     <td className="py-4 text-gray-900">{program.participants}</td>
                     <td className="py-4 text-gray-900">{program.budget.toLocaleString()} VNĐ</td>
@@ -319,7 +317,6 @@ const AdminBenefits = () => {
           </Card>
         </div>
       </div>
-    </Layout>
   );
 };
 

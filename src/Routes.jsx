@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/common';
 import Layout from './components/layout/Layout';
@@ -21,19 +21,12 @@ import LeaveManagement from './pages/leave/LeaveManagement';
 import LeaveRequest from './pages/leave/LeaveRequest';
 import TaskManagement from './pages/task/TaskManagement';
 import TaskDelegation from './pages/task/TaskDelegation';
-<<<<<<<<< Temporary merge branch 1
-import UserList from './pages/admin/UserList';
-import RoleManagement from './pages/admin/RoleManagement';
-import LogsMonitor from './pages/admin/LogsMonitor';
-import TestUserList from './pages/admin/TestUserList';
-=========
 
-// Admin pages
+// Admin Pages
 import LogsMonitor from './pages/admin/LogsMonitor';
 import AdminBenefits from './pages/admin/AdminBenefits';
 
-// Other pages
->>>>>>>>> Temporary merge branch 2
+// Other Pages
 import Chat from './pages/Chat';
 import Reports from './pages/Reports';
 import Documents from './pages/Documents';
@@ -74,7 +67,7 @@ const AppRoutes = () => {
       <Route element={<AdminRoute><Layout /></AdminRoute>}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/face-recognition" element={<FaceRecognition />} />
-        
+
         {/* Employees */}
         <Route path="/employees" element={<EmployeeList />} />
         <Route path="/employees/add" element={<AddEmployee />} />
@@ -101,11 +94,8 @@ const AppRoutes = () => {
         <Route path="/recruitment/positions" element={<PositionsList />} />
         <Route path="/recruitment/applications" element={<ApplicationsList />} />
 
-<<<<<<<<< Temporary merge branch 1
         {/* Admin */}
-        <Route path="/admin/users" element={<UserList />} />
-        <Route path="/admin/roles" element={<RoleManagement />} />
-=========
+        <Route path="/admin/logs" element={<LogsMonitor />} />
         <Route
           path="/admin/benefits"
           element={
@@ -114,8 +104,6 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         />
->>>>>>>>> Temporary merge branch 2
-        <Route path="/admin/logs" element={<LogsMonitor />} />
 
         {/* Other */}
         <Route path="/notifications" element={<NotificationCenter />} />
