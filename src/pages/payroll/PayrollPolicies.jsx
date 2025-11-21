@@ -93,8 +93,8 @@ const PayrollPolicies = () => {
           <div className="container mx-auto">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white">Financial Policies</h1>
-                <p className="text-purple-100 mt-1">Company payroll policies and regulations</p>
+                <h1 className="text-3xl font-bold text-white">Chính sách tài chính</h1>
+                <p className="text-purple-100 mt-1">Chính sách và quy định lương của công ty</p>
               </div>
               <Button 
                 variant="secondary"
@@ -102,7 +102,7 @@ const PayrollPolicies = () => {
                 onClick={handleDownloadPDF}
                 icon={<FileText className="h-4 w-4 mr-2" />}
               >
-                Download PDF
+                Tải PDF
               </Button>
             </div>
           </div>
@@ -111,24 +111,24 @@ const PayrollPolicies = () => {
         <div className="container mx-auto p-6">
           {/* Overview Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card title="Standard Working Days" icon={<Calendar className="h-5 w-5 text-blue-500" />}>
+            <Card title="Ngày làm việc tiêu chuẩn" icon={<Calendar className="h-5 w-5 text-blue-500" />}>
               <div className="text-center">
                 <div className="text-3xl font-bold text-blue-600">22</div>
-                <div className="text-sm text-gray-600">Days per month</div>
+                <div className="text-sm text-gray-600">Ngày/tháng</div>
               </div>
             </Card>
 
-            <Card title="Basic Tax Rate" icon={<Calculator className="h-5 w-5 text-orange-500" />}>
+            <Card title="Thuế suất cơ bản" icon={<Calculator className="h-5 w-5 text-orange-500" />}>
               <div className="text-center">
                 <div className="text-3xl font-bold text-orange-600">5%</div>
-                <div className="text-sm text-gray-600">Above 11M VND</div>
+                <div className="text-sm text-gray-600">Trên 11 triệu VND</div>
               </div>
             </Card>
 
-            <Card title="Overtime Rate" icon={<DollarSign className="h-5 w-5 text-green-500" />}>
+            <Card title="Tỷ lệ làm thêm giờ" icon={<DollarSign className="h-5 w-5 text-green-500" />}>
               <div className="text-center">
                 <div className="text-3xl font-bold text-green-600">150%</div>
-                <div className="text-sm text-gray-600">Of hourly rate</div>
+                <div className="text-sm text-gray-600">Theo giờ</div>
               </div>
             </Card>
           </div>
@@ -136,85 +136,85 @@ const PayrollPolicies = () => {
           {/* Policy Sections */}
           <div className="space-y-6">
             {/* Salary Policy */}
-            <Card title="💼 Salary Policy" icon={<DollarSign className="h-5 w-5 text-blue-500" />}>
+            <Card title="💼 Chính sách lương" icon={<DollarSign className="h-5 w-5 text-blue-500" />}>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <h4 className="font-semibold text-gray-900 flex items-center">
                       <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                      Salary Components
+                      Thành phần lương
                     </h4>
                     <ul className="space-y-2 text-sm text-gray-700 ml-6">
-                      <li>• Basic salary as primary component</li>
-                      <li>• Allowances (transport, meals, communication)</li>
-                      <li>• Bonuses (performance, attendance, productivity)</li>
-                      <li>• Overtime compensation at 150% rate</li>
+                      <li>• Lương cơ bản là thành phần chính</li>
+                      <li>• Phụ cấp (đi lại, ăn uống, liên lạc)</li>
+                      <li>• Thưởng (hiệu suất, chuyên cần, năng suất)</li>
+                      <li>• Làm thêm giờ với tỷ lệ 150%</li>
                     </ul>
                   </div>
                   <div className="space-y-3">
                     <h4 className="font-semibold text-gray-900 flex items-center">
                       <AlertCircle className="h-4 w-4 text-orange-500 mr-2" />
-                      Deductions
+                      Các khoản khấu trừ
                     </h4>
                     <ul className="space-y-2 text-sm text-gray-700 ml-6">
-                      <li>• Personal Income Tax (5% above 11M VND)</li>
-                      <li>• Social Insurance (10.5% of basic salary)</li>
-                      <li>• Late penalty (50% per late day)</li>
-                      <li>• Absence penalty (full daily salary)</li>
+                      <li>• Thuế TNCN (5% trên 11 triệu VND)</li>
+                      <li>• Bảo hiểm xã hội (10.5% lương cơ bản)</li>
+                      <li>• Phạt đi trễ (50% mỗi ngày trễ)</li>
+                      <li>• Phạt vắng mặt (trừ nguyên ngày lương)</li>
                     </ul>
                   </div>
                 </div>
 
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <h5 className="font-medium text-yellow-800 mb-2">📋 Salary Calculation Formula</h5>
+                  <h5 className="font-medium text-yellow-800 mb-2">📋 Công thức tính lương</h5>
                   <div className="text-sm text-yellow-700">
-                    <p><strong>Daily Salary:</strong> Basic Salary ÷ 22 days</p>
-                    <p><strong>Gross Salary:</strong> Daily Salary × Actual Working Days</p>
-                    <p><strong>Actual Working Days:</strong> Working Days - (Late Days × 0.5)</p>
-                    <p><strong>Overtime Pay:</strong> Overtime Hours × Hourly Rate × 1.5</p>
-                    <p><strong>Net Salary:</strong> Total Earnings - Deductions</p>
+                    <p><strong>Lương ngày:</strong> Lương cơ bản ÷ 22 ngày</p>
+                    <p><strong>Lương gộp:</strong> Lương ngày × Ngày làm việc thực tế</p>
+                    <p><strong>Ngày làm việc thực tế:</strong> Ngày công - (Ngày trễ × 0.5)</p>
+                    <p><strong>Lương làm thêm:</strong> Giờ làm thêm × Lương giờ × 1.5</p>
+                    <p><strong>Lương thực nhận:</strong> Tổng thu nhập - Các khoản khấu trừ</p>
                   </div>
                 </div>
               </div>
             </Card>
 
             {/* Tax Regulations */}
-            <Card title="💸 Tax Regulations" icon={<TrendingUp className="h-5 w-5 text-orange-500" />}>
+            <Card title="💸 Quy định thuế" icon={<TrendingUp className="h-5 w-5 text-orange-500" />}>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900">Personal Income Tax</h4>
+                    <h4 className="font-semibold text-gray-900">Thuế thu nhập cá nhân</h4>
                     <div className="bg-gray-50 rounded-lg p-4">
                       <div className="text-sm space-y-2">
                         <div className="flex justify-between">
-                          <span>No Tax:</span>
+                          <span>Không thuế:</span>
                           <span>0 - 11,000,000 VND</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Tax Rate:</span>
+                          <span>Thuế suất:</span>
                           <span className="font-medium text-orange-600">5%</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Applies to:</span>
-                          <span>Above 11M VND</span>
+                          <span>Áp dụng cho:</span>
+                          <span>Trên 11 triệu VND</span>
                         </div>
                       </div>
                     </div>
                   </div>
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-gray-900">Tax Schedule</h4>
+                    <h4 className="font-semibold text-gray-900">Lịch nộp thuế</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                        <span>Monthly calculation and deduction</span>
+                        <span>Tính và khấu trừ hàng tháng</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-                        <span>Annual reconciliation</span>
+                        <span>Quyết toán hàng năm</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 bg-purple-400 rounded-full"></div>
-                        <span>Private enterprise compliance</span>
+                        <span>Tuân thủ doanh nghiệp tư nhân</span>
                       </div>
                     </div>
                   </div>
@@ -223,51 +223,51 @@ const PayrollPolicies = () => {
             </Card>
 
             {/* Insurance Policies */}
-            <Card title="🛡️ Insurance Policies" icon={<Building className="h-5 w-5 text-green-500" />}>
+            <Card title="🛡️ Chính sách bảo hiểm" icon={<Building className="h-5 w-5 text-green-500" />}>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="text-center">
                     <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Building className="h-6 w-6 text-green-600" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Social Insurance</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">Bảo hiểm xã hội</h4>
                     <div className="text-sm text-gray-600">
                       <div className="font-medium text-green-600">10.5%</div>
-                      <div>of basic salary</div>
+                      <div>lương cơ bản</div>
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Building className="h-6 w-6 text-blue-600" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Health Insurance</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">Bảo hiểm y tế</h4>
                     <div className="text-sm text-gray-600">
-                      <div className="font-medium text-blue-600">Included</div>
-                      <div>in social insurance</div>
+                      <div className="font-medium text-blue-600">Bao gồm</div>
+                      <div>trong BHXH</div>
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Building className="h-6 w-6 text-purple-600" />
                     </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Unemployment</h4>
+                    <h4 className="font-semibold text-gray-900 mb-2">Bảo hiểm thất nghiệp</h4>
                     <div className="text-sm text-gray-600">
-                      <div className="font-medium text-purple-600">Included</div>
-                      <div>in social insurance</div>
+                      <div className="font-medium text-purple-600">Bao gồm</div>
+                      <div>trong BHXH</div>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h5 className="font-medium text-blue-800 mb-2">📋 Insurance Coverage</h5>
+                  <h5 className="font-medium text-blue-800 mb-2">📋 Phạm vi bảo hiểm</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
                     <div>
-                      <p><strong>Healthcare:</strong> Hospital treatment, medications</p>
-                      <p><strong>Accident:</strong> Work-related injuries coverage</p>
+                      <p><strong>Y tế:</strong> Điều trị bệnh viện, thuốc men</p>
+                      <p><strong>Tai nạn:</strong> Bảo hiểm tai nạn lao động</p>
                     </div>
                     <div>
-                      <p><strong>Maternity:</strong> Maternity leave benefits</p>
-                      <p><strong>Retirement:</strong> Pension upon retirement</p>
+                      <p><strong>Thai sản:</strong> Chế độ nghỉ thai sản</p>
+                      <p><strong>Hưu trí:</strong> Lương hưu khi nghỉ hưu</p>
                     </div>
                   </div>
                 </div>
@@ -275,56 +275,56 @@ const PayrollPolicies = () => {
             </Card>
 
             {/* Benefits and Allowances */}
-            <Card title="🎁 Benefits & Allowances" icon={<Award className="h-5 w-5 text-purple-500" />}>
+            <Card title="🎁 Phúc lợi & Phụ cấp" icon={<Award className="h-5 w-5 text-purple-500" />}>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Transportation Allowance</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3">Phụ cấp đi lại</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Development Staff:</span>
-                        <span className="font-medium">500,000 VND/month</span>
+                        <span>Nhân viên phát triển:</span>
+                        <span className="font-medium">500,000 VND/tháng</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Marketing Staff:</span>
-                        <span className="font-medium">400,000 VND/month</span>
+                        <span>Nhân viên marketing:</span>
+                        <span className="font-medium">400,000 VND/tháng</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>HR Staff:</span>
-                        <span className="font-medium">350,000 VND/month</span>
+                        <span>Nhân viên nhân sự:</span>
+                        <span className="font-medium">350,000 VND/tháng</span>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Meal Allowance</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3">Phụ cấp ăn uống</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Breakfast:</span>
-                        <span className="font-medium">50,000 VND/day</span>
+                        <span>Bữa sáng:</span>
+                        <span className="font-medium">50,000 VND/ngày</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Lunch:</span>
-                        <span className="font-medium">70,000 VND/day</span>
+                        <span>Bữa trưa:</span>
+                        <span className="font-medium">70,000 VND/ngày</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Dinner:</span>
-                        <span className="font-medium">60,000 VND/day</span>
+                        <span>Bữa tối:</span>
+                        <span className="font-medium">60,000 VND/ngày</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h5 className="font-medium text-green-800 mb-2">🏆 Performance Bonus Structure</h5>
+                  <h5 className="font-medium text-green-800 mb-2">🏆 Cơ cấu thưởng hiệu suất</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-green-700">
                     <div>
-                      <p><strong>Perfect Attendance:</strong> 500,000 VND/month</p>
-                      <p><strong>Project Completion:</strong> 10% of project value</p>
+                      <p><strong>Chuyên cần:</strong> 500,000 VND/tháng</p>
+                      <p><strong>Hoàn thành dự án:</strong> 10% giá trị dự án</p>
                     </div>
                     <div>
-                      <p><strong>Client Satisfaction:</strong> 1,000,000 VND</p>
-                      <p><strong>Innovation Award:</strong> 2,000,000 VND</p>
+                      <p><strong>Khách hàng hài lòng:</strong> 1,000,000 VND</p>
+                      <p><strong>Giải thưởng sáng tạo:</strong> 2,000,000 VND</p>
                     </div>
                   </div>
                 </div>
@@ -332,114 +332,114 @@ const PayrollPolicies = () => {
             </Card>
 
             {/* Leave Policies */}
-            <Card title="🏖️ Leave Policies" icon={<Calendar className="h-5 w-5 text-teal-500" />}>
+            <Card title="🏖️ Chính sách nghỉ phép" icon={<Calendar className="h-5 w-5 text-teal-500" />}>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Paid Leave</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3">Nghỉ có lương</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Annual Leave:</span>
-                        <span className="font-medium">12 days/year</span>
+                        <span>Phép năm:</span>
+                        <span className="font-medium">12 ngày/năm</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Sick Leave:</span>
-                        <span className="font-medium">10 days/year</span>
+                        <span>Nghỉ ốm:</span>
+                        <span className="font-medium">10 ngày/năm</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Personal Leave:</span>
-                        <span className="font-medium">5 days/year</span>
+                        <span>Nghỉ việc riêng:</span>
+                        <span className="font-medium">5 ngày/năm</span>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Special Leave</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3">Nghỉ đặc biệt</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Wedding:</span>
-                        <span className="font-medium">3 days</span>
+                        <span>Kết hôn:</span>
+                        <span className="font-medium">3 ngày</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Family Death:</span>
-                        <span className="font-medium">3 days</span>
+                        <span>Tang gia:</span>
+                        <span className="font-medium">3 ngày</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Maternity:</span>
-                        <span className="font-medium">180 days</span>
+                        <span>Thai sản:</span>
+                        <span className="font-medium">180 ngày</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h5 className="font-medium text-orange-800 mb-2">⚠️ Leave Regulations</h5>
+                  <h5 className="font-medium text-orange-800 mb-2">⚠️ Quy định nghỉ phép</h5>
                   <div className="text-sm text-orange-700 space-y-1">
-                    <p>• Leave must be requested 2 days in advance</p>
-                    <p>• Sick leave requires medical certificate</p>
-                    <p>• Unused annual leave can be carried forward</p>
-                    <p>• Emergency leave can be retroactively approved</p>
+                    <p>• Phải xin phép trước 2 ngày</p>
+                    <p>• Nghỉ ốm cần giấy xác nhận y tế</p>
+                    <p>• Phép năm chưa dùng có thể chuyển sang năm sau</p>
+                    <p>• Nghỉ khẩn cấp có thể được duyệt sau</p>
                   </div>
                 </div>
               </div>
             </Card>
 
             {/* Compensation Policy */}
-            <Card title="💰 Compensation Policy" icon={<DollarSign className="h-5 w-5 text-yellow-500" />}>
+            <Card title="💰 Chính sách đãi ngộ" icon={<DollarSign className="h-5 w-5 text-yellow-500" />}>
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Salary Grade Structure</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3">Cơ cấu bậc lương</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Junior Developer:</span>
-                        <span className="font-medium">8-12M VND/month</span>
+                        <span>Lập trình viên mới:</span>
+                        <span className="font-medium">8-12 triệu/tháng</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Senior Developer:</span>
-                        <span className="font-medium">15-25M VND/month</span>
+                        <span>Lập trình viên cao cấp:</span>
+                        <span className="font-medium">15-25 triệu/tháng</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Team Lead:</span>
-                        <span className="font-medium">25-35M VND/month</span>
+                        <span>Trưởng nhóm:</span>
+                        <span className="font-medium">25-35 triệu/tháng</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Project Manager:</span>
-                        <span className="font-medium">30-45M VND/month</span>
+                        <span>Quản lý dự án:</span>
+                        <span className="font-medium">30-45 triệu/tháng</span>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-3">Overtime Compensation</h4>
+                    <h4 className="font-semibold text-gray-900 mb-3">Lương làm thêm giờ</h4>
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
-                        <span>Regular Hours:</span>
-                        <span className="font-medium">Standard Rate</span>
+                        <span>Giờ bình thường:</span>
+                        <span className="font-medium">Mức chuẩn</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Weekend:</span>
-                        <span className="font-medium text-green-600">150% of hourly rate</span>
+                        <span>Cuối tuần:</span>
+                        <span className="font-medium text-green-600">150% lương giờ</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Holidays:</span>
-                        <span className="font-medium text-blue-600">200% of hourly rate</span>
+                        <span>Ngày lễ:</span>
+                        <span className="font-medium text-blue-600">200% lương giờ</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span>Night Shift:</span>
-                        <span className="font-medium text-purple-600">130% of hourly rate</span>
+                        <span>Ca đêm:</span>
+                        <span className="font-medium text-purple-600">130% lương giờ</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <h5 className="font-medium text-red-800 mb-2">⚠️ Termination Compensation</h5>
+                  <h5 className="font-medium text-red-800 mb-2">⚠️ Đền bù khi nghỉ việc</h5>
                   <div className="text-sm text-red-700 space-y-1">
-                    <p>• Severance pay: 0.5 month salary per year of service</p>
-                    <p>• Notice period: Minimum 30 days notice</p>
-                    <p>• Confidentiality agreement: 12 months non-compete</p>
-                    <p>• Final settlement: All outstanding payments within 7 days</p>
+                    <p>• Trợ cấp thôi việc: 0.5 tháng lương/năm làm việc</p>
+                    <p>• Thời gian báo trước: Tối thiểu 30 ngày</p>
+                    <p>• Thỏa thuận bảo mật: 12 tháng không cạnh tranh</p>
+                    <p>• Thanh toán cuối cùng: Trong vòng 7 ngày</p>
                   </div>
                 </div>
               </div>

@@ -58,43 +58,43 @@ const AddEmployee = () => {
 
     // Personal Information - Required fields
     if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = 'Họ là bắt buộc';
     }
     if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = 'Tên là bắt buộc';
     }
     if (!formData.dateOfBirth) {
-      newErrors.dateOfBirth = 'Date of birth is required';
+      newErrors.dateOfBirth = 'Ngày sinh là bắt buộc';
     }
     if (!formData.gender) {
-      newErrors.gender = 'Gender is required';
+      newErrors.gender = 'Giới tính là bắt buộc';
     }
     if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
+      newErrors.phone = 'Số điện thoại là bắt buộc';
     }
     if (!formData.personalEmail.trim()) {
-      newErrors.personalEmail = 'Personal email is required';
+      newErrors.personalEmail = 'Email cá nhân là bắt buộc';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personalEmail)) {
-      newErrors.personalEmail = 'Please enter a valid email address';
+      newErrors.personalEmail = 'Vui lòng nhập email hợp lệ';
     }
 
     // Employment Details - Required fields
     if (!formData.department) {
-      newErrors.department = 'Department is required';
+      newErrors.department = 'Phòng ban là bắt buộc';
     }
     if (!formData.position) {
-      newErrors.position = 'Position is required';
+      newErrors.position = 'Chức vụ là bắt buộc';
     }
     if (!formData.employeeCode.trim()) {
-      newErrors.employeeCode = 'Employee code is required';
+      newErrors.employeeCode = 'Mã nhân viên là bắt buộc';
     }
     if (!formData.companyEmail.trim()) {
-      newErrors.companyEmail = 'Company email is required';
+      newErrors.companyEmail = 'Email công ty là bắt buộc';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.companyEmail)) {
-      newErrors.companyEmail = 'Please enter a valid email address';
+      newErrors.companyEmail = 'Vui lòng nhập email hợp lệ';
     }
     if (!formData.contractType) {
-      newErrors.contractType = 'Contract type is required';
+      newErrors.contractType = 'Loại hợp đồng là bắt buộc';
     }
 
     setErrors(newErrors);
@@ -159,33 +159,33 @@ const AddEmployee = () => {
   };
 
   const tabs = [
-    { id: 'personal', label: 'Personal Information' },
-    { id: 'employment', label: 'Employment Details' }
+    { id: 'personal', label: 'Thông tin cá nhân' },
+    { id: 'employment', label: 'Thông tin công việc' }
   ];
 
   const departments = [
-    'IT Department',
-    'Human Resources',
-    'Finance',
-    'Marketing',
-    'Sales',
-    'Operations'
+    'Phòng IT',
+    'Phòng Nhân sự',
+    'Phòng Tài chính',
+    'Phòng Marketing',
+    'Phòng Kinh doanh',
+    'Phòng Vận hành'
   ];
 
   const positions = [
-    'Software Developer',
-    'HR Manager',
-    'Accountant',
-    'Marketing Specialist',
-    'Sales Representative',
-    'Operations Manager'
+    'Lập trình viên',
+    'Trưởng phòng Nhân sự',
+    'Kế toán',
+    'Chuyên viên Marketing',
+    'Nhân viên Kinh doanh',
+    'Trưởng phòng Vận hành'
   ];
 
   const contractTypes = [
-    'Full-time',
-    'Part-time',
-    'Contract',
-    'Internship'
+    'Toàn thời gian',
+    'Bán thời gian',
+    'Hợp đồng',
+    'Thực tập'
   ];
 
 
@@ -200,14 +200,14 @@ const AddEmployee = () => {
               <div className="w-32 h-32 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <User className="w-16 h-16 text-purple-500" />
               </div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">New Employee</h2>
-              <p className="text-sm text-purple-600">Upload a photo and fill in the details</p>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Nhân viên mới</h2>
+              <p className="text-sm text-purple-600">Tải ảnh và điền thông tin chi tiết</p>
             </div>
           </Card>
 
           {/* Actions */}
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Thao tác</h3>
             <div className="space-y-3">
               <Button
                 onClick={handleSubmit}
@@ -215,11 +215,11 @@ const AddEmployee = () => {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Check className="w-4 h-4 mr-2" />
-                {saving ? 'Creating...' : 'Create Employee'}
+                {saving ? 'Đang tạo...' : 'Tạo nhân viên'}
               </Button>
               {!isFormValid() && (
                 <p className="text-xs text-amber-600 mt-2 text-center">
-                  Please fill in all required fields
+                  Vui lòng điền đầy đủ các trường bắt buộc
                 </p>
               )}
               <Button
@@ -228,7 +228,7 @@ const AddEmployee = () => {
                 className="w-full"
               >
                 <X className="w-4 h-4 mr-2" />
-                Cancel
+                Hủy
               </Button>
             </div>
           </Card>
@@ -259,36 +259,36 @@ const AddEmployee = () => {
             {/* Tab Content */}
             {activeTab === 'personal' && (
               <div className="space-y-6">
-                <h1 className="text-2xl font-bold text-gray-900">Personal Information</h1>
-                <p className="text-gray-600">Basic personal information</p>
+                <h1 className="text-2xl font-bold text-gray-900">Thông tin cá nhân</h1>
+                <p className="text-gray-600">Thông tin cá nhân cơ bản</p>
 
                 {/* Personal Details */}
                 <div>
                   <div className="flex items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Personal Details</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Thông tin chi tiết</h3>
                     <User className="w-4 h-4 ml-2 text-purple-500" />
                   </div>
-                  <p className="text-sm text-gray-600 mb-4">Basic personal information</p>
-                  
+                  <p className="text-sm text-gray-600 mb-4">Thông tin cá nhân cơ bản</p>
+
                   <div className="grid grid-cols-2 gap-4">
                     <Input
-                      label="First Name"
+                      label="Họ"
                       value={formData.firstName}
                       onChange={(value) => handleInputChange('firstName', value)}
-                      placeholder="Enter first name"
+                      placeholder="Nhập họ"
                       required
                       error={errors.firstName}
                     />
                     <Input
-                      label="Last Name"
+                      label="Tên"
                       value={formData.lastName}
                       onChange={(value) => handleInputChange('lastName', value)}
-                      placeholder="Enter last name"
+                      placeholder="Nhập tên"
                       required
                       error={errors.lastName}
                     />
                     <Input
-                      label="Date of Birth"
+                      label="Ngày sinh"
                       type="date"
                       value={formData.dateOfBirth}
                       onChange={(value) => handleInputChange('dateOfBirth', value)}
@@ -297,7 +297,7 @@ const AddEmployee = () => {
                     />
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Gender <span className="text-red-500">*</span>
+                        Giới tính <span className="text-red-500">*</span>
                       </label>
                       <div className="flex space-x-4">
                         <label className="flex items-center">
@@ -309,7 +309,7 @@ const AddEmployee = () => {
                             onChange={(e) => handleInputChange('gender', e.target.value)}
                             className="mr-2"
                           />
-                          Male
+                          Nam
                         </label>
                         <label className="flex items-center">
                           <input
@@ -320,7 +320,7 @@ const AddEmployee = () => {
                             onChange={(e) => handleInputChange('gender', e.target.value)}
                             className="mr-2"
                           />
-                          Female
+                          Nữ
                         </label>
                       </div>
                       {errors.gender && (
@@ -328,17 +328,17 @@ const AddEmployee = () => {
                       )}
                     </div>
                     <Input
-                      label="ID Number"
+                      label="Số CMND/CCCD"
                       value={formData.idNumber}
                       onChange={(value) => handleInputChange('idNumber', value)}
-                      placeholder="Enter ID number (CMND/CCCD)"
+                      placeholder="Nhập số CMND/CCCD"
                       helperText="Số CMND/CCCD của nhân viên (9 hoặc 12 chữ số)"
                     />
                     <Input
-                      label="Tax Code"
+                      label="Mã số thuế"
                       value={formData.taxCode}
                       onChange={(value) => handleInputChange('taxCode', value)}
-                      placeholder="Enter tax code"
+                      placeholder="Nhập mã số thuế"
                       helperText="Mã số thuế cá nhân (MST) - dùng để khai báo thuế thu nhập cá nhân"
                     />
                   </div>
@@ -347,40 +347,40 @@ const AddEmployee = () => {
                 {/* Contact & Address */}
                 <div>
                   <div className="flex items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Contact & Address</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Liên hệ & Địa chỉ</h3>
                     <Phone className="w-4 h-4 ml-2 text-purple-500" />
                   </div>
-                  <p className="text-sm text-gray-600 mb-4">How to reach the employee</p>
-                  
+                  <p className="text-sm text-gray-600 mb-4">Thông tin liên lạc của nhân viên</p>
+
                   <div className="grid grid-cols-2 gap-4">
                     <Input
-                      label="Personal Email"
+                      label="Email cá nhân"
                       type="email"
                       value={formData.personalEmail}
                       onChange={(value) => handleInputChange('personalEmail', value)}
-                      placeholder="Enter personal email"
+                      placeholder="Nhập email cá nhân"
                       required
                       error={errors.personalEmail}
                     />
                     <Input
-                      label="Phone"
+                      label="Số điện thoại"
                       value={formData.phone}
                       onChange={(value) => handleInputChange('phone', value)}
-                      placeholder="Enter phone number"
+                      placeholder="Nhập số điện thoại"
                       required
                       error={errors.phone}
                     />
                     <Input
-                      label="Permanent Address"
+                      label="Địa chỉ thường trú"
                       value={formData.permanentAddress}
                       onChange={(value) => handleInputChange('permanentAddress', value)}
-                      placeholder="Enter permanent address"
+                      placeholder="Nhập địa chỉ thường trú"
                     />
                     <Input
-                      label="Temporary Address"
+                      label="Địa chỉ tạm trú"
                       value={formData.temporaryAddress}
                       onChange={(value) => handleInputChange('temporaryAddress', value)}
-                      placeholder="Enter temporary address"
+                      placeholder="Nhập địa chỉ tạm trú"
                     />
                   </div>
                 </div>
@@ -390,54 +390,54 @@ const AddEmployee = () => {
 
             {activeTab === 'employment' && (
               <div className="space-y-6">
-                <h1 className="text-2xl font-bold text-gray-900">Employment Details</h1>
-                <p className="text-gray-600">Employment contract information</p>
+                <h1 className="text-2xl font-bold text-gray-900">Thông tin công việc</h1>
+                <p className="text-gray-600">Thông tin hợp đồng lao động</p>
 
                 {/* Company Information */}
                 <div>
                   <div className="flex items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Company Information</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Thông tin công ty</h3>
                     <User className="w-4 h-4 ml-2 text-purple-500" />
                   </div>
-                  <p className="text-sm text-gray-600 mb-4">Department and position details</p>
-                  
+                  <p className="text-sm text-gray-600 mb-4">Chi tiết phòng ban và chức vụ</p>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Select
-                        label="Department"
+                        label="Phòng ban"
                         value={formData.department}
                         onChange={(value) => handleInputChange('department', value)}
                         options={departments.map(dept => ({ value: dept, label: dept }))}
-                        placeholder="-- Select Department --"
+                        placeholder="-- Chọn phòng ban --"
                         required
                         error={errors.department}
                       />
                     </div>
                     <div>
                       <Select
-                        label="Position"
+                        label="Chức vụ"
                         value={formData.position}
                         onChange={(value) => handleInputChange('position', value)}
                         options={positions.map(pos => ({ value: pos, label: pos }))}
-                        placeholder="-- Select Position --"
+                        placeholder="-- Chọn chức vụ --"
                         required
                         error={errors.position}
                       />
                     </div>
                     <Input
-                      label="Employee Code"
+                      label="Mã nhân viên"
                       value={formData.employeeCode}
                       onChange={(value) => handleInputChange('employeeCode', value)}
-                      placeholder="Enter employee code"
+                      placeholder="Nhập mã nhân viên"
                       required
                       error={errors.employeeCode}
                     />
                     <Input
-                      label="Company Email"
+                      label="Email công ty"
                       type="email"
                       value={formData.companyEmail}
                       onChange={(value) => handleInputChange('companyEmail', value)}
-                      placeholder="Enter company email"
+                      placeholder="Nhập email công ty"
                       required
                       error={errors.companyEmail}
                     />
@@ -447,43 +447,43 @@ const AddEmployee = () => {
                 {/* Contract Details */}
                 <div>
                   <div className="flex items-center mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">Contract Details</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Chi tiết hợp đồng</h3>
                     <User className="w-4 h-4 ml-2 text-purple-500" />
                   </div>
-                  <p className="text-sm text-gray-600 mb-4">Employment contract information</p>
-                  
+                  <p className="text-sm text-gray-600 mb-4">Thông tin hợp đồng lao động</p>
+
                   <div className="grid grid-cols-2 gap-4">
                     <Input
-                      label="Contract Code"
+                      label="Mã hợp đồng"
                       value={formData.contractCode}
                       onChange={(value) => handleInputChange('contractCode', value)}
-                      placeholder="Enter contract code"
+                      placeholder="Nhập mã hợp đồng"
                     />
                     <div>
                       <Select
-                        label="Contract Type"
+                        label="Loại hợp đồng"
                         value={formData.contractType}
                         onChange={(value) => handleInputChange('contractType', value)}
                         options={contractTypes.map(type => ({ value: type, label: type }))}
-                        placeholder="-- Select Contract Type --"
+                        placeholder="-- Chọn loại hợp đồng --"
                         required
                         error={errors.contractType}
                       />
                     </div>
                     <Input
-                      label="Base Salary"
+                      label="Lương cơ bản"
                       value={formData.baseSalary}
                       onChange={(value) => handleInputChange('baseSalary', value)}
-                      placeholder="Enter base salary"
+                      placeholder="Nhập lương cơ bản"
                     />
                     <Input
-                      label="Sign Date"
+                      label="Ngày ký"
                       type="date"
                       value={formData.signDate}
                       onChange={(value) => handleInputChange('signDate', value)}
                     />
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">Enter amount in millions (e.g. 10 for 10 million)</p>
+                  <p className="text-xs text-gray-500 mt-2">Nhập số tiền theo triệu đồng (ví dụ: 10 cho 10 triệu)</p>
                 </div>
 
               </div>

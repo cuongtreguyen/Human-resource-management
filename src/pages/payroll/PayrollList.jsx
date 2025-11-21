@@ -43,7 +43,7 @@ const PayrollList = () => {
       const response = await fakeApi.getPayrollRecords();
       setPayrollRecords(response.data);
     } catch (err) {
-      setError('Failed to load payroll records');
+      setError('Không thể tải dữ liệu bảng lương');
       console.error('Payroll data error:', err);
     } finally {
       setLoading(false);
@@ -184,7 +184,7 @@ const PayrollList = () => {
     setPayrollRecords(updatedPayrolls);
     
     // Show success message (in real app, would be toast notification)
-    alert(`Payroll calculated and saved successfully for employee ${employees.find(e => e.id === payrollData.employeeId)?.name}`);
+    alert(`Đã tính và lưu bảng lương thành công cho nhân viên ${employees.find(e => e.id === payrollData.employeeId)?.name}`);
   };
 
   // Open payroll calculation modal
@@ -217,7 +217,7 @@ const PayrollList = () => {
     });
 
     if (filteredPayrolls.length === 0) {
-      alert('No payroll data to export');
+      alert('Không có dữ liệu lương để xuất');
       return;
     }
 
@@ -242,7 +242,7 @@ const PayrollList = () => {
     link.click();
     URL.revokeObjectURL(url);
 
-    alert('Payroll data exported successfully!');
+    alert('Xuất dữ liệu lương thành công!');
   };
 
   // Calculate total payroll statistics
@@ -266,8 +266,8 @@ const PayrollList = () => {
           <div className="container mx-auto">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-white">Payroll Management</h1>
-                <p className="text-purple-100 mt-1">Private enterprise salary calculation and disbursement</p>
+                <h1 className="text-3xl font-bold text-white">Quản lý Bảng lương</h1>
+                <p className="text-purple-100 mt-1">Tính toán và chi trả lương cho doanh nghiệp</p>
               </div>
               <div className="flex gap-3">
                 <Button 
@@ -276,7 +276,7 @@ const PayrollList = () => {
                   className="bg-white text-purple-600 hover:bg-purple-50"
                 >
                   <FileText className="h-4 w-4 mr-2" />
-                  Policies
+                  Chính sách
                 </Button>
                 <Button 
                   onClick={exportPayrollData}
@@ -284,7 +284,7 @@ const PayrollList = () => {
                   className="bg-white text-purple-600 hover:bg-purple-50"
                 >
                   <Download className="h-4 w-4 mr-2" />
-                  Export
+                  Xuất dữ liệu
                 </Button>
               </div>
             </div>
@@ -296,13 +296,13 @@ const PayrollList = () => {
           <Card className="mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phòng ban</label>
                 <Select
                   options={[
-                    { value: 'all', label: 'All Departments' },
-                    { value: 'Phòng phát triển Phần mềm', label: 'Development' },
+                    { value: 'all', label: 'Tất cả phòng ban' },
+                    { value: 'Phòng phát triển Phần mềm', label: 'Phát triển' },
                     { value: 'Phòng Marketing', label: 'Marketing' },
-                    { value: 'Phòng HR', label: 'Human Resources' }
+                    { value: 'Phòng HR', label: 'Nhân sự' }
                   ]}
                   defaultValue={selectedDepartment}
                   onChange={(value) => setSelectedDepartment(value)}
@@ -310,7 +310,7 @@ const PayrollList = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Payroll Month</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Tháng lương</label>
                 <Input
                   type="month"
                   value={selectedMonth}
@@ -325,7 +325,7 @@ const PayrollList = () => {
                   variant="primary"
                   className="w-full"
                 >
-                  🧮 Generate Payrolls
+                  🧮 Tạo bảng lương
                 </Button>
               </div>
             </div>
@@ -333,51 +333,51 @@ const PayrollList = () => {
 
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <Card title="Total Employees" icon={<Users className="h-5 w-5 text-blue-500" />}>
+            <Card title="Tổng nhân viên" icon={<Users className="h-5 w-5 text-blue-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{payrollStats.totalEmployees}</div>
-                <div className="text-sm text-gray-500">Active employees</div>
+                <div className="text-sm text-gray-500">Nhân viên đang làm</div>
               </div>
             </Card>
-            
-            <Card title="Total Payroll" icon={<DollarSign className="h-5 w-5 text-green-500" />}>
+
+            <Card title="Tổng lương" icon={<DollarSign className="h-5 w-5 text-green-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
                   {(payrollStats.totalPayroll / 1000000).toFixed(1)}M VND
                 </div>
-                <div className="text-sm text-gray-500">This month</div>
+                <div className="text-sm text-gray-500">Tháng này</div>
               </div>
             </Card>
-            
-            <Card title="Total Tax" icon={<TrendingUp className="h-5 w-5 text-orange-500" />}>
+
+            <Card title="Tổng thuế" icon={<TrendingUp className="h-5 w-5 text-orange-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-orange-600">
                   {payrollStats.totalTax > 0 ? `${(payrollStats.totalTax / 1000000).toFixed(1)}M VND` : '0 VND'}
                 </div>
-                <div className="text-sm text-gray-500">Tax collected</div>
+                <div className="text-sm text-gray-500">Thuế đã thu</div>
               </div>
             </Card>
-            
-            <Card title="Total Insurance" icon={<Building className="h-5 w-5 text-purple-500" />}>
+
+            <Card title="Tổng bảo hiểm" icon={<Building className="h-5 w-5 text-purple-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
                   {payrollStats.totalInsurance > 0 ? `${(payrollStats.totalInsurance / 1000000).toFixed(1)}M VND` : '0 VND'}
                 </div>
-                <div className="text-sm text-gray-500">Social insurance</div>
+                <div className="text-sm text-gray-500">Bảo hiểm xã hội</div>
               </div>
             </Card>
           </div>
 
           {/* Payroll List */}
-          <Card title="Monthly Payroll List" 
+          <Card title="Bảng lương hàng tháng"
             actions={
               <div className="flex items-center gap-2">
-                <Button 
+                <Button
                   onClick={() => generateAllPayrolls()}
                   variant="secondary"
                   size="sm"
                 >
-                  Refresh
+                  Làm mới
                 </Button>
               </div>
             }
@@ -386,12 +386,12 @@ const PayrollList = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">EMPLOYEE</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">DEPARTMENT</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">BASIC SALARY</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">NET SALARY</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">STATUS</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">ACTIONS</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">NHÂN VIÊN</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">PHÒNG BAN</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">LƯƠNG CƠ BẢN</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">LƯƠNG THỰC LĨNH</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">TRẠNG THÁI</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">THAO TÁC</th>
                   </tr>
                 </thead>
                 <tbody>

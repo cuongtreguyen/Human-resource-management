@@ -12,8 +12,8 @@ const PayrollPoliciesModal = ({ isOpen, onClose }) => {
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-semibold">Financial Policies</h2>
-              <p className="text-purple-100">Company payroll policies and regulations</p>
+              <h2 className="text-xl font-semibold">Chính sách tài chính</h2>
+              <p className="text-purple-100">Chính sách và quy định lương của công ty</p>
             </div>
             <Button onClick={onClose} variant="ghost" className="text-white hover:bg-purple-600">
               ✕
@@ -23,81 +23,81 @@ const PayrollPoliciesModal = ({ isOpen, onClose }) => {
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-96px)]">
           <div className="space-y-6">
-            <Card title="💼 Salary Policy">
+            <Card title="💼 Chính sách lương">
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Working Days:</strong> Standard 22 days per month
+                    <strong>Ngày công:</strong> Tiêu chuẩn 22 ngày/tháng
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Late Penalty:</strong> 50% salary deduction per late day
+                    <strong>Phạt đi trễ:</strong> Trừ 50% lương mỗi ngày trễ
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Overtime Rate:</strong> 150% of standard hourly rate
+                    <strong>Lương làm thêm:</strong> 150% lương giờ tiêu chuẩn
                   </div>
                 </div>
               </div>
             </Card>
 
-            <Card title="💸 Tax Regulations">
+            <Card title="💸 Quy định thuế">
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Taxable Income:</strong> Income above 11,000,000 VND
+                    <strong>Thu nhập chịu thuế:</strong> Thu nhập trên 11,000,000 VND
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Tax Rate:</strong> 5% for private enterprises
+                    <strong>Thuế suất:</strong> 5% cho doanh nghiệp tư nhân
                   </div>
                 </div>
               </div>
             </Card>
 
-            <Card title="🛡️ Insurance">
+            <Card title="🛡️ Bảo hiểm">
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
                   <Building className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Social Insurance:</strong> 10.5% of basic salary
+                    <strong>Bảo hiểm xã hội:</strong> 10.5% lương cơ bản
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Building className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Health Insurance:</strong> Included in social insurance
+                    <strong>Bảo hiểm y tế:</strong> Bao gồm trong BHXH
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <Building className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Unemployment Insurance:</strong> Included in social insurance
+                    <strong>Bảo hiểm thất nghiệp:</strong> Bao gồm trong BHXH
                   </div>
                 </div>
               </div>
             </Card>
 
-            <Card title="🎁 Benefits">
+            <Card title="🎁 Phúc lợi">
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Allowances:</strong> Transport, meal, communication allowances
+                    <strong>Phụ cấp:</strong> Đi lại, ăn uống, liên lạc
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                   <div>
-                    <strong>Bonuses:</strong> Performance, attendance, productivity bonuses
+                    <strong>Thưởng:</strong> Hiệu suất, chuyên cần, năng suất
                   </div>
                 </div>
               </div>

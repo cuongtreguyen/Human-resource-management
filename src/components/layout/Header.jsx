@@ -1,7 +1,7 @@
 import React from 'react';
 import { Menu, Bell, User, LogOut } from 'lucide-react';
 
-const Header = ({ onLogout, onMenuClick }) => {
+const Header = ({ onLogout, onMenuClick, onNotificationClick }) => {
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 h-16">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
@@ -26,15 +26,20 @@ const Header = ({ onLogout, onMenuClick }) => {
         {/* Right side - User actions */}
         <div className="flex items-center space-x-4">
           {/* Notifications */}
-          <button className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 relative">
-            <Bell className="h-6 w-6" />
-            <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
+          <button
+            onClick={onNotificationClick}
+            className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 relative cursor-pointer z-10"
+            title="Thông báo"
+            type="button"
+          >
+            <Bell className="h-6 w-6 pointer-events-none" />
+            <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full pointer-events-none"></span>
           </button>
 
           {/* User menu */}
           <div className="flex items-center space-x-3">
             <div className="text-right hidden md:block">
-              <p className="text-sm font-medium text-gray-900">Admin User</p>
+              <p className="text-sm font-medium text-gray-900">Quản trị viên</p>
               <p className="text-xs text-gray-500">admin@company.com</p>
             </div>
             
@@ -46,7 +51,7 @@ const Header = ({ onLogout, onMenuClick }) => {
               <button
                 onClick={onLogout}
                 className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                title="Logout"
+                title="Đăng xuất"
               >
                 <LogOut className="h-5 w-5" />
               </button>

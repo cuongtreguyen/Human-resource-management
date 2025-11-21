@@ -9,7 +9,7 @@ const Reports = () => {
   const reportTypes = [
     {
       id: 'employee_summary',
-      name: 'Employee Summary Report',
+      name: 'Báo Cáo Tổng Hợp Nhân Viên',
       description: 'Tổng hợp thông tin nhân viên',
       icon: '👥',
       color: 'blue',
@@ -18,7 +18,7 @@ const Reports = () => {
     },
     {
       id: 'attendance_summary',
-      name: 'Attendance Summary Report',
+      name: 'Báo Cáo Chấm Công',
       description: 'Báo cáo chấm công tổng hợp',
       icon: '⏰',
       color: 'green',
@@ -27,7 +27,7 @@ const Reports = () => {
     },
     {
       id: 'payroll_summary',
-      name: 'Payroll Summary Report',
+      name: 'Báo Cáo Lương',
       description: 'Báo cáo lương và phúc lợi',
       icon: '💰',
       color: 'yellow',
@@ -36,7 +36,7 @@ const Reports = () => {
     },
     {
       id: 'department_analysis',
-      name: 'Department Analysis Report',
+      name: 'Báo Cáo Phân Tích Phòng Ban',
       description: 'Phân tích hiệu suất phòng ban',
       icon: '📊',
       color: 'purple',
@@ -51,10 +51,10 @@ const Reports = () => {
       // Simulate report generation - removed fakeApi dependency
       const response = { success: true, data: { filename: 'report.pdf' } };
       setGeneratedReports(prev => [response.data, ...prev]);
-      alert(`Report "${response.data.title}" generated successfully!`);
+      alert(`Báo cáo "${response.data.title}" đã được tạo thành công!`);
     } catch (error) {
       console.error('Error generating report:', error);
-      alert('Error generating report. Please try again.');
+      alert('Lỗi khi tạo báo cáo. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -66,7 +66,7 @@ const Reports = () => {
     link.href = `#${report.filename}`;
     link.download = report.filename;
     link.click();
-    alert(`Downloading ${report.filename}...`);
+    alert(`Đang tải ${report.filename}...`);
   };
 
   const getColorClasses = (color) => {
@@ -80,17 +80,17 @@ const Reports = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-4">
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-6 rounded-lg mx-6 mt-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-white">Reports & Analytics</h1>
-            <p className="text-gray-400 text-sm">Dashboard / Reports</p>
+            <h1 className="text-3xl font-bold">Báo Cáo & Phân Tích</h1>
+            <p className="text-purple-100 mt-1">Trang chủ / Báo cáo</p>
           </div>
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-gray-400">
-              Total Reports: {generatedReports.length}
+            <div className="text-sm text-purple-100">
+              Tổng báo cáo: {generatedReports.length}
             </div>
           </div>
         </div>
@@ -99,7 +99,7 @@ const Reports = () => {
       <div className="p-6">
         {/* Report Types Grid */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-white mb-6">Available Reports</h2>
+          <h2 className="text-xl font-semibold text-white mb-6">Báo Cáo Có Sẵn</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {reportTypes.map((report) => (
               <div 
@@ -118,13 +118,13 @@ const Reports = () => {
                     disabled={loading}
                     className={`w-full px-4 py-2 rounded-lg text-white font-medium transition-all duration-200 ${getColorClasses(report.color)} disabled:opacity-50`}
                   >
-                    {loading ? 'Generating...' : 'Generate Report'}
+                    {loading ? 'Đang tạo...' : 'Tạo Báo Cáo'}
                   </button>
                   <button
                     onClick={() => navigate(report.route)}
                     className="w-full mt-3 px-4 py-2 rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-800 transition-all text-sm"
                   >
-                    Open module
+                    Mở module
                   </button>
                 </div>
               </div>
@@ -135,10 +135,10 @@ const Reports = () => {
         {/* Generated Reports */}
         {generatedReports.length > 0 && (
           <div>
-            <h2 className="text-xl font-semibold text-white mb-6">Generated Reports</h2>
+            <h2 className="text-xl font-semibold text-white mb-6">Báo Cáo Đã Tạo</h2>
             <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700">
               <div className="px-6 py-4 border-b border-gray-700">
-                <h3 className="text-lg font-medium text-white">Recent Reports</h3>
+                <h3 className="text-lg font-medium text-white">Báo Cáo Gần Đây</h3>
               </div>
               <div className="p-6">
                 <div className="space-y-4">
@@ -156,20 +156,20 @@ const Reports = () => {
                         <div>
                           <h4 className="font-medium text-white">{report.title}</h4>
                           <p className="text-sm text-gray-400">
-                            Generated: {new Date(report.generatedAt).toLocaleString()}
+                            Tạo lúc: {new Date(report.generatedAt).toLocaleString('vi-VN')}
                           </p>
-                          <p className="text-xs text-gray-500">Status: {report.status}</p>
+                          <p className="text-xs text-gray-500">Trạng thái: {report.status}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                          Ready
+                          Sẵn sàng
                         </span>
                         <button
                           onClick={() => downloadReport(report)}
                           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm"
                         >
-                          Download
+                          Tải xuống
                         </button>
                       </div>
                     </div>
@@ -182,7 +182,7 @@ const Reports = () => {
 
         {/* Quick Stats */}
         <div className="mt-8">
-          <h2 className="text-xl font-semibold text-white mb-6">Report Statistics</h2>
+          <h2 className="text-xl font-semibold text-white mb-6">Thống Kê Báo Cáo</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg border border-blue-500 p-6 text-white">
               <div className="flex items-center">
@@ -192,7 +192,7 @@ const Reports = () => {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-blue-100">Total Reports</p>
+                  <p className="text-sm font-medium text-blue-100">Tổng Báo Cáo</p>
                   <p className="text-3xl font-bold">{generatedReports.length}</p>
                 </div>
               </div>
@@ -206,7 +206,7 @@ const Reports = () => {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-green-100">This Month</p>
+                  <p className="text-sm font-medium text-green-100">Tháng Này</p>
                   <p className="text-3xl font-bold">{Math.floor(generatedReports.length * 0.7)}</p>
                 </div>
               </div>
@@ -220,7 +220,7 @@ const Reports = () => {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-yellow-100">Success Rate</p>
+                  <p className="text-sm font-medium text-yellow-100">Tỷ Lệ Thành Công</p>
                   <p className="text-3xl font-bold">98%</p>
                 </div>
               </div>
@@ -234,7 +234,7 @@ const Reports = () => {
                   </svg>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-purple-100">Downloads</p>
+                  <p className="text-sm font-medium text-purple-100">Lượt Tải</p>
                   <p className="text-3xl font-bold">{generatedReports.length * 2}</p>
                 </div>
               </div>
@@ -244,12 +244,12 @@ const Reports = () => {
 
         {/* Source Mapping */}
         <div className="mt-12">
-          <h2 className="text-xl font-semibold text-white mb-6">Report & Analytics Source Mapping</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-6">Ánh Xạ Nguồn Báo Cáo & Phân Tích</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {reportTypes.map((report) => (
-              <div key={report.id} className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl border border-gray-700 p-5 shadow-lg">
-                <p className="text-sm text-gray-400">Function</p>
-                <p className="text-lg font-semibold text-white">{report.name}</p>
+              <div key={report.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-lg hover:shadow-xl transition-all">
+                <p className="text-sm text-gray-500">Chức năng</p>
+                <p className="text-lg font-semibold text-gray-900">{report.name}</p>
                 <p className="text-sm text-gray-400 mt-3">
                   Route: <span className="text-blue-300">{report.route}</span>
                 </p>
@@ -260,7 +260,7 @@ const Reports = () => {
                   onClick={() => navigate(report.route)}
                   className="mt-4 w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-sm text-gray-200 hover:bg-gray-700 transition-all"
                 >
-                  Go to {report.name.split(' ')[0]} page
+                  Đi đến trang {report.name.split(' ')[0]}
                 </button>
               </div>
             ))}

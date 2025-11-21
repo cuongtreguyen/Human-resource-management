@@ -5,58 +5,58 @@ import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Ho
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
   const navigationGroups = [
     {
-      title: 'DASHBOARD',
+      title: 'BẢNG ĐIỀU KHIỂN',
       items: [
-        { name: 'Dashboard', href: '/dashboard', icon: Home },
+        { name: 'Trang chủ', href: '/dashboard', icon: Home },
       ]
     },
     {
-      title: 'USER MANAGEMENT',
+      title: 'QUẢN LÝ NGƯỜI DÙNG',
       items: [
-        { name: 'Internal Chat', href: '/chat', icon: MessageCircle },
-        { name: 'Face Recognition Portal', href: '/face-recognition', icon: User },
+        { name: 'Chat nội bộ', href: '/chat', icon: MessageCircle },
+        { name: 'Nhận diện khuôn mặt', href: '/face-recognition', icon: User },
       ]
     },
     {
-      title: 'EMPLOYEE MANAGEMENT',
+      title: 'QUẢN LÝ NHÂN VIÊN',
       items: [
-        { name: 'Employee List', href: '/employees', icon: Users },
-        { name: 'Add Employee', href: '/employees/add', icon: UserPlus },
-        { name: 'Export Data', href: '/employees/export', icon: FileText },
+        { name: 'Danh sách nhân viên', href: '/employees', icon: Users },
+        { name: 'Thêm nhân viên', href: '/employees/add', icon: UserPlus },
+        { name: 'Xuất dữ liệu', href: '/employees/export', icon: FileText },
       ]
     },
     {
-      title: 'ATTENDANCE MANAGEMENT',
+      title: 'QUẢN LÝ CHẤM CÔNG',
       items: [
-        { name: 'Attendance List', href: '/attendance', icon: Clock },
-        { name: 'Attendance Creation', href: '/attendance/create', icon: Calendar },
+        { name: 'Danh sách chấm công', href: '/attendance', icon: Clock },
+        { name: 'Tạo chấm công', href: '/attendance/create', icon: Calendar },
       ]
     },
     {
-      title: 'PAYROLL MANAGEMENT',
+      title: 'QUẢN LÝ LƯƠNG',
       items: [
-        { name: 'Payroll List', href: '/payroll', icon: DollarSign },
-        { name: 'Financial Policy', href: '/payroll/policies', icon: FileText },
+        { name: 'Danh sách lương', href: '/payroll', icon: DollarSign },
+        { name: 'Chính sách tài chính', href: '/payroll/policies', icon: FileText },
       ]
     },
     {
-      title: 'LEAVE MANAGEMENT',
+      title: 'QUẢN LÝ NGHỈ PHÉP',
       items: [
-        { name: 'Leave Management', href: '/leaves', icon: Calendar },
-        { name: 'Create Leave', href: '/leaves/create', icon: UserPlus },
-        { name: 'Task Delegation', href: '/leaves/delegation', icon: Users },
+        { name: 'Quản lý nghỉ phép', href: '/leaves', icon: Calendar },
+        { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: UserPlus },
+        { name: 'Bàn giao công việc', href: '/leaves/delegation', icon: Users },
       ]
     },
     {
-      title: 'SYSTEM MANAGEMENT',
+      title: 'QUẢN LÝ HỆ THỐNG',
       items: [
-        { name: 'Task Management', href: '/tasks', icon: CheckSquare },
-        { name: 'Documents', href: '/documents', icon: FileText },
-        { name: 'Reports', href: '/reports', icon: BarChart3 },
-        { name: 'Notifications', href: '/notifications', icon: Bell },
-        { name: 'Benefits & Insurance', href: '/admin/benefits', icon: Heart },
-        { name: 'Logs Monitor', href: '/admin/logs', icon: Activity },
-        { name: 'Settings', href: '/settings', icon: Settings },
+        { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare },
+        { name: 'Tài liệu', href: '/documents', icon: FileText },
+        { name: 'Báo cáo', href: '/reports', icon: BarChart3 },
+        { name: 'Thông báo', href: '/notifications', icon: Bell },
+        { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart },
+        { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity },
+        { name: 'Cài đặt', href: '/settings', icon: Settings },
       ]
     }
   ];
@@ -76,7 +76,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 lg:hidden">
-          <h1 className="text-xl font-semibold text-gray-900">HR Management</h1>
+          <h1 className="text-xl font-semibold text-gray-900">Quản lý Nhân sự</h1>
           <button
             onClick={() => setSidebarOpen(false)}
             className="p-2 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
@@ -134,7 +134,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
               </div>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Admin User</p>
+              <p className="text-sm font-medium text-gray-900">Quản trị viên</p>
               <p className="text-xs text-gray-500">admin@company.com</p>
             </div>
           </div>

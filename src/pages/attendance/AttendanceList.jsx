@@ -114,7 +114,7 @@ const AttendanceList = () => {
           <div className="animate-fade-in">
             <div className="flex items-center justify-between mb-8">
               <h1 className="text-3xl font-bold text-gray-900">
-                Employee Attendance
+                Chấm công nhân viên
               </h1>
             </div>
             
@@ -158,11 +158,11 @@ const AttendanceList = () => {
             )}
 
             {/* Attendance Record */}
-            <Card title="Attendance Record">
+            <Card title="Bảng chấm công">
               <div className="space-y-4">
                 <div className="flex gap-3">
                   <Input
-                    placeholder="Search by name..."
+                    placeholder="Tìm theo tên..."
                     icon={<Search className="h-4 w-4" />}
                     className="flex-1"
                   />
@@ -172,7 +172,7 @@ const AttendanceList = () => {
                     onClick={loadAttendanceData}
                     disabled={loading}
                   >
-                    {loading ? 'Loading...' : 'Refresh'}
+                    {loading ? 'Đang tải...' : 'Làm mới'}
                   </Button>
                 </div>
 
@@ -200,15 +200,15 @@ const AttendanceList = () => {
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="text-center">
-                              <div className="text-sm text-gray-500">Check In</div>
+                              <div className="text-sm text-gray-500">Giờ vào</div>
                               <div className="font-medium">{record.check_in || '-'}</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-sm text-gray-500">Check Out</div>
+                              <div className="text-sm text-gray-500">Giờ ra</div>
                               <div className="font-medium">{record.check_out || '-'}</div>
                             </div>
                             <div className="text-center">
-                              <div className="text-sm text-gray-500">Hours Worked</div>
+                              <div className="text-sm text-gray-500">Số giờ làm</div>
                               <div className="font-medium text-blue-600">
                                 {record.check_in && record.check_out ? 
                                   (() => {

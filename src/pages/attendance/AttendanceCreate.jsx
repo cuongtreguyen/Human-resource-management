@@ -27,13 +27,13 @@ const AttendanceCreate = () => {
     }
   };
 
-  const departments = ['All Departments', 'Development', 'Marketing','Finance', 'Operations'];
+  const departments = ['Tất cả phòng ban', 'Phát triển', 'Marketing', 'Tài chính', 'Vận hành'];
 
   // Mock employees data - removed unused variable
 
   const handleDepartmentChange = (value) => {
     setSelectedDepartment(value);
-    if (value !== 'All Departments') {
+    if (value !== 'Tất cả phòng ban') {
       const filteredEmployees = employees.filter(emp => emp.department === value);
       setEmployeeList(filteredEmployees);
     } else {
@@ -86,10 +86,10 @@ const AttendanceCreate = () => {
         });
       }
       
-      alert('Attendance records saved successfully!');
+      alert('Lưu chấm công thành công!');
       navigate('/attendance');
     } catch (err) {
-      alert('Failed to save attendance records');
+      alert('Không thể lưu chấm công');
       console.error('Save attendance error:', err);
     } finally {
       setLoading(false);
@@ -106,15 +106,15 @@ const AttendanceCreate = () => {
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-lg mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Attendance Management</h1>
-            <p className="text-purple-100 mt-1">Select a department and add employees to the attendance sheet</p>
+            <h1 className="text-3xl font-bold">Quản lý Chấm công</h1>
+            <p className="text-purple-100 mt-1">Chọn phòng ban và thêm nhân viên vào bảng chấm công</p>
           </div>
           <div className="flex space-x-3">
             <Button variant="secondary" size="md" onClick={handleGoBack}>
               <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
-              ← Back
+              ← Quay lại
             </Button>
             <Button 
               variant="success" 
@@ -132,7 +132,7 @@ const AttendanceCreate = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 1m0 0l-3-1m3 1V7m0 0V3" />
                 </svg>
               )}
-              {loading ? 'Saving...' : 'Save Attendance'}
+              {loading ? 'Đang lưu...' : 'Lưu chấm công'}
             </Button>
           </div>
         </div>
@@ -140,7 +140,7 @@ const AttendanceCreate = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Employee List */}
-        <Card title="Employee List">
+        <Card title="Danh sách nhân viên">
           <div className="flex items-center mb-4">
             <svg className="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -149,11 +149,11 @@ const AttendanceCreate = () => {
           
           <div className="mb-4">
             <Select
-              label="Department"
+              label="Phòng ban"
               options={departments.map(dept => ({ value: dept, label: dept }))}
               value={selectedDepartment}
               onChange={handleDepartmentChange}
-              placeholder="-- Select Department --"
+              placeholder="-- Chọn phòng ban --"
             />
           </div>
 
@@ -162,13 +162,13 @@ const AttendanceCreate = () => {
               <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
               </svg>
-              <p className="text-gray-500">Select a department to display employees</p>
+              <p className="text-gray-500">Chọn phòng ban để hiển thị nhân viên</p>
             </div>
           )}
 
           {selectedDepartment && employeeList.length > 0 && (
             <div className="space-y-2">
-              <h4 className="font-medium text-gray-900 mb-3">Available Employees</h4>
+              <h4 className="font-medium text-gray-900 mb-3">Nhân viên có sẵn</h4>
               {employeeList.map((employee) => (
                 <div
                   key={employee.id}
@@ -191,7 +191,7 @@ const AttendanceCreate = () => {
                     <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    Add
+                    Thêm
                   </Button>
                 </div>
               ))}
@@ -203,13 +203,13 @@ const AttendanceCreate = () => {
               <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
-              <p className="text-gray-500">No employees found in this department</p>
+              <p className="text-gray-500">Không tìm thấy nhân viên trong phòng ban này</p>
             </div>
           )}
         </Card>
 
         {/* Attendance Sheet */}
-        <Card title="Attendance Sheet">
+        <Card title="Bảng chấm công">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
               <svg className="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -221,26 +221,26 @@ const AttendanceCreate = () => {
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                {attendanceSheet.length} employees added to attendance sheet
+                {attendanceSheet.length} nhân viên đã thêm vào bảng chấm công
               </span>
               <Button variant="success" size="sm" onClick={saveAttendance}>
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 1m0 0l-3-1m3 1V7m0 0V3" />
                 </svg>
-                Save Attendance
+                Lưu chấm công
               </Button>
             </div>
           </div>
 
           {/* Table Header */}
           <div className="grid grid-cols-7 gap-2 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-            <div>EMPLOYEE</div>
-            <div>DATE</div>
-            <div>CHECK-IN</div>
-            <div>CHECK-OUT</div>
-            <div>OVERTIME</div>
-            <div>STATUS</div>
-            <div>ACTIONS</div>
+            <div>NHÂN VIÊN</div>
+            <div>NGÀY</div>
+            <div>GIỜ VÀO</div>
+            <div>GIỜ RA</div>
+            <div>TĂNG CA</div>
+            <div>TRẠNG THÁI</div>
+            <div>THAO TÁC</div>
           </div>
 
           {/* Table Body */}
@@ -286,9 +286,9 @@ const AttendanceCreate = () => {
                     onChange={(e) => updateAttendanceRecord(record.id, 'status', e.target.value)}
                     className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
                   >
-                    <option value="Present">Present</option>
-                    <option value="Late">Late</option>
-                    <option value="Absent">Absent</option>
+                    <option value="Present">Có mặt</option>
+                    <option value="Late">Đi trễ</option>
+                    <option value="Absent">Vắng mặt</option>
                   </select>
                 </div>
                 <div className="flex space-x-1">
@@ -310,7 +310,7 @@ const AttendanceCreate = () => {
               <svg className="w-12 h-１２ text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m1 0V7a2 2 0 012-2h4a2 2 0 012 2v4m-6 0v8a2 2 0 002-2h2a2 2 0 002-2V7m6 0v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7" />
               </svg>
-              <p className="text-gray-500 mb-2">Select employees from the list on the left to add to the attendance sheet</p>
+              <p className="text-gray-500 mb-2">Chọn nhân viên từ danh sách bên trái để thêm vào bảng chấm công</p>
               <svg className="w-8 h-8 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m1 0V7a2 2 0 012-2h4a2 2 0 012 2v4m-6 0v8a2 2 0 002-2h2a2 2 0 002-2V7m6 0v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7" />
               </svg>

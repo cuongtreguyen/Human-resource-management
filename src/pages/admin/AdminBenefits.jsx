@@ -49,7 +49,7 @@ const insurancePolicies = [
   {
     id: 'BHYT-2024-01',
     provider: 'Bảo hiểm xã hội Việt Nam',
-    type: 'Health Insurance',
+    type: 'Bảo hiểm y tế',
     effective: '2024-01-01',
     expiry: '2024-12-31',
     coverage: '100%',
@@ -58,7 +58,7 @@ const insurancePolicies = [
   {
     id: 'BHTN-2024-02',
     provider: 'Bảo hiểm xã hội Việt Nam',
-    type: 'Unemployment Insurance',
+    type: 'Bảo hiểm thất nghiệp',
     effective: '2024-01-01',
     expiry: '2024-12-31',
     coverage: '100%',
@@ -67,7 +67,7 @@ const insurancePolicies = [
   {
     id: 'BH_TNGT-2024-03',
     provider: 'PTI Insurance',
-    type: 'Accident Insurance',
+    type: 'Bảo hiểm tai nạn',
     effective: '2024-02-01',
     expiry: '2025-01-31',
     coverage: '500,000,000 VNĐ',
@@ -79,24 +79,24 @@ const pendingRequests = [
   {
     id: 'REQ-2401',
     employee: 'Trần Hoàng Nam',
-    department: 'Engineering',
-    type: 'Add new dependent',
+    department: 'Kỹ thuật',
+    type: 'Thêm người phụ thuộc',
     submitted: '2024-10-04',
     priority: 'high'
   },
   {
     id: 'REQ-2402',
     employee: 'Nguyễn Thị Hạnh',
-    department: 'Finance',
-    type: 'Update insurance coverage',
+    department: 'Tài chính',
+    type: 'Cập nhật bảo hiểm',
     submitted: '2024-10-02',
     priority: 'medium'
   },
   {
     id: 'REQ-2403',
     employee: 'Vũ Đức Thịnh',
-    department: 'Sales',
-    type: 'Cancel meal allowance',
+    department: 'Kinh doanh',
+    type: 'Hủy phụ cấp ăn trưa',
     submitted: '2024-09-30',
     priority: 'low'
   }
@@ -117,21 +117,21 @@ const AdminBenefits = () => {
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-start justify-between gap-6 flex-wrap">
             <div>
-              <p className="text-sm text-purple-100 uppercase tracking-wider">Admin / Total Rewards</p>
-              <h1 className="text-3xl font-bold mt-2">Benefits & Insurance Control Center</h1>
+              <p className="text-sm text-purple-100 uppercase tracking-wider">Quản trị / Phúc Lợi</p>
+              <h1 className="text-3xl font-bold mt-2">Trung Tâm Quản Lý Phúc Lợi & Bảo Hiểm</h1>
               <p className="text-purple-100 mt-3 max-w-2xl">
-                Manage enterprise-wide benefit programs, insurance policies and employee requests in one workspace.
+                Quản lý các chương trình phúc lợi, chính sách bảo hiểm và yêu cầu của nhân viên trong một không gian làm việc.
               </p>
             </div>
             <div className="flex gap-3 flex-wrap">
               <Button variant="secondary" size="md">
-                Export Overview
+                Xuất Tổng Quan
               </Button>
               <Button
                 size="md"
                 icon={<Plus className="w-4 h-4" />}
               >
-                New Benefit
+                Thêm Phúc Lợi
               </Button>
             </div>
           </div>
@@ -143,7 +143,7 @@ const AdminBenefits = () => {
               <Heart className="text-purple-600" size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Active Programs</p>
+              <p className="text-sm text-gray-500">Chương trình hoạt động</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {benefitPrograms.filter(item => item.status === 'active').length}
               </p>
@@ -154,7 +154,7 @@ const AdminBenefits = () => {
               <Shield className="text-blue-600" size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Insurance Policies</p>
+              <p className="text-sm text-gray-500">Chính sách bảo hiểm</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {insurancePolicies.length}
               </p>
@@ -165,7 +165,7 @@ const AdminBenefits = () => {
               <Users className="text-green-600" size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Participants</p>
+              <p className="text-sm text-gray-500">Người tham gia</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {totalParticipants}
               </p>
@@ -176,7 +176,7 @@ const AdminBenefits = () => {
               <Wallet className="text-amber-600" size={24} />
             </div>
             <div>
-              <p className="text-sm text-gray-500">Annual Budget</p>
+              <p className="text-sm text-gray-500">Ngân sách năm</p>
               <p className="text-2xl font-semibold text-gray-900">
                 {(totalBudget / 1000000).toFixed(1)}M VNĐ
               </p>
@@ -185,12 +185,12 @@ const AdminBenefits = () => {
         </div>
 
         <Card
-          title="Benefit Programs"
-          subtitle="Company wide allowances and perks"
+          title="Chương Trình Phúc Lợi"
+          subtitle="Phụ cấp và đặc quyền toàn công ty"
           icon={<Heart className="w-5 h-5" />}
           actions={
             <Button variant="outline" size="sm" icon={<FileText className="w-4 h-4" />}>
-              Download Catalog
+              Tải Danh Mục
             </Button>
           }
         >
@@ -232,8 +232,8 @@ const AdminBenefits = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card
-            title="Insurance Policies"
-            subtitle="Tracking coverage and lifecycle"
+            title="Chính Sách Bảo Hiểm"
+            subtitle="Theo dõi phạm vi bảo hiểm và vòng đời"
             icon={<Shield className="w-5 h-5" />}
           >
             <div className="space-y-4">
@@ -250,19 +250,19 @@ const AdminBenefits = () => {
                   </div>
                   <div className="grid grid-cols-2 gap-4 mt-4 text-sm text-gray-600">
                     <div>
-                      <p className="text-gray-500">Policy ID</p>
+                      <p className="text-gray-500">Mã bảo hiểm</p>
                       <p className="font-medium text-gray-900">{policy.id}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Coverage</p>
+                      <p className="text-gray-500">Phạm vi</p>
                       <p className="font-medium text-gray-900">{policy.coverage}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Effective</p>
+                      <p className="text-gray-500">Hiệu lực</p>
                       <p className="font-medium text-gray-900">{policy.effective}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Expiry</p>
+                      <p className="text-gray-500">Hết hạn</p>
                       <p className="font-medium text-gray-900">{policy.expiry}</p>
                     </div>
                   </div>
@@ -272,12 +272,12 @@ const AdminBenefits = () => {
           </Card>
 
           <Card
-            title="Pending Requests"
-            subtitle="Actions that need approval"
+            title="Yêu Cầu Chờ Duyệt"
+            subtitle="Các yêu cầu cần phê duyệt"
             icon={<TrendingUp className="w-5 h-5" />}
             actions={
               <Button variant="outline" size="sm">
-                View workflow
+                Xem quy trình
               </Button>
             }
           >
@@ -299,15 +299,15 @@ const AdminBenefits = () => {
                             : 'bg-gray-100 text-gray-600'
                       }`}
                     >
-                      {request.priority} priority
+                      {request.priority === 'high' ? 'Ưu tiên cao' : request.priority === 'medium' ? 'Trung bình' : 'Thấp'}
                     </span>
-                    <p className="text-xs text-gray-500 mt-1">Submitted: {request.submitted}</p>
+                    <p className="text-xs text-gray-500 mt-1">Ngày gửi: {request.submitted}</p>
                     <div className="flex gap-2 mt-3 justify-end">
                       <Button variant="secondary" size="sm">
-                        Review
+                        Xem xét
                       </Button>
                       <Button size="sm" icon={<CheckCircle className="w-4 h-4" />}>
-                        Approve
+                        Phê duyệt
                       </Button>
                     </div>
                   </div>

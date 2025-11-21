@@ -50,7 +50,7 @@ const ExportData = () => {
     setTimeout(() => {
       setIsExporting(false);
       // In real app, this would trigger file download
-      alert('Export completed! File would be downloaded in real application.');
+      alert('Xuất dữ liệu hoàn tất! File sẽ được tải về.');
     }, 3000);
   };
 
@@ -61,54 +61,59 @@ const ExportData = () => {
   ];
 
   const departmentOptions = [
-    { value: 'all', label: 'All Departments' },
-    { value: 'it', label: 'IT Department' },
-    { value: 'hr', label: 'Human Resources' },
-    { value: 'finance', label: 'Finance' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'sales', label: 'Sales' },
-    { value: 'operations', label: 'Operations' }
+    { value: 'all', label: 'Tất cả phòng ban' },
+    { value: 'it', label: 'Phòng IT' },
+    { value: 'hr', label: 'Phòng Nhân sự' },
+    { value: 'finance', label: 'Phòng Tài chính' },
+    { value: 'marketing', label: 'Phòng Marketing' },
+    { value: 'sales', label: 'Phòng Kinh doanh' },
+    { value: 'operations', label: 'Phòng Vận hành' }
   ];
 
   const positionOptions = [
-    { value: 'all', label: 'All Positions' },
-    { value: 'manager', label: 'Manager' },
-    { value: 'developer', label: 'Software Developer' },
-    { value: 'accountant', label: 'Accountant' },
-    { value: 'specialist', label: 'Specialist' },
-    { value: 'assistant', label: 'Assistant' }
+    { value: 'all', label: 'Tất cả chức vụ' },
+    { value: 'manager', label: 'Quản lý' },
+    { value: 'developer', label: 'Lập trình viên' },
+    { value: 'accountant', label: 'Kế toán' },
+    { value: 'specialist', label: 'Chuyên viên' },
+    { value: 'assistant', label: 'Trợ lý' }
   ];
 
   const statusOptions = [
-    { value: 'all', label: 'All Status' },
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'probation', label: 'Probation' }
+    { value: 'all', label: 'Tất cả trạng thái' },
+    { value: 'active', label: 'Đang làm việc' },
+    { value: 'inactive', label: 'Nghỉ việc' },
+    { value: 'probation', label: 'Thử việc' }
   ];
 
   const dateRangeOptions = [
-    { value: 'all', label: 'All Time' },
-    { value: 'this_month', label: 'This Month' },
-    { value: 'last_month', label: 'Last Month' },
-    { value: 'this_year', label: 'This Year' },
-    { value: 'custom', label: 'Custom Range' }
+    { value: 'all', label: 'Tất cả thời gian' },
+    { value: 'this_month', label: 'Tháng này' },
+    { value: 'last_month', label: 'Tháng trước' },
+    { value: 'this_year', label: 'Năm nay' },
+    { value: 'custom', label: 'Tùy chỉnh' }
   ];
 
   const columnOptions = [
-    { key: 'personalInfo', label: 'Personal Information', description: 'Name, DOB, Gender, ID' },
-    { key: 'contactInfo', label: 'Contact Information', description: 'Email, Phone, Address' },
-    { key: 'employmentInfo', label: 'Employment Details', description: 'Department, Position, Start Date' },
-    { key: 'salaryInfo', label: 'Salary Information', description: 'Base Salary, Allowances' },
-    { key: 'performanceInfo', label: 'Performance Data', description: 'Reviews, Ratings' }
+    { key: 'personalInfo', label: 'Thông tin cá nhân', description: 'Họ tên, Ngày sinh, Giới tính, CMND' },
+    { key: 'contactInfo', label: 'Thông tin liên hệ', description: 'Email, Số điện thoại, Địa chỉ' },
+    { key: 'employmentInfo', label: 'Thông tin công việc', description: 'Phòng ban, Chức vụ, Ngày bắt đầu' },
+    { key: 'salaryInfo', label: 'Thông tin lương', description: 'Lương cơ bản, Phụ cấp' },
+    { key: 'performanceInfo', label: 'Dữ liệu hiệu suất', description: 'Đánh giá, Xếp loại' }
   ];
 
   return (
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Export Employee Data</h1>
-          <p className="text-gray-600">Export employee information in various formats for reporting and analysis</p>
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-lg">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Xuất dữ liệu nhân viên</h1>
+              <p className="text-purple-100 mt-1">Xuất thông tin nhân viên với nhiều định dạng để báo cáo và phân tích</p>
+            </div>
+            <Download className="w-12 h-12 text-purple-200" />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -118,7 +123,7 @@ const ExportData = () => {
             <Card>
               <div className="flex items-center mb-4">
                 <FileText className="w-5 h-5 text-purple-500 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-900">Export Format</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Định dạng xuất</h3>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 {formatOptions.map((format) => (
@@ -142,29 +147,29 @@ const ExportData = () => {
             <Card>
               <div className="flex items-center mb-4">
                 <Filter className="w-5 h-5 text-purple-500 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-900">Filters</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Bộ lọc</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <Select
-                  label="Department"
+                  label="Phòng ban"
                   value={exportOptions.department}
                   onChange={(e) => handleInputChange('department', e.target.value)}
                   options={departmentOptions}
                 />
                 <Select
-                  label="Position"
+                  label="Chức vụ"
                   value={exportOptions.position}
                   onChange={(e) => handleInputChange('position', e.target.value)}
                   options={positionOptions}
                 />
                 <Select
-                  label="Status"
+                  label="Trạng thái"
                   value={exportOptions.status}
                   onChange={(e) => handleInputChange('status', e.target.value)}
                   options={statusOptions}
                 />
                 <Select
-                  label="Date Range"
+                  label="Khoảng thời gian"
                   value={exportOptions.dateRange}
                   onChange={(e) => handleInputChange('dateRange', e.target.value)}
                   options={dateRangeOptions}
@@ -175,13 +180,13 @@ const ExportData = () => {
               {exportOptions.dateRange === 'custom' && (
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <Input
-                    label="Start Date"
+                    label="Từ ngày"
                     type="date"
                     value={exportOptions.startDate}
                     onChange={(e) => handleInputChange('startDate', e.target.value)}
                   />
                   <Input
-                    label="End Date"
+                    label="Đến ngày"
                     type="date"
                     value={exportOptions.endDate}
                     onChange={(e) => handleInputChange('endDate', e.target.value)}
@@ -194,7 +199,7 @@ const ExportData = () => {
             <Card>
               <div className="flex items-center mb-4">
                 <Users className="w-5 h-5 text-purple-500 mr-2" />
-                <h3 className="text-lg font-semibold text-gray-900">Include Columns</h3>
+                <h3 className="text-lg font-semibold text-gray-900">Chọn cột dữ liệu</h3>
               </div>
               <div className="space-y-3">
                 {columnOptions.map((column) => (
@@ -221,42 +226,42 @@ const ExportData = () => {
           <div className="space-y-6">
             {/* Summary */}
             <Card>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Export Summary</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tóm tắt xuất dữ liệu</h3>
               <div className="space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Format:</span>
+                  <span className="text-gray-600">Định dạng:</span>
                   <span className="font-medium">
                     {formatOptions.find(f => f.value === exportOptions.format)?.label}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Department:</span>
+                  <span className="text-gray-600">Phòng ban:</span>
                   <span className="font-medium">
                     {departmentOptions.find(d => d.value === exportOptions.department)?.label}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Position:</span>
+                  <span className="text-gray-600">Chức vụ:</span>
                   <span className="font-medium">
                     {positionOptions.find(p => p.value === exportOptions.position)?.label}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Status:</span>
+                  <span className="text-gray-600">Trạng thái:</span>
                   <span className="font-medium">
                     {statusOptions.find(s => s.value === exportOptions.status)?.label}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Estimated Records:</span>
-                  <span className="font-medium text-purple-600">~150 employees</span>
+                  <span className="text-gray-600">Số bản ghi ước tính:</span>
+                  <span className="font-medium text-purple-600">~150 nhân viên</span>
                 </div>
               </div>
             </Card>
 
             {/* Actions */}
             <Card>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Thao tác</h3>
               <div className="space-y-3">
                 <Button
                   onClick={handleExport}
@@ -264,7 +269,7 @@ const ExportData = () => {
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   <Download className="w-4 h-4 mr-2" />
-                  {isExporting ? 'Exporting...' : 'Export Data'}
+                  {isExporting ? 'Đang xuất...' : 'Xuất dữ liệu'}
                 </Button>
                 <Button
                   variant="outline"
@@ -288,33 +293,33 @@ const ExportData = () => {
                     });
                   }}
                 >
-                  Reset Options
+                  Đặt lại
                 </Button>
               </div>
             </Card>
 
             {/* Export History */}
             <Card>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Exports</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Xuất gần đây</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div>
-                    <p className="text-sm font-medium">Employee List - Excel</p>
-                    <p className="text-xs text-gray-500">2 hours ago</p>
+                    <p className="text-sm font-medium">Danh sách NV - Excel</p>
+                    <p className="text-xs text-gray-500">2 giờ trước</p>
                   </div>
                   <Download className="w-4 h-4 text-gray-400" />
                 </div>
                 <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div>
-                    <p className="text-sm font-medium">IT Department - CSV</p>
-                    <p className="text-xs text-gray-500">1 day ago</p>
+                    <p className="text-sm font-medium">Phòng IT - CSV</p>
+                    <p className="text-xs text-gray-500">1 ngày trước</p>
                   </div>
                   <Download className="w-4 h-4 text-gray-400" />
                 </div>
                 <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
                   <div>
-                    <p className="text-sm font-medium">Monthly Report - PDF</p>
-                    <p className="text-xs text-gray-500">3 days ago</p>
+                    <p className="text-sm font-medium">Báo cáo tháng - PDF</p>
+                    <p className="text-xs text-gray-500">3 ngày trước</p>
                   </div>
                   <Download className="w-4 h-4 text-gray-400" />
                 </div>

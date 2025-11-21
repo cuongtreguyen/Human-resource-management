@@ -30,10 +30,10 @@ const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
 
   const tabs = [
-    { id: 'general', name: 'General', icon: '⚙️' },
-    { id: 'notifications', name: 'Notifications', icon: '🔔' },
-    { id: 'security', name: 'Security', icon: '🔒' },
-    { id: 'system', name: 'System', icon: '🖥️' }
+    { id: 'general', name: 'Chung', icon: '⚙️' },
+    { id: 'notifications', name: 'Thông báo', icon: '🔔' },
+    { id: 'security', name: 'Bảo mật', icon: '🔒' },
+    { id: 'system', name: 'Hệ thống', icon: '🖥️' }
   ];
 
   const handleSaveSettings = async () => {
@@ -41,10 +41,10 @@ const Settings = () => {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert('Settings saved successfully!');
+      alert('Đã lưu cài đặt thành công!');
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Error saving settings. Please try again.');
+      alert('Lỗi khi lưu cài đặt. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -70,10 +70,10 @@ const Settings = () => {
   const renderGeneralSettings = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Company Information</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Thông Tin Công Ty</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Company Name</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Tên Công Ty</label>
             <input
               type="text"
               value={settings.companyName}
@@ -82,7 +82,7 @@ const Settings = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Company Email</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Email Công Ty</label>
             <input
               type="email"
               value={settings.companyEmail}
@@ -91,7 +91,7 @@ const Settings = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Company Phone</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Số Điện Thoại</label>
             <input
               type="tel"
               value={settings.companyPhone}
@@ -100,7 +100,7 @@ const Settings = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Timezone</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Múi Giờ</label>
             <select
               value={settings.timezone}
               onChange={(e) => handleDirectSettingChange('timezone', e.target.value)}
@@ -114,7 +114,7 @@ const Settings = () => {
           </div>
         </div>
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">Company Address</label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Địa Chỉ Công Ty</label>
           <textarea
             rows={3}
             value={settings.companyAddress}
@@ -125,10 +125,10 @@ const Settings = () => {
       </div>
 
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Display Settings</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Cài Đặt Hiển Thị</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Date Format</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Định Dạng Ngày</label>
             <select
               value={settings.dateFormat}
               onChange={(e) => handleDirectSettingChange('dateFormat', e.target.value)}
@@ -140,7 +140,7 @@ const Settings = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Language</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Ngôn Ngữ</label>
             <select
               value={settings.language}
               onChange={(e) => handleDirectSettingChange('language', e.target.value)}
@@ -159,12 +159,12 @@ const Settings = () => {
   const renderNotificationSettings = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Notification Preferences</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Tùy Chọn Thông Báo</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-white">Email Notifications</h4>
-              <p className="text-sm text-gray-400">Receive notifications via email</p>
+              <h4 className="font-medium text-white">Thông báo Email</h4>
+              <p className="text-sm text-gray-400">Nhận thông báo qua email</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -179,8 +179,8 @@ const Settings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-white">SMS Notifications</h4>
-              <p className="text-sm text-gray-400">Receive notifications via SMS</p>
+              <h4 className="font-medium text-white">Thông báo SMS</h4>
+              <p className="text-sm text-gray-400">Nhận thông báo qua SMS</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -195,8 +195,8 @@ const Settings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-white">Push Notifications</h4>
-              <p className="text-sm text-gray-400">Receive push notifications in browser</p>
+              <h4 className="font-medium text-white">Thông báo đẩy</h4>
+              <p className="text-sm text-gray-400">Nhận thông báo đẩy trên trình duyệt</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -216,12 +216,12 @@ const Settings = () => {
   const renderSecuritySettings = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">Security Settings</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Cài Đặt Bảo Mật</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-white">Two-Factor Authentication</h4>
-              <p className="text-sm text-gray-400">Add an extra layer of security</p>
+              <h4 className="font-medium text-white">Xác thực hai yếu tố</h4>
+              <p className="text-sm text-gray-400">Thêm lớp bảo mật bổ sung</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -235,7 +235,7 @@ const Settings = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Session Timeout (minutes)</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Thời gian hết phiên (phút)</label>
             <input
               type="number"
               min="5"
@@ -247,15 +247,15 @@ const Settings = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Password Policy</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Chính sách mật khẩu</label>
             <select
               value={settings.security.passwordPolicy}
               onChange={(e) => handleSettingChange('security', 'passwordPolicy', e.target.value)}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
             >
-              <option value="low">Low (6+ characters)</option>
-              <option value="medium">Medium (8+ characters, mixed case)</option>
-              <option value="high">High (12+ characters, special chars)</option>
+              <option value="low">Thấp (6+ ký tự)</option>
+              <option value="medium">Trung bình (8+ ký tự, chữ hoa/thường)</option>
+              <option value="high">Cao (12+ ký tự, ký tự đặc biệt)</option>
             </select>
           </div>
         </div>
@@ -266,12 +266,12 @@ const Settings = () => {
   const renderSystemSettings = () => (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700 p-6">
-        <h3 className="text-lg font-semibold text-white mb-4">System Settings</h3>
+        <h3 className="text-lg font-semibold text-white mb-4">Cài Đặt Hệ Thống</h3>
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-white">Maintenance Mode</h4>
-              <p className="text-sm text-gray-400">Put system in maintenance mode</p>
+              <h4 className="font-medium text-white">Chế độ bảo trì</h4>
+              <p className="text-sm text-gray-400">Đặt hệ thống vào chế độ bảo trì</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -286,8 +286,8 @@ const Settings = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <h4 className="font-medium text-white">Auto Backup</h4>
-              <p className="text-sm text-gray-400">Automatically backup data daily</p>
+              <h4 className="font-medium text-white">Sao lưu tự động</h4>
+              <p className="text-sm text-gray-400">Tự động sao lưu dữ liệu hàng ngày</p>
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -301,16 +301,16 @@ const Settings = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Log Level</label>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Cấp độ ghi log</label>
             <select
               value={settings.system.logLevel}
               onChange={(e) => handleSettingChange('system', 'logLevel', e.target.value)}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
             >
-              <option value="debug">Debug</option>
-              <option value="info">Info</option>
-              <option value="warn">Warning</option>
-              <option value="error">Error</option>
+              <option value="debug">Gỡ lỗi</option>
+              <option value="info">Thông tin</option>
+              <option value="warn">Cảnh báo</option>
+              <option value="error">Lỗi</option>
             </select>
           </div>
         </div>
@@ -324,8 +324,8 @@ const Settings = () => {
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-white">System Settings</h1>
-            <p className="text-gray-400 text-sm">Dashboard / Settings</p>
+            <h1 className="text-2xl font-bold text-white">Cài Đặt Hệ Thống</h1>
+            <p className="text-gray-400 text-sm">Trang chủ / Cài đặt</p>
           </div>
           <button
             onClick={handleSaveSettings}
@@ -335,7 +335,7 @@ const Settings = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
             </svg>
-            <span>{loading ? 'Saving...' : 'Save Settings'}</span>
+            <span>{loading ? 'Đang lưu...' : 'Lưu Cài Đặt'}</span>
           </button>
         </div>
       </div>

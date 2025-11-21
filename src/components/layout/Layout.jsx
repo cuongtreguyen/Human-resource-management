@@ -7,14 +7,13 @@ const LayoutContext = createContext(false);
 
 const Layout = ({ children }) => {
   const isInsideLayout = useContext(LayoutContext);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   if (isInsideLayout) {
     return children || <Outlet />;
   }
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const navigate = useNavigate();
-  const location = useLocation();
 
   const handleLogout = () => {
     // Clear any stored user data
@@ -36,9 +35,10 @@ const Layout = ({ children }) => {
         {/* Main content */}
         <div className="flex flex-col flex-1 overflow-hidden">
           {/* Header */}
-          <Header 
+          <Header
             onLogout={handleLogout}
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+            onNotificationClick={() => navigate('/notifications')}
           />
           
           {/* Page content */}

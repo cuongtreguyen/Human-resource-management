@@ -67,12 +67,12 @@ const LogsMonitor = () => {
 
   // Chart data for action distribution
   const chartData = [
-    { name: 'View', value: stats.view, color: '#10B981' },
-    { name: 'Navigate', value: stats.navigate, color: '#3B82F6' },
-    { name: 'Update', value: stats.update, color: '#F59E0B' },
-    { name: 'Create', value: stats.create, color: '#8B5CF6' },
-    { name: 'Error', value: stats.error, color: '#EF4444' },
-    { name: 'Attendance', value: stats.attendance || 0, color: '#6366F1' }
+    { name: 'Xem', value: stats.view, color: '#10B981' },
+    { name: 'Điều hướng', value: stats.navigate, color: '#3B82F6' },
+    { name: 'Cập nhật', value: stats.update, color: '#F59E0B' },
+    { name: 'Tạo mới', value: stats.create, color: '#8B5CF6' },
+    { name: 'Lỗi', value: stats.error, color: '#EF4444' },
+    { name: 'Chấm công', value: stats.attendance || 0, color: '#6366F1' }
   ];
 
   const getTypeColor = (type) => {
@@ -102,17 +102,17 @@ const LogsMonitor = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Audit Log</h1>
-            <p className="text-gray-600 mt-1">Tracking system behaviors and user actions</p>
+            <h1 className="text-3xl font-bold text-gray-900">Nhật Ký Hệ Thống</h1>
+            <p className="text-gray-600 mt-1">Theo dõi hành vi hệ thống và hoạt động người dùng</p>
           </div>
           <div className="flex gap-3">
             <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
               <Calendar size={20} />
-              Export Logs
+              Xuất Nhật Ký
             </button>
             <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
               <BarChart3 size={20} />
-              Generate Report
+              Tạo Báo Cáo
             </button>
           </div>
         </div>
@@ -121,7 +121,7 @@ const LogsMonitor = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Action Distribution Chart */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Action Distribution</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Phân Bổ Hành Động</h3>
             <div className="flex items-center justify-center h-64">
               <div className="relative w-48 h-48">
                 {/* Simple donut chart representation */}
@@ -150,7 +150,7 @@ const LogsMonitor = () => {
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-                    <div className="text-sm text-gray-500">Total Actions</div>
+                    <div className="text-sm text-gray-500">Tổng Hành Động</div>
                   </div>
                 </div>
               </div>
@@ -170,7 +170,7 @@ const LogsMonitor = () => {
 
           {/* Activities Chart */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Activities</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Hoạt Động</h3>
             <div className="h-64 flex items-end justify-between gap-2">
               {['30/09', '01/10', '02/10', '03/10', '04/10', '05/10', '06/10'].map((date) => {
                 const dayLogs = logs.filter(log => formatDate(log.timestamp) === date);
@@ -210,43 +210,43 @@ const LogsMonitor = () => {
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-gray-900">{stats.total}</div>
-              <div className="text-sm text-gray-500">All</div>
+              <div className="text-sm text-gray-500">Tất cả</div>
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">{stats.view}</div>
-              <div className="text-sm text-gray-500">View</div>
+              <div className="text-sm text-gray-500">Xem</div>
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">{stats.navigate}</div>
-              <div className="text-sm text-gray-500">Navigate</div>
+              <div className="text-sm text-gray-500">Điều hướng</div>
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-yellow-600">{stats.update}</div>
-              <div className="text-sm text-gray-500">Update</div>
+              <div className="text-sm text-gray-500">Cập nhật</div>
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">{stats.create}</div>
-              <div className="text-sm text-gray-500">Create</div>
+              <div className="text-sm text-gray-500">Tạo mới</div>
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">{stats.error}</div>
-              <div className="text-sm text-gray-500">Error</div>
+              <div className="text-sm text-gray-500">Lỗi</div>
             </div>
           </div>
           <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
             <div className="text-center">
               <div className="text-2xl font-bold text-indigo-600">{stats.attendance}</div>
-              <div className="text-sm text-gray-500">Attendance</div>
+              <div className="text-sm text-gray-500">Chấm công</div>
             </div>
           </div>
         </div>
@@ -255,12 +255,12 @@ const LogsMonitor = () => {
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Find by user</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Tìm theo người dùng</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Search by username..."
+                  placeholder="Tìm theo tên người dùng..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -269,25 +269,25 @@ const LogsMonitor = () => {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Loại</label>
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value)}
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">Tất cả</option>
-                <option value="View">View</option>
-                <option value="Navigate">Navigate</option>
-                <option value="Update">Update</option>
-                <option value="Create">Create</option>
-                <option value="Delete">Delete</option>
-                <option value="Error">Error</option>
-                <option value="Attendance">Attendance</option>
+                <option value="View">Xem</option>
+                <option value="Navigate">Điều hướng</option>
+                <option value="Update">Cập nhật</option>
+                <option value="Create">Tạo mới</option>
+                <option value="Delete">Xóa</option>
+                <option value="Error">Lỗi</option>
+                <option value="Attendance">Chấm công</option>
               </select>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Time</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Thời gian</label>
               <input
                 type="date"
                 value={dateFilter}
@@ -298,9 +298,9 @@ const LogsMonitor = () => {
             
             <div className="flex items-end gap-2">
               <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                Filter
+                Lọc
               </button>
-              <button 
+              <button
                 onClick={() => {
                   setSearchTerm('');
                   setTypeFilter('all');
@@ -308,7 +308,7 @@ const LogsMonitor = () => {
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                Clear Filters
+                Xóa Bộ Lọc
               </button>
             </div>
           </div>
@@ -320,11 +320,11 @@ const LogsMonitor = () => {
             <table className="min-w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Thời gian</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Người dùng</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loại</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Chi tiết</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -333,14 +333,14 @@ const LogsMonitor = () => {
                     <td className="px-6 py-12 text-center text-gray-500" colSpan={5}>
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                        <span>Loading logs...</span>
+                        <span>Đang tải nhật ký...</span>
                       </div>
                     </td>
                   </tr>
                 ) : filteredLogs.length === 0 ? (
                   <tr>
                     <td className="px-6 py-12 text-center text-gray-500" colSpan={5}>
-                      No logs found
+                      Không tìm thấy nhật ký
                     </td>
                   </tr>
                 ) : (
@@ -382,14 +382,14 @@ const LogsMonitor = () => {
           {/* Pagination */}
           <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
             <div className="text-sm text-gray-500">
-              Showing 1 - {filteredLogs.length} of {filteredLogs.length} results
+              Hiển thị 1 - {filteredLogs.length} của {filteredLogs.length} kết quả
             </div>
             <div className="flex items-center gap-2">
               <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                Previous
+                Trước
               </button>
               <button className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">
-                Next
+                Sau
               </button>
             </div>
           </div>

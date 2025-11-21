@@ -10,27 +10,27 @@ const Documents = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const categories = [
-    { id: 'all', name: 'All Documents', icon: '📁' },
-    { id: 'contracts', name: 'Contracts', icon: '📄' },
-    { id: 'policies', name: 'Policies', icon: '📋' },
-    { id: 'forms', name: 'Forms', icon: '📝' },
-    { id: 'certificates', name: 'Certificates', icon: '🏆' },
-    { id: 'reports', name: 'Reports', icon: '📊' }
+    { id: 'all', name: 'Tất cả tài liệu', icon: '📁' },
+    { id: 'contracts', name: 'Hợp đồng', icon: '📄' },
+    { id: 'policies', name: 'Chính sách', icon: '📋' },
+    { id: 'forms', name: 'Biểu mẫu', icon: '📝' },
+    { id: 'certificates', name: 'Chứng chỉ', icon: '🏆' },
+    { id: 'reports', name: 'Báo cáo', icon: '📊' }
   ];
 
   const mockDocuments = useMemo(() => [
     {
       id: 1,
-      name: 'Employee Contract Template.pdf',
+      name: 'Mẫu Hợp Đồng Nhân Viên.pdf',
       category: 'contracts',
       size: '2.4 MB',
       uploadDate: '2024-01-15',
-      uploadedBy: 'HR Manager',
+      uploadedBy: 'Quản lý HR',
       downloads: 45
     },
     {
       id: 2,
-      name: 'Company Policy Handbook.pdf',
+      name: 'Sổ Tay Chính Sách Công Ty.pdf',
       category: 'policies',
       size: '5.8 MB',
       uploadDate: '2024-01-10',
@@ -39,29 +39,29 @@ const Documents = () => {
     },
     {
       id: 3,
-      name: 'Leave Request Form.docx',
+      name: 'Đơn Xin Nghỉ Phép.docx',
       category: 'forms',
       size: '156 KB',
       uploadDate: '2024-01-08',
-      uploadedBy: 'HR Team',
+      uploadedBy: 'Đội HR',
       downloads: 123
     },
     {
       id: 4,
-      name: 'Training Certificate.pdf',
+      name: 'Chứng Chỉ Đào Tạo.pdf',
       category: 'certificates',
       size: '1.2 MB',
       uploadDate: '2024-01-05',
-      uploadedBy: 'Training Dept',
+      uploadedBy: 'Phòng Đào tạo',
       downloads: 34
     },
     {
       id: 5,
-      name: 'Monthly Report Jan 2024.pdf',
+      name: 'Báo Cáo Tháng 01-2024.pdf',
       category: 'reports',
       size: '3.1 MB',
       uploadDate: '2024-01-01',
-      uploadedBy: 'Manager',
+      uploadedBy: 'Quản lý',
       downloads: 56
     }
   ], []);
@@ -92,19 +92,19 @@ const Documents = () => {
       setShowUploadModal(false);
       setUploadFile(null);
       setLoading(false);
-      alert('Document uploaded successfully!');
+      alert('Tải tài liệu lên thành công!');
     }, 2000);
   };
 
   const downloadDocument = (document) => {
     // Simulate download
-    alert(`Downloading ${document.name}...`);
+    alert(`Đang tải ${document.name}...`);
   };
 
   const deleteDocument = (documentId) => {
-    if (window.confirm('Are you sure you want to delete this document?')) {
+    if (window.confirm('Bạn có chắc chắn muốn xóa tài liệu này?')) {
       setDocuments(prev => prev.filter(doc => doc.id !== documentId));
-      alert('Document deleted successfully!');
+      alert('Đã xóa tài liệu thành công!');
     }
   };
 
@@ -144,22 +144,22 @@ const Documents = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-900">
+      <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-4">
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-6 rounded-lg mx-6 mt-6">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-white">Document Management</h1>
-              <p className="text-gray-400 text-sm">Dashboard / Documents</p>
+              <h1 className="text-3xl font-bold">Quản Lý Tài Liệu</h1>
+              <p className="text-purple-100 mt-1">Trang chủ / Tài liệu</p>
             </div>
             <button
               onClick={() => setShowUploadModal(true)}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 flex items-center space-x-2 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 flex items-center space-x-2 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              <span>Upload Document</span>
+              <span>Tải Lên Tài Liệu</span>
             </button>
           </div>
         </div>
@@ -172,10 +172,10 @@ const Documents = () => {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search documents..."
+                    placeholder="Tìm kiếm tài liệu..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 bg-gray-800 text-white placeholder-gray-400 rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-400 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   />
                   <svg className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -186,7 +186,7 @@ const Documents = () => {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
@@ -200,7 +200,7 @@ const Documents = () => {
 
           {/* Categories */}
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-white mb-4">Categories</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Danh Mục</h2>
             <div className="flex flex-wrap gap-3">
               {categories.map(category => (
                 <button
@@ -208,8 +208,8 @@ const Documents = () => {
                   onClick={() => setSelectedCategory(category.id)}
                   className={`px-4 py-2 rounded-lg transition-all duration-200 ${
                     selectedCategory === category.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-white text-gray-600 hover:bg-purple-50 border border-gray-200'
                   }`}
                 >
                   <span className="mr-2">{category.icon}</span>
@@ -224,16 +224,16 @@ const Documents = () => {
             {filteredDocuments.map(document => (
               <div 
                 key={document.id}
-                className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700 p-6 hover:shadow-xl transition-all duration-200"
+                className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:border-purple-300 transition-all duration-200"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
                     <div className="text-2xl">{getFileIcon(document.name)}</div>
                     <div>
-                      <h3 className="font-semibold text-white text-sm truncate max-w-40">
+                      <h3 className="font-semibold text-gray-900 text-sm truncate max-w-40">
                         {document.name}
                       </h3>
-                      <p className="text-gray-400 text-xs">{document.size}</p>
+                      <p className="text-gray-500 text-xs">{document.size}</p>
                     </div>
                   </div>
                   <div className="flex space-x-1">
@@ -261,27 +261,27 @@ const Documents = () => {
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(document.category)}`}>
                       {document.category}
                     </span>
-                    <span className="text-gray-400 text-xs">{document.downloads} downloads</span>
+                    <span className="text-gray-400 text-xs">{document.downloads} lượt tải</span>
                   </div>
                   
                   <div className="text-xs text-gray-400">
-                    <p>Uploaded: {document.uploadDate}</p>
-                    <p>By: {document.uploadedBy}</p>
+                    <p>Ngày tải: {document.uploadDate}</p>
+                    <p>Người tải: {document.uploadedBy}</p>
                   </div>
                 </div>
 
                 <div className="mt-4 flex space-x-2">
                   <button
                     onClick={() => downloadDocument(document)}
-                    className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm"
+                    className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 text-sm"
                   >
-                    Download
+                    Tải xuống
                   </button>
                   <button
                     onClick={() => {/* View details */}}
-                    className="px-3 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-all duration-200 text-sm"
+                    className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm"
                   >
-                    View
+                    Xem
                   </button>
                 </div>
               </div>
@@ -291,12 +291,12 @@ const Documents = () => {
           {/* Upload Modal */}
           {showUploadModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-              <div className="bg-gray-800 rounded-lg shadow-xl max-w-md w-full border border-gray-700">
-                <div className="flex justify-between items-center p-6 border-b border-gray-700">
-                  <h2 className="text-xl font-semibold text-white">Upload Document</h2>
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full border border-gray-200">
+                <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                  <h2 className="text-xl font-semibold text-gray-900">Tải Lên Tài Liệu</h2>
                   <button 
                     onClick={() => setShowUploadModal(false)}
-                    className="text-gray-400 hover:text-white text-2xl leading-none"
+                    className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
                   >
                     ×
                   </button>
@@ -304,25 +304,25 @@ const Documents = () => {
 
                 <form onSubmit={handleFileUpload} className="p-6 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Select File</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Chọn Tệp</label>
                     <input
                       type="file"
                       onChange={(e) => setUploadFile(e.target.files[0])}
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 text-gray-900"
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">Category</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Danh Mục</label>
                     <select
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
+                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 text-gray-900"
                     >
-                      <option value="contracts">Contracts</option>
-                      <option value="policies">Policies</option>
-                      <option value="forms">Forms</option>
-                      <option value="certificates">Certificates</option>
-                      <option value="reports">Reports</option>
+                      <option value="contracts">Hợp đồng</option>
+                      <option value="policies">Chính sách</option>
+                      <option value="forms">Biểu mẫu</option>
+                      <option value="certificates">Chứng chỉ</option>
+                      <option value="reports">Báo cáo</option>
                     </select>
                   </div>
 
@@ -330,16 +330,16 @@ const Documents = () => {
                     <button
                       type="button"
                       onClick={() => setShowUploadModal(false)}
-                      className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-all duration-200"
+                      className="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-all duration-200"
                     >
-                      Cancel
+                      Hủy
                     </button>
                     <button
                       type="submit"
                       disabled={loading || !uploadFile}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-all duration-200"
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 transition-all duration-200"
                     >
-                      {loading ? 'Uploading...' : 'Upload'}
+                      {loading ? 'Đang tải...' : 'Tải lên'}
                     </button>
                   </div>
                 </form>

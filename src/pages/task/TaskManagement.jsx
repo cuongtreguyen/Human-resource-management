@@ -266,8 +266,8 @@ const TaskManagement = () => {
       <div className="bg-gradient-to-r from-gray-800 to-gray-900 border-b border-gray-700 px-6 py-4">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-white">Task Management</h1>
-            <p className="text-gray-400 text-sm">Dashboard / Task Management</p>
+            <h1 className="text-2xl font-bold text-white">Quản lý Công việc</h1>
+            <p className="text-gray-400 text-sm">Trang chủ / Quản lý Công việc</p>
           </div>
           <button
             onClick={() => setShowAddTask(true)}
@@ -276,7 +276,7 @@ const TaskManagement = () => {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
             </svg>
-            <span>Add Task</span>
+            <span>Thêm công việc</span>
           </button>
         </div>
 
@@ -284,8 +284,8 @@ const TaskManagement = () => {
         <div className="flex items-center justify-between mt-4">
           <div className="flex space-x-8">
             {[
-              { id: 'timeline', name: 'Timeline' },
-              { id: 'calculate', name: 'Calculate' }
+              { id: 'timeline', name: 'Lịch trình' },
+              { id: 'calculate', name: 'Tính toán' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -322,7 +322,7 @@ const TaskManagement = () => {
               {showNotifications && (
                 <div className="absolute right-0 mt-2 w-80 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
                   <div className="p-4 border-b border-gray-700">
-                    <h3 className="font-semibold text-white">Notifications</h3>
+                    <h3 className="font-semibold text-white">Thông báo</h3>
                   </div>
                   <div className="max-h-96 overflow-y-auto">
                     {notifications.map(notification => (
@@ -362,7 +362,7 @@ const TaskManagement = () => {
             <div className="relative">
               <input
                 type="text"
-                placeholder="Search Task"
+                placeholder="Tìm kiếm công việc"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="bg-gray-800 text-white placeholder-gray-400 px-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 border border-gray-600"
@@ -411,30 +411,30 @@ const TaskManagement = () => {
                         selectedView === 'month' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
                       }`}
                     >
-                      Month
+                      Tháng
                     </button>
-                    <button 
+                    <button
                       onClick={() => setSelectedView('week')}
                       className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
                         selectedView === 'week' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
                       }`}
                     >
-                      Week
+                      Tuần
                     </button>
-                    <button 
+                    <button
                       onClick={() => setSelectedView('day')}
                       className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
                         selectedView === 'day' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
                       }`}
                     >
-                      Day
+                      Ngày
                     </button>
                   </div>
                   <button 
                     onClick={goToToday}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 font-medium"
                   >
-                    Today
+                    Hôm nay
                   </button>
                 </div>
               </div>
@@ -450,35 +450,35 @@ const TaskManagement = () => {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  <span>Add Event</span>
+                  <span>Thêm sự kiện</span>
                 </button>
                 
-                <h3 className="text-white font-medium mb-4">Draggable Events</h3>
-                
+                <h3 className="text-white font-medium mb-4">Kéo thả sự kiện</h3>
+
                 {/* Event Filter */}
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Filter Events</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Lọc sự kiện</label>
                   <select
                     value={eventFilter}
                     onChange={(e) => setEventFilter(e.target.value)}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="all">All Events ({timelineData?.events.length || 0})</option>
-                    <option value="development">Development ({timelineData?.events.filter(e => e.type === 'development').length || 0})</option>
-                    <option value="design">Design ({timelineData?.events.filter(e => e.type === 'design').length || 0})</option>
-                    <option value="meeting">Meeting ({timelineData?.events.filter(e => e.type === 'meeting').length || 0})</option>
-                    <option value="review">Review ({timelineData?.events.filter(e => e.type === 'review').length || 0})</option>
-                    <option value="training">Training ({timelineData?.events.filter(e => e.type === 'training').length || 0})</option>
+                    <option value="all">Tất cả sự kiện ({timelineData?.events.length || 0})</option>
+                    <option value="development">Phát triển ({timelineData?.events.filter(e => e.type === 'development').length || 0})</option>
+                    <option value="design">Thiết kế ({timelineData?.events.filter(e => e.type === 'design').length || 0})</option>
+                    <option value="meeting">Họp ({timelineData?.events.filter(e => e.type === 'meeting').length || 0})</option>
+                    <option value="review">Đánh giá ({timelineData?.events.filter(e => e.type === 'review').length || 0})</option>
+                    <option value="training">Đào tạo ({timelineData?.events.filter(e => e.type === 'training').length || 0})</option>
                   </select>
                 </div>
                 
                 <div className="space-y-3">
                   {[
-                    { name: 'Development', type: 'development', color: '#3B82F6', icon: '💻' },
-                    { name: 'Design', type: 'design', color: '#10B981', icon: '🎨' },
-                    { name: 'Meeting', type: 'meeting', color: '#8B5CF6', icon: '👥' },
-                    { name: 'Review', type: 'review', color: '#F59E0B', icon: '📋' },
-                    { name: 'Training', type: 'training', color: '#EF4444', icon: '🎓' }
+                    { name: 'Phát triển', type: 'development', color: '#3B82F6', icon: '💻' },
+                    { name: 'Thiết kế', type: 'design', color: '#10B981', icon: '🎨' },
+                    { name: 'Họp', type: 'meeting', color: '#8B5CF6', icon: '👥' },
+                    { name: 'Đánh giá', type: 'review', color: '#F59E0B', icon: '📋' },
+                    { name: 'Đào tạo', type: 'training', color: '#EF4444', icon: '🎓' }
                   ].map((event, index) => (
                     <div 
                       key={index}
@@ -500,7 +500,7 @@ const TaskManagement = () => {
               {/* Calendar Grid */}
               <div className="flex-1 p-6">
                 <div className="grid grid-cols-7 gap-1 mb-4">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(day => (
                     <div key={day} className="p-2 text-center text-sm font-medium text-gray-400">
                       {day}
                     </div>
@@ -581,7 +581,7 @@ const TaskManagement = () => {
                       </svg>
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-blue-100">Total Tasks</p>
+                      <p className="text-sm font-medium text-blue-100">Tổng công việc</p>
                       <p className="text-3xl font-bold">{analyticsData.overview.totalTasks}</p>
                     </div>
                   </div>
@@ -595,7 +595,7 @@ const TaskManagement = () => {
                       </svg>
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-green-100">Completed</p>
+                      <p className="text-sm font-medium text-green-100">Hoàn thành</p>
                       <p className="text-3xl font-bold">{analyticsData.overview.completedTasks}</p>
                     </div>
                   </div>
@@ -609,7 +609,7 @@ const TaskManagement = () => {
                       </svg>
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-yellow-100">Avg. Time</p>
+                      <p className="text-sm font-medium text-yellow-100">TG trung bình</p>
                       <p className="text-3xl font-bold">{analyticsData.productivity.averageCompletionTime}d</p>
                     </div>
                   </div>
@@ -623,7 +623,7 @@ const TaskManagement = () => {
                       </svg>
                     </div>
                     <div className="ml-4">
-                      <p className="text-sm font-medium text-purple-100">Efficiency</p>
+                      <p className="text-sm font-medium text-purple-100">Hiệu suất</p>
                       <p className="text-3xl font-bold">{analyticsData.productivity.efficiencyScore}%</p>
                     </div>
                   </div>
@@ -639,8 +639,8 @@ const TaskManagement = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Calculate Task Metrics</h3>
-                <p className="text-gray-400 mb-6">Analyze performance and get insights for all tasks</p>
+                <h3 className="text-xl font-bold text-white mb-2">Tính toán số liệu công việc</h3>
+                <p className="text-gray-400 mb-6">Phân tích hiệu suất và thông tin chi tiết cho tất cả công việc</p>
                 <button 
                   onClick={calculateMetrics}
                   className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-4 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center space-x-3 mx-auto shadow-lg hover:shadow-xl transform hover:scale-105"
@@ -648,7 +648,7 @@ const TaskManagement = () => {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
-                  <span className="font-medium">Calculate Metrics</span>
+                  <span className="font-medium">Tính toán</span>
                 </button>
               </div>
             </div>
@@ -657,7 +657,7 @@ const TaskManagement = () => {
             {analyticsData && (
               <div className="bg-gradient-to-r from-gray-800 to-gray-900 rounded-xl shadow-lg border border-gray-700">
                 <div className="px-6 py-4 border-b border-gray-700">
-                  <h3 className="text-lg font-medium text-white">Employee Performance</h3>
+                  <h3 className="text-lg font-medium text-white">Hiệu suất nhân viên</h3>
                 </div>
                 <div className="p-6">
                   <div className="space-y-4">
@@ -671,7 +671,7 @@ const TaskManagement = () => {
                           </div>
                           <div>
                             <h4 className="font-medium text-white">{employee.name}</h4>
-                            <p className="text-sm text-gray-400">{employee.tasksCompleted} tasks completed</p>
+                            <p className="text-sm text-gray-400">{employee.tasksCompleted} công việc hoàn thành</p>
                           </div>
                         </div>
                         <div className="text-right">
@@ -701,7 +701,7 @@ const TaskManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-gray-800 rounded-lg shadow-xl max-w-md w-full border border-gray-700">
             <div className="flex justify-between items-center p-6 border-b border-gray-700">
-              <h2 className="text-xl font-semibold text-white">Add New Event</h2>
+              <h2 className="text-xl font-semibold text-white">Thêm sự kiện mới</h2>
               <button 
                 onClick={() => setShowAddEvent(false)}
                 className="text-gray-400 hover:text-white text-2xl leading-none"
@@ -712,40 +712,40 @@ const TaskManagement = () => {
 
             <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Event Title *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Tiêu đề sự kiện *</label>
                 <input
                   type="text"
                   required
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
-                  placeholder="Enter event title"
+                  placeholder="Nhập tiêu đề sự kiện"
                   value={newEvent.title}
                   onChange={(e) => setNewEvent(prev => ({ ...prev, title: e.target.value }))}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Event Type</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Loại sự kiện</label>
                 <select
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
                   value={newEvent.type}
                   onChange={(e) => setNewEvent(prev => ({ ...prev, type: e.target.value }))}
                 >
-                  <option value="development">Development</option>
-                  <option value="design">Design</option>
-                  <option value="meeting">Meeting</option>
-                  <option value="review">Review</option>
-                  <option value="training">Training</option>
+                  <option value="development">Phát triển</option>
+                  <option value="design">Thiết kế</option>
+                  <option value="meeting">Họp</option>
+                  <option value="review">Đánh giá</option>
+                  <option value="training">Đào tạo</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Assignee</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Người thực hiện</label>
                 <select
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
                   value={newEvent.assigneeId}
                   onChange={(e) => setNewEvent(prev => ({ ...prev, assigneeId: e.target.value }))}
                 >
-                  <option value="">Select assignee</option>
+                  <option value="">Chọn người thực hiện</option>
                   {assignees.map(assignee => (
                     <option key={assignee.id} value={assignee.id}>{assignee.name}</option>
                   ))}
@@ -754,7 +754,7 @@ const TaskManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Ngày bắt đầu</label>
                   <input
                     type="date"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
@@ -764,7 +764,7 @@ const TaskManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Ngày kết thúc</label>
                   <input
                     type="date"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
@@ -775,11 +775,11 @@ const TaskManagement = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Mô tả</label>
                 <textarea
                   rows={3}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 resize-vertical text-white placeholder-gray-400"
-                  placeholder="Enter event description"
+                  placeholder="Nhập mô tả sự kiện"
                   value={newEvent.description}
                   onChange={(e) => setNewEvent(prev => ({ ...prev, description: e.target.value }))}
                 />
@@ -791,14 +791,14 @@ const TaskManagement = () => {
                   onClick={() => setShowAddEvent(false)}
                   className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-all duration-200"
                 >
-                  Cancel
+                  Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-all duration-200"
                 >
-                  {loading ? 'Creating...' : 'Create Event'}
+                  {loading ? 'Đang tạo...' : 'Tạo sự kiện'}
                 </button>
               </div>
             </form>
@@ -811,7 +811,7 @@ const TaskManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <div className="bg-gray-800 rounded-lg shadow-xl max-w-md w-full border border-gray-700">
             <div className="flex justify-between items-center p-6 border-b border-gray-700">
-              <h2 className="text-xl font-semibold text-white">Add New Task</h2>
+              <h2 className="text-xl font-semibold text-white">Thêm công việc mới</h2>
               <button 
                 onClick={() => setShowAddTask(false)}
                 className="text-gray-400 hover:text-white text-2xl leading-none"
@@ -822,23 +822,23 @@ const TaskManagement = () => {
 
             <form onSubmit={handleCreateTask} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Task Title *</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Tiêu đề công việc *</label>
                 <input
                   type="text"
                   required
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white placeholder-gray-400"
-                  placeholder="Enter task title"
+                  placeholder="Nhập tiêu đề công việc"
                   value={newTask.title}
                   onChange={(e) => setNewTask(prev => ({ ...prev, title: e.target.value }))}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Mô tả</label>
                 <textarea
                   rows={3}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 resize-vertical text-white placeholder-gray-400"
-                  placeholder="Enter task description"
+                  placeholder="Nhập mô tả công việc"
                   value={newTask.description}
                   onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
                 />
@@ -846,41 +846,41 @@ const TaskManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Trạng thái</label>
                   <select
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
                     value={newTask.status}
                     onChange={(e) => setNewTask(prev => ({ ...prev, status: e.target.value }))}
                   >
-                    <option value="new">New Task</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="pending">Pending</option>
-                    <option value="complete">Complete</option>
+                    <option value="new">Mới</option>
+                    <option value="in-progress">Đang thực hiện</option>
+                    <option value="pending">Chờ xử lý</option>
+                    <option value="complete">Hoàn thành</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Priority</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Ưu tiên</label>
                   <select
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
                     value={newTask.priority}
                     onChange={(e) => setNewTask(prev => ({ ...prev, priority: e.target.value }))}
                   >
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
+                    <option value="low">Thấp</option>
+                    <option value="medium">Trung bình</option>
+                    <option value="high">Cao</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">Assignee</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Người thực hiện</label>
                 <select
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
                   value={newTask.assigneeId}
                   onChange={(e) => setNewTask(prev => ({ ...prev, assigneeId: e.target.value }))}
                 >
-                  <option value="">Select assignee</option>
+                  <option value="">Chọn người thực hiện</option>
                   {assignees.map(assignee => (
                     <option key={assignee.id} value={assignee.id}>{assignee.name}</option>
                   ))}
@@ -889,7 +889,7 @@ const TaskManagement = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">Start Date</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Ngày bắt đầu</label>
                   <input
                     type="date"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
@@ -899,7 +899,7 @@ const TaskManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">End Date</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Ngày kết thúc</label>
                   <input
                     type="date"
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-white"
@@ -915,14 +915,14 @@ const TaskManagement = () => {
                   onClick={() => setShowAddTask(false)}
                   className="px-4 py-2 text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 transition-all duration-200"
                 >
-                  Cancel
+                  Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-all duration-200"
                 >
-                  {loading ? 'Creating...' : 'Create Task'}
+                  {loading ? 'Đang tạo...' : 'Tạo công việc'}
                 </button>
               </div>
             </form>
