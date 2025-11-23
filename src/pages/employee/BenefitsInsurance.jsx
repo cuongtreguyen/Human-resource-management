@@ -392,7 +392,7 @@ const EmployeeBenefitsInsurance = () => {
         id: 1,
         name: 'Phụ cấp ăn trưa',
         type: 'Meal',
-        amount: '30,000 VNĐ/ngày',
+        amount: '1,000,000 VNĐ/tháng',
         description: 'Phụ cấp ăn trưa cho nhân viên, thanh toán cùng lương',
         status: 'active',
         icon: Gift,
