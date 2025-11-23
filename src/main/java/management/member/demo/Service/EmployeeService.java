@@ -9,10 +9,12 @@ import management.member.demo.dto.EmployeeSearchFilterRequest;
 import management.member.demo.dto.ProfileResponse;
 import management.member.demo.dto.ProfileUpdateRequest;
 import management.member.demo.entity.Employee;
+import management.member.demo.entity.User;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.validator.EmployeeValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -28,14 +30,17 @@ public class EmployeeService {
     private final EmployeeRepository repository;
     private final EmployeeMapper employeeMapper;
     private final EmployeeValidator employeeValidator;
+    private final AuthService authService;
 
     @Autowired
     public EmployeeService(EmployeeRepository repository, 
                           EmployeeMapper employeeMapper,
-                          EmployeeValidator employeeValidator) {
+                          EmployeeValidator employeeValidator,
+                          AuthService authService) {
         this.repository = repository;
         this.employeeMapper = employeeMapper;
         this.employeeValidator = employeeValidator;
+        this.authService = authService;
     }
 
     /**
@@ -64,27 +69,41 @@ public class EmployeeService {
         return employeeMapper.toResponse(savedEmployee);
     }
 
-    /**
-     * Lấy thông tin profile của nhân viên theo ID
-     * Profile bao gồm thông tin liên hệ và thông tin công việc
-     */
+    // Lấy thông tin profile của nhân viên theo ID
+    // Employee chỉ có thể xem profile của chính mình, Admin có thể xem tất cả
     public ProfileResponse getProfile(Long id) {
         employeeValidator.validateEmployeeId(id);
         
         Employee employee = findEmployeeById(id);
         
+        // Kiểm tra quyền truy cập: Employee chỉ xem được profile của chính mình
+        User currentUser = authService.getCurrentUser();
+        if (currentUser != null && "EMPLOYEE".equals(currentUser.getRole().name())) {
+            // Employee chỉ xem được profile của chính mình (so sánh qua email)
+            if (!employee.getEmail().equals(currentUser.getEmail())) {
+                throw new AccessDeniedException("Bạn không có quyền truy cập profile này");
+            }
+        }
+        
         return employeeMapper.toProfileResponse(employee);
     }
 
-    /**
-     * Cập nhật profile của nhân viên theo ID
-     * Chỉ cho phép update thông tin liên hệ (fullName, email, phone, address)
-     */
+    // Cập nhật profile của nhân viên theo ID
+    // Employee chỉ có thể update profile của chính mình, Admin có thể update tất cả
     public ProfileResponse updateProfile(Long id, ProfileUpdateRequest request) {
         employeeValidator.validateEmployeeId(id);
         employeeValidator.validateProfileUpdateRequest(request);
         
         Employee employee = findEmployeeById(id);
+        
+        // Kiểm tra quyền truy cập: Employee chỉ update được profile của chính mình
+        User currentUser = authService.getCurrentUser();
+        if (currentUser != null && "EMPLOYEE".equals(currentUser.getRole().name())) {
+            // Employee chỉ update được profile của chính mình (so sánh qua email)
+            if (!employee.getEmail().equals(currentUser.getEmail())) {
+                throw new AccessDeniedException("Bạn không có quyền cập nhật profile này");
+            }
+        }
         
         employeeMapper.updateProfileFromRequest(employee, request);
         

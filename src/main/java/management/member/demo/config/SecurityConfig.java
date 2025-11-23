@@ -39,8 +39,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 // Cấu hình session management thành stateless
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // Cấu hình authorization rules
+                // Cấu hình authorization rules - phân quyền theo role
                 .authorizeHttpRequests(auth -> auth
+                        // Public endpoints - không cần authentication
                         .requestMatchers(
                                 "/auth/**",
                                 "/swagger-ui/**",
@@ -48,7 +49,27 @@ public class SecurityConfig {
                                 "/swagger-resources/**",
                                 "/swagger-ui.html"
                         ).permitAll()
-                        .anyRequest().authenticated()) // Yêu cầu authentication cho các endpoint khác
+                        // Admin endpoints - chỉ ADMIN mới truy cập được
+                        .requestMatchers(
+                                "/employees",
+                                "/employees/total",
+                                "/employees/active/count",
+                                "/employees/search",
+                                "/employees/{id}",
+                                "/employees/{id}/**",
+                                "/salary/**",
+                                "/payroll/**",
+                                "/employee-benefits/**",
+                                "/employee-insurance-contracts/**"
+                        ).hasRole("ADMIN")
+                        // Employee endpoints - ADMIN và EMPLOYEE đều truy cập được
+                        // Employee chỉ xem được profile của chính mình (kiểm tra trong service)
+                        .requestMatchers(
+                                "/employees/{id}/profile",
+                                "/employees/{id}/profile/**"
+                        ).hasAnyRole("ADMIN", "EMPLOYEE")
+                        // Các endpoint khác yêu cầu authentication
+                        .anyRequest().authenticated())
                 // Thêm JWT filter trước UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

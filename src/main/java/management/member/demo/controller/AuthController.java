@@ -49,6 +49,7 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "INVALID_CREDENTIALS"),
             @ApiResponse(responseCode = "403", description = "ACCOUNT_LOCKED_OR_INACTIVE")
     })
+    // Đăng nhập user và trả về JWT token cùng với role
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
         AuthService.Tokens tokens = authService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
         LoginResponse response = new LoginResponse();
@@ -56,6 +57,8 @@ public class AuthController {
         response.setAccessToken(tokens.getAccessToken());
         response.setRefreshToken(tokens.getRefreshToken());
         response.setAccessTokenExpiresAt(LocalDateTime.now().plusSeconds(3600));
+        // Lấy role từ user
+        response.setRole(authService.getCurrentUserRole());
         return ResponseEntity.ok(response);
     }
 

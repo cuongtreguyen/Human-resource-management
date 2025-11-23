@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import management.member.demo.security.JwtService;
 import management.member.demo.repository.UserRepository;
 import management.member.demo.entity.User;
+import management.member.demo.Enum.Role;
 import management.member.demo.exception.base.BusinessException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -124,9 +125,7 @@ public class AuthService {
         return String.valueOf(principal);
     }
 
-    /**
-     * Lấy thông tin User hiện tại từ repository (có thể trả null nếu không tìm thấy)
-     */
+    // Lấy thông tin User hiện tại từ repository (có thể trả null nếu không tìm thấy)
     public User getCurrentUser() {
         String username = getCurrentUsername();
         if (username == null) {
@@ -134,6 +133,15 @@ public class AuthService {
         }
         Optional<User> user = userRepository.findByUsername(username);
         return user.orElse(null);
+    }
+
+    // Lấy role của user hiện tại
+    public String getCurrentUserRole() {
+        User user = getCurrentUser();
+        if (user == null || user.getRole() == null) {
+            return Role.EMPLOYEE.name();
+        }
+        return user.getRole().name();
     }
 
     /**

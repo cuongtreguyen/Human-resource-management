@@ -160,27 +160,34 @@ public class OtpService {
      */
     @Scheduled(fixedRate = 300000) // 5 phút = 300,000ms
     public void cleanupExpiredOtps() {
-        int removedCount = 0;
+        int removedOtpCount = 0;
+        int removedRateLimitCount = 0;
         
         // Dọn dẹp OTP hết hạn
-        otpStorage.entrySet().removeIf(entry -> {
-            boolean expired = entry.getValue().isExpired();
-            if (expired) {
+        var otpIterator = otpStorage.entrySet().iterator();
+        while (otpIterator.hasNext()) {
+            var entry = otpIterator.next();
+            if (entry.getValue().isExpired()) {
                 System.out.println("Đã xóa OTP hết hạn cho email: " + entry.getKey());
+                otpIterator.remove();
+                removedOtpCount++;
             }
-            return expired;
-        });
+        }
         
         // Dọn dẹp rate limiting hết hạn
-        rateLimitStorage.entrySet().removeIf(entry -> {
-            boolean expired = entry.getValue().isExpired();
-            if (expired) {
+        var rateLimitIterator = rateLimitStorage.entrySet().iterator();
+        while (rateLimitIterator.hasNext()) {
+            var entry = rateLimitIterator.next();
+            if (entry.getValue().isExpired()) {
                 System.out.println("Đã xóa rate limit hết hạn cho email: " + entry.getKey());
+                rateLimitIterator.remove();
+                removedRateLimitCount++;
             }
-            return expired;
-        });
+        }
         
-        System.out.println("Đã dọn dẹp " + removedCount + " OTP hết hạn");
+        if (removedOtpCount > 0 || removedRateLimitCount > 0) {
+            System.out.println("Đã dọn dẹp " + removedOtpCount + " OTP hết hạn và " + removedRateLimitCount + " rate limit hết hạn");
+        }
     }
 
     /**

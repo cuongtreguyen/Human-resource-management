@@ -3,9 +3,11 @@ package management.member.demo.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import management.member.demo.Enum.Role;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -68,6 +70,12 @@ public class User {
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
     
+    /** Vai trò của user (ADMIN, EMPLOYEE) */
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "role")
+    private Role role;
+    
     /** Thời gian tạo user (tự động, không thể cập nhật) */
     @CreatedDate
     @Column(name = "created_at", updatable = false)
@@ -77,5 +85,5 @@ public class User {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
+    
 }
