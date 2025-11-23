@@ -22,4 +22,5 @@ public class TaskRequest {
     @Enumerated(EnumType.STRING)
     TaskStatus taskStatus;
     LocalDate createdAt;
+    LocalDate endedAt;
 }

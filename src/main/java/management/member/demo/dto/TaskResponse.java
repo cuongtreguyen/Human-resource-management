@@ -20,4 +20,5 @@ public class TaskResponse {
     TaskPriorityStatus taskPriorityStatus;
     TaskStatus taskStatus;
     LocalDate createdAt;
+    LocalDate endedAt;
 }
