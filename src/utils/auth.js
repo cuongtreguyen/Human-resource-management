@@ -36,6 +36,14 @@ export const isEmployee = () => {
   return getRole() === 'employee';
 };
 
+export const isManager = () => {
+  return getRole() === 'manager';
+};
+
+export const isAccountant = () => {
+  return getRole() === 'accountant';
+};
+
 export const setUserInfo = (info) => {
   const win = getStorage();
   if (!win) return;

@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
     if (userRole === 'employee') {
       return <Navigate to="/employee" replace />;
     }
-    if (userRole === 'admin') {
+    if (userRole === 'admin' || userRole === 'manager' || userRole === 'accountant') {
       return <Navigate to="/dashboard" replace />;
     }
     return <Navigate to="/login" replace />;

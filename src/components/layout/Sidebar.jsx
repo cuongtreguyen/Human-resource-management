@@ -1,65 +1,76 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Bell, Activity, Heart } from 'lucide-react';
+import { getRole } from '../../utils/auth';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
+  const userRole = getRole();
+
   const navigationGroups = [
     {
       title: 'BẢNG ĐIỀU KHIỂN',
       items: [
-        { name: 'Trang chủ', href: '/dashboard', icon: Home },
+        { name: 'Trang chủ', href: '/dashboard', icon: Home, allowedRoles: ['admin', 'manager', 'accountant'] },
       ]
     },
     {
       title: 'QUẢN LÝ NGƯỜI DÙNG',
       items: [
-        { name: 'Chat nội bộ', href: '/chat', icon: MessageCircle },
-        { name: 'Nhận diện khuôn mặt', href: '/face-recognition', icon: User },
+        { name: 'Chat nội bộ', href: '/chat', icon: MessageCircle, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Nhận diện khuôn mặt', href: '/face-recognition', icon: User, allowedRoles: ['admin', 'manager'] },
       ]
     },
     {
       title: 'QUẢN LÝ NHÂN VIÊN',
       items: [
-        { name: 'Danh sách nhân viên', href: '/employees', icon: Users },
-        { name: 'Thêm nhân viên', href: '/employees/add', icon: UserPlus },
-        { name: 'Xuất dữ liệu', href: '/employees/export', icon: FileText },
+        { name: 'Danh sách nhân viên', href: '/employees', icon: Users, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Thêm nhân viên', href: '/employees/add', icon: UserPlus, allowedRoles: ['admin'] },
+        { name: 'Xuất dữ liệu', href: '/employees/export', icon: FileText, allowedRoles: ['admin'] },
       ]
     },
     {
       title: 'QUẢN LÝ CHẤM CÔNG',
       items: [
-        { name: 'Danh sách chấm công', href: '/attendance', icon: Clock },
-        { name: 'Tạo chấm công', href: '/attendance/create', icon: Calendar },
+        { name: 'Danh sách chấm công', href: '/attendance', icon: Clock, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Tạo chấm công', href: '/attendance/create', icon: Calendar, allowedRoles: ['admin', 'manager'] },
       ]
     },
     {
       title: 'QUẢN LÝ LƯƠNG',
       items: [
-        { name: 'Danh sách lương', href: '/payroll', icon: DollarSign },
-        { name: 'Chính sách tài chính', href: '/payroll/policies', icon: FileText },
+        { name: 'Danh sách lương', href: '/payroll', icon: DollarSign, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Chính sách tài chính', href: '/payroll/policies', icon: FileText, allowedRoles: ['admin', 'accountant'] },
       ]
     },
     {
       title: 'QUẢN LÝ NGHỈ PHÉP',
       items: [
-        { name: 'Quản lý nghỉ phép', href: '/leaves', icon: Calendar },
-        { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: UserPlus },
-        { name: 'Bàn giao công việc', href: '/leaves/delegation', icon: Users },
+        { name: 'Quản lý nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['admin', 'manager'] },
+        { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: UserPlus, allowedRoles: ['admin', 'manager'] },
+        { name: 'Bàn giao công việc', href: '/leaves/delegation', icon: Users, allowedRoles: ['admin', 'manager'] },
       ]
     },
     {
       title: 'QUẢN LÝ HỆ THỐNG',
       items: [
-        { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare },
-        { name: 'Tài liệu', href: '/documents', icon: FileText },
-        { name: 'Báo cáo', href: '/reports', icon: BarChart3 },
-        { name: 'Thông báo', href: '/notifications', icon: Bell },
-        { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart },
-        { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity },
-        { name: 'Cài đặt', href: '/settings', icon: Settings },
+        { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['admin', 'manager'] },
+        { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Thông báo', href: '/notifications', icon: Bell, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart, allowedRoles: ['admin'] },
+        { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity, allowedRoles: ['admin'] },
+        { name: 'Cài đặt', href: '/settings', icon: Settings, allowedRoles: ['admin'] },
       ]
     }
   ];
+
+  // Filter navigation groups and items based on user role
+  const filteredNavigationGroups = navigationGroups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => item.allowedRoles.includes(userRole))
+    }))
+    .filter(group => group.items.length > 0); // Remove empty groups
 
   return (
     <>
@@ -87,7 +98,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
 
         <nav className="mt-8 px-4 flex-1 overflow-y-auto">
           <div className="space-y-6">
-            {navigationGroups.map((group) => (
+            {filteredNavigationGroups.map((group) => (
               <div key={group.title}>
                 {/* Group Title */}
                 <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
@@ -134,8 +145,16 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
               </div>
             </div>
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-900">Quản trị viên</p>
-              <p className="text-xs text-gray-500">admin@company.com</p>
+              <p className="text-sm font-medium text-gray-900">
+                {userRole === 'admin' && 'Quản trị viên'}
+                {userRole === 'manager' && 'Quản lý'}
+                {userRole === 'accountant' && 'Kế toán'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {userRole === 'admin' && 'admin@company.com'}
+                {userRole === 'manager' && 'manager@company.com'}
+                {userRole === 'accountant' && 'accountant@company.com'}
+              </p>
             </div>
           </div>
         </div>

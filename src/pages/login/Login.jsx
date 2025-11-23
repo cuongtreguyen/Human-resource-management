@@ -42,6 +42,26 @@ const Login = () => {
       route: "/dashboard",
       info: null,
     },
+    manager: {
+      email: "manager@company.com",
+      password: "manager123",
+      role: "manager",
+      route: "/dashboard",
+      info: {
+        name: "Nguyễn Văn Quản Lý",
+        department: "Nhân sự",
+      },
+    },
+    accountant: {
+      email: "accountant@company.com",
+      password: "accountant123",
+      role: "accountant",
+      route: "/dashboard",
+      info: {
+        name: "Trần Thị Kế Toán",
+        department: "Tài chính",
+      },
+    },
   };
 
   // Initialize floating particles

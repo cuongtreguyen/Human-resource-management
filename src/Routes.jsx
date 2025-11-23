@@ -53,9 +53,21 @@ import PositionsList from './pages/recruitment/PositionsList';
 import ApplicationsList from './pages/recruitment/ApplicationsList';
 import Profile from './pages/Profile';
 
-// Admin route wrapper
+// Route wrappers for different access levels
 const AdminRoute = ({ children }) => (
   <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>
+);
+
+const AdminManagerRoute = ({ children }) => (
+  <ProtectedRoute allowedRoles={['admin', 'manager']}>{children}</ProtectedRoute>
+);
+
+const AdminAccountantRoute = ({ children }) => (
+  <ProtectedRoute allowedRoles={['admin', 'accountant']}>{children}</ProtectedRoute>
+);
+
+const StaffRoute = ({ children }) => (
+  <ProtectedRoute allowedRoles={['admin', 'manager', 'accountant']}>{children}</ProtectedRoute>
 );
 
 const AppRoutes = () => {
@@ -63,56 +75,52 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
 
-      {/* Admin Area */}
-      <Route element={<AdminRoute><Layout /></AdminRoute>}>
+      {/* Staff Area (Admin, Manager, Accountant) */}
+      <Route element={<StaffRoute><Layout /></StaffRoute>}>
+        {/* Dashboard - All staff */}
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/face-recognition" element={<FaceRecognition />} />
+
+        {/* Face Recognition - Admin & Manager */}
+        <Route path="/face-recognition" element={<AdminManagerRoute><FaceRecognition /></AdminManagerRoute>} />
 
         {/* Employees */}
-        <Route path="/employees" element={<EmployeeList />} />
-        <Route path="/employees/add" element={<AddEmployee />} />
-        <Route path="/employees/view/:id" element={<EmployeeDetails />} />
-        <Route path="/employees/edit/:id" element={<EditEmployee />} />
-        <Route path="/employees/export" element={<ExportData />} />
+        <Route path="/employees" element={<EmployeeList />} /> {/* All staff can view */}
+        <Route path="/employees/view/:id" element={<EmployeeDetails />} /> {/* All staff can view */}
+        <Route path="/employees/add" element={<AdminRoute><AddEmployee /></AdminRoute>} /> {/* Admin only */}
+        <Route path="/employees/edit/:id" element={<AdminRoute><EditEmployee /></AdminRoute>} /> {/* Admin only */}
+        <Route path="/employees/export" element={<AdminRoute><ExportData /></AdminRoute>} /> {/* Admin only */}
 
         {/* Attendance */}
-        <Route path="/attendance" element={<AttendanceList />} />
-        <Route path="/attendance/create" element={<AttendanceCreate />} />
+        <Route path="/attendance" element={<AttendanceList />} /> {/* All staff can view */}
+        <Route path="/attendance/create" element={<AdminManagerRoute><AttendanceCreate /></AdminManagerRoute>} /> {/* Admin & Manager */}
 
         {/* Payroll */}
-        <Route path="/payroll" element={<PayrollList />} />
-        <Route path="/payroll/policies" element={<PayrollPolicies />} />
+        <Route path="/payroll" element={<PayrollList />} /> {/* All staff can view */}
+        <Route path="/payroll/policies" element={<AdminAccountantRoute><PayrollPolicies /></AdminAccountantRoute>} /> {/* Admin & Accountant */}
 
-        {/* Leaves */}
-        <Route path="/leaves" element={<LeaveManagement />} />
-        <Route path="/leaves/create" element={<LeaveRequest />} />
-        <Route path="/leaves/delegation" element={<TaskDelegation />} />
-        <Route path="/leaves/workflow" element={<WorkflowManager />} />
+        {/* Leaves - Admin & Manager */}
+        <Route path="/leaves" element={<AdminManagerRoute><LeaveManagement /></AdminManagerRoute>} />
+        <Route path="/leaves/create" element={<AdminManagerRoute><LeaveRequest /></AdminManagerRoute>} />
+        <Route path="/leaves/delegation" element={<AdminManagerRoute><TaskDelegation /></AdminManagerRoute>} />
+        <Route path="/leaves/workflow" element={<AdminManagerRoute><WorkflowManager /></AdminManagerRoute>} />
 
-        {/* Recruitment */}
-        <Route path="/recruitment" element={<RecruitmentManagement />} />
-        <Route path="/recruitment/positions" element={<PositionsList />} />
-        <Route path="/recruitment/applications" element={<ApplicationsList />} />
+        {/* Recruitment - Admin only */}
+        <Route path="/recruitment" element={<AdminRoute><RecruitmentManagement /></AdminRoute>} />
+        <Route path="/recruitment/positions" element={<AdminRoute><PositionsList /></AdminRoute>} />
+        <Route path="/recruitment/applications" element={<AdminRoute><ApplicationsList /></AdminRoute>} />
 
-        {/* Admin */}
-        <Route path="/admin/logs" element={<LogsMonitor />} />
-        <Route
-          path="/admin/benefits"
-          element={
-            <ProtectedRoute allowedRoles={['admin']}>
-              <AdminBenefits />
-            </ProtectedRoute>
-          }
-        />
+        {/* Admin Only */}
+        <Route path="/admin/logs" element={<AdminRoute><LogsMonitor /></AdminRoute>} />
+        <Route path="/admin/benefits" element={<AdminRoute><AdminBenefits /></AdminRoute>} />
+        <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
 
-        {/* Other */}
+        {/* System - All staff */}
         <Route path="/notifications" element={<NotificationCenter />} />
-        <Route path="/tasks" element={<TaskManagement />} />
+        <Route path="/tasks" element={<AdminManagerRoute><TaskManagement /></AdminManagerRoute>} /> {/* Admin & Manager */}
         <Route path="/chat" element={<Chat />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/documents" element={<Documents />} />
-        <Route path="/settings" element={<Settings />} />
         <Route path="/test" element={<Test />} />
       </Route>
 
