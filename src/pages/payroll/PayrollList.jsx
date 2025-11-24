@@ -5,24 +5,27 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
-import { 
-  DollarSign, 
-  Download, 
-  Eye, 
-  Calendar, 
-  Users, 
-  TrendingUp, 
+import { getRole } from '../../utils/auth';
+import {
+  DollarSign,
+  Download,
+  Eye,
+  Calendar,
+  Users,
+  TrendingUp,
   Building,
   FileText
 } from 'lucide-react';
-import { 
-  PayrollDetailsModal, 
-  PayrollCalculationModal, 
-  PayrollPoliciesModal 
+import {
+  PayrollDetailsModal,
+  PayrollCalculationModal,
+  PayrollPoliciesModal
 } from '../../components/payroll';
 
 const PayrollList = () => {
+  const userRole = getRole(); // Lấy role của user hiện tại
   const [payrollRecords, setPayrollRecords] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [showPayrollModal, setShowPayrollModal] = useState(false);
   const [showPoliciesModal, setShowPoliciesModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -34,88 +37,29 @@ const PayrollList = () => {
   const [, setError] = useState(null);
 
   useEffect(() => {
-    loadPayrollData();
+    loadEmployees();
   }, []);
 
-  const loadPayrollData = async () => {
+  const loadEmployees = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getPayrollRecords();
-      setPayrollRecords(response.data);
+      const response = await fakeApi.getEmployees();
+      setEmployees(response.data);
     } catch (err) {
-      setError('Không thể tải dữ liệu bảng lương');
-      console.error('Payroll data error:', err);
+      console.error('Error loading employees:', err);
+      setError('Không thể tải dữ liệu nhân viên');
     } finally {
       setLoading(false);
     }
   };
 
-  // Sample employees data for payroll
-  const employees = useMemo(() => [
-    {
-      id: 1,
-      name: 'Nguyễn Văn Bình',
-      department: 'Phòng phát triển Phần mềm',
-      position: 'Senior Developer',
-      email: 'binh.nguyen@company.com',
-      phone: '090123456',
-      basicSalary: 15000000,
-      workingDays: 20,
-      lateDays: 2,
-      overtimeHours: 8,
-      bonuses: 2000000,
-      allowances: [{ name: 'Transportation', amount: 500000 }, { name: 'Meals', amount: 300000 }]
-    },
-    {
-      id: 2,
-      name: 'Trần Thị Mai',
-      department: 'Phòng Marketing',
-      position: 'Marketing Coordinator',
-      email: 'mai.tran@company.com',
-      phone: '090234567',
-      basicSalary: 12000000,
-      workingDays: 22,
-      lateDays: 1,
-      overtimeHours: 4,
-      bonuses: 1500000,
-      allowances: [{ name: 'Transportation', amount: 400000 }, { name: 'Communication', amount: 200000 }]
-    },
-    {
-      id: 3,
-      name: 'Lê Văn Hùng',
-      department: 'Phòng HR',
-      position: 'HR Specialist',
-      email: 'hung.le@company.com',
-      phone: '090345678',
-      basicSalary: 10000000,
-      workingDays: 21,
-      lateDays: 0,
-      overtimeHours: 6,
-      bonuses: 1000000,
-      allowances: [{ name: 'Transportation', amount: 350000 }, { name: 'Meals', amount: 250000 }]
-    },
-    {
-      id: 4,
-      name: 'Phạm Thị Lan',
-      department: 'Phòng Phát triển Phần mềm',
-      position: 'Junior Developer',
-      email: 'lan.pham@company.com',
-      phone: '090456789',
-      basicSalary: 8000000,
-      workingDays: 19,
-      lateDays: 3,
-      overtimeHours: 12,
-      bonuses: 800000,
-      allowances: [{ name: 'Transportation', amount: 300000 }, { name: 'Learning', amount: 1000000 }]
-    }
-  ], []);
 
   // Generate payroll record for an employee
   const generatePayrollRecord = useCallback((employee) => {
-    const basicSalary = employee.basicSalary;
-    const allowances = employee.allowances?.reduce((sum, allowance) => sum + allowance.amount, 0) || 0;
-    const bonuses = employee.bonuses || 0;
-    const deductions = 0; // Không có deductions trong employee data
+    const basicSalary = employee.salary || employee.basicSalary || 0;
+    const allowances = 1000000; // Phụ cấp mặc định
+    const bonuses = 0;
+    const deductions = 0;
 
     // 💰 Tính tổng thu nhập
     const grossIncome = basicSalary + allowances + bonuses;
@@ -135,7 +79,11 @@ const PayrollList = () => {
     return {
       id: employee.id,
       employeeId: employee.id, // Thêm employeeId để có thể tìm employee
-      ...employee,
+      name: employee.name,
+      email: employee.email,
+      department: employee.department,
+      position: employee.position,
+      phone: employee.phone,
       basicSalary: basicSalary,
       allowances: allowances,
       bonuses: bonuses,
@@ -155,6 +103,9 @@ const PayrollList = () => {
 
   // Generate all payroll records
   const generateAllPayrolls = useCallback(() => {
+    if (employees.length === 0) {
+      return;
+    }
     const payrolls = employees.map(employee => generatePayrollRecord(employee));
     setPayrollRecords(payrolls);
   }, [employees, generatePayrollRecord]);
@@ -194,15 +145,19 @@ const PayrollList = () => {
   };
 
   const openPayrollDetailsModal = (employee) => {
+    console.log('Opening payroll details for:', employee);
     // Tìm payroll record của employee này
     const payrollRecord = payrollRecords.find(record => record.employeeId === employee.id);
+    console.log('Found payroll record:', payrollRecord);
     if (payrollRecord) {
       setSelectedPayrollDetails({
         employee: employee,
         payroll: payrollRecord
       });
       setShowPayrollDetailsModal(true);
+      console.log('Modal should open now');
     } else {
+      console.log('No payroll record found for employee:', employee.id);
       alert('Chưa có dữ liệu payroll cho nhân viên này');
     }
   };
@@ -254,9 +209,12 @@ const PayrollList = () => {
   }), { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 }) : 
   { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 };
 
+  // Generate payrolls when employees are loaded
   useEffect(() => {
-    generateAllPayrolls();
-  }, [generateAllPayrolls]);
+    if (employees.length > 0) {
+      generateAllPayrolls();
+    }
+  }, [employees, generateAllPayrolls]);
 
   return (
     <Layout>
@@ -267,10 +225,14 @@ const PayrollList = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-white">Quản lý Bảng lương</h1>
-                <p className="text-purple-100 mt-1">Tính toán và chi trả lương cho doanh nghiệp</p>
+                <p className="text-purple-100 mt-1">
+                  {userRole === 'admin' ? 'Tính toán và chi trả lương cho doanh nghiệp' :
+                   userRole === 'accountant' ? 'Tính toán lương cho nhân viên' :
+                   'Xem thông tin lương của nhân viên'}
+                </p>
               </div>
               <div className="flex gap-3">
-                <Button 
+                <Button
                   onClick={() => setShowPoliciesModal(true)}
                   variant="secondary"
                   className="bg-white text-purple-600 hover:bg-purple-50"
@@ -278,14 +240,17 @@ const PayrollList = () => {
                   <FileText className="h-4 w-4 mr-2" />
                   Chính sách
                 </Button>
-                <Button 
-                  onClick={exportPayrollData}
-                  variant="secondary"
-                  className="bg-white text-purple-600 hover:bg-purple-50"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  Xuất dữ liệu
-                </Button>
+                {/* Chỉ Admin và Accountant mới có quyền xuất dữ liệu */}
+                {(userRole === 'admin' || userRole === 'accountant') && (
+                  <Button
+                    onClick={exportPayrollData}
+                    variant="secondary"
+                    className="bg-white text-purple-600 hover:bg-purple-50"
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Xuất dữ liệu
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -300,9 +265,11 @@ const PayrollList = () => {
                 <Select
                   options={[
                     { value: 'all', label: 'Tất cả phòng ban' },
-                    { value: 'Phòng phát triển Phần mềm', label: 'Phát triển' },
-                    { value: 'Phòng Marketing', label: 'Marketing' },
-                    { value: 'Phòng HR', label: 'Nhân sự' }
+                    { value: 'IT', label: 'IT' },
+                    { value: 'Marketing', label: 'Marketing' },
+                    { value: 'Human Resources', label: 'Nhân sự' },
+                    { value: 'Finance', label: 'Tài chính' },
+                    { value: 'Sales', label: 'Kinh doanh' }
                   ]}
                   defaultValue={selectedDepartment}
                   onChange={(value) => setSelectedDepartment(value)}
@@ -320,13 +287,20 @@ const PayrollList = () => {
                 />
               </div>
               <div className="flex items-end">
-                <Button 
-                  onClick={() => generateAllPayrolls()}
-                  variant="primary"
-                  className="w-full"
-                >
-                  🧮 Tạo bảng lương
-                </Button>
+                {/* Chỉ Admin và Accountant mới có quyền tạo bảng lương */}
+                {(userRole === 'admin' || userRole === 'accountant') ? (
+                  <Button
+                    onClick={() => generateAllPayrolls()}
+                    variant="primary"
+                    className="w-full"
+                  >
+                    🧮 Tạo bảng lương
+                  </Button>
+                ) : (
+                  <div className="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-center">
+                    Chỉ xem
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -371,15 +345,17 @@ const PayrollList = () => {
           {/* Payroll List */}
           <Card title="Bảng lương hàng tháng"
             actions={
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={() => generateAllPayrolls()}
-                  variant="secondary"
-                  size="sm"
-                >
-                  Làm mới
-                </Button>
-              </div>
+              (userRole === 'admin' || userRole === 'accountant') ? (
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={() => generateAllPayrolls()}
+                    variant="secondary"
+                    size="sm"
+                  >
+                    Làm mới
+                  </Button>
+                </div>
+              ) : null
             }
           >
             <div className="overflow-x-auto">
@@ -395,7 +371,12 @@ const PayrollList = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {payrollRecords.map((payroll) => {
+                  {payrollRecords
+                    .filter(payroll => {
+                      if (selectedDepartment === 'all') return true;
+                      return payroll.department === selectedDepartment;
+                    })
+                    .map((payroll) => {
                     const employee = employees.find(e => e.id === payroll.employeeId);
                     return (
                       <tr key={payroll.id} className="border-b border-gray-100 hover:bg-gray-50">
@@ -433,21 +414,39 @@ const PayrollList = () => {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="flex gap-2">
-                            <Button 
-                              variant="secondary" 
-                              size="sm"
-                              onClick={() => openPayrollModal(employee)}
-                            >
-                              🧮
-                            </Button>
-                            <Button 
-                              variant="secondary" 
-                              size="sm"
-                              onClick={() => openPayrollDetailsModal(employee)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                          <div className="flex gap-2 relative z-10">
+                            {employee ? (
+                              <>
+                                {/* Chỉ Admin và Accountant mới có quyền tính lương */}
+                                {(userRole === 'admin' || userRole === 'accountant') && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      console.log('Opening payroll modal for:', employee);
+                                      openPayrollModal(employee);
+                                    }}
+                                    className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer"
+                                    title="Tính toán lương"
+                                  >
+                                    🧮
+                                  </button>
+                                )}
+                                {/* Tất cả role đều được xem chi tiết */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    console.log('Opening details modal for:', employee);
+                                    openPayrollDetailsModal(employee);
+                                  }}
+                                  className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
+                                  title="Xem chi tiết"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-gray-400 text-sm">Không có dữ liệu</span>
+                            )}
                           </div>
                         </td>
                       </tr>

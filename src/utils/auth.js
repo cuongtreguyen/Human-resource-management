@@ -78,3 +78,8 @@ export const clearUserInfo = () => {
   win.sessionStorage.removeItem(USER_INFO_KEY);
 };
 
+export const getUserId = () => {
+  const userInfo = getUserInfo();
+  return userInfo?.employeeId || null;
+};
+

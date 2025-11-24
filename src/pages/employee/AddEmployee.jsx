@@ -5,6 +5,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
+import fakeApi from '../../services/fakeApi';
 import { User, Phone, Check, X } from 'lucide-react';
 
 const AddEmployee = () => {
@@ -118,7 +119,7 @@ const AddEmployee = () => {
       const newErrors = validation.errors;
       const hasPersonalErrors = newErrors.firstName || newErrors.lastName || newErrors.dateOfBirth || newErrors.gender || newErrors.phone || newErrors.personalEmail;
       const hasEmploymentErrors = newErrors.department || newErrors.position || newErrors.employeeCode || newErrors.companyEmail || newErrors.contractType;
-      
+
       if (hasPersonalErrors) {
         setActiveTab('personal');
       } else if (hasEmploymentErrors) {
@@ -128,13 +129,44 @@ const AddEmployee = () => {
     }
 
     setSaving(true);
-    
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      // Prepare employee data for API
+      const employeeData = {
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.companyEmail,
+        position: formData.position,
+        department: formData.department,
+        phone: formData.phone,
+        status: 'active',
+        hireDate: formData.signDate || new Date().toISOString().split('T')[0],
+        salary: formData.baseSalary ? parseInt(formData.baseSalary) * 1000000 : 0,
+        personalEmail: formData.personalEmail,
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
+        idNumber: formData.idNumber,
+        taxCode: formData.taxCode,
+        permanentAddress: formData.permanentAddress,
+        temporaryAddress: formData.temporaryAddress,
+        employeeCode: formData.employeeCode,
+        contractCode: formData.contractCode,
+        contractType: formData.contractType
+      };
+
+      const response = await fakeApi.createEmployee(employeeData);
+
+      if (response.success) {
+        alert('Nhân viên mới đã được tạo thành công!');
+        navigate('/employees');
+      } else {
+        alert('Có lỗi xảy ra khi tạo nhân viên');
+      }
+    } catch (error) {
+      console.error('Error creating employee:', error);
+      alert('Có lỗi xảy ra khi tạo nhân viên');
+    } finally {
       setSaving(false);
-      console.log('New employee payload', formData);
-      navigate('/employees');
-    }, 2000);
+    }
   };
 
   // Check if form is valid (for enabling/disabling button)

@@ -6,6 +6,39 @@ import { getRole } from '../../utils/auth';
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
   const userRole = getRole();
 
+  // Màu sắc theo role
+  const themeColors = {
+    admin: {
+      bg: 'bg-gradient-to-br from-blue-50 to-indigo-50',
+      activeBg: 'bg-blue-50',
+      activeText: 'text-blue-700',
+      activeBorder: 'border-blue-700',
+      activeIcon: 'text-blue-500',
+      footerBadge: 'bg-blue-500',
+      hoverBg: 'hover:bg-blue-50',
+    },
+    accountant: {
+      bg: 'bg-gradient-to-br from-emerald-50 to-teal-50',
+      activeBg: 'bg-emerald-50',
+      activeText: 'text-emerald-700',
+      activeBorder: 'border-emerald-700',
+      activeIcon: 'text-emerald-500',
+      footerBadge: 'bg-emerald-500',
+      hoverBg: 'hover:bg-emerald-50',
+    },
+    manager: {
+      bg: 'bg-gradient-to-br from-purple-50 to-pink-50',
+      activeBg: 'bg-purple-50',
+      activeText: 'text-purple-700',
+      activeBorder: 'border-purple-700',
+      activeIcon: 'text-purple-500',
+      footerBadge: 'bg-purple-500',
+      hoverBg: 'hover:bg-purple-50',
+    }
+  };
+
+  const currentTheme = themeColors[userRole] || themeColors.admin;
+
   const navigationGroups = [
     {
       title: 'BẢNG ĐIỀU KHIỂN',
@@ -46,18 +79,23 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
       title: 'QUẢN LÝ NGHỈ PHÉP',
       items: [
         { name: 'Quản lý nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['admin', 'manager'] },
-        { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: UserPlus, allowedRoles: ['admin', 'manager'] },
-        { name: 'Bàn giao công việc', href: '/leaves/delegation', icon: Users, allowedRoles: ['admin', 'manager'] },
+        { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: UserPlus, allowedRoles: ['manager'] }, // Chỉ Manager tạo đơn
+      ]
+    },
+    {
+      title: 'QUẢN LÝ CÔNG VIỆC',
+      items: [
+        { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['manager'] }, // Chỉ Manager
+        { name: 'Bàn giao công việc', href: '/leaves/delegation', icon: Users, allowedRoles: ['manager'] }, // Di chuyển từ Nghỉ phép
       ]
     },
     {
       title: 'QUẢN LÝ HỆ THỐNG',
       items: [
-        { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['admin', 'manager'] },
         { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['admin', 'manager', 'accountant'] },
         { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['admin', 'manager', 'accountant'] },
         { name: 'Thông báo', href: '/notifications', icon: Bell, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart, allowedRoles: ['admin'] },
+        { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart, allowedRoles: ['admin', 'accountant'] }, // Admin + Accountant
         { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity, allowedRoles: ['admin'] },
         { name: 'Cài đặt', href: '/settings', icon: Settings, allowedRoles: ['admin'] },
       ]
@@ -83,7 +121,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-20 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col ${
+      <div className={`fixed inset-y-0 left-0 z-20 w-64 ${currentTheme.bg} shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col ${
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 lg:hidden">
@@ -115,14 +153,14 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
                         to={item.href}
                         className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${
                           isActive
-                            ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-700'
-                            : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                            ? `${currentTheme.activeBg} ${currentTheme.activeText} border-r-2 ${currentTheme.activeBorder}`
+                            : `text-gray-700 ${currentTheme.hoverBg} hover:text-gray-900`
                         }`}
                         onClick={() => setSidebarOpen(false)}
                       >
                         <item.icon
                           className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                            isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                            isActive ? currentTheme.activeIcon : 'text-gray-400 group-hover:text-gray-500'
                           }`}
                           aria-hidden="true"
                         />
@@ -140,7 +178,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
         <div className="mt-auto p-4 border-t border-gray-200">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
+              <div className={`h-8 w-8 ${currentTheme.footerBadge} rounded-full flex items-center justify-center`}>
                 <Users className="h-5 w-5 text-white" />
               </div>
             </div>

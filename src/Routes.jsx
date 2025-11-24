@@ -58,6 +58,10 @@ const AdminRoute = ({ children }) => (
   <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>
 );
 
+const ManagerRoute = ({ children }) => (
+  <ProtectedRoute allowedRoles={['manager']}>{children}</ProtectedRoute>
+);
+
 const AdminManagerRoute = ({ children }) => (
   <ProtectedRoute allowedRoles={['admin', 'manager']}>{children}</ProtectedRoute>
 );

@@ -49,7 +49,7 @@ const Login = () => {
       route: "/dashboard",
       info: {
         name: "Nguyễn Văn Quản Lý",
-        department: "Nhân sự",
+        department: "IT", // Manager của phòng IT
       },
     },
     accountant: {

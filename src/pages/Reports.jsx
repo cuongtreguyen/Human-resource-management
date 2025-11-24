@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import Layout from '../components/layout/Layout';
 
 const Reports = () => {
   const [loading, setLoading] = useState(false);
@@ -80,7 +81,8 @@ const Reports = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <Layout>
+      <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-6 rounded-lg mx-6 mt-6">
         <div className="flex justify-between items-center">
@@ -267,7 +269,8 @@ const Reports = () => {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </Layout>
   );
 };
 
