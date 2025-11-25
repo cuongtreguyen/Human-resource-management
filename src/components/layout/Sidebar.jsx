@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Bell, Activity, Heart } from 'lucide-react';
+import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Bell, Activity, Heart, Award } from 'lucide-react';
 import { getRole } from '../../utils/auth';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
@@ -50,14 +50,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
       title: 'QUẢN LÝ NGƯỜI DÙNG',
       items: [
         { name: 'Chat nội bộ', href: '/chat', icon: MessageCircle, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Nhận diện khuôn mặt', href: '/face-recognition', icon: User, allowedRoles: ['admin', 'manager'] },
+        { name: 'Nhận diện khuôn mặt', href: '/face-recognition', icon: User, allowedRoles: ['admin', 'manager', 'accountant'] },
       ]
     },
     {
       title: 'QUẢN LÝ NHÂN VIÊN',
       items: [
         { name: 'Danh sách nhân viên', href: '/employees', icon: Users, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Thêm nhân viên', href: '/employees/add', icon: UserPlus, allowedRoles: ['admin'] },
         { name: 'Xuất dữ liệu', href: '/employees/export', icon: FileText, allowedRoles: ['admin'] },
       ]
     },
@@ -65,7 +64,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
       title: 'QUẢN LÝ CHẤM CÔNG',
       items: [
         { name: 'Danh sách chấm công', href: '/attendance', icon: Clock, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Tạo chấm công', href: '/attendance/create', icon: Calendar, allowedRoles: ['admin', 'manager'] },
+        { name: 'Tạo chấm công', href: '/attendance/create', icon: Calendar, allowedRoles: ['admin', 'manager', 'accountant'] },
       ]
     },
     {
@@ -86,7 +85,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
       title: 'QUẢN LÝ CÔNG VIỆC',
       items: [
         { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['manager'] }, // Chỉ Manager
-        { name: 'Bàn giao công việc', href: '/leaves/delegation', icon: Users, allowedRoles: ['manager'] }, // Di chuyển từ Nghỉ phép
+        { name: 'Bàn giao công việc', href: '/task-delegation', icon: Users, allowedRoles: ['admin', 'manager'] }, // Admin + Manager
+      ]
+    },
+    {
+      title: 'ĐÁNH GIÁ & PHÁT TRIỂN',
+      items: [
+        { name: 'Đánh giá nhân viên', href: '/evaluations', icon: Award, allowedRoles: ['admin', 'manager'] },
       ]
     },
     {
@@ -114,16 +119,15 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
     <>
       {/* Mobile backdrop */}
       {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-10 bg-gray-600 bg-opacity-75 lg:hidden"
+        <div
+          className="fixed inset-0 z-20 bg-gray-600 bg-opacity-75 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-20 w-64 ${currentTheme.bg} shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col ${
-        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}>
+      <div className={`fixed inset-y-0 left-0 z-30 w-64 ${currentTheme.bg} shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:z-0 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}>
         <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 lg:hidden">
           <h1 className="text-xl font-semibold text-gray-900">Quản lý Nhân sự</h1>
           <button
@@ -142,7 +146,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
                 <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   {group.title}
                 </h3>
-                
+
                 {/* Group Items */}
                 <div className="space-y-1">
                   {group.items.map((item) => {
@@ -151,17 +155,15 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${
-                          isActive
-                            ? `${currentTheme.activeBg} ${currentTheme.activeText} border-r-2 ${currentTheme.activeBorder}`
-                            : `text-gray-700 ${currentTheme.hoverBg} hover:text-gray-900`
-                        }`}
+                        className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-150 ${isActive
+                          ? `${currentTheme.activeBg} ${currentTheme.activeText} border-r-2 ${currentTheme.activeBorder}`
+                          : `text-gray-700 ${currentTheme.hoverBg} hover:text-gray-900`
+                          }`}
                         onClick={() => setSidebarOpen(false)}
                       >
                         <item.icon
-                          className={`mr-3 h-5 w-5 flex-shrink-0 ${
-                            isActive ? currentTheme.activeIcon : 'text-gray-400 group-hover:text-gray-500'
-                          }`}
+                          className={`mr-3 h-5 w-5 flex-shrink-0 ${isActive ? currentTheme.activeIcon : 'text-gray-400 group-hover:text-gray-500'
+                            }`}
                           aria-hidden="true"
                         />
                         {item.name}

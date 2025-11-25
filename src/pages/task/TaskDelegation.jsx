@@ -6,12 +6,12 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { DelegationGuide, DelegationDetailModal } from '../../components/features';
-import { 
-  Users, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  User, 
+import {
+  Users,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  User,
   Calendar,
   FileText,
   ArrowRight,
@@ -19,7 +19,9 @@ import {
   Eye,
   BookOpen,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Plus,
+  X
 } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
 
@@ -33,6 +35,18 @@ const TaskDelegation = () => {
   const [showGuide, setShowGuide] = useState(false);
   const [selectedDelegation, setSelectedDelegation] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [newDelegation, setNewDelegation] = useState({
+    originalAssigneeId: '',
+    delegatedToId: '',
+    taskTitle: '',
+    priority: 'medium',
+    leaveType: 'annual',
+    startDate: '',
+    endDate: '',
+    reason: '',
+    handoverNotes: ''
+  });
 
   useEffect(() => {
     loadData();
@@ -195,6 +209,62 @@ const TaskDelegation = () => {
     setSelectedDelegation(null);
   };
 
+  const handleAddDelegation = () => {
+    setShowAddTaskModal(true);
+  };
+
+  const handleCloseAddTaskModal = () => {
+    setShowAddTaskModal(false);
+    setNewDelegation({
+      originalAssigneeId: '',
+      delegatedToId: '',
+      taskTitle: '',
+      priority: 'medium',
+      leaveType: 'annual',
+      startDate: '',
+      endDate: '',
+      reason: '',
+      handoverNotes: ''
+    });
+  };
+
+  const handleSubmitDelegation = async (e) => {
+    e.preventDefault();
+
+    try {
+      // Calculate days between dates
+      const start = new Date(newDelegation.startDate);
+      const end = new Date(newDelegation.endDate);
+      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+
+      // Create new delegation
+      const delegation = {
+        id: delegations.length + 1,
+        originalAssignee: { id: newDelegation.originalAssigneeId, name: 'Nhân viên A', position: 'Chức vụ' },
+        delegatedTo: { id: newDelegation.delegatedToId, name: 'Nhân viên B', position: 'Chức vụ' },
+        task: { id: delegations.length + 1, title: newDelegation.taskTitle, priority: newDelegation.priority },
+        leaveRequest: {
+          type: newDelegation.leaveType,
+          startDate: newDelegation.startDate,
+          endDate: newDelegation.endDate,
+          days: days,
+          reason: newDelegation.reason
+        },
+        status: 'pending',
+        delegatedAt: new Date().toISOString().split('T')[0],
+        handoverNotes: newDelegation.handoverNotes,
+        progress: 0
+      };
+
+      setDelegations([...delegations, delegation]);
+      handleCloseAddTaskModal();
+      alert('Tạo bàn giao công việc thành công!');
+    } catch (error) {
+      console.error('Error creating delegation:', error);
+      alert('Có lỗi xảy ra khi tạo bàn giao công việc');
+    }
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -220,18 +290,27 @@ const TaskDelegation = () => {
                 <p className="text-purple-100 mt-1">Theo dõi và quản lý việc bàn giao công việc khi nghỉ phép</p>
               </div>
               <div className="flex space-x-3">
-                <Button 
-                  variant="secondary" 
-                  size="md" 
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleAddDelegation}
+                  className="flex items-center space-x-2 bg-white text-purple-700 hover:bg-purple-50"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Thêm bàn giao</span>
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
                   onClick={() => setShowGuide(!showGuide)}
                   className="flex items-center space-x-2"
                 >
                   <BookOpen className="h-4 w-4" />
                   <span>{showGuide ? 'Ẩn hướng dẫn' : 'Xem hướng dẫn'}</span>
                 </Button>
-                <Button 
-                  variant="secondary" 
-                  size="md" 
+                <Button
+                  variant="secondary"
+                  size="md"
                   onClick={() => navigate('/leaves')}
                 >
                   ← Quay lại
@@ -460,6 +539,202 @@ const TaskDelegation = () => {
           </Card>
         </div>
       </div>
+
+      {/* Add Delegation Modal */}
+      {showAddTaskModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-gray-900">Thêm bàn giao công việc mới</h2>
+              <button
+                onClick={handleCloseAddTaskModal}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="h-6 w-6 text-gray-500" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitDelegation} className="p-6">
+              <div className="space-y-6">
+                {/* Task Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-purple-600" />
+                    Thông tin công việc
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Tên công việc <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newDelegation.taskTitle}
+                        onChange={(e) => setNewDelegation({ ...newDelegation, taskTitle: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Nhập tên công việc cần bàn giao"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Mức độ ưu tiên <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        required
+                        value={newDelegation.priority}
+                        onChange={(e) => setNewDelegation({ ...newDelegation, priority: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="high">Cao</option>
+                        <option value="medium">Trung bình</option>
+                        <option value="low">Thấp</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Ghi chú bàn giao
+                      </label>
+                      <textarea
+                        value={newDelegation.handoverNotes}
+                        onChange={(e) => setNewDelegation({ ...newDelegation, handoverNotes: e.target.value })}
+                        rows="3"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Nhập ghi chú, yêu cầu đặc biệt..."
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Assignment Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Users className="h-5 w-5 text-purple-600" />
+                    Thông tin bàn giao
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Người giao việc <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newDelegation.originalAssigneeId}
+                        onChange={(e) => setNewDelegation({ ...newDelegation, originalAssigneeId: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="ID nhân viên giao việc"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Người nhận việc <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={newDelegation.delegatedToId}
+                        onChange={(e) => setNewDelegation({ ...newDelegation, delegatedToId: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="ID nhân viên nhận việc"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Leave Information */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-purple-600" />
+                    Thông tin nghỉ phép
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Loại nghỉ phép <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        required
+                        value={newDelegation.leaveType}
+                        onChange={(e) => setNewDelegation({ ...newDelegation, leaveType: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="annual">Nghỉ phép thường</option>
+                        <option value="sick">Nghỉ ốm</option>
+                        <option value="maternity">Nghỉ thai sản</option>
+                        <option value="emergency">Nghỉ khẩn cấp</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ngày bắt đầu <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={newDelegation.startDate}
+                          onChange={(e) => setNewDelegation({ ...newDelegation, startDate: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Ngày kết thúc <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={newDelegation.endDate}
+                          onChange={(e) => setNewDelegation({ ...newDelegation, endDate: e.target.value })}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Lý do nghỉ phép <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        required
+                        value={newDelegation.reason}
+                        onChange={(e) => setNewDelegation({ ...newDelegation, reason: e.target.value })}
+                        rows="3"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        placeholder="Nhập lý do nghỉ phép..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end gap-3 pt-6 border-t border-gray-200">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleCloseAddTaskModal}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Tạo bàn giao
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Detail Modal */}
       <DelegationDetailModal

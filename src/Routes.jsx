@@ -48,6 +48,7 @@ import EmployeePerformanceReview from './pages/employee/PerformanceReview';
 import EmployeeTrainingDevelopment from './pages/employee/TrainingDevelopment';
 import EmployeeBenefitsInsurance from './pages/employee/BenefitsInsurance';
 import EmployeeSupportHelp from './pages/employee/SupportHelp';
+import SimpleEmployeeEvaluation from './pages/evaluation/SimpleEmployeeEvaluation';
 import RecruitmentManagement from './pages/recruitment/RecruitmentManagement';
 import PositionsList from './pages/recruitment/PositionsList';
 import ApplicationsList from './pages/recruitment/ApplicationsList';
@@ -70,6 +71,10 @@ const AdminAccountantRoute = ({ children }) => (
   <ProtectedRoute allowedRoles={['admin', 'accountant']}>{children}</ProtectedRoute>
 );
 
+const AdminManagerAccountantRoute = ({ children }) => (
+  <ProtectedRoute allowedRoles={['admin', 'manager', 'accountant']}>{children}</ProtectedRoute>
+);
+
 const StaffRoute = ({ children }) => (
   <ProtectedRoute allowedRoles={['admin', 'manager', 'accountant']}>{children}</ProtectedRoute>
 );
@@ -84,8 +89,8 @@ const AppRoutes = () => {
         {/* Dashboard - All staff */}
         <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Face Recognition - Admin & Manager */}
-        <Route path="/face-recognition" element={<AdminManagerRoute><FaceRecognition /></AdminManagerRoute>} />
+        {/* Face Recognition - Admin, Manager & Accountant */}
+        <Route path="/face-recognition" element={<AdminManagerAccountantRoute><FaceRecognition /></AdminManagerAccountantRoute>} />
 
         {/* Employees */}
         <Route path="/employees" element={<EmployeeList />} /> {/* All staff can view */}
@@ -96,7 +101,7 @@ const AppRoutes = () => {
 
         {/* Attendance */}
         <Route path="/attendance" element={<AttendanceList />} /> {/* All staff can view */}
-        <Route path="/attendance/create" element={<AdminManagerRoute><AttendanceCreate /></AdminManagerRoute>} /> {/* Admin & Manager */}
+        <Route path="/attendance/create" element={<AdminManagerAccountantRoute><AttendanceCreate /></AdminManagerAccountantRoute>} /> {/* Admin, Manager & Accountant */}
 
         {/* Payroll */}
         <Route path="/payroll" element={<PayrollList />} /> {/* All staff can view */}
@@ -105,8 +110,10 @@ const AppRoutes = () => {
         {/* Leaves - Admin & Manager */}
         <Route path="/leaves" element={<AdminManagerRoute><LeaveManagement /></AdminManagerRoute>} />
         <Route path="/leaves/create" element={<AdminManagerRoute><LeaveRequest /></AdminManagerRoute>} />
-        <Route path="/leaves/delegation" element={<AdminManagerRoute><TaskDelegation /></AdminManagerRoute>} />
         <Route path="/leaves/workflow" element={<AdminManagerRoute><WorkflowManager /></AdminManagerRoute>} />
+
+        {/* Task Delegation - Admin & Manager */}
+        <Route path="/task-delegation" element={<AdminManagerRoute><TaskDelegation /></AdminManagerRoute>} />
 
         {/* Recruitment - Admin only */}
         <Route path="/recruitment" element={<AdminRoute><RecruitmentManagement /></AdminRoute>} />
@@ -115,12 +122,15 @@ const AppRoutes = () => {
 
         {/* Admin Only */}
         <Route path="/admin/logs" element={<AdminRoute><LogsMonitor /></AdminRoute>} />
-        <Route path="/admin/benefits" element={<AdminRoute><AdminBenefits /></AdminRoute>} />
         <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
+
+        {/* Admin & Accountant */}
+        <Route path="/admin/benefits" element={<AdminAccountantRoute><AdminBenefits /></AdminAccountantRoute>} />
 
         {/* System - All staff */}
         <Route path="/notifications" element={<NotificationCenter />} />
         <Route path="/tasks" element={<AdminManagerRoute><TaskManagement /></AdminManagerRoute>} /> {/* Admin & Manager */}
+        <Route path="/evaluations" element={<AdminManagerRoute><SimpleEmployeeEvaluation /></AdminManagerRoute>} /> {/* Admin & Manager */}
         <Route path="/chat" element={<Chat />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/reports" element={<Reports />} />
