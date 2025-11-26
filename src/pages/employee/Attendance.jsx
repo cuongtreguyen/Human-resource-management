@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Download, Calendar, Clock, LogIn, LogOut } from 'lucide-react';
-import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import faceRecognitionApi from '../../services/faceRecognitionApi';
 import fakeApi from '../../services/fakeApi';
 import { getUserInfo } from '../../utils/auth';
@@ -228,7 +227,7 @@ const EmployeeAttendance = () => {
   };
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-center justify-between mb-4">
@@ -378,7 +377,7 @@ const EmployeeAttendance = () => {
           </div>
         </div>
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 

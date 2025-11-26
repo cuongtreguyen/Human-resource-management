@@ -24,7 +24,7 @@ class FakeApiService {
     const employees = [
       {
         id: 'emp001',
-        name: 'Nguyễn Văn An',
+        name: 'Trần Ngọc Hải',
         email: 'nguyenvanan@company.com',
         position: 'Software Developer',
         department: 'IT',

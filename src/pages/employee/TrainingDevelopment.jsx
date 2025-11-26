@@ -139,19 +139,17 @@ const EmployeeTrainingDevelopment = () => {
 
   if (loading) {
     return (
-      <EmployeeLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-            <span>Đang tải...</span>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="flex items-center gap-2">
+          <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+          <span>Đang tải...</span>
         </div>
-      </EmployeeLayout>
+      </div>
     );
   }
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
@@ -379,7 +377,7 @@ const EmployeeTrainingDevelopment = () => {
           </div>
         </div>
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 

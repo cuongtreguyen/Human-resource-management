@@ -456,19 +456,17 @@ const EmployeeBenefitsInsurance = () => {
 
   if (loading) {
     return (
-      <EmployeeLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-lg">Đang tải dữ liệu...</span>
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="flex items-center gap-3">
+          <div className="w-6 h-6 border-4 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-lg">Đang tải dữ liệu...</span>
         </div>
-      </EmployeeLayout>
+      </div>
     );
   }
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-8">
 
         {/* Header + Nút gửi yêu cầu */}
@@ -729,7 +727,7 @@ const EmployeeBenefitsInsurance = () => {
           </div>
         )}
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 
