@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { FaceRecognitionWidget } from '../components/features';
-import { 
-  StatsCard, 
-  DepartmentDistribution, 
-  AttendanceRate, 
-  QuickActions, 
-  RecentActivity 
+import {
+  StatsCard,
+  DepartmentDistribution,
+  AttendanceRate,
+  QuickActions,
+  RecentActivity
 } from '../components/dashboard';
 import fakeApi from '../services/fakeApi';
+import { isAdmin } from '../utils/auth';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -75,17 +76,8 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Bảng điều khiển</h1>
-          <button 
-            onClick={refreshData}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Làm mới
-          </button>
-        </div>
-        
+      
+        </div>  
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatsCard
             icon={
@@ -134,11 +126,17 @@ const Dashboard = () => {
           <AttendanceRate rate={stats?.averageAttendance || 0} />
         </div>
 
-        <QuickActions onFaceRecognitionClick={() => setShowFaceRecognition(true)} />
-        
-        <div className="mt-8">
-          <RecentActivity activities={stats?.recentActivities || []} />
-        </div>
+        {/* Quick Actions - Ẩn cho Admin */}
+        {!isAdmin() && (
+          <QuickActions onFaceRecognitionClick={() => setShowFaceRecognition(true)} />
+        )}
+
+        {/* Recent Activity - Ẩn cho Admin */}
+        {!isAdmin() && (
+          <div className="mt-8">
+            <RecentActivity activities={stats?.recentActivities || []} />
+          </div>
+        )}
       </div>
 
       {/* Face Recognition Widget */}

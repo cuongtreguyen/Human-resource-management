@@ -1,18 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
 
 const AttendanceCreate = () => {
   const navigate = useNavigate();
-  const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [employeeList, setEmployeeList] = useState([]);
-  const [attendanceSheet, setAttendanceSheet] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [employees, setEmployees] = useState([]);
+  const [attendanceData, setAttendanceData] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
 
   useEffect(() => {
     loadEmployees();
@@ -20,74 +21,71 @@ const AttendanceCreate = () => {
 
   const loadEmployees = async () => {
     try {
+      setLoadingEmployees(true);
       const response = await fakeApi.getEmployees();
       setEmployees(response.data);
+
+      // Khởi tạo dữ liệu chấm công mặc định cho tất cả nhân viên
+      const initialData = {};
+      response.data.forEach(emp => {
+        initialData[emp.id] = {
+          date: new Date().toISOString().split('T')[0],
+          clockIn: '08:00',
+          clockOut: '17:00',
+          overtime: '0',
+          status: 'Present'
+        };
+      });
+      setAttendanceData(initialData);
     } catch (err) {
       console.error('Failed to load employees:', err);
+    } finally {
+      setLoadingEmployees(false);
     }
   };
 
-  const departments = ['Tất cả phòng ban', 'Phát triển', 'Marketing', 'Tài chính', 'Vận hành'];
+  // Lấy danh sách phòng ban unique
+  const departments = ['all', ...new Set(employees.map(emp => emp.department).filter(Boolean))];
 
-  // Mock employees data - removed unused variable
+  // Lọc nhân viên theo search và phòng ban
+  const filteredEmployees = employees.filter(emp => {
+    const matchSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                       emp.id.toString().includes(searchTerm);
+    const matchDept = selectedDepartment === 'all' || emp.department === selectedDepartment;
+    return matchSearch && matchDept;
+  });
 
-  const handleDepartmentChange = (value) => {
-    setSelectedDepartment(value);
-    if (value !== 'Tất cả phòng ban') {
-      const filteredEmployees = employees.filter(emp => emp.department === value);
-      setEmployeeList(filteredEmployees);
-    } else {
-      setEmployeeList(employees);
-    }
-  };
-
-  const addToAttendanceSheet = (employee) => {
-    const attendanceRecord = {
-      id: Date.now(),
-      employeeId: employee.id,
-      employeeName: employee.name,
-      date: new Date().toISOString().split('T')[0],
-      clockIn: '',
-      clockOut: '',
-      overtime: '0',
-      status: 'Present'
-    };
-    
-    setAttendanceSheet(prev => [...prev, attendanceRecord]);
-  };
-
-  const removeFromAttendanceSheet = (recordId) => {
-    setAttendanceSheet(prev => prev.filter(record => record.id !== recordId));
-  };
-
-  const updateAttendanceRecord = (recordId, field, value) => {
-    setAttendanceSheet(prev => 
-      prev.map(record => 
-        record.id === recordId 
-          ? { ...record, [field]: value }
-          : record
-      )
-    );
+  const updateAttendanceRecord = (employeeId, field, value) => {
+    setAttendanceData(prev => ({
+      ...prev,
+      [employeeId]: {
+        ...prev[employeeId],
+        [field]: value
+      }
+    }));
   };
 
   const saveAttendance = async () => {
     try {
       setLoading(true);
-      
-      // Save each attendance record
-      for (const record of attendanceSheet) {
-        await fakeApi.createAttendanceRecord({
-          employeeId: record.employeeId,
-          date: record.date,
-          checkIn: record.clockIn,
-          checkOut: record.clockOut,
-          status: record.status,
-          overtime: parseFloat(record.overtime) || 0
-        });
+
+      // Lưu chấm công cho tất cả nhân viên đang hiển thị
+      for (const emp of filteredEmployees) {
+        const record = attendanceData[emp.id];
+        if (record) {
+          await fakeApi.createAttendanceRecord({
+            employeeId: emp.id,
+            date: record.date,
+            checkIn: record.clockIn,
+            checkOut: record.clockOut,
+            status: record.status,
+            overtime: parseFloat(record.overtime) || 0
+          });
+        }
       }
-      
+
       alert('Lưu chấm công thành công!');
-      navigate('/attendance');
+      navigate('/dashboard');
     } catch (err) {
       alert('Không thể lưu chấm công');
       console.error('Save attendance error:', err);
@@ -96,8 +94,13 @@ const AttendanceCreate = () => {
     }
   };
 
-  const handleGoBack = () => {
-    navigate('/attendance');
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Present': return 'bg-green-100 text-green-700';
+      case 'Late': return 'bg-yellow-100 text-yellow-700';
+      case 'Absent': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
   };
 
   return (
@@ -106,21 +109,15 @@ const AttendanceCreate = () => {
       <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-lg mb-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Quản lý Chấm công</h1>
-            <p className="text-purple-100 mt-1">Chọn phòng ban và thêm nhân viên vào bảng chấm công</p>
+            <h1 className="text-3xl font-bold">Bảng Chấm Công</h1>
+            <p className="text-purple-100 mt-1">Quản lý chấm công nhân viên</p>
           </div>
           <div className="flex space-x-3">
-            <Button variant="secondary" size="md" onClick={handleGoBack}>
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              ← Quay lại
-            </Button>
-            <Button 
-              variant="success" 
-              size="md" 
+            <Button
+              variant="success"
+              size="md"
               onClick={saveAttendance}
-              disabled={loading || attendanceSheet.length === 0}
+              disabled={loading || filteredEmployees.length === 0}
             >
               {loading ? (
                 <svg className="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
@@ -129,7 +126,7 @@ const AttendanceCreate = () => {
                 </svg>
               ) : (
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 1m0 0l-3-1m3 1V7m0 0V3" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               )}
               {loading ? 'Đang lưu...' : 'Lưu chấm công'}
@@ -138,186 +135,159 @@ const AttendanceCreate = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Employee List */}
-        <Card title="Danh sách nhân viên">
-          <div className="flex items-center mb-4">
-            <svg className="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      {/* Filters */}
+      <Card className="mb-6">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Search */}
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Tìm theo tên hoặc mã nhân viên..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* Department Filter */}
+          <div className="w-full md:w-64">
+            <select
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="all">Tất cả phòng ban</option>
+              {departments.filter(d => d !== 'all').map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Stats */}
+          <div className="flex items-center gap-4 text-sm">
+            <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full">
+              {filteredEmployees.length} nhân viên
+            </span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Attendance Table */}
+      <Card>
+        {loadingEmployees ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3 text-gray-500">Đang tải danh sách nhân viên...</span>
+          </div>
+        ) : filteredEmployees.length === 0 ? (
+          <div className="text-center py-12">
+            <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
+            <p className="text-gray-500">Không tìm thấy nhân viên</p>
           </div>
-          
-          <div className="mb-4">
-            <Select
-              label="Phòng ban"
-              options={departments.map(dept => ({ value: dept, label: dept }))}
-              value={selectedDepartment}
-              onChange={handleDepartmentChange}
-              placeholder="-- Chọn phòng ban --"
-            />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Nhân viên</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Phòng ban</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Ngày</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Giờ vào</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Giờ ra</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Tăng ca (h)</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredEmployees.map((employee) => {
+                  const record = attendanceData[employee.id] || {};
+                  return (
+                    <tr key={employee.id} className="hover:bg-gray-50 transition-colors">
+                      {/* Employee Info */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-medium mr-3">
+                            {employee.name.split(' ').slice(-1)[0]?.[0] || 'N'}
+                          </div>
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{employee.name}</div>
+                            <div className="text-xs text-gray-500">#{employee.id}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Department */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-sm text-gray-600">{employee.department || '-'}</span>
+                      </td>
+
+                      {/* Date */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <input
+                          type="date"
+                          value={record.date || ''}
+                          onChange={(e) => updateAttendanceRecord(employee.id, 'date', e.target.value)}
+                          className="text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        />
+                      </td>
+
+                      {/* Clock In */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <input
+                          type="time"
+                          value={record.clockIn || ''}
+                          onChange={(e) => updateAttendanceRecord(employee.id, 'clockIn', e.target.value)}
+                          className="text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        />
+                      </td>
+
+                      {/* Clock Out */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <input
+                          type="time"
+                          value={record.clockOut || ''}
+                          onChange={(e) => updateAttendanceRecord(employee.id, 'clockOut', e.target.value)}
+                          className="text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        />
+                      </td>
+
+                      {/* Overtime */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.5"
+                          value={record.overtime || '0'}
+                          onChange={(e) => updateAttendanceRecord(employee.id, 'overtime', e.target.value)}
+                          className="w-16 text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
+                        />
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <select
+                          value={record.status || 'Present'}
+                          onChange={(e) => updateAttendanceRecord(employee.id, 'status', e.target.value)}
+                          className={`text-sm px-3 py-1 rounded-full border-0 font-medium ${getStatusColor(record.status)}`}
+                        >
+                          <option value="Present">Có mặt</option>
+                          <option value="Late">Đi trễ</option>
+                          <option value="Absent">Vắng mặt</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-
-          {!selectedDepartment && (
-            <div className="text-center py-8">
-              <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              <p className="text-gray-500">Chọn phòng ban để hiển thị nhân viên</p>
-            </div>
-          )}
-
-          {selectedDepartment && employeeList.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="font-medium text-gray-900 mb-3">Nhân viên có sẵn</h4>
-              {employeeList.map((employee) => (
-                <div
-                  key={employee.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
-                >
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 text-sm font-medium mr-3">
-                      {employee.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{employee.name}</div>
-                      <div className="text-xs text-gray-500">{employee.department}</div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => addToAttendanceSheet(employee)}
-                  >
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Thêm
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {selectedDepartment && employeeList.length === 0 && (
-            <div className="text-center py-8">
-              <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-              <p className="text-gray-500">Không tìm thấy nhân viên trong phòng ban này</p>
-            </div>
-          )}
-        </Card>
-
-        {/* Attendance Sheet */}
-        <Card title="Bảng chấm công">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center">
-              <svg className="w-6 h-6 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-              </svg>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-blue-600 flex items-center">
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {attendanceSheet.length} nhân viên đã thêm vào bảng chấm công
-              </span>
-              <Button variant="success" size="sm" onClick={saveAttendance}>
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 1m0 0l-3-1m3 1V7m0 0V3" />
-                </svg>
-                Lưu chấm công
-              </Button>
-            </div>
-          </div>
-
-          {/* Table Header */}
-          <div className="grid grid-cols-7 gap-2 text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">
-            <div>NHÂN VIÊN</div>
-            <div>NGÀY</div>
-            <div>GIỜ VÀO</div>
-            <div>GIỜ RA</div>
-            <div>TĂNG CA</div>
-            <div>TRẠNG THÁI</div>
-            <div>THAO TÁC</div>
-          </div>
-
-          {/* Table Body */}
-          <div className="space-y-2">
-            {attendanceSheet.map((record) => (
-              <div key={record.id} className="grid grid-cols-7 gap-2 p-3 bg-gray-50 rounded-lg border">
-                <div className="text-sm font-medium text-gray-900">{record.employeeName}</div>
-                <div>
-                  <input
-                    type="date"
-                    value={record.date}
-                    onChange={(e) => updateAttendanceRecord(record.id, 'date', e.target.value)}
-                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="time"
-                    value={record.clockIn}
-                    onChange={(e) => updateAttendanceRecord(record.id, 'clockIn', e.target.value)}
-                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="time"
-                    value={record.clockOut}
-                    onChange={(e) => updateAttendanceRecord(record.id, 'clockOut', e.target.value)}
-                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
-                </div>
-                <div>
-                  <input
-                    type="text"
-                    value={record.overtime}
-                    onChange={(e) => updateAttendanceRecord(record.id, 'overtime', e.target.value)}
-                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  />
-                </div>
-                <div>
-                  <select
-                    value={record.status}
-                    onChange={(e) => updateAttendanceRecord(record.id, 'status', e.target.value)}
-                    className="w-full text-xs px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-500"
-                  >
-                    <option value="Present">Có mặt</option>
-                    <option value="Late">Đi trễ</option>
-                    <option value="Absent">Vắng mặt</option>
-                  </select>
-                </div>
-                <div className="flex space-x-1">
-                  <button
-                    onClick={() => removeFromAttendanceSheet(record.id)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentlyColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {attendanceSheet.length === 0 && (
-            <div className="text-center py-12">
-              <svg className="w-12 h-１２ text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m1 0V7a2 2 0 012-2h4a2 2 0 012 2v4m-6 0v8a2 2 0 002-2h2a2 2 0 002-2V7m6 0v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7" />
-              </svg>
-              <p className="text-gray-500 mb-2">Chọn nhân viên từ danh sách bên trái để thêm vào bảng chấm công</p>
-              <svg className="w-8 h-8 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m1 0V7a2 2 0 012-2h4a2 2 0 012 2v4m-6 0v8a2 2 0 002-2h2a2 2 0 002-2V7m6 0v8a2 2 0 01-2 2H6a2 2 0 01-2-2V7" />
-              </svg>
-            </div>
-          )}
-        </Card>
-      </div>
+        )}
+      </Card>
     </Layout>
   );
 };

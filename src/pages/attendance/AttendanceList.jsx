@@ -194,7 +194,7 @@ const AttendanceList = () => {
                               {record.name ? record.name.charAt(0).toUpperCase() : 'U'}
                             </div>
                             <div>
-                              <div className="font-medium text-gray-900">{record.name || 'Unknown'}</div>
+                              <div className="font-medium text-gray-900">{record.name || 'Không xác định'}</div>
                               <div className="text-sm text-gray-500">{record.date}</div>
                             </div>
                           </div>

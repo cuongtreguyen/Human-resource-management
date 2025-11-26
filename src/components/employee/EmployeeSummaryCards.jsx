@@ -1,9 +1,9 @@
 import React from 'react';
 import Card from '../ui/Card';
 
-const EmployeeSummaryCards = ({ totalEmployees, activeEmployees, avgSalary }) => {
+const EmployeeSummaryCards = ({ totalEmployees, activeEmployees }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       <Card className="text-center">
         <div className="text-blue-600 mb-3">
           <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -11,7 +11,7 @@ const EmployeeSummaryCards = ({ totalEmployees, activeEmployees, avgSalary }) =>
           </svg>
         </div>
         <h3 className="text-2xl font-bold text-blue-600">{totalEmployees}</h3>
-        <p className="text-gray-600">Total Employees</p>
+        <p className="text-gray-600">Tổng nhân viên</p>
       </Card>
 
       <Card className="text-center">
@@ -21,17 +21,7 @@ const EmployeeSummaryCards = ({ totalEmployees, activeEmployees, avgSalary }) =>
           </svg>
         </div>
         <h3 className="text-2xl font-bold text-green-600">{activeEmployees}</h3>
-        <p className="text-gray-600">Active Employees</p>
-      </Card>
-
-      <Card className="text-center">
-        <div className="text-purple-600 mb-3">
-          <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-          </svg>
-        </div>
-        <h3 className="text-2xl font-bold text-purple-600">${avgSalary.toLocaleString()}</h3>
-        <p className="text-gray-600">Avg. Salary</p>
+        <p className="text-gray-600">Đang làm việc</p>
       </Card>
     </div>
   );

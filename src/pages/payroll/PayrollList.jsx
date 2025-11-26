@@ -232,16 +232,9 @@ const PayrollList = () => {
                 </p>
               </div>
               <div className="flex gap-3">
-                <Button
-                  onClick={() => setShowPoliciesModal(true)}
-                  variant="secondary"
-                  className="bg-white text-purple-600 hover:bg-purple-50"
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Chính sách
-                </Button>
-                {/* Chỉ Admin và Accountant mới có quyền xuất dữ liệu */}
-                {(userRole === 'admin' || userRole === 'accountant') && (
+              
+                {/* Chỉ Accountant mới có quyền xuất dữ liệu */}
+                {userRole === 'accountant' && (
                   <Button
                     onClick={exportPayrollData}
                     variant="secondary"
@@ -287,8 +280,8 @@ const PayrollList = () => {
                 />
               </div>
               <div className="flex items-end">
-                {/* Chỉ Admin và Accountant mới có quyền tạo bảng lương */}
-                {(userRole === 'admin' || userRole === 'accountant') ? (
+                {/* Chỉ Accountant mới có quyền tạo bảng lương */}
+                {userRole === 'accountant' ? (
                   <Button
                     onClick={() => generateAllPayrolls()}
                     variant="primary"
@@ -297,8 +290,8 @@ const PayrollList = () => {
                     🧮 Tạo bảng lương
                   </Button>
                 ) : (
-                  <div className="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg text-center">
-                    Chỉ xem
+                  <div>
+            
                   </div>
                 )}
               </div>
@@ -345,7 +338,7 @@ const PayrollList = () => {
           {/* Payroll List */}
           <Card title="Bảng lương hàng tháng"
             actions={
-              (userRole === 'admin' || userRole === 'accountant') ? (
+              userRole === 'accountant' ? (
                 <div className="flex items-center gap-2">
                   <Button
                     onClick={() => generateAllPayrolls()}
@@ -417,8 +410,8 @@ const PayrollList = () => {
                           <div className="flex gap-2 relative z-10">
                             {employee ? (
                               <>
-                                {/* Chỉ Admin và Accountant mới có quyền tính lương */}
-                                {(userRole === 'admin' || userRole === 'accountant') && (
+                                {/* Chỉ Accountant mới có quyền tính lương */}
+                                {userRole === 'accountant' && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();

@@ -44,15 +44,28 @@ const EmployeeList = () => {
 
   const departments = ['Tất cả phòng ban', 'Phát triển', 'Marketing', 'Nhân sự', 'Tài chính', 'Vận hành'];
   const positions = ['Tất cả chức vụ', 'Lập trình viên', 'Quản lý', 'Chuyên viên', 'Phân tích viên', 'Giám đốc'];
-  const salaryRanges = ['Tất cả mức lương', '$30k - $50k', '$50k - $70k', '$70k - $90k', '$90k+'];
+  const salaryRanges = ['Tất cả mức lương', '10 - 15 triệu', '15 - 20 triệu', '20 - 30 triệu', 'Trên 30 triệu'];
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(filters.search.toLowerCase()) ||
                          employee.email.toLowerCase().includes(filters.search.toLowerCase());
     const matchesDepartment = filters.department === 'Tất cả phòng ban' || employee.department === filters.department;
     const matchesPosition = filters.position === 'Tất cả chức vụ' || employee.position === filters.position;
-    
-    return matchesSearch && matchesDepartment && matchesPosition;
+
+    // Lọc theo mức lương
+    let matchesSalary = true;
+    const salary = employee.salary || 0;
+    if (filters.salaryRange === '10 - 15 triệu') {
+      matchesSalary = salary >= 10000000 && salary < 15000000;
+    } else if (filters.salaryRange === '15 - 20 triệu') {
+      matchesSalary = salary >= 15000000 && salary < 20000000;
+    } else if (filters.salaryRange === '20 - 30 triệu') {
+      matchesSalary = salary >= 20000000 && salary < 30000000;
+    } else if (filters.salaryRange === 'Trên 30 triệu') {
+      matchesSalary = salary >= 30000000;
+    }
+
+    return matchesSearch && matchesDepartment && matchesPosition && matchesSalary;
   });
 
   const handleFilterChange = (field, value) => {
@@ -144,23 +157,24 @@ const EmployeeList = () => {
   };
 
   const getStatusBadge = (status) => {
-    const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1);
-    const statusColors = {
-      Active: 'bg-green-100 text-green-800',
-      Inactive: 'bg-red-100 text-red-800',
-      Pending: 'bg-yellow-100 text-yellow-800'
+    const normalizedStatus = status.toLowerCase();
+    const statusConfig = {
+      active: { color: 'bg-green-100 text-green-800', label: 'Đang làm việc' },
+      inactive: { color: 'bg-red-100 text-red-800', label: 'Nghỉ việc' },
+      pending: { color: 'bg-yellow-100 text-yellow-800', label: 'Chờ duyệt' }
     };
 
+    const config = statusConfig[normalizedStatus] || { color: 'bg-gray-100 text-gray-800', label: status };
+
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[normalizedStatus]}`}>
-        {normalizedStatus}
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
+        {config.label}
       </span>
     );
   };
 
   const totalEmployees = employees.length;
   const activeEmployees = employees.filter(emp => emp.status === 'active').length;
-  const avgSalary = Math.round(employees.reduce((sum, emp) => sum + emp.salary, 0) / employees.length);
 
   // Pagination logic
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -221,21 +235,15 @@ const EmployeeList = () => {
               </svg>
               Thêm nhân viên
             </Button>
-            <Button variant="outline" size="md" onClick={handleExportEmployees}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.293V19a2 2 0 01-2 2z" />
-              </svg>
-              Xuất dữ liệu
-            </Button>
+         
           </div>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <EmployeeSummaryCards 
+      <EmployeeSummaryCards
         totalEmployees={totalEmployees}
         activeEmployees={activeEmployees}
-        avgSalary={avgSalary}
       />
 
       {/* Search and Filters */}
@@ -279,12 +287,6 @@ const EmployeeList = () => {
               </svg>
               Xóa bộ lọc
             </Button>
-            <Button variant="primary" size="sm" onClick={handleApplyFilters}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.293V19a2 2 0 01-2 2z" />
-              </svg>
-              Áp dụng
-            </Button>
           </div>
         </div>
       </Card>
@@ -295,9 +297,6 @@ const EmployeeList = () => {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <input type="checkbox" className="rounded border-gray-300" />
-                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tên nhân viên
                 </th>
@@ -324,9 +323,6 @@ const EmployeeList = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedEmployees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <input type="checkbox" className="rounded border-gray-300" />
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium mr-3">

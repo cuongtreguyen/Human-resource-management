@@ -15,14 +15,12 @@ const EditEmployee = () => {
 
   const [formData, setFormData] = useState({
     // Personal Information
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     phone: '',
     address: '',
     dateOfBirth: '',
     gender: '',
-    nationality: '',
     maritalStatus: '',
 
     // ID Card Information
@@ -31,10 +29,9 @@ const EditEmployee = () => {
     idCardIssuePlace: '',
 
     // Job Information
-    employeeId: '',
     department: '',
     position: '',
-    startDate: '',
+    hireDate: '',
     status: '',
     manager: '',
     workLocation: '',
@@ -43,48 +40,43 @@ const EditEmployee = () => {
 
     // Salary Information
     salary: '',
-    payGrade: '',
-    benefits: '',
-
-    // Education
-    education: '',
-    educationDetails: '',
-
-    // Bank Information
-    bankAccount: '',
-    bankName: '',
-    bankBranch: '',
 
     // Emergency Contact
     emergencyContactName: '',
     emergencyContactRelationship: '',
-    emergencyContactPhone: '',
-
-    // Additional Information
-    notes: ''
+    emergencyContactPhone: ''
   });
 
   useEffect(() => {
     const loadEmployeeData = async () => {
       try {
         setLoading(true);
-        // Simulate API call to get employee data
         const response = await fakeApi.getEmployeeById(id);
         if (response.success && response.data) {
           const data = response.data;
-          // Handle emergency contact if it's an object
-          const emergencyContactValue = typeof data.emergencyContact === 'object'
-            ? (data.emergencyContact?.name || '')
-            : (data.emergencyContact || '');
-          const emergencyPhoneValue = typeof data.emergencyContact === 'object'
-            ? (data.emergencyContact?.phone || '')
-            : (data.emergencyPhone || '');
-
           setFormData({
-            ...data,
-            emergencyContactName: emergencyContactValue,
-            emergencyContactRelationship: typeof data.emergencyContact === 'object' ? (data.emergencyContact?.relationship || '') : '',
-            emergencyContactPhone: emergencyPhoneValue,
+            name: data.name || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            address: data.address || '',
+            dateOfBirth: data.dateOfBirth || '',
+            gender: data.gender || '',
+            maritalStatus: data.maritalStatus || '',
+            idCard: data.idCard || '',
+            idCardIssueDate: data.idCardIssueDate || '',
+            idCardIssuePlace: data.idCardIssuePlace || '',
+            department: data.department || '',
+            position: data.position || '',
+            hireDate: data.hireDate || '',
+            status: data.status || '',
+            manager: data.manager || '',
+            workLocation: data.workLocation || '',
+            employeeType: data.employeeType || '',
+            contractType: data.contractType || '',
+            salary: data.salary || '',
+            emergencyContactName: data.emergencyContact?.name || '',
+            emergencyContactRelationship: data.emergencyContact?.relationship || '',
+            emergencyContactPhone: data.emergencyContact?.phone || ''
           });
         } else {
           alert('Không tìm thấy thông tin nhân viên');
@@ -123,28 +115,19 @@ const EditEmployee = () => {
     }
   };
 
-  const departments = ['Công nghệ', 'Nhân sự', 'Marketing', 'Tài chính', 'Kinh doanh', 'Vận hành'];
-  const positions = ['Lập trình viên', 'Quản lý nhân sự', 'Chuyên viên Marketing', 'Kế toán', 'Nhân viên kinh doanh', 'Quản lý vận hành'];
-  const statuses = ['Đang làm việc', 'Nghỉ việc', 'Nghỉ phép', 'Đã thôi việc'];
-  const genders = ['Nam', 'Nữ', 'Khác'];
-  const nationalities = ['Việt Nam', 'Hoa Kỳ', 'Hàn Quốc', 'Nhật Bản', 'Trung Quốc', 'Khác'];
+  const departments = ['Công nghệ thông tin', 'Nhân sự', 'Marketing', 'Tài chính', 'Kinh doanh', 'Vận hành'];
+  const positions = ['Lập trình viên', 'Quản lý nhân sự', 'Chuyên viên Marketing', 'Kế toán viên', 'Nhân viên kinh doanh', 'Quản lý vận hành'];
+  const statuses = [
+    { value: 'active', label: 'Đang làm việc' },
+    { value: 'inactive', label: 'Nghỉ việc' },
+    { value: 'on_leave', label: 'Nghỉ phép' }
+  ];
+  const genders = ['Nam', 'Nữ'];
   const maritalStatuses = ['Độc thân', 'Đã kết hôn', 'Ly hôn', 'Góa'];
-  const workLocations = ['Văn phòng HCM', 'Văn phòng Hà Nội', 'Văn phòng Đà Nẵng', 'Remote', 'Hybrid'];
-  const employeeTypes = ['Full-time', 'Part-time', 'Contract', 'Intern'];
-  const contractTypes = ['Chính thức', 'Thử việc', 'Hợp đồng ngắn hạn', 'Theo dự án'];
-  const educationLevels = ['Trung học', 'Cao đẳng', 'Đại học', 'Thạc sĩ', 'Tiến sĩ'];
-  const relationships = ['Bố', 'Mẹ', 'Vợ', 'Chồng', 'Anh/Chị/Em', 'Người thân khác'];
-  const banks = [
-    'Vietcombank', 'Techcombank', 'VPBank', 'BIDV', 'Agribank',
-    'MB Bank', 'ACB', 'Sacombank', 'VIB', 'TPBank', 'Khác'
-  ];
-  const payGrades = [
-    { value: 'Bậc 1', label: 'Bậc 1 - Nhân viên mới (0-2 năm kinh nghiệm)' },
-    { value: 'Bậc 2', label: 'Bậc 2 - Nhân viên (2-4 năm kinh nghiệm)' },
-    { value: 'Bậc 3', label: 'Bậc 3 - Nhân viên cấp cao (4-6 năm kinh nghiệm)' },
-    { value: 'Bậc 4', label: 'Bậc 4 - Chuyên gia (6-10 năm kinh nghiệm)' },
-    { value: 'Bậc 5', label: 'Bậc 5 - Chuyên gia cấp cao (>10 năm kinh nghiệm)' }
-  ];
+  const workLocations = ['Văn phòng Hà Nội', 'Văn phòng TP. Hồ Chí Minh', 'Văn phòng Đà Nẵng', 'Remote', 'Hybrid'];
+  const employeeTypes = ['Toàn thời gian', 'Bán thời gian', 'Hợp đồng', 'Thực tập'];
+  const contractTypes = ['Hợp đồng không xác định thời hạn', 'Hợp đồng xác định thời hạn 1 năm', 'Hợp đồng xác định thời hạn 2 năm', 'Thử việc'];
+  const relationships = ['Cha', 'Mẹ', 'Vợ', 'Chồng', 'Anh/Chị/Em', 'Người thân khác'];
 
   if (loading) {
     return (
@@ -191,16 +174,10 @@ const EditEmployee = () => {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Họ"
-                    value={formData.firstName}
-                    onChange={(value) => handleInputChange('firstName', value)}
-                    placeholder="Nhập họ"
-                  />
-                  <Input
-                    label="Tên"
-                    value={formData.lastName}
-                    onChange={(value) => handleInputChange('lastName', value)}
-                    placeholder="Nhập tên"
+                    label="Họ và tên"
+                    value={formData.name}
+                    onChange={(value) => handleInputChange('name', value)}
+                    placeholder="Nhập họ và tên"
                   />
                   <Input
                     label="Email"
@@ -216,12 +193,6 @@ const EditEmployee = () => {
                     placeholder="Nhập số điện thoại"
                   />
                   <Input
-                    label="Địa chỉ"
-                    value={formData.address}
-                    onChange={(value) => handleInputChange('address', value)}
-                    placeholder="Nhập địa chỉ"
-                  />
-                  <Input
                     label="Ngày sinh"
                     type="date"
                     value={formData.dateOfBirth}
@@ -234,17 +205,19 @@ const EditEmployee = () => {
                     onChange={(value) => handleInputChange('gender', value)}
                   />
                   <Select
-                    label="Quốc tịch"
-                    options={nationalities.map(nation => ({ value: nation, label: nation }))}
-                    value={formData.nationality}
-                    onChange={(value) => handleInputChange('nationality', value)}
-                  />
-                  <Select
                     label="Tình trạng hôn nhân"
                     options={maritalStatuses.map(status => ({ value: status, label: status }))}
                     value={formData.maritalStatus}
                     onChange={(value) => handleInputChange('maritalStatus', value)}
                   />
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Địa chỉ"
+                      value={formData.address}
+                      onChange={(value) => handleInputChange('address', value)}
+                      placeholder="Nhập địa chỉ"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -281,12 +254,6 @@ const EditEmployee = () => {
                   Thông tin công việc
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Mã nhân viên"
-                    value={formData.employeeId}
-                    onChange={(value) => handleInputChange('employeeId', value)}
-                    placeholder="Nhập mã nhân viên"
-                  />
                   <Select
                     label="Phòng ban"
                     options={departments.map(dept => ({ value: dept, label: dept }))}
@@ -300,19 +267,19 @@ const EditEmployee = () => {
                     onChange={(value) => handleInputChange('position', value)}
                   />
                   <Input
-                    label="Ngày bắt đầu"
+                    label="Ngày vào làm"
                     type="date"
-                    value={formData.startDate}
-                    onChange={(value) => handleInputChange('startDate', value)}
+                    value={formData.hireDate}
+                    onChange={(value) => handleInputChange('hireDate', value)}
                   />
                   <Select
                     label="Trạng thái"
-                    options={statuses.map(status => ({ value: status, label: status }))}
+                    options={statuses}
                     value={formData.status}
                     onChange={(value) => handleInputChange('status', value)}
                   />
                   <Input
-                    label="Quản lý"
+                    label="Quản lý trực tiếp"
                     value={formData.manager}
                     onChange={(value) => handleInputChange('manager', value)}
                     placeholder="Nhập tên quản lý"
@@ -346,83 +313,14 @@ const EditEmployee = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <Input
-                      label="Lương năm"
+                      label="Lương tháng"
                       type="number"
                       value={formData.salary}
                       onChange={(value) => handleInputChange('salary', value)}
-                      placeholder="Nhập lương năm (VNĐ)"
+                      placeholder="Nhập lương tháng (VNĐ)"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Ví dụ: 15000000 (15 triệu VNĐ/năm)</p>
+                    <p className="text-xs text-gray-500 mt-1">Ví dụ: 15000000 (15 triệu VNĐ/tháng)</p>
                   </div>
-                  <div>
-                    <Select
-                      label="Bậc lương"
-                      options={payGrades}
-                      value={formData.payGrade}
-                      onChange={(value) => handleInputChange('payGrade', value)}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Bậc lương dựa trên kinh nghiệm và năng lực</p>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phúc lợi
-                    </label>
-                    <textarea
-                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows="3"
-                      value={formData.benefits}
-                      onChange={(e) => handleInputChange('benefits', e.target.value)}
-                      placeholder="Nhập thông tin phúc lợi"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Education */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-                  Học vấn
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Select
-                    label="Trình độ học vấn"
-                    options={educationLevels.map(level => ({ value: level, label: level }))}
-                    value={formData.education}
-                    onChange={(value) => handleInputChange('education', value)}
-                  />
-                  <Input
-                    label="Chi tiết học vấn"
-                    value={formData.educationDetails}
-                    onChange={(value) => handleInputChange('educationDetails', value)}
-                    placeholder="VD: Cử nhân Công nghệ thông tin - ĐH Bách Khoa"
-                  />
-                </div>
-              </div>
-
-              {/* Bank Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-                  Thông tin ngân hàng
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Input
-                    label="Số tài khoản"
-                    value={formData.bankAccount}
-                    onChange={(value) => handleInputChange('bankAccount', value)}
-                    placeholder="Nhập số tài khoản"
-                  />
-                  <Select
-                    label="Ngân hàng"
-                    options={banks.map(bank => ({ value: bank, label: bank }))}
-                    value={formData.bankName}
-                    onChange={(value) => handleInputChange('bankName', value)}
-                  />
-                  <Input
-                    label="Chi nhánh"
-                    value={formData.bankBranch}
-                    onChange={(value) => handleInputChange('bankBranch', value)}
-                    placeholder="VD: Chi nhánh Quận 1"
-                  />
                 </div>
               </div>
 

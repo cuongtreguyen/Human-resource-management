@@ -13,6 +13,7 @@ import {
   Filter
 } from 'lucide-react';
 import fakeApi from '../services/fakeApi';
+import { isAdmin } from '../utils/auth';
 
 const NotificationCenter = () => {
   const navigate = useNavigate();
@@ -122,15 +123,16 @@ const NotificationCenter = () => {
               <h1 className="text-3xl font-bold">Trung tâm thông báo</h1>
               <p className="text-purple-100 mt-1">Quản lý tất cả thông báo của bạn</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-3 text-center">
-                <div className="text-3xl font-bold">{unreadCount}</div>
-                <div className="text-purple-100 text-sm">Chưa đọc</div>
+            {/* Ẩn badge chuông cho Admin */}
+            {!isAdmin() && (
+              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 flex items-center gap-3">
+                <Bell className="h-7 w-7" />
+                <div>
+                  <div className="text-2xl font-bold">{unreadCount}</div>
+                  <div className="text-purple-100 text-sm">Chưa đọc</div>
+                </div>
               </div>
-              <div className="bg-white/20 backdrop-blur-sm rounded-full p-4">
-                <Bell className="h-8 w-8" />
-              </div>
-            </div>
+            )}
           </div>
         </div>
 

@@ -57,35 +57,33 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
       title: 'QUẢN LÝ NHÂN VIÊN',
       items: [
         { name: 'Danh sách nhân viên', href: '/employees', icon: Users, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Xuất dữ liệu', href: '/employees/export', icon: FileText, allowedRoles: ['admin'] },
       ]
     },
     {
       title: 'QUẢN LÝ CHẤM CÔNG',
       items: [
         { name: 'Danh sách chấm công', href: '/attendance', icon: Clock, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Tạo chấm công', href: '/attendance/create', icon: Calendar, allowedRoles: ['admin', 'manager', 'accountant'] },
       ]
     },
     {
       title: 'QUẢN LÝ LƯƠNG',
       items: [
         { name: 'Danh sách lương', href: '/payroll', icon: DollarSign, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Chính sách tài chính', href: '/payroll/policies', icon: FileText, allowedRoles: ['admin', 'accountant'] },
+        { name: 'Chính sách tài chính', href: '/payroll/policies', icon: FileText, allowedRoles: ['accountant'] },
       ]
     },
     {
       title: 'QUẢN LÝ NGHỈ PHÉP',
       items: [
-        { name: 'Quản lý nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['admin', 'manager'] },
-        { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: UserPlus, allowedRoles: ['manager'] }, // Chỉ Manager tạo đơn
+        { name: 'Quản lý nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['manager'] },
+        { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: UserPlus, allowedRoles: ['manager'] },
       ]
     },
     {
       title: 'QUẢN LÝ CÔNG VIỆC',
       items: [
-        { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['manager'] }, // Chỉ Manager
-        { name: 'Bàn giao công việc', href: '/task-delegation', icon: Users, allowedRoles: ['admin', 'manager'] }, // Admin + Manager
+        { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['manager'] },
+        { name: 'Bàn giao công việc', href: '/task-delegation', icon: Users, allowedRoles: ['manager'] },
       ]
     },
     {
@@ -97,10 +95,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
     {
       title: 'QUẢN LÝ HỆ THỐNG',
       items: [
-        { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['manager', 'accountant'] },
+        { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['manager', 'accountant'] },
         { name: 'Thông báo', href: '/notifications', icon: Bell, allowedRoles: ['admin', 'manager', 'accountant'] },
-        { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart, allowedRoles: ['admin', 'accountant'] }, // Admin + Accountant
+        { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart, allowedRoles: ['accountant'] },
         { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity, allowedRoles: ['admin'] },
         { name: 'Cài đặt', href: '/settings', icon: Settings, allowedRoles: ['admin'] },
       ]
@@ -189,11 +187,6 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
                 {userRole === 'admin' && 'Quản trị viên'}
                 {userRole === 'manager' && 'Quản lý'}
                 {userRole === 'accountant' && 'Kế toán'}
-              </p>
-              <p className="text-xs text-gray-500">
-                {userRole === 'admin' && 'admin@company.com'}
-                {userRole === 'manager' && 'manager@company.com'}
-                {userRole === 'accountant' && 'accountant@company.com'}
               </p>
             </div>
           </div>
