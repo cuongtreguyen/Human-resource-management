@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ArrowLeft, Send, Calendar, FileText, Clock } from 'lucide-react';
-import EmployeeLayout from '../../components/layout/EmployeeLayout';
 
 const EmployeeLeave = () => {
   const [form, setForm] = useState({ type: 'annual', startDate: '', endDate: '', reason: '' });
@@ -25,7 +24,7 @@ const EmployeeLeave = () => {
   const days = calculateDays();
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-6">
         {/* Header với nút quay lại */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
@@ -224,7 +223,7 @@ const EmployeeLeave = () => {
           </div>
         </div>
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 

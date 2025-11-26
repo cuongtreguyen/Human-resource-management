@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { ArrowLeft, CheckCircle, Clock, AlertCircle, ListTodo, TrendingUp, Calendar, X, Eye, Edit, User, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import Button from '../../components/ui/Button';
 import fakeApi from '../../services/fakeApi';
 
@@ -118,7 +117,7 @@ const EmployeeTasks = () => {
   };
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
@@ -642,7 +641,7 @@ const EmployeeTasks = () => {
           </motion.div>
         </div>
       )}
-    </EmployeeLayout>
+    </div>
   );
 };
 

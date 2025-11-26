@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ArrowLeft, FileText, Download, Eye, Search, Filter, File } from 'lucide-react';
-import EmployeeLayout from '../../components/layout/EmployeeLayout';
 
 const docs = [
   { id: 1, name: 'Quy chế công ty.pdf', type: 'PDF', size: '1.2MB', category: 'Quy định', date: '15/01/2025' },
@@ -28,7 +27,7 @@ const EmployeeDocuments = () => {
   };
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
@@ -157,7 +156,7 @@ const EmployeeDocuments = () => {
           )}
         </div>
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 

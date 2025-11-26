@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ArrowLeft, HelpCircle, MessageCircle, Phone, Mail, FileText, Search, Send, Clock, CheckCircle } from 'lucide-react';
-import EmployeeLayout from '../../components/layout/EmployeeLayout';
 
 const EmployeeSupportHelp = () => {
   const [activeTab, setActiveTab] = useState('faq');
@@ -140,7 +139,7 @@ const EmployeeSupportHelp = () => {
   };
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
@@ -467,7 +466,7 @@ const EmployeeSupportHelp = () => {
           </div>
         )}
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, DollarSign, TrendingUp, Calendar, Download, Eye } from 'lucide-react';
-import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import fakeApi from '../../services/fakeApi';
 
 const EmployeePayroll = () => {
@@ -23,7 +22,7 @@ const EmployeePayroll = () => {
   const latestSalary = records.length > 0 ? records[0].netSalary : 0;
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-6">
         {/* Header với nút quay lại */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
@@ -216,7 +215,7 @@ const EmployeePayroll = () => {
           </div>
         )}
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 

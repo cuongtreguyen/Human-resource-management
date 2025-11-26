@@ -230,7 +230,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, User, Mail, Phone, MapPin, Briefcase, Calendar, Edit2, Save } from 'lucide-react';
-import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import fakeApi from '../../services/fakeApi';
 
 const EmployeeProfile = () => {
@@ -269,19 +268,17 @@ const EmployeeProfile = () => {
 
   if (loading) {
     return (
-      <EmployeeLayout>
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-gray-600">Đang tải...</p>
-          </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải...</p>
         </div>
-      </EmployeeLayout>
+      </div>
     );
   }
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-8 px-6 shadow-lg">
@@ -509,7 +506,7 @@ const EmployeeProfile = () => {
           )}
         </div>
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 

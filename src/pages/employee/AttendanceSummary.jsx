@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, Calendar, Clock, TrendingUp, Download, BarChart3 } from 'lucide-react';
-import EmployeeLayout from '../../components/layout/EmployeeLayout';
 import fakeApi from '../../services/fakeApi';
 
 const EmployeeAttendanceSummary = () => {
@@ -54,7 +53,7 @@ const EmployeeAttendanceSummary = () => {
   ];
 
   return (
-    <EmployeeLayout>
+    <div>
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
@@ -249,7 +248,7 @@ const EmployeeAttendanceSummary = () => {
           </div>
         </div>
       </div>
-    </EmployeeLayout>
+    </div>
   );
 };
 
