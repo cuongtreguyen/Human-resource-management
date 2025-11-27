@@ -29,27 +29,44 @@ CREATE OR REPLACE FUNCTION generate_employee_code()
 RETURNS TEXT AS $$
 DECLARE
     new_code TEXT;
-    code_exists BOOLEAN;
     current_year TEXT;
     sequence_num INTEGER;
+    max_attempts INTEGER := 100;
+    attempt INTEGER := 0;
 BEGIN
     current_year := TO_CHAR(CURRENT_DATE, 'YYYY');
     
-    -- Get the next sequence number for this year
+    -- Get the next sequence number across all years for uniqueness
+    -- This ensures codes are globally unique even across year boundaries
     SELECT COALESCE(MAX(
         CASE 
-            WHEN employee_code ~ ('^EMP' || current_year || '[0-9]+$')
-            THEN CAST(SUBSTRING(employee_code FROM 8) AS INTEGER)
+            WHEN employee_code ~ '^EMP[0-9]{8}$'
+            THEN CAST(SUBSTRING(employee_code FROM 4) AS BIGINT)
             ELSE 0
         END
     ), 0) + 1
     INTO sequence_num
-    FROM employees
-    WHERE employee_code LIKE 'EMP' || current_year || '%';
+    FROM employees;
     
-    new_code := 'EMP' || current_year || LPAD(sequence_num::TEXT, 4, '0');
-    
-    RETURN new_code;
+    -- Format: EMP + YYYYNNNN (year + 4-digit sequence)
+    -- If sequence exceeds 9999 for a year, continue incrementing globally
+    LOOP
+        new_code := 'EMP' || current_year || LPAD(sequence_num::TEXT, 4, '0');
+        
+        -- Check if this code already exists
+        IF NOT EXISTS (SELECT 1 FROM employees WHERE employee_code = new_code) THEN
+            RETURN new_code;
+        END IF;
+        
+        sequence_num := sequence_num + 1;
+        attempt := attempt + 1;
+        
+        -- Safety check to prevent infinite loops
+        IF attempt >= max_attempts THEN
+            -- Fall back to timestamp-based code for extreme cases
+            RETURN 'EMP' || TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDDHH24MISS');
+        END IF;
+    END LOOP;
 END;
 $$ LANGUAGE plpgsql;
 

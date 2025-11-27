@@ -170,16 +170,22 @@ async function executeMultiple(queries) {
 }
 
 // Graceful shutdown handlers
+// Note: We only close the pool without calling process.exit()
+// to allow other shutdown handlers to run properly
+let isShuttingDown = false;
+
 process.on('SIGINT', async () => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
   console.log('[DB] Received SIGINT, closing pool...');
   await closePool();
-  process.exit(0);
 });
 
 process.on('SIGTERM', async () => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
   console.log('[DB] Received SIGTERM, closing pool...');
   await closePool();
-  process.exit(0);
 });
 
 module.exports = {
