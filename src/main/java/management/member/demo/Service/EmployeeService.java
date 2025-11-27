@@ -3,6 +3,7 @@ package management.member.demo.Service;
 import management.member.demo.Enum.EmployeeStatus;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.Mapper.EmployeeMapper;
+import management.member.demo.dto.AddEmployeeRequest;
 import management.member.demo.dto.EmployeeRequest;
 import management.member.demo.dto.EmployeeResponse;
 import management.member.demo.dto.EmployeeSearchFilterRequest;
@@ -41,6 +42,100 @@ public class EmployeeService {
         this.employeeMapper = employeeMapper;
         this.employeeValidator = employeeValidator;
         this.authService = authService;
+    }
+
+    /**
+     * Thêm nhân viên mới
+     */
+    public EmployeeResponse addEmployee(AddEmployeeRequest request) {
+        // Validate request
+        if (request == null) {
+            throw ErrorCode.INVALID_REQUEST.toException();
+        }
+        
+        // Kiểm tra email đã tồn tại chưa
+        if (repository.existsByEmail(request.getEmail())) {
+            throw ErrorCode.EMPLOYEE_EMAIL_EXISTS.toException();
+        }
+        
+        // Tạo Employee entity từ request
+        Employee employee = new Employee();
+        
+        // Parse name thành firstName và lastName
+        String name = request.getName();
+        if (name != null && !name.trim().isEmpty()) {
+            String[] nameParts = name.trim().split("\\s+", 2);
+            if (nameParts.length > 0) {
+                employee.setFirstName(nameParts[0]);
+                if (nameParts.length > 1) {
+                    employee.setLastName(nameParts[1]);
+                }
+            }
+            employee.setFullName(name.trim());
+        }
+        
+        // Set các field cơ bản
+        employee.setEmail(request.getEmail());
+        employee.setPosition(request.getPosition());
+        employee.setDepartment(request.getDepartment());
+        employee.setPhone(request.getPhone());
+        employee.setHireDate(request.getHireDate());
+        employee.setBaseSalary(request.getSalary());
+        
+        // Convert status string sang enum
+        String statusStr = request.getStatus();
+        if (statusStr != null) {
+            try {
+                employee.setStatus(EmployeeStatus.valueOf(statusStr.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw ErrorCode.INVALID_STATUS_VALUE.toException();
+            }
+        } else {
+            employee.setStatus(EmployeeStatus.ACTIVE); // Default
+        }
+        
+        // Set các field bổ sung
+        employee.setPersonalEmail(request.getPersonalEmail());
+        employee.setDateOfBirth(request.getDateOfBirth());
+        employee.setGender(request.getGender());
+        employee.setIdNumber(request.getIdNumber());
+        employee.setTaxCode(request.getTaxCode());
+        employee.setEmployeeId(request.getEmployeeId());
+        employee.setContractCode(request.getContractCode());
+        employee.setContractType(request.getContractType());
+        employee.setPermanentAddress(request.getPermanentAddress());
+        employee.setTemporaryAddress(request.getTemporaryAddress());
+        
+        // Generate employeeCode nếu chưa có
+        if (request.getEmployeeId() != null && !request.getEmployeeId().trim().isEmpty()) {
+            employee.setEmployeeCode(request.getEmployeeId());
+        } else {
+            // Generate employeeCode tự động
+            String employeeCode = generateEmployeeCode();
+            employee.setEmployeeCode(employeeCode);
+        }
+        
+        // Set address (nếu có permanentAddress thì dùng, không thì dùng temporaryAddress)
+        if (request.getPermanentAddress() != null && !request.getPermanentAddress().trim().isEmpty()) {
+            employee.setAddress(request.getPermanentAddress());
+        } else if (request.getTemporaryAddress() != null && !request.getTemporaryAddress().trim().isEmpty()) {
+            employee.setAddress(request.getTemporaryAddress());
+        }
+        
+        // Set default remainingLeaveDays
+        employee.setRemainingLeaveDays(12);
+        
+        // Save employee
+        Employee savedEmployee = repository.save(employee);
+        return employeeMapper.toResponse(savedEmployee);
+    }
+    
+    /**
+     * Generate employee code tự động
+     */
+    private String generateEmployeeCode() {
+        Long count = repository.count();
+        return "EMP" + String.format("%05d", count + 1);
     }
 
     /**

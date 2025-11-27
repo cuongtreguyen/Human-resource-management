@@ -3,13 +3,15 @@ package management.member.demo.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+import javax.crypto.SecretKey;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import management.member.demo.exception.base.BusinessException;
-
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,15 +23,27 @@ import java.util.function.Function;
  */
 @Service
 public class JwtService {
-    private static final String SECRET_KEY = "your-256-bit-secret"; // TODO: lấy từ AWS Secrets Manager
-    
     private final JwtConfig jwtConfig;
     private final CacheManager cacheManager;
+    private final SecretsManagerService secretsManagerService;
     
     @Autowired
-    public JwtService(JwtConfig jwtConfig, CacheManager cacheManager) {
+    public JwtService(JwtConfig jwtConfig, CacheManager cacheManager, SecretsManagerService secretsManagerService) {
         this.jwtConfig = jwtConfig;
         this.cacheManager = cacheManager;
+        this.secretsManagerService = secretsManagerService;
+    }
+
+    /**
+     * Lấy SECRET_KEY từ AWS Secrets Manager và chuyển thành SecretKey
+     * Sử dụng Keys.hmacShaKeyFor() để tránh lỗi base64 parsing
+     */
+    private SecretKey getSecretKey() {
+        String secretString = secretsManagerService.getJwtSecretKey();
+        // Chuyển string thành byte array và tạo SecretKey
+        // Keys.hmacShaKeyFor() sẽ tự động tạo key từ byte array (không cần base64)
+        byte[] keyBytes = secretString.getBytes(StandardCharsets.UTF_8);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     /**
@@ -67,8 +81,9 @@ public class JwtService {
      * @return tất cả claims trong token
      */
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
+        return Jwts.parserBuilder()
+                .setSigningKey(getSecretKey())
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
@@ -175,13 +190,25 @@ public class JwtService {
      * @return JWT token được tạo
      */
     private String createToken(Map<String, Object> claims, String subject, long ttlSeconds) {
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuer(jwtConfig.getIssuer())
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + ttlSeconds * 1000))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-                .compact();
+        try {
+            if (jwtConfig == null) {
+                throw new IllegalStateException("JwtConfig is null");
+            }
+            if (jwtConfig.getIssuer() == null) {
+                throw new IllegalStateException("JwtConfig issuer is null");
+            }
+            return Jwts.builder()
+                    .setClaims(claims)
+                    .setSubject(subject)
+                    .setIssuer(jwtConfig.getIssuer())
+                    .setIssuedAt(new Date(System.currentTimeMillis()))
+                    .setExpiration(new Date(System.currentTimeMillis() + ttlSeconds * 1000))
+                    .signWith(getSecretKey(), SignatureAlgorithm.HS256)
+                    .compact();
+        } catch (Exception e) {
+            System.err.println("Error in createToken: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 }

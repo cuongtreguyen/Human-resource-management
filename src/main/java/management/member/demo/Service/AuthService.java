@@ -46,35 +46,54 @@ public class AuthService {
         this.otpService = otpService;
     }
 
-    /**
-     * Xác thực user và tạo JWT token
-     * @param username tên đăng nhập của user
-     * @param password mật khẩu của user
-     * @return JWT token nếu xác thực thành công
-     * @throws AuthenticationException nếu thông tin đăng nhập không đúng
-     */
-    public Tokens authenticate(String username, String password) {
+    // Xác thực user bằng email và password, tạo JWT token
+    public Tokens authenticate(String email, String password) {
         // Kiểm tra trạng thái tài khoản trước khi xác thực
-        if (!isUserActiveAndNotLocked(username)) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            // Nếu tài khoản bị khóa (chỉ kiểm tra isLocked, không phụ thuộc vào lockedAt)
+            if (user.getIsLocked() != null && user.getIsLocked()) {
+                // lockedAt chỉ để hiển thị thời gian bị khóa, không ảnh hưởng đến việc chặn
+                if (user.getLockedAt() != null) {
+                    // Tính thời gian đã bị khóa (phút) - chỉ để hiển thị
+                    long lockedMinutes = getLockedDuration(user);
+                    throw new BusinessException("ACCOUNT_LOCKED_OR_INACTIVE", 
+                        String.format("Account is locked since %d minute(s) ago. Please contact administrator.", lockedMinutes));
+                } else {
+                    // Không có lockedAt - không hiển thị thời gian
+                    throw new BusinessException("ACCOUNT_LOCKED_OR_INACTIVE", "Account is locked. Please contact administrator.");
+                }
+            }
+        }
+        
+        if (!isUserActiveAndNotLocked(email)) {
             throw new BusinessException("ACCOUNT_LOCKED_OR_INACTIVE", "Account is inactive or locked");
         }
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(username, password)
+                    new UsernamePasswordAuthenticationToken(email, password)
             );
 
             // Thành công: reset failed attempts và cập nhật last login
-            recordSuccessfulLogin(username);
+            recordSuccessfulLogin(email);
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-            String accessToken = jwtService.generateToken(userDetails);
-            String refreshToken = jwtService.generateRefreshToken(userDetails);
-            return new Tokens(accessToken, refreshToken);
+            try {
+                String accessToken = jwtService.generateToken(userDetails);
+                String refreshToken = jwtService.generateRefreshToken(userDetails);
+                return new Tokens(accessToken, refreshToken);
+            } catch (Exception tokenEx) {
+                // Log lỗi khi tạo token
+                System.err.println("Error generating token: " + tokenEx.getMessage());
+                tokenEx.printStackTrace();
+                throw new BusinessException("TOKEN_GENERATION_ERROR", "Failed to generate token: " + tokenEx.getMessage());
+            }
         } catch (Exception ex) {
             // Thất bại: tăng failed attempts và có thể khóa tài khoản
-            recordFailedLogin(username);
+            recordFailedLogin(email);
             if (ex instanceof BadCredentialsException || ex instanceof AuthenticationException) {
-                throw new BusinessException("INVALID_CREDENTIALS", "Username or password is incorrect");
+                throw new BusinessException("INVALID_CREDENTIALS", "Email or password is incorrect");
             }
             throw ex;
         }
@@ -85,8 +104,9 @@ public class AuthService {
      * Cấp lại access token từ refresh token hợp lệ
      */
     public String refreshAccessToken(String refreshToken) {
-        String username = jwtService.validateAndExtractUsernameFromRefreshToken(refreshToken);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        // Token chứa email (được dùng làm username trong UserDetails)
+        String email = jwtService.validateAndExtractUsernameFromRefreshToken(refreshToken);
+        UserDetails userDetails = userDetailsService.loadUserByUsername(email);
         return jwtService.generateToken(userDetails);
     }
 
@@ -110,9 +130,7 @@ public class AuthService {
         }
     }
 
-    /**
-     * Lấy username hiện tại từ SecurityContext
-     */
+    // Lấy email hiện tại từ SecurityContext (email được dùng làm username trong UserDetails)
     public String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getPrincipal() == null) {
@@ -127,11 +145,11 @@ public class AuthService {
 
     // Lấy thông tin User hiện tại từ repository (có thể trả null nếu không tìm thấy)
     public User getCurrentUser() {
-        String username = getCurrentUsername();
-        if (username == null) {
+        String email = getCurrentUsername();
+        if (email == null) {
             return null;
         }
-        Optional<User> user = userRepository.findByUsername(username);
+        Optional<User> user = userRepository.findByEmail(email);
         return user.orElse(null);
     }
 
@@ -142,6 +160,12 @@ public class AuthService {
             return Role.EMPLOYEE.name();
         }
         return user.getRole().name();
+    }
+
+    // Lấy user bằng email
+    public User getUserByEmail(String email) {
+        Optional<User> user = userRepository.findByEmail(email);
+        return user.orElse(null);
     }
 
     /**
@@ -172,7 +196,7 @@ public class AuthService {
         otpService.verifyOtp(email, otp);
         
         // Tìm user và cập nhật mật khẩu
-        Optional<User> userOpt = userRepository.findByUsername(email);
+        Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
             throw new BusinessException("USER_NOT_FOUND", "User not found");
         }
@@ -187,33 +211,60 @@ public class AuthService {
         otpService.removeOtp(email);
     }
 
-    private boolean isUserActiveAndNotLocked(String username) {
-        Optional<User> userOpt = userRepository.findByUsername(username);
+    // Test method để reset password trực tiếp (không cần OTP) - chỉ dùng cho development
+    public void testResetPassword(String email, String newPassword) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            throw new BusinessException("USER_NOT_FOUND", "User not found");
+        }
+        
+        User user = userOpt.get();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setFailedLoginAttempts(0);
+        user.setIsLocked(false);
+        user.setLockedAt(null);
+        userRepository.save(user);
+    }
+
+    // Tính thời gian đã bị khóa (phút) - chỉ để hiển thị
+    private long getLockedDuration(User user) {
+        if (user.getLockedAt() == null) {
+            return 0;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        return java.time.Duration.between(user.getLockedAt(), now).toMinutes();
+    }
+
+    private boolean isUserActiveAndNotLocked(String email) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
             return true; // để AuthenticationManager xử lý không tồn tại
         }
         User user = userOpt.get();
         Boolean active = user.getIsActive();
         Boolean locked = user.getIsLocked();
+        // Chặn nếu isLocked = true (không phân biệt khóa tự động hay thủ công)
         return (active == null || active) && (locked == null || !locked);
     }
 
-    private void recordSuccessfulLogin(String username) {
-        userRepository.findByUsername(username).ifPresent(u -> {
+    private void recordSuccessfulLogin(String email) {
+        userRepository.findByEmail(email).ifPresent(u -> {
             u.setFailedLoginAttempts(0);
             u.setIsLocked(false);
+            u.setLockedAt(null); // Reset thời gian khóa
             u.setLastLogin(LocalDateTime.now());
             userRepository.save(u);
         });
     }
 
-    private void recordFailedLogin(String username) {
-        userRepository.findByUsername(username).ifPresent(u -> {
+    private void recordFailedLogin(String email) {
+        userRepository.findByEmail(email).ifPresent(u -> {
             Integer attempts = u.getFailedLoginAttempts();
             int newAttempts = attempts == null ? 1 : attempts + 1;
             u.setFailedLoginAttempts(newAttempts);
             if (newAttempts >= MAX_FAILED_ATTEMPTS) {
                 u.setIsLocked(true);
+                u.setLockedAt(LocalDateTime.now()); // Lưu thời gian bị khóa
             }
             userRepository.save(u);
         });

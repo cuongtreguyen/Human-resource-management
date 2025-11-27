@@ -6,6 +6,7 @@ import management.member.demo.dto.LoginRequest;
 import management.member.demo.dto.LoginResponse;
 import management.member.demo.dto.ForgotPasswordRequest;
 import management.member.demo.dto.ResetPasswordRequest;
+import management.member.demo.entity.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -37,28 +38,25 @@ public class AuthController {
         this.emailService = emailService;
     }
 
-    /**
-     * API đăng nhập user và trả về JWT token
-     * @param loginRequest thông tin đăng nhập (username, password)
-     * @return JWT token nếu đăng nhập thành công
-     */
+    // Đăng nhập bằng email và password, trả về JWT token cùng với role
     @PostMapping("/login")
-    @Operation(summary = "User login", description = "Authenticate user and return access & refresh tokens")
+    @Operation(summary = "User login", description = "Authenticate user with email and password, return access & refresh tokens")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Login success"),
             @ApiResponse(responseCode = "401", description = "INVALID_CREDENTIALS"),
             @ApiResponse(responseCode = "403", description = "ACCOUNT_LOCKED_OR_INACTIVE")
     })
-    // Đăng nhập user và trả về JWT token cùng với role
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
-        AuthService.Tokens tokens = authService.authenticate(loginRequest.getUsername(), loginRequest.getPassword());
+        AuthService.Tokens tokens = authService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
         LoginResponse response = new LoginResponse();
-        response.setUsername(loginRequest.getUsername());
+        // Lấy thông tin user để trả về username
+        User currentUser = authService.getUserByEmail(loginRequest.getEmail());
+        response.setUsername(currentUser != null ? currentUser.getUsername() : loginRequest.getEmail());
         response.setAccessToken(tokens.getAccessToken());
         response.setRefreshToken(tokens.getRefreshToken());
         response.setAccessTokenExpiresAt(LocalDateTime.now().plusSeconds(3600));
         // Lấy role từ user
-        response.setRole(authService.getCurrentUserRole());
+        response.setRole(currentUser != null && currentUser.getRole() != null ? currentUser.getRole().name() : "EMPLOYEE");
         return ResponseEntity.ok(response);
     }
 
@@ -133,6 +131,19 @@ public class AuthController {
     })
     public ResponseEntity<Map<String, String>> resetPassword(@RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+    }
+
+    // Endpoint test để reset password trực tiếp (không cần OTP) - chỉ dùng cho development
+    @PostMapping("/test/reset-password")
+    @Operation(summary = "Test reset password", description = "Reset password directly without OTP (for testing only)")
+    public ResponseEntity<Map<String, String>> testResetPassword(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        String newPassword = request.get("newPassword");
+        if (email == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Email and newPassword are required"));
+        }
+        authService.testResetPassword(email, newPassword);
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 }

@@ -28,12 +28,28 @@ public class Employee {
 	@Column(name = "full_name")
 	private String fullName;
 
+	/** Tên */
+	@Size(max = 100)
+	@Column(name = "first_name")
+	private String firstName;
+
+	/** Họ */
+	@Size(max = 100)
+	@Column(name = "last_name")
+	private String lastName;
+
 	/** Email công việc */
 	@Email
 	@NotBlank
 	@Size(max = 120)
 	@Column(unique = true)
 	private String email;
+
+	/** Email cá nhân */
+	@Email
+	@Size(max = 120)
+	@Column(name = "personal_email")
+	private String personalEmail;
 
 	/** Số điện thoại */
 	@Size(max = 30)
@@ -42,6 +58,49 @@ public class Employee {
 	/** Địa chỉ */
 	@Size(max = 255)
 	private String address;
+
+	/** Địa chỉ thường trú */
+	@Size(max = 255)
+	@Column(name = "permanent_address")
+	private String permanentAddress;
+
+	/** Địa chỉ tạm trú */
+	@Size(max = 255)
+	@Column(name = "temporary_address")
+	private String temporaryAddress;
+
+	/** Ngày sinh */
+	@Column(name = "date_of_birth")
+	private LocalDate dateOfBirth;
+
+	/** Giới tính */
+	@Size(max = 10)
+	private String gender;
+
+	/** Số CMND/CCCD */
+	@Size(max = 20)
+	@Column(name = "id_number")
+	private String idNumber;
+
+	/** Mã số thuế */
+	@Size(max = 20)
+	@Column(name = "tax_code")
+	private String taxCode;
+
+	/** ID nhân viên (String) */
+	@Size(max = 50)
+	@Column(name = "employee_id")
+	private String employeeId;
+
+	/** Mã hợp đồng */
+	@Size(max = 50)
+	@Column(name = "contract_code")
+	private String contractCode;
+
+	/** Loại hợp đồng */
+	@Size(max = 50)
+	@Column(name = "contract_type")
+	private String contractType;
 
 	/** Mã nhân viên */
 	@NotBlank

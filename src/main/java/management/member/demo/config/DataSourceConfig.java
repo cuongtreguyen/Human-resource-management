@@ -24,6 +24,30 @@ public class DataSourceConfig {
     @Value("${spring.datasource.driver-class-name}")
     private String driverClassName;
 
+    @Value("${spring.datasource.hikari.minimum-idle:5}")
+    private int minimumIdle;
+
+    @Value("${spring.datasource.hikari.maximum-pool-size:10}")
+    private int maximumPoolSize;
+
+    @Value("${spring.datasource.hikari.connection-timeout:30000}")
+    private long connectionTimeout;
+
+    @Value("${spring.datasource.hikari.idle-timeout:300000}")
+    private long idleTimeout;
+
+    @Value("${spring.datasource.hikari.max-lifetime:1800000}")
+    private long maxLifetime;
+
+    @Value("${spring.datasource.hikari.auto-commit:false}")
+    private boolean autoCommit;
+
+    @Value("${spring.datasource.hikari.pool-name:HikariPool-HRM}")
+    private String poolName;
+
+    @Value("${spring.datasource.hikari.connection-test-query:SELECT 1}")
+    private String connectionTestQuery;
+
     @Bean
     @Primary
     public DataSource dataSource() {
@@ -43,11 +67,27 @@ public class DataSourceConfig {
             url += (url.contains("?") ? "&" : "?") + "TimeZone=UTC";
         }
         
+        // Basic connection settings
         config.setJdbcUrl(url);
         config.setUsername(username);
         config.setPassword(password);
         config.setDriverClassName(driverClassName);
-        // Không dùng connectionInitSql vì có thể gây conflict
+        
+        // Connection pool settings
+        config.setMinimumIdle(minimumIdle);
+        config.setMaximumPoolSize(maximumPoolSize);
+        config.setConnectionTimeout(connectionTimeout);
+        config.setIdleTimeout(idleTimeout);
+        config.setMaxLifetime(maxLifetime);
+        config.setAutoCommit(autoCommit);
+        config.setPoolName(poolName);
+        config.setConnectionTestQuery(connectionTestQuery);
+        
+        // Additional settings
+        config.addDataSourceProperty("cachePrepStmts", "true");
+        config.addDataSourceProperty("prepStmtCacheSize", "250");
+        config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+        
         return new HikariDataSource(config);
     }
 }

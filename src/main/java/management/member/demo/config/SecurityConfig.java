@@ -47,7 +47,10 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
-                                "/swagger-ui.html"
+                                "/swagger-ui.html",
+                                "/api/face-recognition/**",
+                                "/api/attendance/**",
+                                "/api/resume/**"
                         ).permitAll()
                         // Admin endpoints - chỉ ADMIN mới truy cập được
                         .requestMatchers(

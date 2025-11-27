@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import management.member.demo.Enum.Role;
+import management.member.demo.Enum.SystemStatusType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -62,6 +63,10 @@ public class User {
     @Column(name = "is_locked")
     private Boolean isLocked = false;
     
+    /** Thời gian tài khoản bị khóa */
+    @Column(name = "locked_at")
+    private LocalDateTime lockedAt;
+    
     /** Số lần đăng nhập thất bại liên tiếp */
     @Column(name = "failed_login_attempts")
     private Integer failedLoginAttempts = 0;
@@ -75,6 +80,16 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     private Role role;
+    
+    /** ID của nhân viên liên kết (nullable - admin có thể không có employeeId) */
+    @Size(max = 50)
+    @Column(name = "employee_id")
+    private String employeeId;
+    
+    /** Trạng thái hệ thống của user (IDLE, RUNNING, SUCCESS, ERROR) */
+    @Convert(converter = management.member.demo.converter.SystemStatusTypeAttributeConverter.class)
+    @Column(name = "system_status")
+    private SystemStatusType systemStatus;
     
     /** Thời gian tạo user (tự động, không thể cập nhật) */
     @CreatedDate

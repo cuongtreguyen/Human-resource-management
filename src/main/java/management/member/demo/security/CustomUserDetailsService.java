@@ -24,9 +24,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        management.member.demo.entity.User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // Tìm user bằng email (email được dùng làm identifier để đăng nhập)
+        management.member.demo.entity.User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
         // Lấy role từ user và tạo authority
         String role = user.getRole() != null ? user.getRole().name() : "EMPLOYEE";
@@ -34,8 +35,9 @@ public class CustomUserDetailsService implements UserDetailsService {
                 new SimpleGrantedAuthority("ROLE_" + role)
         );
 
+        // Dùng email làm username trong UserDetails để Spring Security xác thực
         return User.builder()
-                .username(user.getUsername())
+                .username(user.getEmail())
                 .password(user.getPassword())
                 .authorities(authorities)
                 .accountExpired(false)

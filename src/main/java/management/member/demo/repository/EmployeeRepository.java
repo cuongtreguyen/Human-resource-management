@@ -36,5 +36,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     
     // Đếm số lượng nhân viên theo status
     long countByStatus(EmployeeStatus status);
+    
+    // Kiểm tra email đã tồn tại chưa
+    boolean existsByEmail(String email);
 }
 

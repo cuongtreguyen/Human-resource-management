@@ -2,6 +2,7 @@ package management.member.demo.controller;
 
 import jakarta.validation.Valid;
 import management.member.demo.Service.EmployeeService;
+import management.member.demo.dto.AddEmployeeRequest;
 import management.member.demo.dto.EmployeeRequest;
 import management.member.demo.dto.EmployeeResponse;
 import management.member.demo.dto.EmployeeSearchFilterRequest;
@@ -28,6 +29,22 @@ public class EmployeeController {
     @Autowired
     public EmployeeController(EmployeeService service) {
         this.service = service;
+    }
+
+    // Thêm nhân viên mới
+    @PostMapping
+    @Operation(
+            summary = "Add new employee",
+            description = "Thêm nhân viên mới với đầy đủ thông tin"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Employee created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "409", description = "Email already exists")
+    })
+    public ResponseEntity<EmployeeResponse> addEmployee(
+            @Valid @RequestBody AddEmployeeRequest request) {
+        return ResponseEntity.ok(service.addEmployee(request));
     }
 
     // Lấy danh sách tất cả nhân viên bao gồm: Employee Name, Department, Position, Start Date, Monthly Salary, Status
