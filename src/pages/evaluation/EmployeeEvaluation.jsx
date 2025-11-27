@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import {
   Search, Plus, Award, TrendingUp, Star, Eye, Edit, Calendar, Filter,
-  X, Save, FileText, Target, Users, BookOpen, DollarSign, CheckCircle
+  X, Save, FileText, Target, Users, BookOpen, DollarSign, CheckCircle, ListTodo
 } from 'lucide-react';
 import {
   REVIEW_TYPES,
@@ -17,6 +17,7 @@ import FeedbackTab from '../../components/evaluation/FeedbackTab';
 import DevelopmentTab from '../../components/evaluation/DevelopmentTab';
 import CompensationTab from '../../components/evaluation/CompensationTab';
 import SummaryTab from '../../components/evaluation/SummaryTab';
+import TaskPerformanceTab from '../../components/evaluation/TaskPerformanceTab';
 
 const EmployeeEvaluation = () => {
   const navigate = useNavigate();
@@ -242,6 +243,7 @@ const EmployeeEvaluation = () => {
 
   const tabs = [
     { id: 'info', label: 'Thông tin', icon: FileText },
+    { id: 'task-performance', label: 'Công việc', icon: ListTodo },
     { id: 'kpis', label: 'KPIs', icon: Target },
     { id: 'competencies', label: 'Năng lực', icon: Award },
     { id: '360-feedback', label: '360° Feedback', icon: Users },
@@ -249,6 +251,11 @@ const EmployeeEvaluation = () => {
     { id: 'compensation', label: 'Đãi ngộ', icon: DollarSign },
     { id: 'summary', label: 'Tổng kết', icon: CheckCircle }
   ];
+
+  const handleTaskKPIsLoaded = (metrics) => {
+    // Optional callback when task KPIs are loaded
+    console.log('Task metrics loaded:', metrics);
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -315,6 +322,15 @@ const EmployeeEvaluation = () => {
               </div>
             </div>
           </div>
+        );
+      case 'task-performance':
+        return (
+          <TaskPerformanceTab
+            formData={formData}
+            setFormData={setFormData}
+            selectedEmployee={selectedEmployee}
+            onLoadTaskKPIs={handleTaskKPIsLoaded}
+          />
         );
       case 'kpis':
         return <KPIsTab formData={formData} setFormData={setFormData} />;

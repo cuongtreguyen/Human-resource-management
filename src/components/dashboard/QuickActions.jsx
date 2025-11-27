@@ -1,47 +1,91 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import {
+  UserPlus,
+  ClipboardList,
+  Calendar,
+  FileText,
+  DollarSign,
+  Users
+} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const QuickActions = ({ onFaceRecognitionClick }) => {
+const QuickActions = () => {
+  const navigate = useNavigate();
+
+  const actions = [
+    {
+      icon: UserPlus,
+      label: 'Thêm nhân viên',
+      description: 'Tạo hồ sơ nhân viên mới',
+      color: 'blue',
+      path: '/employees/add'
+    },
+    {
+      icon: ClipboardList,
+      label: 'Chấm công',
+      description: 'Ghi nhận chấm công',
+      color: 'green',
+      path: '/attendance'
+    },
+    {
+      icon: Calendar,
+      label: 'Nghỉ phép',
+      description: 'Quản lý đơn nghỉ phép',
+      color: 'amber',
+      path: '/leave'
+    },
+    {
+      icon: DollarSign,
+      label: 'Bảng lương',
+      description: 'Xem bảng lương',
+      color: 'purple',
+      path: '/payroll'
+    },
+    {
+      icon: FileText,
+      label: 'Công việc',
+      description: 'Quản lý công việc',
+      color: 'indigo',
+      path: '/tasks'
+    },
+    {
+      icon: Users,
+      label: 'Đánh giá',
+      description: 'Đánh giá nhân viên',
+      color: 'pink',
+      path: '/evaluations'
+    }
+  ];
+
+  const colorClasses = {
+    blue: 'bg-blue-100 text-blue-600 hover:bg-blue-200',
+    green: 'bg-green-100 text-green-600 hover:bg-green-200',
+    amber: 'bg-amber-100 text-amber-600 hover:bg-amber-200',
+    purple: 'bg-purple-100 text-purple-600 hover:bg-purple-200',
+    indigo: 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200',
+    pink: 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Quick Actions</h3>
-      </div>
-      <div className="p-6">
-        <div className="flex space-x-4">
-          <button
-            onClick={onFaceRecognitionClick}
-            className="bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            <span>Face Recognition</span>
-          </button>
-          <Link 
-            to="/chat" 
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-            <span>Chat</span>
-          </Link>
-          <Link 
-            to="/tasks" 
-            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 flex items-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
-            <span>Task Management</span>
-          </Link>
-        </div>
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">Thao tác nhanh</h3>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        {actions.map((action, index) => {
+          const Icon = action.icon;
+          return (
+            <button
+              key={index}
+              onClick={() => navigate(action.path)}
+              className={`flex flex-col items-center p-4 rounded-xl transition-all duration-200 ${colorClasses[action.color]}`}
+            >
+              <Icon size={24} className="mb-2" />
+              <span className="text-sm font-medium">{action.label}</span>
+              <span className="text-xs opacity-75 text-center mt-1">{action.description}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 };
 
 export default QuickActions;
-

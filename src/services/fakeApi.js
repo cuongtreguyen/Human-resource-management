@@ -1,6 +1,41 @@
 // Fake API Service for HR Management System
 // This provides mock data and simulated API responses
 
+// ============================================
+// SHARED DATA STORES (để đồng bộ giữa Employee và Admin)
+// ============================================
+
+// Support Tickets - Shared store
+let supportTicketsStore = [
+  {
+    id: 'ticket001',
+    subject: 'Cập nhật số CCCD mới',
+    category: 'profile-update',
+    priority: 'medium',
+    status: 'resolved',
+    description: 'Tôi vừa đổi CCCD mới, số mới là 001234567890. Vui lòng cập nhật vào hệ thống.',
+    createdDate: '2024-01-20',
+    lastUpdate: '2024-01-22',
+    employeeId: 'emp001',
+    employeeName: 'Trần Ngọc Hải',
+    assignedTo: 'HR Department',
+    response: 'Đã cập nhật CCCD mới vào hệ thống. Vui lòng kiểm tra lại thông tin trong Hồ sơ cá nhân.'
+  },
+  {
+    id: 'ticket002',
+    subject: 'Không thể truy cập hệ thống chấm công',
+    category: 'technical',
+    priority: 'high',
+    status: 'in-progress',
+    description: 'Máy tính của tôi không mở được trang chấm công, báo lỗi 403. Đã thử xóa cache và đổi trình duyệt nhưng vẫn không được.',
+    createdDate: '2024-01-21',
+    lastUpdate: '2024-01-21',
+    employeeId: 'emp002',
+    employeeName: 'Trần Thị Bình',
+    assignedTo: 'IT Support'
+  }
+];
+
 class FakeApiService {
   constructor() {
     this.baseUrl = '/api/v1';
@@ -1724,6 +1759,147 @@ class FakeApiService {
   }
 
   // ============================================
+  // BENEFITS & INSURANCE APIs (Shared Data)
+  // ============================================
+
+  // Chương trình phúc lợi công ty (tự động cấp cho nhân viên)
+  async getWelfarePrograms() {
+    const programs = [
+      { id: 'wf001', name: 'Phụ cấp ăn trưa', amount: '35.000 VNĐ/ngày làm việc', monthlyValue: 770000, budget: 220000000, participants: 154, owner: 'Phòng Hành chính', status: 'active', description: 'Phụ cấp ăn trưa cho nhân viên, thanh toán cùng lương hàng tháng', eligibility: 'Tất cả nhân viên chính thức', nextReview: '01/12/2024' },
+      { id: 'wf002', name: 'Phụ cấp xăng xe / đi lại', amount: '700.000 VNĐ/tháng', monthlyValue: 700000, budget: 96000000, participants: 86, owner: 'Phòng Hành chính', status: 'active', description: 'Hỗ trợ chi phí đi lại cho nhân viên làm việc tại văn phòng', eligibility: 'Nhân viên làm việc onsite', nextReview: '20/11/2024' },
+      { id: 'wf003', name: 'Thẻ tập gym & wellness', amount: 'Miễn phí 100%', monthlyValue: 500000, budget: 180000000, participants: 92, owner: 'HR - Văn hóa doanh nghiệp', status: 'active', description: 'Thẻ tập gym miễn phí tại các phòng gym đối tác', eligibility: 'Tất cả nhân viên chính thức', nextReview: '15/01/2025' },
+      { id: 'wf004', name: 'Phụ cấp điện thoại', amount: '300.000 VNĐ/tháng', monthlyValue: 300000, budget: 72000000, participants: 68, owner: 'IT Support', status: 'active', description: 'Hỗ trợ chi phí điện thoại và internet cho công việc', eligibility: 'Nhân viên cần liên lạc thường xuyên', nextReview: '30/11/2024' }
+    ];
+    return this.delayResponse({ data: programs, success: true });
+  }
+
+  // Chính sách bảo hiểm bắt buộc
+  async getInsurancePolicies() {
+    const policies = [
+      { id: 'BHXH-2024', name: 'Bảo hiểm xã hội (BHXH)', provider: 'Bảo hiểm xã hội Việt Nam', employerRate: '17.5%', employeeRate: '8%', effective: '01/01/2024', expiry: '31/12/2024', type: 'mandatory', description: 'Bảo hiểm xã hội bắt buộc theo quy định nhà nước' },
+      { id: 'BHYT-2024', name: 'Bảo hiểm y tế (BHYT)', provider: 'Bảo hiểm xã hội Việt Nam', employerRate: '3%', employeeRate: '1.5%', effective: '01/01/2024', expiry: '31/12/2024', type: 'mandatory', description: 'Bảo hiểm y tế cho nhân viên, hỗ trợ khám chữa bệnh' },
+      { id: 'BHTN-2024', name: 'Bảo hiểm thất nghiệp (BHTN)', provider: 'Bảo hiểm xã hội Việt Nam', employerRate: '1%', employeeRate: '1%', effective: '01/01/2024', expiry: '31/12/2024', type: 'mandatory', description: 'Bảo hiểm thất nghiệp theo quy định nhà nước' },
+      { id: 'BH-TN-2024', name: 'Bảo hiểm tai nạn 24/24', provider: 'Bảo hiểm PTI', employerRate: '100%', employeeRate: '0%', effective: '01/02/2024', expiry: '31/01/2025', type: 'voluntary', description: 'Bảo hiểm tai nạn 24/24, công ty đóng 100%' }
+    ];
+    return this.delayResponse({ data: policies, success: true });
+  }
+
+  // Bảo hiểm tự nguyện (nhân viên có thể đăng ký thêm)
+  async getVoluntaryInsurance() {
+    const voluntaryInsurance = [
+      { id: 'vol001', name: 'Bảo hiểm sức khỏe cao cấp', provider: 'Bảo Việt', monthlyPremium: 500000, coverage: 'Khám chữa bệnh tại bệnh viện quốc tế', maxBenefit: '500.000.000 VNĐ/năm', status: 'available', description: 'Bảo hiểm sức khỏe cao cấp với quyền lợi khám chữa bệnh tại các bệnh viện quốc tế' },
+      { id: 'vol002', name: 'Bảo hiểm nhân thọ', provider: 'Prudential', monthlyPremium: 300000, coverage: 'Bồi thường tử vong, thương tật', maxBenefit: '1.000.000.000 VNĐ', status: 'available', description: 'Bảo hiểm nhân thọ với quyền lợi bồi thường cao' },
+      { id: 'vol003', name: 'Bảo hiểm nha khoa', provider: 'Bảo Minh', monthlyPremium: 200000, coverage: 'Khám và điều trị nha khoa', maxBenefit: '50.000.000 VNĐ/năm', status: 'available', description: 'Bảo hiểm nha khoa, hỗ trợ chi phí khám và điều trị răng miệng' }
+    ];
+    return this.delayResponse({ data: voluntaryInsurance, success: true });
+  }
+
+  // Phúc lợi & bảo hiểm của nhân viên cụ thể
+  async getEmployeeBenefits(employeeId) {
+    // Phúc lợi đang hưởng (tự động từ công ty)
+    const myBenefits = [
+      { id: 'wf001', name: 'Phụ cấp ăn trưa', amount: '35.000 VNĐ/ngày', monthlyValue: 770000, status: 'active', startDate: '01/03/2024', description: 'Phụ cấp ăn trưa cho nhân viên' },
+      { id: 'wf002', name: 'Phụ cấp xăng xe', amount: '700.000 VNĐ/tháng', monthlyValue: 700000, status: 'active', startDate: '01/03/2024', description: 'Hỗ trợ chi phí đi lại' },
+      { id: 'wf003', name: 'Thẻ gym', amount: 'Miễn phí', monthlyValue: 500000, status: 'active', startDate: '01/03/2024', description: 'Thẻ tập gym miễn phí' },
+      { id: 'wf004', name: 'Phụ cấp điện thoại', amount: '300.000 VNĐ/tháng', monthlyValue: 300000, status: 'active', startDate: '01/03/2024', description: 'Hỗ trợ chi phí điện thoại' }
+    ];
+
+    // Bảo hiểm bắt buộc
+    const myInsurance = [
+      { id: 'BHXH-2024', policyNumber: 'BHXH-2024-001', name: 'Bảo hiểm xã hội', provider: 'Bảo hiểm xã hội Việt Nam', startDate: '01/03/2024', endDate: '31/12/2024', employerPays: '17.5%', employeePays: '8%', status: 'active', dependents: 0, documents: ['Sổ BHXH', 'Giấy xác nhận'] },
+      { id: 'BHYT-2024', policyNumber: 'BHYT-2024-001', name: 'Bảo hiểm y tế', provider: 'Bảo hiểm xã hội Việt Nam', startDate: '01/03/2024', endDate: '31/12/2024', employerPays: '3%', employeePays: '1.5%', status: 'active', dependents: 2, hospitalName: 'Bệnh viện Bạch Mai', documents: ['Thẻ BHYT'] },
+      { id: 'BHTN-2024', policyNumber: 'BHTN-2024-001', name: 'Bảo hiểm thất nghiệp', provider: 'Bảo hiểm xã hội Việt Nam', startDate: '01/03/2024', endDate: '31/12/2024', employerPays: '1%', employeePays: '1%', status: 'active', dependents: 0, documents: ['Giấy xác nhận BHTN'] }
+    ];
+
+    // Bảo hiểm tự nguyện đã đăng ký
+    const myVoluntaryInsurance = [
+      { id: 'vol001', name: 'Bảo hiểm sức khỏe cao cấp', provider: 'Bảo Việt', monthlyPremium: 500000, status: 'enrolled', startDate: '01/06/2024', endDate: '31/05/2025' }
+    ];
+
+    return this.delayResponse({
+      data: {
+        benefits: myBenefits,
+        mandatoryInsurance: myInsurance,
+        voluntaryInsurance: myVoluntaryInsurance,
+        totalBenefitValue: myBenefits.reduce((sum, b) => sum + b.monthlyValue, 0)
+      },
+      success: true
+    });
+  }
+
+  // Yêu cầu thay đổi phúc lợi/bảo hiểm
+  async getBenefitRequests() {
+    const requests = [
+      { id: 'REQ-2401', employeeId: 'emp001', employee: 'Trần Hoàng Nam', department: 'Kỹ thuật', type: 'add-dependent', typeLabel: 'Thêm người phụ thuộc (vợ) vào BHYT', submitted: '04/10/2024', reason: 'Vợ mới sinh con cần thêm vào thẻ BHYT gia đình để hưởng quyền lợi khám chữa bệnh. Hiện tại vợ chưa có bảo hiểm y tế.', attachments: 2, status: 'pending', priority: 'high' },
+      { id: 'REQ-2402', employeeId: 'emp002', employee: 'Nguyễn Thị Hạnh', department: 'Tài chính', type: 'change-hospital', typeLabel: 'Đổi nơi khám chữa bệnh ban đầu', submitted: '02/10/2024', reason: 'Thay đổi nơi khám chữa bệnh ban đầu từ BV Bạch Mai sang BV Vinmec do gần nhà hơn và tiện đi lại.', attachments: 1, status: 'pending', priority: 'medium' },
+      { id: 'REQ-2403', employeeId: 'emp003', employee: 'Vũ Đức Thịnh', department: 'Kinh doanh', type: 'cancel-benefit', typeLabel: 'Hủy phụ cấp ăn trưa (làm remote)', submitted: '30/09/2024', reason: 'Chuyển sang làm việc full remote từ ngày 01/10/2024 nên không còn nhu cầu nhận phụ cấp ăn trưa tại văn phòng.', attachments: 0, status: 'pending', priority: 'low' }
+    ];
+    return this.delayResponse({ data: requests, success: true });
+  }
+
+  // Yêu cầu của nhân viên cụ thể
+  async getEmployeeBenefitRequests(employeeId) {
+    const requests = [
+      { id: 'REQ-2399', type: 'add-dependent', typeLabel: 'Thêm con vào BHYT', submitted: '15/08/2024', status: 'approved', approvedBy: 'Nguyễn Văn Kế Toán', approvedDate: '18/08/2024', reason: 'Thêm con mới sinh vào BHYT gia đình' },
+      { id: 'REQ-2350', type: 'change-hospital', typeLabel: 'Đổi nơi khám chữa bệnh', submitted: '01/06/2024', status: 'approved', approvedBy: 'Nguyễn Văn Kế Toán', approvedDate: '05/06/2024', reason: 'Đổi từ BV Đa khoa Hà Nội sang BV Bạch Mai' },
+      { id: 'REQ-2300', type: 'enroll-voluntary', typeLabel: 'Đăng ký BH sức khỏe cao cấp', submitted: '20/05/2024', status: 'approved', approvedBy: 'Nguyễn Văn Kế Toán', approvedDate: '25/05/2024', reason: 'Đăng ký bảo hiểm sức khỏe cao cấp Bảo Việt' }
+    ];
+    return this.delayResponse({ data: requests, success: true });
+  }
+
+  // Tạo yêu cầu mới
+  async createBenefitRequest(requestData) {
+    const newRequest = {
+      id: `REQ-${Date.now().toString().slice(-4)}`,
+      ...requestData,
+      submitted: new Date().toLocaleDateString('vi-VN'),
+      status: 'pending'
+    };
+    return this.delayResponse({ data: newRequest, success: true, message: 'Yêu cầu đã được gửi thành công! HR sẽ xử lý trong 1-3 ngày làm việc.' });
+  }
+
+  // Phê duyệt yêu cầu
+  async approveBenefitRequest(requestId, approverName) {
+    return this.delayResponse({
+      data: { id: requestId, status: 'approved', approvedBy: approverName, approvedDate: new Date().toLocaleDateString('vi-VN') },
+      success: true,
+      message: `Đã phê duyệt yêu cầu ${requestId}`
+    });
+  }
+
+  // Từ chối yêu cầu
+  async rejectBenefitRequest(requestId, approverName, rejectReason) {
+    return this.delayResponse({
+      data: { id: requestId, status: 'rejected', rejectedBy: approverName, rejectedDate: new Date().toLocaleDateString('vi-VN'), rejectReason },
+      success: true,
+      message: `Đã từ chối yêu cầu ${requestId}`
+    });
+  }
+
+  // Bảo hiểm hiện tại của nhân viên (dùng cho modal chi tiết)
+  async getEmployeeInsuranceDetail(employeeId) {
+    const insuranceData = {
+      'emp001': [
+        { type: 'BHXH', start: '01/03/2022', end: null, dependents: 1 },
+        { type: 'BHYT', start: '01/03/2022', end: null, dependents: 2, hospitalName: 'BV Bạch Mai' },
+        { type: 'BHTN', start: '01/03/2022', end: null, dependents: 0 },
+        { type: 'Bảo hiểm tai nạn 24/24', start: '01/02/2024', end: '31/01/2025', dependents: 0 }
+      ],
+      'emp002': [
+        { type: 'BHXH', start: '15/06/2021', end: null, dependents: 0 },
+        { type: 'BHYT', start: '15/06/2021', end: null, dependents: 1, hospitalName: 'BV Vinmec' },
+        { type: 'BHTN', start: '15/06/2021', end: null, dependents: 0 }
+      ],
+      'emp003': [
+        { type: 'BHXH', start: '10/08/2023', end: null, dependents: 0 },
+        { type: 'BHYT', start: '10/08/2023', end: null, dependents: 0, hospitalName: 'BV Đa khoa Hà Nội' },
+        { type: 'BHTN', start: '10/08/2023', end: null, dependents: 0 }
+      ]
+    };
+    return this.delayResponse({ data: insuranceData[employeeId] || [], success: true });
+  }
+
+  // ============================================
   // EMPLOYEE PORTAL APIs
   // ============================================
 
@@ -2161,46 +2337,37 @@ class FakeApiService {
   }
 
   // ============================================
-  // SUPPORT & HELP APIs
+  // SUPPORT & HELP APIs (Dùng shared store để đồng bộ)
   // ============================================
 
+  // Employee xem tickets của mình
   async getSupportTickets(employeeId) {
-    const tickets = [
-      {
-        id: 'ticket001',
-        subject: 'Không thể truy cập hệ thống payroll',
-        category: 'technical',
-        priority: 'high',
-        status: 'open',
-        description: 'Tôi không thể đăng nhập vào trang payroll',
-        createdDate: '2024-01-20',
-        lastUpdate: '2024-01-21',
-        assignedTo: 'IT Support'
-      },
-      {
-        id: 'ticket002',
-        subject: 'Câu hỏi về chính sách nghỉ phép',
-        category: 'hr',
-        priority: 'medium',
-        status: 'resolved',
-        description: 'Tôi muốn biết về việc chuyển đổi ngày phép sang năm sau',
-        createdDate: '2024-01-18',
-        lastUpdate: '2024-01-19',
-        assignedTo: 'HR Department',
-        resolution: 'Bạn có thể chuyển tối đa 5 ngày phép sang năm sau'
-      }
-    ];
-    return this.delayResponse({ data: tickets, success: true });
+    // Lọc tickets theo employeeId nếu có, không thì trả về tất cả (cho demo)
+    const tickets = employeeId
+      ? supportTicketsStore.filter(t => t.employeeId === employeeId)
+      : supportTicketsStore;
+    return this.delayResponse({ data: [...tickets].reverse(), success: true });
   }
 
+  // Employee tạo ticket mới
   async createSupportTicket(ticketData) {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('vi-VN');
+
     const newTicket = {
-      id: this.generateId(),
+      id: 'ticket' + this.generateId(),
       ...ticketData,
       status: 'open',
-      createdDate: new Date().toISOString(),
-      lastUpdate: new Date().toISOString()
+      createdDate: dateStr,
+      lastUpdate: dateStr,
+      employeeId: ticketData.employeeId || 'emp001',
+      employeeName: ticketData.employeeName || 'Trần Ngọc Hải',
+      assignedTo: ticketData.category === 'technical' ? 'IT Support' : 'HR Department'
     };
+
+    // Thêm vào shared store
+    supportTicketsStore.push(newTicket);
+
     return this.delayResponse({
       data: newTicket,
       success: true,
@@ -2208,11 +2375,55 @@ class FakeApiService {
     });
   }
 
+  // Cập nhật ticket (status)
   async updateSupportTicket(ticketId, updates) {
+    const ticketIndex = supportTicketsStore.findIndex(t => t.id === ticketId);
+    if (ticketIndex !== -1) {
+      supportTicketsStore[ticketIndex] = {
+        ...supportTicketsStore[ticketIndex],
+        ...updates,
+        lastUpdate: new Date().toLocaleDateString('vi-VN')
+      };
+      return this.delayResponse({
+        data: supportTicketsStore[ticketIndex],
+        success: true,
+        message: 'Yêu cầu hỗ trợ đã được cập nhật'
+      });
+    }
     return this.delayResponse({
-      data: { ticketId, ...updates, lastUpdate: new Date().toISOString() },
-      success: true,
-      message: 'Yêu cầu hỗ trợ đã được cập nhật'
+      data: null,
+      success: false,
+      message: 'Không tìm thấy ticket'
+    });
+  }
+
+  // Admin/Manager xem tất cả tickets
+  async getAllSupportTickets() {
+    return this.delayResponse({ data: [...supportTicketsStore].reverse(), success: true });
+  }
+
+  // Admin/Manager phản hồi ticket
+  async respondToTicket(ticketId, responseData) {
+    const ticketIndex = supportTicketsStore.findIndex(t => t.id === ticketId);
+    if (ticketIndex !== -1) {
+      supportTicketsStore[ticketIndex] = {
+        ...supportTicketsStore[ticketIndex],
+        response: responseData.response,
+        status: responseData.status || 'resolved',
+        lastUpdate: new Date().toLocaleDateString('vi-VN'),
+        respondedAt: new Date().toISOString(),
+        respondedBy: 'HR Admin'
+      };
+      return this.delayResponse({
+        data: supportTicketsStore[ticketIndex],
+        success: true,
+        message: 'Đã gửi phản hồi thành công'
+      });
+    }
+    return this.delayResponse({
+      data: null,
+      success: false,
+      message: 'Không tìm thấy ticket'
     });
   }
 
@@ -2238,6 +2449,254 @@ class FakeApiService {
       }
     ];
     return this.delayResponse({ data: faqs, success: true });
+  }
+
+  // ============================================
+  // TASK METRICS FOR EVALUATION APIs
+  // ============================================
+
+  async getEmployeeTasksForEvaluation(employeeId, startDate, endDate) {
+    // Mock data: tasks assigned to an employee within the evaluation period
+    const employeeTasks = [
+      {
+        id: 'et001',
+        title: 'Thiết kế giao diện dashboard mới',
+        description: 'Tạo wireframe và mockup cho dashboard phiên bản 2.0',
+        columnId: 'done',
+        priority: 'high',
+        dueDate: '2024-12-10',
+        completedDate: '2024-12-09',
+        department: 'IT',
+        tags: ['UI/UX', 'Design'],
+        assignees: ['Nguyễn Văn An']
+      },
+      {
+        id: 'et002',
+        title: 'Viết API documentation',
+        description: 'Cập nhật tài liệu API cho các endpoints mới',
+        columnId: 'done',
+        priority: 'medium',
+        dueDate: '2024-12-12',
+        completedDate: '2024-12-11',
+        department: 'IT',
+        tags: ['Documentation'],
+        assignees: ['Nguyễn Văn An']
+      },
+      {
+        id: 'et003',
+        title: 'Implement authentication system',
+        description: 'Xây dựng hệ thống đăng nhập với JWT và OAuth',
+        columnId: 'inProgress',
+        priority: 'high',
+        dueDate: '2024-12-20',
+        completedDate: null,
+        department: 'IT',
+        tags: ['Backend', 'Security'],
+        assignees: ['Nguyễn Văn An', 'Trần Thị Bình']
+      },
+      {
+        id: 'et004',
+        title: 'Fix responsive issues',
+        description: 'Sửa các vấn đề hiển thị trên mobile',
+        columnId: 'done',
+        priority: 'low',
+        dueDate: '2024-12-08',
+        completedDate: '2024-12-10', // Late
+        department: 'IT',
+        tags: ['Frontend', 'Bug'],
+        assignees: ['Nguyễn Văn An']
+      },
+      {
+        id: 'et005',
+        title: 'Database optimization',
+        description: 'Tối ưu hóa queries và indexes',
+        columnId: 'review',
+        priority: 'medium',
+        dueDate: '2024-12-18',
+        completedDate: null,
+        department: 'IT',
+        tags: ['Database', 'Performance'],
+        assignees: ['Nguyễn Văn An']
+      },
+      {
+        id: 'et006',
+        title: 'Setup CI/CD pipeline',
+        description: 'Cấu hình GitHub Actions cho auto deployment',
+        columnId: 'done',
+        priority: 'high',
+        dueDate: '2024-12-15',
+        completedDate: '2024-12-14',
+        department: 'IT',
+        tags: ['DevOps'],
+        assignees: ['Nguyễn Văn An']
+      },
+      {
+        id: 'et007',
+        title: 'Code review các PR của team',
+        description: 'Review code cho 5 pull requests',
+        columnId: 'done',
+        priority: 'medium',
+        dueDate: '2024-12-05',
+        completedDate: '2024-12-05',
+        department: 'IT',
+        tags: ['Code Review'],
+        assignees: ['Nguyễn Văn An']
+      },
+      {
+        id: 'et008',
+        title: 'Viết unit tests cho auth module',
+        description: 'Coverage tối thiểu 80%',
+        columnId: 'done',
+        priority: 'high',
+        dueDate: '2024-12-07',
+        completedDate: '2024-12-06',
+        department: 'IT',
+        tags: ['Testing'],
+        assignees: ['Nguyễn Văn An']
+      },
+      {
+        id: 'et009',
+        title: 'Training junior developer',
+        description: 'Hướng dẫn nhân viên mới về codebase',
+        columnId: 'todo',
+        priority: 'low',
+        dueDate: '2024-12-25',
+        completedDate: null,
+        department: 'IT',
+        tags: ['Training'],
+        assignees: ['Nguyễn Văn An']
+      },
+      {
+        id: 'et010',
+        title: 'Refactor legacy code',
+        description: 'Cải thiện chất lượng code module cũ',
+        columnId: 'inProgress',
+        priority: 'medium',
+        dueDate: '2024-12-22',
+        completedDate: null,
+        department: 'IT',
+        tags: ['Refactoring'],
+        assignees: ['Nguyễn Văn An']
+      }
+    ];
+
+    return this.delayResponse({ data: employeeTasks, success: true });
+  }
+
+  async getTaskMetricsForEvaluation(employeeId, startDate, endDate) {
+    // Calculate metrics from tasks
+    const tasksResponse = await this.getEmployeeTasksForEvaluation(employeeId, startDate, endDate);
+    const tasks = tasksResponse.data;
+
+    const total = tasks.length;
+    const done = tasks.filter(t => t.columnId === 'done').length;
+    const inProgress = tasks.filter(t => t.columnId === 'inProgress').length;
+    const review = tasks.filter(t => t.columnId === 'review').length;
+    const todo = tasks.filter(t => t.columnId === 'todo').length;
+
+    // Calculate on-time rate
+    const completedTasks = tasks.filter(t => t.columnId === 'done');
+    const onTimeTasks = completedTasks.filter(t => {
+      if (!t.dueDate || !t.completedDate) return true;
+      return new Date(t.completedDate) <= new Date(t.dueDate);
+    });
+    const onTimeRate = completedTasks.length > 0
+      ? Math.round((onTimeTasks.length / completedTasks.length) * 100)
+      : 0;
+
+    // High priority completion
+    const highPriorityTasks = tasks.filter(t => t.priority === 'high');
+    const completedHighPriority = highPriorityTasks.filter(t => t.columnId === 'done').length;
+    const highPriorityRate = highPriorityTasks.length > 0
+      ? Math.round((completedHighPriority / highPriorityTasks.length) * 100)
+      : 100;
+
+    const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    // Productivity score (weighted)
+    const productivityScore = Math.round(
+      (completionRate * 0.4) + (onTimeRate * 0.35) + (highPriorityRate * 0.25)
+    );
+
+    const metrics = {
+      stats: { total, todo, inProgress, review, done },
+      completionRate,
+      onTimeRate,
+      highPriorityRate,
+      productivityScore,
+      priorityDistribution: {
+        high: tasks.filter(t => t.priority === 'high').length,
+        medium: tasks.filter(t => t.priority === 'medium').length,
+        low: tasks.filter(t => t.priority === 'low').length
+      },
+      suggestedKPIs: [
+        {
+          objective: 'Tỷ lệ hoàn thành công việc',
+          target: 100,
+          actual: completionRate,
+          unit: '%',
+          weight: 30,
+          achievement: completionRate,
+          comments: `Hoàn thành ${done}/${total} công việc được giao`
+        },
+        {
+          objective: 'Tỷ lệ hoàn thành đúng hạn',
+          target: 100,
+          actual: onTimeRate,
+          unit: '%',
+          weight: 25,
+          achievement: onTimeRate,
+          comments: 'Đánh giá khả năng quản lý thời gian'
+        },
+        {
+          objective: 'Hoàn thành công việc ưu tiên cao',
+          target: 100,
+          actual: highPriorityRate,
+          unit: '%',
+          weight: 25,
+          achievement: highPriorityRate,
+          comments: `Xử lý ${highPriorityTasks.length} công việc quan trọng`
+        },
+        {
+          objective: 'Điểm năng suất tổng hợp',
+          target: 100,
+          actual: productivityScore,
+          unit: 'điểm',
+          weight: 20,
+          achievement: productivityScore,
+          comments: 'Đánh giá tổng hợp dựa trên nhiều yếu tố'
+        }
+      ],
+      recommendations: this.generateTaskRecommendations(completionRate, onTimeRate, highPriorityRate, inProgress, done)
+    };
+
+    return this.delayResponse({ data: metrics, success: true });
+  }
+
+  generateTaskRecommendations(completionRate, onTimeRate, highPriorityRate, inProgress, done) {
+    const recommendations = [];
+
+    if (completionRate < 80) {
+      recommendations.push('Cần cải thiện tỷ lệ hoàn thành công việc. Xem xét đào tạo về quản lý công việc.');
+    }
+
+    if (onTimeRate < 80) {
+      recommendations.push('Cần cải thiện khả năng hoàn thành đúng deadline. Đề xuất khóa học quản lý thời gian.');
+    }
+
+    if (highPriorityRate < 90) {
+      recommendations.push('Cần ưu tiên xử lý các công việc quan trọng trước.');
+    }
+
+    if (inProgress > done) {
+      recommendations.push('Có nhiều công việc đang dở dang. Cần tập trung hoàn thành trước khi nhận việc mới.');
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push('Hiệu suất công việc tốt. Tiếp tục duy trì và có thể đảm nhận thêm trách nhiệm.');
+    }
+
+    return recommendations;
   }
 }
 

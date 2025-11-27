@@ -8,7 +8,7 @@ import {
   RecentActivity
 } from '../components/dashboard';
 import fakeApi from '../services/fakeApi';
-import { isAdmin } from '../utils/auth';
+import { isAdmin, isManager } from '../utils/auth';
 
 const Dashboard = () => {
   const [stats, setStats] = useState(null);
@@ -126,13 +126,13 @@ const Dashboard = () => {
           <AttendanceRate rate={stats?.averageAttendance || 0} />
         </div>
 
-        {/* Quick Actions - Ẩn cho Admin */}
-        {!isAdmin() && (
+        {/* Quick Actions - Ẩn cho Admin và Manager */}
+        {!isAdmin() && !isManager() && (
           <QuickActions onFaceRecognitionClick={() => setShowFaceRecognition(true)} />
         )}
 
-        {/* Recent Activity - Ẩn cho Admin */}
-        {!isAdmin() && (
+        {/* Recent Activity - Ẩn cho Admin và Manager */}
+        {!isAdmin() && !isManager() && (
           <div className="mt-8">
             <RecentActivity activities={stats?.recentActivities || []} />
           </div>

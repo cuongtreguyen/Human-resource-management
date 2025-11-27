@@ -1,33 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { 
-  Calendar, 
-  User, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  Plus,
+import {
+  Clock,
+  AlertCircle,
+  CheckCircle,
   Eye,
-  Edit,
-  Trash2,
   FileText,
-  TrendingUp,
-  Users
+  X,
+  User,
+  Calendar,
+  MessageSquare
 } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
 
 const LeaveManagement = () => {
-  const navigate = useNavigate();
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -40,7 +37,7 @@ const LeaveManagement = () => {
         fakeApi.getEmployees(),
         fakeApi.getLeaveRequests()
       ]);
-      
+
       setEmployees(employeesRes.data);
       setLeaveRequests(leaveRequestsRes.data);
     } catch {
@@ -58,6 +55,16 @@ const LeaveManagement = () => {
       case 'cancelled': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getStatusName = (status) => {
+    const statuses = {
+      'approved': 'Đã duyệt',
+      'pending': 'Chờ duyệt',
+      'rejected': 'Từ chối',
+      'cancelled': 'Đã hủy'
+    };
+    return statuses[status] || status;
   };
 
   const getLeaveTypeColor = (type) => {
@@ -80,14 +87,22 @@ const LeaveManagement = () => {
     return types[type] || 'Khác';
   };
 
+  const handleViewDetail = (request) => {
+    setSelectedRequest(request);
+    setShowModal(true);
+  };
+
   const handleApprove = async (requestId) => {
     try {
-      const updatedRequests = leaveRequests.map(request => 
-        request.id === requestId 
-          ? { ...request, status: 'approved', approvedBy: 'admin' }
+      const updatedRequests = leaveRequests.map(request =>
+        request.id === requestId
+          ? { ...request, status: 'approved', approvedBy: 'manager' }
           : request
       );
       setLeaveRequests(updatedRequests);
+      if (selectedRequest && selectedRequest.id === requestId) {
+        setSelectedRequest({ ...selectedRequest, status: 'approved', approvedBy: 'manager' });
+      }
       alert('Đã duyệt đơn nghỉ phép!');
     } catch {
       alert('Có lỗi xảy ra khi duyệt đơn');
@@ -96,12 +111,15 @@ const LeaveManagement = () => {
 
   const handleReject = async (requestId) => {
     try {
-      const updatedRequests = leaveRequests.map(request => 
-        request.id === requestId 
-          ? { ...request, status: 'rejected', approvedBy: 'admin' }
+      const updatedRequests = leaveRequests.map(request =>
+        request.id === requestId
+          ? { ...request, status: 'rejected', approvedBy: 'manager' }
           : request
       );
       setLeaveRequests(updatedRequests);
+      if (selectedRequest && selectedRequest.id === requestId) {
+        setSelectedRequest({ ...selectedRequest, status: 'rejected', approvedBy: 'manager' });
+      }
       alert('Đã từ chối đơn nghỉ phép!');
     } catch {
       alert('Có lỗi xảy ra khi từ chối đơn');
@@ -141,37 +159,9 @@ const LeaveManagement = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6 rounded-lg mb-6">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold">Quản lý nghỉ phép</h1>
-                <p className="text-green-100 mt-1">Theo dõi và quản lý các đơn nghỉ phép của nhân viên</p>
-              </div>
-              <div className="flex space-x-3">
-                <Button 
-                  variant="secondary" 
-                  size="md" 
-                  onClick={() => navigate('/leaves/create')}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Tạo đơn nghỉ phép
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  size="md" 
-                  onClick={() => navigate('/leaves/delegation')}
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Bàn giao công việc
-                </Button>
-                <Button 
-                  variant="secondary" 
-                  size="md" 
-                  onClick={() => navigate('/leaves/workflow')}
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Workflow
-                </Button>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold">Duyệt đơn nghỉ phép</h1>
+              <p className="text-green-100 mt-1">Xem và duyệt các đơn nghỉ phép của nhân viên</p>
             </div>
           </div>
 
@@ -183,21 +173,21 @@ const LeaveManagement = () => {
                 <div className="text-sm text-gray-500">Tổng số đơn</div>
               </div>
             </Card>
-            
+
             <Card title="Chờ duyệt" icon={<Clock className="h-5 w-5 text-yellow-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
                 <div className="text-sm text-gray-500">Cần xử lý</div>
               </div>
             </Card>
-            
+
             <Card title="Đã duyệt" icon={<CheckCircle className="h-5 w-5 text-green-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
                 <div className="text-sm text-gray-500">Đã duyệt</div>
               </div>
             </Card>
-            
+
             <Card title="Từ chối" icon={<AlertCircle className="h-5 w-5 text-red-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
@@ -262,13 +252,13 @@ const LeaveManagement = () => {
                           </div>
                         </div>
                       </td>
-                      
+
                       <td className="py-3 px-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getLeaveTypeColor(request.type)}`}>
                           {getLeaveTypeName(request.type)}
                         </span>
                       </td>
-                      
+
                       <td className="py-3 px-4">
                         <div className="text-sm">
                           <div className="font-medium text-gray-900">
@@ -279,14 +269,14 @@ const LeaveManagement = () => {
                           </div>
                         </div>
                       </td>
-                      
+
                       <td className="py-3 px-4">
                         <div className="text-center">
                           <div className="text-lg font-bold text-gray-900">{request.days}</div>
                           <div className="text-sm text-gray-500">ngày</div>
                         </div>
                       </td>
-                      
+
                       <td className="py-3 px-4">
                         <div className="max-w-xs">
                           <p className="text-sm text-gray-900 truncate" title={request.reason}>
@@ -294,40 +284,34 @@ const LeaveManagement = () => {
                           </p>
                         </div>
                       </td>
-                      
+
                       <td className="py-3 px-4">
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                          {request.status === 'approved' ? 'Đã duyệt' :
-                           request.status === 'pending' ? 'Chờ duyệt' :
-                           request.status === 'rejected' ? 'Từ chối' :
-                           request.status === 'cancelled' ? 'Đã hủy' : request.status}
+                          {getStatusName(request.status)}
                         </span>
                       </td>
-                      
+
                       <td className="py-3 px-4">
                         <div className="flex space-x-2">
-                          <Button 
-                            variant="secondary" 
+                          <Button
+                            variant="secondary"
                             size="sm"
-                            onClick={() => {
-                              // View details
-                              alert(`Chi tiết đơn nghỉ phép:\n\nNhân viên: ${request.employeeName}\nLoại nghỉ: ${getLeaveTypeName(request.type)}\nThời gian: ${new Date(request.startDate).toLocaleDateString('vi-VN')} - ${new Date(request.endDate).toLocaleDateString('vi-VN')}\nSố ngày: ${request.days}\nLý do: ${request.reason}\nTrạng thái: ${request.status}`);
-                            }}
+                            onClick={() => handleViewDetail(request)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          
+
                           {request.status === 'pending' && (
                             <>
-                              <Button 
-                                variant="primary" 
+                              <Button
+                                variant="primary"
                                 size="sm"
                                 onClick={() => handleApprove(request.id)}
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </Button>
-                              <Button 
-                                variant="secondary" 
+                              <Button
+                                variant="secondary"
                                 size="sm"
                                 onClick={() => handleReject(request.id)}
                               >
@@ -345,6 +329,144 @@ const LeaveManagement = () => {
           </Card>
         </div>
       </div>
+
+      {/* Modal xem chi tiết đơn nghỉ phép */}
+      {showModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full shadow-xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">Chi tiết đơn nghỉ phép</h3>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6">
+              {/* Thông tin nhân viên */}
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-blue-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
+                  {selectedRequest.employeeName.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">{selectedRequest.employeeName}</h4>
+                  <p className="text-sm text-gray-500">Mã NV: {selectedRequest.employeeId}</p>
+                </div>
+                <div className="ml-auto">
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedRequest.status)}`}>
+                    {getStatusName(selectedRequest.status)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Chi tiết đơn */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <FileText className="w-4 h-4" />
+                    <span className="text-sm">Loại nghỉ</span>
+                  </div>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-sm font-medium ${getLeaveTypeColor(selectedRequest.type)}`}>
+                    {getLeaveTypeName(selectedRequest.type)}
+                  </span>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <Clock className="w-4 h-4" />
+                    <span className="text-sm">Số ngày nghỉ</span>
+                  </div>
+                  <p className="text-xl font-bold text-gray-900">{selectedRequest.days} ngày</p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-sm">Ngày bắt đầu</span>
+                  </div>
+                  <p className="font-medium text-gray-900">
+                    {new Date(selectedRequest.startDate).toLocaleDateString('vi-VN', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="flex items-center gap-2 text-gray-500 mb-1">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-sm">Ngày kết thúc</span>
+                  </div>
+                  <p className="font-medium text-gray-900">
+                    {new Date(selectedRequest.endDate).toLocaleDateString('vi-VN', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Lý do nghỉ */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-center gap-2 text-gray-500 mb-2">
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-sm">Lý do nghỉ phép</span>
+                </div>
+                <p className="text-gray-900">{selectedRequest.reason}</p>
+              </div>
+
+              {/* Thông tin bổ sung */}
+              <div className="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-200">
+                <span>Ngày nộp đơn: {new Date(selectedRequest.submittedDate).toLocaleDateString('vi-VN')}</span>
+                {selectedRequest.approvedBy && (
+                  <span>Người duyệt: {selectedRequest.approvedBy}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              {selectedRequest.status === 'pending' ? (
+                <>
+                  <button
+                    onClick={() => {
+                      handleReject(selectedRequest.id);
+                      setShowModal(false);
+                    }}
+                    className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                  >
+                    Từ chối
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleApprove(selectedRequest.id);
+                      setShowModal(false);
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                  >
+                    Duyệt đơn
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Đóng
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

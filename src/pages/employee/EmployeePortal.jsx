@@ -100,8 +100,6 @@ const EmployeePortal = () => {
     { title: "Nhiệm vụ", desc: "Công việc được giao", action: () => navigate("/employee/tasks") },
     { title: "Tài liệu", desc: "Văn bản & biểu mẫu", action: () => navigate("/employee/documents") },
     { title: "Hồ sơ cá nhân", desc: "Cập nhật thông tin", action: () => navigate("/employee/profile") },
-    { title: "Đánh giá hiệu suất", desc: "Xem kết quả đánh giá", action: () => navigate("/employee/performance") },
-    { title: "Đào tạo", desc: "Khóa học & phát triển", action: () => navigate("/employee/training") },
     { title: "Phúc lợi", desc: "Bảo hiểm & phúc lợi", action: () => navigate("/employee/benefits") },
     { title: "Hỗ trợ", desc: "FAQ & ticket hỗ trợ", action: () => navigate("/employee/support") },
   ];

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Bell, Activity, Heart, Award } from 'lucide-react';
+import { X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home, BarChart3, MessageCircle, CheckSquare, User, Bell, Activity, Heart, Award, HelpCircle } from 'lucide-react';
 import { getRole } from '../../utils/auth';
 
 const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
@@ -62,7 +62,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
     {
       title: 'QUẢN LÝ CHẤM CÔNG',
       items: [
-        { name: 'Danh sách chấm công', href: '/attendance', icon: Clock, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Danh sách chấm công', href: '/attendance', icon: Clock, allowedRoles: ['admin', 'accountant'] },
       ]
     },
     {
@@ -75,15 +75,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
     {
       title: 'QUẢN LÝ NGHỈ PHÉP',
       items: [
-        { name: 'Quản lý nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['manager'] },
-        { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: UserPlus, allowedRoles: ['manager'] },
+        { name: 'Duyệt đơn nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['manager'] },
       ]
     },
     {
       title: 'QUẢN LÝ CÔNG VIỆC',
       items: [
         { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['manager'] },
-        { name: 'Bàn giao công việc', href: '/task-delegation', icon: Users, allowedRoles: ['manager'] },
       ]
     },
     {
@@ -98,6 +96,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath }) => {
         { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['manager', 'accountant'] },
         { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['manager', 'accountant'] },
         { name: 'Thông báo', href: '/notifications', icon: Bell, allowedRoles: ['admin', 'manager', 'accountant'] },
+        { name: 'Yêu cầu hỗ trợ', href: '/admin/support-tickets', icon: HelpCircle, allowedRoles: ['admin', 'manager'] },
         { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart, allowedRoles: ['accountant'] },
         { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity, allowedRoles: ['admin'] },
         { name: 'Cài đặt', href: '/settings', icon: Settings, allowedRoles: ['admin'] },

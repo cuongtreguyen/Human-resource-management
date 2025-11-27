@@ -1,95 +1,105 @@
-import React, { useState } from 'react';
-import { ArrowLeft, HelpCircle, MessageCircle, Phone, Mail, FileText, Search, Send, Clock, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  ArrowLeft, HelpCircle, MessageCircle, Phone, Mail, FileText,
+  Search, Send, Clock, CheckCircle, User, AlertCircle, Plus, RefreshCw
+} from 'lucide-react';
+import { toast } from 'react-toastify';
+import fakeApi from '../../services/fakeApi';
 
 const EmployeeSupportHelp = () => {
-  const [activeTab, setActiveTab] = useState('faq');
+  const [activeTab, setActiveTab] = useState('tickets');
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [ticketForm, setTicketForm] = useState({
     category: '',
     priority: 'medium',
     subject: '',
     description: ''
   });
-  const [tickets, setTickets] = useState([
-    {
-      id: 1,
-      subject: 'Không thể đăng nhập vào hệ thống',
-      category: 'Technical',
-      priority: 'high',
-      status: 'open',
-      createdAt: '2024-02-15',
-      updatedAt: '2024-02-15'
-    },
-    {
-      id: 2,
-      subject: 'Cập nhật thông tin cá nhân',
-      category: 'General',
-      priority: 'medium',
-      status: 'in-progress',
-      createdAt: '2024-02-10',
-      updatedAt: '2024-02-12'
-    },
-    {
-      id: 3,
-      subject: 'Vấn đề với bảng lương',
-      category: 'Payroll',
-      priority: 'high',
-      status: 'resolved',
-      createdAt: '2024-02-05',
-      updatedAt: '2024-02-08'
+  const [tickets, setTickets] = useState([]);
+
+  // Load tickets khi component mount
+  useEffect(() => {
+    loadTickets();
+  }, []);
+
+  const loadTickets = async () => {
+    try {
+      setLoading(true);
+      const res = await fakeApi.getSupportTickets();
+      if (res.success) {
+        setTickets(res.data);
+      }
+    } catch (error) {
+      console.error('Error loading tickets:', error);
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const faqData = [
     {
       id: 1,
-      category: 'Technical',
-      question: 'Làm thế nào để đổi mật khẩu?',
-      answer: 'Bạn có thể đổi mật khẩu bằng cách vào trang Profile > Security Settings > Change Password. Nhập mật khẩu cũ và mật khẩu mới, sau đó nhấn Save.'
+      category: 'HR',
+      question: 'Làm thế nào để cập nhật thông tin cá nhân?',
+      answer: 'Để cập nhật thông tin cá nhân (địa chỉ, số điện thoại, CCCD, v.v.), bạn cần tạo ticket hỗ trợ trong mục "Ticket hỗ trợ" với danh mục "Cập nhật thông tin cá nhân". Phòng Nhân sự sẽ xử lý trong 1-2 ngày làm việc.'
     },
     {
       id: 2,
       category: 'Technical',
-      question: 'Tại sao tôi không thể chấm công?',
-      answer: 'Có thể do một số nguyên nhân: 1) Kết nối internet không ổn định, 2) Camera không được cấp quyền, 3) Hệ thống đang bảo trì. Vui lòng thử lại sau hoặc liên hệ IT support.'
+      question: 'Làm thế nào để đổi mật khẩu?',
+      answer: 'Hiện tại bạn cần liên hệ phòng IT để được hỗ trợ đổi mật khẩu. Tạo ticket với danh mục "Kỹ thuật" và mô tả yêu cầu đổi mật khẩu.'
     },
     {
       id: 3,
-      category: 'Payroll',
-      question: 'Khi nào tôi nhận được bảng lương?',
-      answer: 'Bảng lương được phát hành vào ngày 25 hàng tháng. Bạn sẽ nhận được thông báo qua email và có thể xem chi tiết trong mục Payroll.'
+      category: 'Technical',
+      question: 'Tại sao tôi không thể chấm công?',
+      answer: 'Có thể do: 1) Kết nối internet không ổn định, 2) Camera không được cấp quyền, 3) Hệ thống đang bảo trì. Vui lòng thử lại sau hoặc tạo ticket hỗ trợ.'
     },
     {
       id: 4,
-      category: 'Leave',
-      question: 'Làm thế nào để xin nghỉ phép?',
-      answer: 'Bạn có thể xin nghỉ phép bằng cách vào mục Leave > Create Request. Điền đầy đủ thông tin và gửi yêu cầu. Quản lý sẽ xem xét và phản hồi trong vòng 2-3 ngày làm việc.'
+      category: 'Payroll',
+      question: 'Khi nào tôi nhận được bảng lương?',
+      answer: 'Bảng lương được phát hành vào ngày 25 hàng tháng. Bạn sẽ nhận được thông báo và có thể xem chi tiết trong mục "Bảng lương".'
     },
     {
       id: 5,
-      category: 'General',
-      question: 'Làm thế nào để cập nhật thông tin cá nhân?',
-      answer: 'Bạn có thể cập nhật thông tin cá nhân trong mục Profile. Một số thông tin như ngày sinh, CMND cần liên hệ HR để thay đổi.'
+      category: 'Leave',
+      question: 'Làm thế nào để xin nghỉ phép?',
+      answer: 'Vào mục "Nghỉ phép" > "Tạo đơn mới". Điền đầy đủ thông tin và gửi. Quản lý sẽ xem xét và phản hồi trong vòng 2-3 ngày làm việc.'
     },
     {
       id: 6,
       category: 'Benefits',
       question: 'Tôi có những phúc lợi gì?',
-      answer: 'Nhân viên được hưởng các phúc lợi: Bảo hiểm y tế, Bảo hiểm xã hội, Phụ cấp ăn trưa, Phụ cấp xăng xe, Thẻ gym. Chi tiết xem trong mục Benefits & Insurance.'
+      answer: 'Xem chi tiết trong mục "Phúc lợi & Bảo hiểm". Bạn được hưởng: BHXH, BHYT, BHTN (bắt buộc) và các phụ cấp như ăn trưa, xăng xe, thẻ gym (tùy điều kiện).'
+    },
+    {
+      id: 7,
+      category: 'HR',
+      question: 'Làm thế nào để thêm người phụ thuộc vào BHYT?',
+      answer: 'Vào mục "Phúc lợi & Bảo hiểm" > "Yêu cầu thay đổi" > Chọn "Thêm người phụ thuộc vào BHYT". Đính kèm giấy tờ cần thiết (giấy khai sinh, đăng ký kết hôn...).'
     }
   ];
 
-  // Categories for FAQ filtering - removed unused variable
-  
+  // Danh mục ticket
+  const ticketCategories = [
+    { value: 'profile-update', label: 'Cập nhật thông tin cá nhân', icon: User },
+    { value: 'technical', label: 'Kỹ thuật / IT', icon: AlertCircle },
+    { value: 'payroll', label: 'Lương thưởng', icon: FileText },
+    { value: 'leave', label: 'Nghỉ phép', icon: Clock },
+    { value: 'benefits', label: 'Phúc lợi & Bảo hiểm', icon: HelpCircle },
+    { value: 'other', label: 'Khác', icon: MessageCircle }
+  ];
+
   const filteredFaq = faqData.filter(faq => {
-    const matchesSearch = faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = activeTab === 'faq' && (searchTerm === '' || matchesSearch);
-    return matchesCategory;
+    return faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   const getPriorityColor = (priority) => {
-    switch(priority) {
+    switch (priority) {
       case 'high': return 'bg-red-100 text-red-700';
       case 'medium': return 'bg-yellow-100 text-yellow-700';
       case 'low': return 'bg-green-100 text-green-700';
@@ -97,8 +107,17 @@ const EmployeeSupportHelp = () => {
     }
   };
 
+  const getPriorityLabel = (priority) => {
+    switch (priority) {
+      case 'high': return 'Cao';
+      case 'medium': return 'Trung bình';
+      case 'low': return 'Thấp';
+      default: return priority;
+    }
+  };
+
   const getStatusColor = (status) => {
-    switch(status) {
+    switch (status) {
       case 'open': return 'bg-blue-100 text-blue-700';
       case 'in-progress': return 'bg-yellow-100 text-yellow-700';
       case 'resolved': return 'bg-green-100 text-green-700';
@@ -108,7 +127,7 @@ const EmployeeSupportHelp = () => {
   };
 
   const getStatusText = (status) => {
-    switch(status) {
+    switch (status) {
       case 'open': return 'Mới tạo';
       case 'in-progress': return 'Đang xử lý';
       case 'resolved': return 'Đã giải quyết';
@@ -117,35 +136,52 @@ const EmployeeSupportHelp = () => {
     }
   };
 
-  const handleSubmitTicket = (e) => {
+  const getCategoryLabel = (value) => {
+    const cat = ticketCategories.find(c => c.value === value);
+    return cat ? cat.label : value;
+  };
+
+  const handleSubmitTicket = async (e) => {
     e.preventDefault();
-    const newTicket = {
-      id: tickets.length + 1,
-      subject: ticketForm.subject,
-      category: ticketForm.category,
-      priority: ticketForm.priority,
-      status: 'open',
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0]
-    };
-    setTickets([newTicket, ...tickets]);
-    setTicketForm({
-      category: '',
-      priority: 'medium',
-      subject: '',
-      description: ''
-    });
-    alert('Ticket đã được tạo thành công!');
+
+    if (!ticketForm.category || !ticketForm.subject || !ticketForm.description) {
+      toast.error('Vui lòng điền đầy đủ thông tin!');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await fakeApi.createSupportTicket({
+        ...ticketForm,
+        categoryLabel: getCategoryLabel(ticketForm.category)
+      });
+
+      if (res.success) {
+        toast.success('Ticket đã được tạo thành công! HR sẽ phản hồi trong 1-2 ngày làm việc.');
+        setTickets([res.data, ...tickets]);
+        setTicketForm({
+          category: '',
+          priority: 'medium',
+          subject: '',
+          description: ''
+        });
+        setShowCreateForm(false);
+      }
+    } catch (error) {
+      toast.error('Có lỗi xảy ra, vui lòng thử lại!');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 shadow-lg">
+        <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
-            <a 
-              href="/employee" 
+            <a
+              href="/employee"
               className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
             >
               <ArrowLeft size={18} />
@@ -154,37 +190,27 @@ const EmployeeSupportHelp = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-2">Hỗ trợ & Trợ giúp</h1>
-            <p className="text-purple-100">Tìm kiếm câu trả lời hoặc liên hệ hỗ trợ</p>
+            <p className="text-purple-100">Tạo yêu cầu hỗ trợ hoặc tìm kiếm câu trả lời</p>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Thống kê */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-blue-100 rounded-lg">
-                <HelpCircle className="text-blue-600" size={24} />
+                <MessageCircle className="text-blue-600" size={24} />
               </div>
               <div>
-                <p className="text-sm text-gray-500">FAQ</p>
-                <p className="text-2xl font-bold text-gray-900">{faqData.length}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <MessageCircle className="text-green-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Ticket đã tạo</p>
+                <p className="text-sm text-gray-500">Tổng ticket</p>
                 <p className="text-2xl font-bold text-gray-900">{tickets.length}</p>
               </div>
             </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-yellow-100 rounded-lg">
                 <Clock className="text-yellow-600" size={24} />
@@ -192,16 +218,16 @@ const EmployeeSupportHelp = () => {
               <div>
                 <p className="text-sm text-gray-500">Đang xử lý</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tickets.filter(t => t.status === 'in-progress').length}
+                  {tickets.filter(t => t.status === 'open' || t.status === 'in-progress').length}
                 </p>
               </div>
             </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <CheckCircle className="text-purple-600" size={24} />
+              <div className="p-3 bg-green-100 rounded-lg">
+                <CheckCircle className="text-green-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Đã giải quyết</p>
@@ -211,183 +237,301 @@ const EmployeeSupportHelp = () => {
               </div>
             </div>
           </div>
+
+          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-100 rounded-lg">
+                <HelpCircle className="text-purple-600" size={24} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Câu hỏi FAQ</p>
+                <p className="text-2xl font-bold text-gray-900">{faqData.length}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveTab('faq')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'faq'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              FAQ
-            </button>
+        <div className="bg-white rounded-xl border border-gray-200 mb-6">
+          <div className="flex border-b">
             <button
               onClick={() => setActiveTab('tickets')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition-colors ${
                 activeTab === 'tickets'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
+              <MessageCircle size={20} />
               Ticket hỗ trợ
             </button>
             <button
-              onClick={() => setActiveTab('contact')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                activeTab === 'contact'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              onClick={() => setActiveTab('faq')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition-colors ${
+                activeTab === 'faq'
+                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              Liên hệ
+              <HelpCircle size={20} />
+              Câu hỏi thường gặp
+            </button>
+            <button
+              onClick={() => setActiveTab('contact')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition-colors ${
+                activeTab === 'contact'
+                  ? 'text-purple-600 border-b-2 border-purple-600 bg-purple-50'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <Phone size={20} />
+              Liên hệ trực tiếp
             </button>
           </div>
         </div>
 
+        {/* Tickets Tab */}
+        {activeTab === 'tickets' && (
+          <div className="space-y-6">
+            {/* Nút tạo ticket và refresh */}
+            {!showCreateForm && (
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-bold text-gray-900">Danh sách yêu cầu hỗ trợ</h3>
+                <div className="flex gap-3">
+                  
+                  <button
+                    onClick={() => setShowCreateForm(true)}
+                    className="flex items-center gap-2 px-5 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium"
+                  >
+                    <Plus size={20} />
+                    Tạo yêu cầu mới
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Form tạo ticket */}
+            {showCreateForm && (
+              <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-900">Tạo yêu cầu hỗ trợ mới</h3>
+                  <button
+                    onClick={() => setShowCreateForm(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmitTicket} className="space-y-5">
+                  {/* Chọn danh mục */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                      Danh mục <span className="text-red-500">*</span>
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {ticketCategories.map(cat => {
+                        const Icon = cat.icon;
+                        return (
+                          <label
+                            key={cat.value}
+                            className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
+                              ticketForm.category === cat.value
+                                ? 'border-purple-600 bg-purple-50'
+                                : 'border-gray-200 hover:border-purple-300'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="category"
+                              value={cat.value}
+                              checked={ticketForm.category === cat.value}
+                              onChange={(e) => setTicketForm({ ...ticketForm, category: e.target.value })}
+                              className="sr-only"
+                            />
+                            <Icon size={20} className={ticketForm.category === cat.value ? 'text-purple-600' : 'text-gray-400'} />
+                            <span className={`font-medium ${ticketForm.category === cat.value ? 'text-purple-700' : 'text-gray-700'}`}>
+                              {cat.label}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Mức độ ưu tiên */}
+                  {/* <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Mức độ ưu tiên</label>
+                    <div className="flex gap-3">
+                      {[
+                        { value: 'low', label: 'Thấp', color: 'green' },
+                        { value: 'medium', label: 'Trung bình', color: 'yellow' },
+                        { value: 'high', label: 'Cao', color: 'red' }
+                      ].map(p => (
+                        <label
+                          key={p.value}
+                          className={`flex-1 flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                            ticketForm.priority === p.value
+                              ? `border-${p.color}-500 bg-${p.color}-50`
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="priority"
+                            value={p.value}
+                            checked={ticketForm.priority === p.value}
+                            onChange={(e) => setTicketForm({ ...ticketForm, priority: e.target.value })}
+                            className="sr-only"
+                          /> */}
+                          {/* <span className={`w-3 h-3 rounded-full bg-${p.color}-500`}></span>
+                          <span className="font-medium">{p.label}</span>
+                        </label>
+                      ))} */}
+                    {/* </div>
+                  </div> */}
+                  {/* Tiêu đề */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tiêu đề <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={ticketForm.subject}
+                      onChange={(e) => setTicketForm({ ...ticketForm, subject: e.target.value })}
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      placeholder="Mô tả ngắn gọn vấn đề của bạn"
+                    />
+                  </div>
+
+                  {/* Mô tả chi tiết */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Mô tả chi tiết <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={ticketForm.description}
+                      onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
+                      rows="5"
+                      className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      placeholder="Mô tả chi tiết vấn đề, thông tin cần cập nhật, hoặc yêu cầu của bạn..."
+                    />
+                  </div>
+
+                  {/* Buttons */}
+                  <div className="flex gap-3 justify-end pt-4 border-t">
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateForm(false)}
+                      className="px-6 py-3 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-medium disabled:opacity-50"
+                    >
+                      <Send size={18} />
+                      {loading ? 'Đang gửi...' : 'Gửi yêu cầu'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Danh sách tickets */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+              {tickets.length === 0 ? (
+                <div className="text-center py-16 text-gray-500">
+                  <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-xl font-bold">Chưa có yêu cầu nào</p>
+                  <p className="text-sm mt-2">Tạo yêu cầu hỗ trợ mới khi bạn cần giúp đỡ</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {tickets.map(ticket => (
+                    <div key={ticket.id} className="p-5 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h4 className="font-bold text-gray-900 text-lg">{ticket.subject}</h4>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {getCategoryLabel(ticket.category)} • Tạo ngày {ticket.createdDate || ticket.createdAt}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`px-3 py-1 text-xs font-bold rounded-full ${getPriorityColor(ticket.priority)}`}>
+                            {getPriorityLabel(ticket.priority)}
+                          </span>
+                          <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(ticket.status)}`}>
+                            {getStatusText(ticket.status)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {ticket.description && (
+                        <p className="text-gray-600 text-sm line-clamp-2">{ticket.description}</p>
+                      )}
+
+                      {ticket.response && (
+                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-sm text-green-800">
+                            <strong>Phản hồi từ HR:</strong> {ticket.response}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* FAQ Tab */}
         {activeTab === 'faq' && (
           <div className="space-y-6">
-            {/* Tìm kiếm FAQ */}
+            {/* Tìm kiếm */}
             <div className="bg-white rounded-xl border border-gray-200 p-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
                 <input
                   type="text"
                   placeholder="Tìm kiếm câu hỏi..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
             </div>
 
             {/* Danh sách FAQ */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Câu hỏi thường gặp</h3>
-              <div className="space-y-4">
-                {filteredFaq.map(faq => (
-                  <div key={faq.id} className="border border-gray-200 rounded-lg">
-                    <div className="p-4">
+            <div className="space-y-4">
+              {filteredFaq.map(faq => (
+                <div key={faq.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+                  <div className="flex items-start gap-4">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <HelpCircle className="text-purple-600" size={20} />
+                    </div>
+                    <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="font-medium text-gray-900">{faq.question}</h4>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-600 text-xs font-medium rounded">
+                        <h4 className="font-bold text-gray-900">{faq.question}</h4>
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded">
                           {faq.category}
                         </span>
                       </div>
-                      <p className="text-gray-600 text-sm leading-relaxed">{faq.answer}</p>
+                      <p className="text-gray-600 leading-relaxed">{faq.answer}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+                </div>
+              ))}
 
-        {/* Tickets Tab */}
-        {activeTab === 'tickets' && (
-          <div className="space-y-6">
-            {/* Form tạo ticket */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Tạo ticket hỗ trợ mới</h3>
-              <form onSubmit={handleSubmitTicket} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
-                    <select
-                      value={ticketForm.category}
-                      onChange={(e) => setTicketForm({...ticketForm, category: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                      required
-                    >
-                      <option value="">Chọn danh mục</option>
-                      <option value="Technical">Kỹ thuật</option>
-                      <option value="Payroll">Lương thưởng</option>
-                      <option value="Leave">Nghỉ phép</option>
-                      <option value="General">Chung</option>
-                      <option value="Benefits">Phúc lợi</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Mức độ ưu tiên</label>
-                    <select
-                      value={ticketForm.priority}
-                      onChange={(e) => setTicketForm({...ticketForm, priority: e.target.value})}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    >
-                      <option value="low">Thấp</option>
-                      <option value="medium">Trung bình</option>
-                      <option value="high">Cao</option>
-                    </select>
-                  </div>
+              {filteredFaq.length === 0 && (
+                <div className="text-center py-12 text-gray-500">
+                  <Search className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>Không tìm thấy câu hỏi phù hợp</p>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tiêu đề</label>
-                  <input
-                    type="text"
-                    value={ticketForm.subject}
-                    onChange={(e) => setTicketForm({...ticketForm, subject: e.target.value})}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Mô tả ngắn gọn vấn đề"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mô tả chi tiết</label>
-                  <textarea
-                    value={ticketForm.description}
-                    onChange={(e) => setTicketForm({...ticketForm, description: e.target.value})}
-                    rows="4"
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
-                    required
-                  />
-                </div>
-                
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                  >
-                    <Send size={16} />
-                    Gửi ticket
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* Danh sách tickets */}
-            <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Lịch sử tickets</h3>
-              <div className="space-y-4">
-                {tickets.map(ticket => (
-                  <div key={ticket.id} className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-gray-900">{ticket.subject}</h4>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(ticket.priority)}`}>
-                          {ticket.priority === 'high' ? 'Cao' : ticket.priority === 'medium' ? 'Trung bình' : 'Thấp'}
-                        </span>
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(ticket.status)}`}>
-                          {getStatusText(ticket.status)}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span>Danh mục: {ticket.category}</span>
-                      <span>Tạo: {ticket.createdAt}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
           </div>
         )}
@@ -397,69 +541,71 @@ const EmployeeSupportHelp = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Thông tin liên hệ */}
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Thông tin liên hệ</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Thông tin liên hệ</h3>
               <div className="space-y-4">
-                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Phone className="text-blue-600" size={20} />
+                <div className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  <div className="p-3 bg-blue-100 rounded-xl">
+                    <Phone className="text-blue-600" size={24} />
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">Hotline hỗ trợ</h4>
-                    <p className="text-sm text-gray-600">024-1234-5678</p>
-                    <p className="text-xs text-gray-500">8:00 - 17:30 (Thứ 2 - Thứ 6)</p>
+                    <h4 className="font-bold text-gray-900">Hotline HR</h4>
+                    <p className="text-lg text-blue-600 font-medium">024-1234-5678</p>
+                    <p className="text-sm text-gray-500">8:00 - 17:30 (Thứ 2 - Thứ 6)</p>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Mail className="text-green-600" size={20} />
+
+                <div className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  <div className="p-3 bg-green-100 rounded-xl">
+                    <Mail className="text-green-600" size={24} />
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">Email hỗ trợ</h4>
-                    <p className="text-sm text-gray-600">support@company.com</p>
-                    <p className="text-xs text-gray-500">Phản hồi trong 24h</p>
+                    <h4 className="font-bold text-gray-900">Email HR</h4>
+                    <p className="text-lg text-green-600 font-medium">hr@company.com</p>
+                    <p className="text-sm text-gray-500">Phản hồi trong 24h làm việc</p>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <MessageCircle className="text-purple-600" size={20} />
+
+                <div className="flex items-center gap-4 p-4 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
+                  <div className="p-3 bg-purple-100 rounded-xl">
+                    <MessageCircle className="text-purple-600" size={24} />
                   </div>
                   <div>
-                    <h4 className="font-medium text-gray-900">Chat trực tuyến</h4>
-                    <p className="text-sm text-gray-600">Có sẵn 24/7</p>
-                    <p className="text-xs text-gray-500">Phản hồi tức thì</p>
+                    <h4 className="font-bold text-gray-900">Chat nội bộ</h4>
+                    <a href="/employee/chat" className="text-lg text-purple-600 font-medium hover:underline">
+                      Mở Chat →
+                    </a>
+                    <p className="text-sm text-gray-500">Nhắn tin trực tiếp với HR</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Hướng dẫn sử dụng */}
+            {/* Hướng dẫn */}
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Hướng dẫn sử dụng</h3>
-              <div className="space-y-3">
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-1">Video hướng dẫn</h4>
-                  <p className="text-sm text-blue-700">Xem các video hướng dẫn chi tiết về cách sử dụng hệ thống</p>
-                  <button className="mt-2 text-sm text-blue-600 hover:text-blue-700 font-medium">
-                    Xem ngay →
-                  </button>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Lưu ý khi tạo yêu cầu</h3>
+              <div className="space-y-4">
+                <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                  <h4 className="font-bold text-blue-900 mb-2">Cập nhật thông tin cá nhân</h4>
+                  <p className="text-sm text-blue-700">
+                    Chọn danh mục "Cập nhật thông tin cá nhân" và mô tả rõ thông tin cần thay đổi.
+                    Đính kèm giấy tờ nếu cần (CCCD, giấy đăng ký kết hôn, v.v.)
+                  </p>
                 </div>
-                
-                <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <h4 className="font-medium text-green-900 mb-1">Tài liệu hướng dẫn</h4>
-                  <p className="text-sm text-green-700">Tải về tài liệu hướng dẫn chi tiết</p>
-                  <button className="mt-2 text-sm text-green-600 hover:text-green-700 font-medium">
-                    Tải về →
-                  </button>
+
+                <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+                  <h4 className="font-bold text-green-900 mb-2">Thời gian xử lý</h4>
+                  <p className="text-sm text-green-700">
+                    Ticket thường được xử lý trong 1-2 ngày làm việc.
+                    Yêu cầu khẩn cấp chọn mức ưu tiên "Cao" để được xử lý nhanh hơn.
+                  </p>
                 </div>
-                
-                <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                  <h4 className="font-medium text-purple-900 mb-1">Đào tạo trực tiếp</h4>
-                  <p className="text-sm text-purple-700">Đăng ký tham gia các buổi đào tạo trực tiếp</p>
-                  <button className="mt-2 text-sm text-purple-600 hover:text-purple-700 font-medium">
-                    Đăng ký →
-                  </button>
+
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <h4 className="font-bold text-amber-900 mb-2">Theo dõi trạng thái</h4>
+                  <p className="text-sm text-amber-700">
+                    Bạn có thể theo dõi trạng thái yêu cầu trong tab "Ticket hỗ trợ".
+                    Khi có phản hồi, bạn sẽ nhận được thông báo.
+                  </p>
                 </div>
               </div>
             </div>

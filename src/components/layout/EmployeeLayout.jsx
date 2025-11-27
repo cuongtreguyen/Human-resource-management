@@ -511,8 +511,6 @@ const EmployeeLayout = ({ children, sidebar = true }) => {
     { icon: BookOpen, label: 'Tài liệu', path: '/employee/documents' },
     { icon: User, label: 'Hồ sơ', path: '/employee/profile' },
     { icon: MessageCircle, label: 'Chat', path: '/employee/chat' },
-    { icon: TrendingUp, label: 'Hiệu suất', path: '/employee/performance' },
-    { icon: BookOpen, label: 'Đào tạo', path: '/employee/training' },
     { icon: Shield, label: 'Phúc lợi', path: '/employee/benefits' },
   ];
 

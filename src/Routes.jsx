@@ -24,6 +24,7 @@ import TaskDelegation from './pages/task/TaskDelegation';
 // Admin Pages
 import LogsMonitor from './pages/admin/LogsMonitor';
 import AdminBenefits from './pages/admin/AdminBenefits';
+import AdminSupportTickets from './pages/admin/AdminSupportTickets';
 
 // Other Pages
 import Chat from './pages/Chat';
@@ -38,12 +39,11 @@ import EmployeeAttendance from './pages/employee/Attendance';
 import EmployeeLeave from './pages/employee/Leave';
 import EmployeePayroll from './pages/employee/Payroll';
 import EmployeeTasks from './pages/employee/Tasks';
+import EmployeeTaskBoard from './pages/employee/EmployeeTaskBoard';
 import EmployeeDocuments from './pages/employee/Documents';
 import EmployeeProfile from './pages/employee/Profile';
 import EmployeeChat from './pages/employee/Chat';
 import EmployeeAttendanceSummary from './pages/employee/AttendanceSummary';
-import EmployeePerformanceReview from './pages/employee/PerformanceReview';
-import EmployeeTrainingDevelopment from './pages/employee/TrainingDevelopment';
 import EmployeeBenefitsInsurance from './pages/employee/BenefitsInsurance';
 import EmployeeSupportHelp from './pages/employee/SupportHelp';
 import SimpleEmployeeEvaluation from './pages/evaluation/SimpleEmployeeEvaluation';
@@ -128,8 +128,11 @@ const AppRoutes = () => {
         <Route path="/admin/logs" element={<AdminRoute><LogsMonitor /></AdminRoute>} />
         <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
 
-        {/* Accountant only */}
-        <Route path="/admin/benefits" element={<AccountantRoute><AdminBenefits /></AccountantRoute>} />
+        {/* Admin & Accountant - Admin chỉ xem, Accountant được duyệt */}
+        <Route path="/admin/benefits" element={<AdminAccountantRoute><AdminBenefits /></AdminAccountantRoute>} />
+
+        {/* Support Tickets - Admin & Manager có thể xem và xử lý */}
+        <Route path="/admin/support-tickets" element={<AdminManagerRoute><AdminSupportTickets /></AdminManagerRoute>} />
 
         {/* System */}
         <Route path="/notifications" element={<NotificationCenter />} /> {/* All staff */}
@@ -149,12 +152,10 @@ const AppRoutes = () => {
         <Route path="attendance/summary" element={<EmployeeAttendanceSummary />} />
         <Route path="leave" element={<EmployeeLeave />} />
         <Route path="payroll" element={<EmployeePayroll />} />
-        <Route path="tasks" element={<EmployeeTasks />} />
+        <Route path="tasks" element={<EmployeeTaskBoard />} />
         <Route path="documents" element={<EmployeeDocuments />} />
         <Route path="profile" element={<EmployeeProfile />} />
         <Route path="chat" element={<EmployeeChat />} />
-        <Route path="performance" element={<EmployeePerformanceReview />} />
-        <Route path="training" element={<EmployeeTrainingDevelopment />} />
         <Route path="benefits" element={<EmployeeBenefitsInsurance />} />
         <Route path="support" element={<EmployeeSupportHelp />} />
       </Route>

@@ -1,56 +1,83 @@
-import React from 'react';
+import {
+  UserPlus,
+  Calendar,
+  DollarSign,
+  ClipboardCheck,
+  Clock
+} from 'lucide-react';
 
-const RecentActivity = ({ activities = [] }) => {
-  const getActivityIcon = (type) => {
-    const icons = {
-      hire: 'bg-green-500',
-      leave: 'bg-blue-500', 
-      payroll: 'bg-purple-500',
-      attendance: 'bg-orange-500'
-    };
-    return icons[type] || 'bg-gray-500';
+const RecentActivity = () => {
+  const activities = [
+    {
+      id: 1,
+      type: 'hire',
+      icon: UserPlus,
+      message: 'Nhân viên mới Nguyễn Văn A đã được thêm',
+      time: '2 giờ trước',
+      color: 'blue'
+    },
+    {
+      id: 2,
+      type: 'leave',
+      icon: Calendar,
+      message: 'Trần Thị B đã gửi đơn xin nghỉ phép',
+      time: '4 giờ trước',
+      color: 'amber'
+    },
+    {
+      id: 3,
+      type: 'payroll',
+      icon: DollarSign,
+      message: 'Bảng lương tháng 11 đã được xử lý',
+      time: '1 ngày trước',
+      color: 'green'
+    },
+    {
+      id: 4,
+      type: 'attendance',
+      icon: ClipboardCheck,
+      message: 'Báo cáo chấm công đã được tạo',
+      time: '2 ngày trước',
+      color: 'purple'
+    }
+  ];
+
+  const colorClasses = {
+    blue: 'bg-blue-100 text-blue-600',
+    amber: 'bg-amber-100 text-amber-600',
+    green: 'bg-green-100 text-green-600',
+    purple: 'bg-purple-100 text-purple-600'
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      <div className="px-6 py-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Recent Activity</h3>
+    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Hoạt động gần đây</h3>
+        <Clock size={20} className="text-gray-400" />
       </div>
-      <div className="p-6">
-        <div className="flow-root">
-          <ul className="-mb-8">
-            {activities.map((activity, index) => (
-              <li key={activity.id}>
-                <div className="relative pb-8">
-                  {index < activities.length - 1 && (
-                    <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
-                  )}
-                  <div className="relative flex space-x-3">
-                    <div>
-                      <span className={`h-8 w-8 rounded-full ${getActivityIcon(activity.type)} flex items-center justify-center ring-8 ring-white`}>
-                        <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                      <div>
-                        <p className="text-sm text-gray-500">{activity.message}</p>
-                      </div>
-                      <div className="text-right text-sm whitespace-nowrap text-gray-500">
-                        {activity.time}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
+
+      <div className="space-y-4">
+        {activities.map((activity) => {
+          const Icon = activity.icon;
+          return (
+            <div key={activity.id} className="flex items-start gap-3">
+              <div className={`p-2 rounded-lg ${colorClasses[activity.color]}`}>
+                <Icon size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-900">{activity.message}</p>
+                <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
+              </div>
+            </div>
+          );
+        })}
       </div>
+
+      <button className="w-full mt-4 text-sm text-blue-600 hover:text-blue-700 font-medium">
+        Xem tất cả hoạt động
+      </button>
     </div>
   );
 };
 
 export default RecentActivity;
-
