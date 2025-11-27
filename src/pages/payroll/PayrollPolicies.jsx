@@ -3,10 +3,11 @@ import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import fakeApi from '../../services/fakeApi';
-import { 
-  FileText, 
-  DollarSign, 
-  Users, 
+import { getRole } from '../../utils/auth';
+import {
+  FileText,
+  DollarSign,
+  Users,
   Building,
   Calculator,
   CheckCircle,
@@ -17,6 +18,47 @@ import {
 } from 'lucide-react';
 
 const PayrollPolicies = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
+
+  const getAccentColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-600';
+      case 'manager':
+        return 'text-purple-600';
+      case 'accountant':
+        return 'text-emerald-600';
+      default:
+        return 'text-orange-600';
+    }
+  };
   const [, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -73,7 +115,7 @@ const PayrollPolicies = () => {
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Error Loading Policies</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <button 
+            <button
               onClick={loadPolicies}
               className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
             >
@@ -89,16 +131,16 @@ const PayrollPolicies = () => {
     <Layout>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-6">
+        <div className={`bg-gradient-to-r ${getBannerColor()} p-6`}>
           <div className="container mx-auto">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-white">Chính sách tài chính</h1>
-                <p className="text-purple-100 mt-1">Chính sách và quy định lương của công ty</p>
+                <p className={`${getSubtitleColor()} mt-1`}>Chính sách và quy định lương của công ty</p>
               </div>
-              <Button 
+              <Button
                 variant="secondary"
-                className="bg-white text-purple-600 hover:bg-purple-50"
+                className={`bg-white ${getAccentColor()} hover:bg-gray-50`}
                 onClick={handleDownloadPDF}
                 icon={<FileText className="h-4 w-4 mr-2" />}
               >

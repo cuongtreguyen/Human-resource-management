@@ -68,7 +68,7 @@ const EmployeePerformanceReview = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
           <span>Đang tải...</span>
         </div>
       </div>
@@ -79,7 +79,7 @@ const EmployeePerformanceReview = () => {
     <div>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-center gap-4 mb-4">
             <a 
               href="/employee" 
@@ -91,7 +91,7 @@ const EmployeePerformanceReview = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-2">Đánh giá hiệu suất</h1>
-            <p className="text-purple-100">Theo dõi và cải thiện hiệu suất làm việc của bạn</p>
+            <p className="text-orange-100">Theo dõi và cải thiện hiệu suất làm việc của bạn</p>
           </div>
         </div>
 
@@ -99,8 +99,8 @@ const EmployeePerformanceReview = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Star className="text-purple-600" size={24} />
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <Star className="text-orange-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Điểm tổng thể</p>
@@ -163,7 +163,7 @@ const EmployeePerformanceReview = () => {
         <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">Mục tiêu cá nhân</h3>
-            <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm">
+            <button className="px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
               Thêm mục tiêu
             </button>
           </div>
@@ -213,7 +213,7 @@ const EmployeePerformanceReview = () => {
               <div key={review.id} className="p-4 border border-gray-200 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
+                    <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
                       {review.reviewer.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
@@ -252,12 +252,12 @@ const EmployeePerformanceReview = () => {
               <p className="text-sm text-green-700">Tham gia các workshop về tư duy sáng tạo</p>
             </div>
             
-            <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
-                <BarChart3 className="text-purple-600" size={20} />
-                <h4 className="font-medium text-purple-900">Quản lý thời gian</h4>
+                <BarChart3 className="text-orange-600" size={20} />
+                <h4 className="font-medium text-orange-900">Quản lý thời gian</h4>
               </div>
-              <p className="text-sm text-purple-700">Sử dụng các công cụ quản lý dự án hiệu quả hơn</p>
+              <p className="text-sm text-orange-700">Sử dụng các công cụ quản lý dự án hiệu quả hơn</p>
             </div>
             
             <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">

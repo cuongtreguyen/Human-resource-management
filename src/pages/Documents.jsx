@@ -1,7 +1,51 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Layout from '../components/layout/Layout';
+import { getRole } from '../utils/auth';
 
 const Documents = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
+
+  const getAccentColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return { text: 'text-blue-600', bg: 'bg-blue-600', hover: 'hover:bg-blue-700', ring: 'focus:ring-blue-500', bgHover: 'hover:bg-blue-50' };
+      case 'manager':
+        return { text: 'text-purple-600', bg: 'bg-purple-600', hover: 'hover:bg-purple-700', ring: 'focus:ring-purple-500', bgHover: 'hover:bg-purple-50' };
+      case 'accountant':
+        return { text: 'text-emerald-600', bg: 'bg-emerald-600', hover: 'hover:bg-emerald-700', ring: 'focus:ring-emerald-500', bgHover: 'hover:bg-emerald-50' };
+      default:
+        return { text: 'text-orange-600', bg: 'bg-orange-600', hover: 'hover:bg-orange-700', ring: 'focus:ring-orange-500', bgHover: 'hover:bg-orange-50' };
+    }
+  };
+
+  const accentColor = getAccentColor();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -146,15 +190,15 @@ const Documents = () => {
     <Layout>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-6 rounded-lg mx-6 mt-6">
+        <div className={`bg-gradient-to-r ${getBannerColor()} text-white px-6 py-6 rounded-lg mx-6 mt-6`}>
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">Quản Lý Tài Liệu</h1>
-              <p className="text-purple-100 mt-1">Trang chủ / Tài liệu</p>
+              <p className={`${getSubtitleColor()} mt-1`}>Trang chủ / Tài liệu</p>
             </div>
             <button
               onClick={() => setShowUploadModal(true)}
-              className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 flex items-center space-x-2 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+              className={`bg-white ${accentColor.text} px-4 py-2 rounded-lg ${accentColor.bgHover} flex items-center space-x-2 transition-all duration-200 shadow-lg hover:shadow-xl font-medium`}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -175,7 +219,7 @@ const Documents = () => {
                     placeholder="Tìm kiếm tài liệu..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-400 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className={`w-full px-4 py-2 bg-white text-gray-900 placeholder-gray-400 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 ${accentColor.ring}`}
                   />
                   <svg className="w-5 h-5 text-gray-400 absolute right-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -186,7 +230,7 @@ const Documents = () => {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className={`w-full px-4 py-2 bg-white text-gray-900 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 ${accentColor.ring}`}
                 >
                   {categories.map(category => (
                     <option key={category.id} value={category.id}>
@@ -208,8 +252,8 @@ const Documents = () => {
                   onClick={() => setSelectedCategory(category.id)}
                   className={`px-4 py-2 rounded-lg transition-all duration-200 ${
                     selectedCategory === category.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-white text-gray-600 hover:bg-purple-50 border border-gray-200'
+                      ? `${accentColor.bg} text-white`
+                      : `bg-white text-gray-600 ${accentColor.bgHover} border border-gray-200`
                   }`}
                 >
                   <span className="mr-2">{category.icon}</span>
@@ -224,7 +268,7 @@ const Documents = () => {
             {filteredDocuments.map(document => (
               <div 
                 key={document.id}
-                className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:border-purple-300 transition-all duration-200"
+                className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl hover:border-gray-300 transition-all duration-200"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center space-x-3">
@@ -273,7 +317,7 @@ const Documents = () => {
                 <div className="mt-4 flex space-x-2">
                   <button
                     onClick={() => downloadDocument(document)}
-                    className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 text-sm"
+                    className={`flex-1 px-3 py-2 ${accentColor.bg} text-white rounded-lg ${accentColor.hover} transition-all duration-200 text-sm`}
                   >
                     Tải xuống
                   </button>
@@ -308,7 +352,7 @@ const Documents = () => {
                     <input
                       type="file"
                       onChange={(e) => setUploadFile(e.target.files[0])}
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 text-gray-900"
+                      className={`w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm focus:outline-none ${accentColor.ring} focus:border-gray-300 text-gray-900`}
                       accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
                     />
                   </div>
@@ -316,7 +360,7 @@ const Documents = () => {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Danh Mục</label>
                     <select
-                      className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500 text-gray-900"
+                      className={`w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-md shadow-sm focus:outline-none ${accentColor.ring} focus:border-gray-300 text-gray-900`}
                     >
                       <option value="contracts">Hợp đồng</option>
                       <option value="policies">Chính sách</option>
@@ -337,7 +381,7 @@ const Documents = () => {
                     <button
                       type="submit"
                       disabled={loading || !uploadFile}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50 transition-all duration-200"
+                      className={`px-4 py-2 ${accentColor.bg} text-white rounded-md ${accentColor.hover} disabled:opacity-50 transition-all duration-200`}
                     >
                       {loading ? 'Đang tải...' : 'Tải lên'}
                     </button>

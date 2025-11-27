@@ -7,8 +7,37 @@ import {
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import fakeApi from '../../services/fakeApi';
+import { getRole } from '../../utils/auth';
 
 const EmployeeBenefitsInsurance = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [benefits, setBenefits] = useState([]);
   const [mandatoryInsurance, setMandatoryInsurance] = useState([]);
@@ -160,7 +189,7 @@ const EmployeeBenefitsInsurance = () => {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-8 rounded-3xl shadow-xl">
+      <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-8 rounded-3xl shadow-xl`}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <a href="/employee" className="flex items-center gap-2 px-5 py-3 bg-white/20 rounded-xl hover:bg-white/30 transition-all w-fit">
             <ArrowLeft size={20} />
@@ -168,14 +197,14 @@ const EmployeeBenefitsInsurance = () => {
           </a>
           <button
             onClick={() => setIsRequestModalOpen(true)}
-            className="flex items-center gap-3 px-6 py-4 bg-white text-purple-700 rounded-2xl font-bold hover:shadow-lg transform hover:scale-105 transition-all"
+            className="flex items-center gap-3 px-6 py-4 bg-white text-gray-700 rounded-2xl font-bold hover:shadow-lg transform hover:scale-105 transition-all"
           >
             <Plus size={24} />
             Yêu cầu thay đổi
           </button>
         </div>
         <h1 className="text-4xl font-bold mt-6">Phúc lợi & Bảo hiểm</h1>
-        <p className="text-purple-100 text-lg mt-2">Xem chi tiết chế độ phúc lợi và bảo hiểm của bạn</p>
+        <p className={`${getSubtitleColor()} text-lg mt-2`}>Xem chi tiết chế độ phúc lợi và bảo hiểm của bạn</p>
       </div>
 
       {/* Tổng quan */}

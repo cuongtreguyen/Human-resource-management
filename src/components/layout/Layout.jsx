@@ -16,7 +16,6 @@ const Layout = ({ children }) => {
   }
 
   const handleLogout = () => {
-    // Clear any stored user data
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     navigate('/login');
@@ -24,14 +23,14 @@ const Layout = ({ children }) => {
 
   return (
     <LayoutContext.Provider value={true}>
-      <div className="flex h-screen bg-gray-100">
+      <div className="flex h-screen bg-gray-50">
         {/* Sidebar */}
-        <Sidebar 
-          sidebarOpen={sidebarOpen} 
-          setSidebarOpen={setSidebarOpen} 
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
           currentPath={location.pathname}
         />
-        
+
         {/* Main content */}
         <div className="flex flex-col flex-1 overflow-hidden">
           {/* Header */}
@@ -40,7 +39,7 @@ const Layout = ({ children }) => {
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
             onNotificationClick={() => navigate('/notifications')}
           />
-          
+
           {/* Page content */}
           <main className="flex-1 overflow-x-hidden overflow-y-auto">
             {children || <Outlet />}
@@ -52,5 +51,3 @@ const Layout = ({ children }) => {
 };
 
 export default Layout;
-
-

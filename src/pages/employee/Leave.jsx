@@ -27,7 +27,7 @@ const EmployeeLeave = () => {
     <div>
       <div className="space-y-6">
         {/* Header với nút quay lại */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-center gap-4 mb-4">
             <a 
               href="/employee" 
@@ -39,7 +39,7 @@ const EmployeeLeave = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-2">Xin nghỉ phép</h1>
-            <p className="text-purple-100">Gửi và theo dõi yêu cầu nghỉ phép của bạn</p>
+            <p className="text-orange-100">Gửi và theo dõi yêu cầu nghỉ phép của bạn</p>
           </div>
         </div>
 
@@ -71,8 +71,8 @@ const EmployeeLeave = () => {
           
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <FileText className="text-purple-600" size={24} />
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <FileText className="text-orange-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Yêu cầu chờ duyệt</p>
@@ -98,10 +98,10 @@ const EmployeeLeave = () => {
                     Loại nghỉ phép
                   </span>
                 </label>
-                <select 
-                  value={form.type} 
-                  onChange={(e)=>setForm({...form, type:e.target.value})} 
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                <select
+                  value={form.type}
+                  onChange={(e)=>setForm({...form, type:e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   required
                 >
                   <option value="annual">🌴 Nghỉ phép năm</option>
@@ -112,9 +112,9 @@ const EmployeeLeave = () => {
               
               <div className="flex items-end">
                 {days > 0 && (
-                  <div className="w-full p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                    <p className="text-sm text-purple-600 font-medium">Tổng số ngày nghỉ</p>
-                    <p className="text-3xl font-bold text-purple-700">{days} ngày</p>
+                  <div className="w-full p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                    <p className="text-sm text-orange-600 font-medium">Tổng số ngày nghỉ</p>
+                    <p className="text-3xl font-bold text-orange-700">{days} ngày</p>
                   </div>
                 )}
               </div>
@@ -132,7 +132,7 @@ const EmployeeLeave = () => {
                   type="date" 
                   value={form.startDate} 
                   onChange={(e)=>setForm({...form, startDate:e.target.value})} 
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   required
                 />
               </div>
@@ -148,7 +148,7 @@ const EmployeeLeave = () => {
                   type="date" 
                   value={form.endDate} 
                   onChange={(e)=>setForm({...form, endDate:e.target.value})} 
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   required
                   min={form.startDate}
                 />
@@ -166,7 +166,7 @@ const EmployeeLeave = () => {
                 rows="4" 
                 value={form.reason} 
                 onChange={(e)=>setForm({...form, reason:e.target.value})} 
-                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none" 
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none" 
                 placeholder="Nhập lý do chi tiết để quản lý có thể xem xét..."
                 required
               />
@@ -176,9 +176,9 @@ const EmployeeLeave = () => {
               <p className="text-sm text-gray-500">
                 Yêu cầu của bạn sẽ được gửi đến quản lý để phê duyệt
               </p>
-              <button 
-                type="submit" 
-                className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
+              <button
+                type="submit"
+                className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-all duration-200 shadow-lg hover:shadow-xl font-medium"
               >
                 <Send size={18} />
                 <span>Gửi yêu cầu</span>

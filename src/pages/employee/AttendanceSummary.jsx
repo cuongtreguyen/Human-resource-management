@@ -56,10 +56,10 @@ const EmployeeAttendanceSummary = () => {
     <div>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-center justify-between mb-4">
-            <a 
-              href="/employee" 
+            <a
+              href="/employee"
               className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
             >
               <ArrowLeft size={18} />
@@ -72,7 +72,7 @@ const EmployeeAttendanceSummary = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-2">Tổng quan chấm công</h1>
-            <p className="text-purple-100">Thống kê chi tiết về tình hình chấm công của bạn</p>
+            <p className="text-orange-100">Thống kê chi tiết về tình hình chấm công của bạn</p>
           </div>
         </div>
 
@@ -84,7 +84,7 @@ const EmployeeAttendanceSummary = () => {
               type="month"
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-orange-500 focus:border-transparent"
             />
           </div>
         </div>
@@ -117,8 +117,8 @@ const EmployeeAttendanceSummary = () => {
           
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <TrendingUp className="text-purple-600" size={24} />
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <TrendingUp className="text-orange-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Trung bình/ngày</p>
@@ -222,7 +222,7 @@ const EmployeeAttendanceSummary = () => {
                       <span className={`px-3 py-1 text-xs font-medium rounded-full ${
                         r.status === 'present' ? 'bg-green-100 text-green-700' :
                         r.status === 'late' ? 'bg-yellow-100 text-yellow-700' :
-                        r.status === 'overtime' ? 'bg-purple-100 text-purple-700' :
+                        r.status === 'overtime' ? 'bg-orange-100 text-orange-700' :
                         'bg-red-100 text-red-700'
                       }`}>
                         {r.status === 'present' ? 'Có mặt' :
@@ -237,7 +237,7 @@ const EmployeeAttendanceSummary = () => {
                   <tr>
                     <td className="px-6 py-12 text-center text-gray-500" colSpan={5}>
                       <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
                         <span>Đang tải...</span>
                       </div>
                     </td>

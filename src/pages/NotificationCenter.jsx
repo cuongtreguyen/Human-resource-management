@@ -13,9 +13,37 @@ import {
   Filter
 } from 'lucide-react';
 import fakeApi from '../services/fakeApi';
-import { isAdmin } from '../utils/auth';
+import { isAdmin, getRole } from '../utils/auth';
 
 const NotificationCenter = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -40,8 +68,8 @@ const NotificationCenter = () => {
   const markAsRead = async (notificationId) => {
     try {
       await fakeApi.markNotificationRead(notificationId);
-      setNotifications(notifications.map(notif => 
-        notif.id === notificationId 
+      setNotifications(notifications.map(notif =>
+        notif.id === notificationId
           ? { ...notif, read: true }
           : notif
       ));
@@ -70,7 +98,7 @@ const NotificationCenter = () => {
 
   const handleNotificationClick = (notification) => {
     markAsRead(notification.id);
-    
+
     // Navigate based on notification type
     switch (notification.type) {
       case 'task_assigned':
@@ -117,11 +145,11 @@ const NotificationCenter = () => {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-xl shadow-lg">
+        <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-xl shadow-lg`}>
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">Trung tâm thông báo</h1>
-              <p className="text-purple-100 mt-1">Quản lý tất cả thông báo của bạn</p>
+              <p className={`${getSubtitleColor()} mt-1`}>Quản lý tất cả thông báo của bạn</p>
             </div>
             {/* Ẩn badge chuông cho Admin */}
             {!isAdmin() && (
@@ -129,7 +157,7 @@ const NotificationCenter = () => {
                 <Bell className="h-7 w-7" />
                 <div>
                   <div className="text-2xl font-bold">{unreadCount}</div>
-                  <div className="text-purple-100 text-sm">Chưa đọc</div>
+                  <div className={`${getSubtitleColor()} text-sm`}>Chưa đọc</div>
                 </div>
               </div>
             )}
@@ -206,11 +234,10 @@ const NotificationCenter = () => {
                   <button
                     key={item.value}
                     onClick={() => setFilter(item.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      filter === item.value
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === item.value
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {item.label}
                   </button>
@@ -249,20 +276,18 @@ const NotificationCenter = () => {
               filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-5 cursor-pointer transition-all hover:bg-gray-50 ${
-                    !notification.read ? 'bg-purple-50/50' : ''
-                  }`}
+                  className={`p-5 cursor-pointer transition-all hover:bg-gray-50 ${!notification.read ? 'bg-purple-50/50' : ''
+                    }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl flex-shrink-0 ${
-                      notification.type === 'task_assigned' ? 'bg-blue-100' :
-                      notification.type === 'leave_approved' ? 'bg-green-100' :
-                      notification.type === 'leave_rejected' ? 'bg-red-100' :
-                      notification.type === 'task_delegation' ? 'bg-purple-100' :
-                      notification.type === 'deadline_approaching' ? 'bg-orange-100' :
-                      'bg-gray-100'
-                    }`}>
+                    <div className={`p-3 rounded-xl flex-shrink-0 ${notification.type === 'task_assigned' ? 'bg-blue-100' :
+                        notification.type === 'leave_approved' ? 'bg-green-100' :
+                          notification.type === 'leave_rejected' ? 'bg-red-100' :
+                            notification.type === 'task_delegation' ? 'bg-purple-100' :
+                              notification.type === 'deadline_approaching' ? 'bg-orange-100' :
+                                'bg-gray-100'
+                      }`}>
                       {getNotificationIcon(notification.type)}
                     </div>
 
@@ -278,13 +303,12 @@ const NotificationCenter = () => {
                         </div>
 
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            notification.priority === 'high' ? 'bg-red-100 text-red-700' :
-                            notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${notification.priority === 'high' ? 'bg-red-100 text-red-700' :
+                              notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                'bg-green-100 text-green-700'
+                            }`}>
                             {notification.priority === 'high' ? 'Quan trọng' :
-                             notification.priority === 'medium' ? 'Trung bình' : 'Thấp'}
+                              notification.priority === 'medium' ? 'Trung bình' : 'Thấp'}
                           </span>
                           {!notification.read && (
                             <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>

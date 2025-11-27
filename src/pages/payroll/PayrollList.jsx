@@ -24,6 +24,33 @@ import {
 
 const PayrollList = () => {
   const userRole = getRole(); // Lấy role của user hiện tại
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const [payrollRecords, setPayrollRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [showPayrollModal, setShowPayrollModal] = useState(false);
@@ -114,7 +141,7 @@ const PayrollList = () => {
   const handleCalculatePayroll = (payrollData) => {
     const updatedPayrolls = [...payrollRecords];
     const employeeIndex = updatedPayrolls.findIndex(p => p.employeeId === payrollData.employeeId);
-    
+
     if (employeeIndex !== -1) {
       updatedPayrolls[employeeIndex] = {
         ...updatedPayrolls[employeeIndex],
@@ -131,9 +158,9 @@ const PayrollList = () => {
         paidDate: new Date().toLocaleDateString()
       });
     }
-    
+
     setPayrollRecords(updatedPayrolls);
-    
+
     // Show success message (in real app, would be toast notification)
     alert(`Đã tính và lưu bảng lương thành công cho nhân viên ${employees.find(e => e.id === payrollData.employeeId)?.name}`);
   };
@@ -206,8 +233,8 @@ const PayrollList = () => {
     totalPayroll: stats.totalPayroll + payroll.netSalary,
     totalTax: stats.totalTax + (payroll.socialInsurance + payroll.healthInsurance + payroll.unemploymentInsurance),
     totalInsurance: stats.totalInsurance + (payroll.socialInsurance + payroll.healthInsurance + payroll.unemploymentInsurance)
-  }), { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 }) : 
-  { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 };
+  }), { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 }) :
+    { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 };
 
   // Generate payrolls when employees are loaded
   useEffect(() => {
@@ -219,20 +246,20 @@ const PayrollList = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-gray-50">
-        {/* Header with purple background */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 p-6">
+        {/* Header */}
+        <div className={`bg-gradient-to-r ${getBannerColor()} p-6`}>
           <div className="container mx-auto">
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-3xl font-bold text-white">Quản lý Bảng lương</h1>
-                <p className="text-purple-100 mt-1">
+                <p className={`${getSubtitleColor()} mt-1`}>
                   {userRole === 'admin' ? 'Tính toán và chi trả lương cho doanh nghiệp' :
-                   userRole === 'accountant' ? 'Tính toán lương cho nhân viên' :
-                   'Xem thông tin lương của nhân viên'}
+                    userRole === 'accountant' ? 'Tính toán lương cho nhân viên' :
+                      'Xem thông tin lương của nhân viên'}
                 </p>
               </div>
               <div className="flex gap-3">
-              
+
                 {/* Chỉ Accountant mới có quyền xuất dữ liệu */}
                 {userRole === 'accountant' && (
                   <Button
@@ -291,7 +318,7 @@ const PayrollList = () => {
                   </Button>
                 ) : (
                   <div>
-            
+
                   </div>
                 )}
               </div>
@@ -370,81 +397,80 @@ const PayrollList = () => {
                       return payroll.department === selectedDepartment;
                     })
                     .map((payroll) => {
-                    const employee = employees.find(e => e.id === payroll.employeeId);
-                    return (
-                      <tr key={payroll.id} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                              {employee?.name?.charAt(0) || '?'}
+                      const employee = employees.find(e => e.id === payroll.employeeId);
+                      return (
+                        <tr key={payroll.id} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                                {employee?.name?.charAt(0) || '?'}
+                              </div>
+                              <div>
+                                <div className="font-medium text-gray-900">{employee?.name || 'Unknown Employee'}</div>
+                                <div className="text-sm text-gray-500">{employee?.email || 'No email'}</div>
+                              </div>
                             </div>
-                            <div>
-                              <div className="font-medium text-gray-900">{employee?.name || 'Unknown Employee'}</div>
-                              <div className="text-sm text-gray-500">{employee?.email || 'No email'}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="text-sm text-gray-700">{employee?.department || payroll.department || 'N/A'}</div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-gray-900">
+                              {payroll.basicSalary?.toLocaleString()} VND
                             </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="text-sm text-gray-700">{employee?.department || payroll.department || 'N/A'}</div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="font-medium text-gray-900">
-                            {payroll.basicSalary?.toLocaleString()} VND
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="font-medium text-green-600">
-                            {payroll.netSalary?.toLocaleString()} VND
-                          </div>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            payroll.status === 'Paid' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {payroll.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <div className="flex gap-2 relative z-10">
-                            {employee ? (
-                              <>
-                                {/* Chỉ Accountant mới có quyền tính lương */}
-                                {userRole === 'accountant' && (
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="font-medium text-green-600">
+                              {payroll.netSalary?.toLocaleString()} VND
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${payroll.status === 'Paid'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                              {payroll.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex gap-2 relative z-10">
+                              {employee ? (
+                                <>
+                                  {/* Chỉ Accountant mới có quyền tính lương */}
+                                  {userRole === 'accountant' && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        console.log('Opening payroll modal for:', employee);
+                                        openPayrollModal(employee);
+                                      }}
+                                      className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer"
+                                      title="Tính toán lương"
+                                    >
+                                      🧮
+                                    </button>
+                                  )}
+                                  {/* Tất cả role đều được xem chi tiết */}
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      console.log('Opening payroll modal for:', employee);
-                                      openPayrollModal(employee);
+                                      console.log('Opening details modal for:', employee);
+                                      openPayrollDetailsModal(employee);
                                     }}
-                                    className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer"
-                                    title="Tính toán lương"
+                                    className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
+                                    title="Xem chi tiết"
                                   >
-                                    🧮
+                                    <Eye className="h-4 w-4" />
                                   </button>
-                                )}
-                                {/* Tất cả role đều được xem chi tiết */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    console.log('Opening details modal for:', employee);
-                                    openPayrollDetailsModal(employee);
-                                  }}
-                                  className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
-                                  title="Xem chi tiết"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </button>
-                              </>
-                            ) : (
-                              <span className="text-gray-400 text-sm">Không có dữ liệu</span>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                                </>
+                              ) : (
+                                <span className="text-gray-400 text-sm">Không có dữ liệu</span>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                 </tbody>
               </table>
             </div>
@@ -469,7 +495,7 @@ const PayrollList = () => {
           isOpen={showPoliciesModal}
           onClose={() => setShowPoliciesModal(false)}
         />
-      </div> 
+      </div>
     </Layout>
   );
 };

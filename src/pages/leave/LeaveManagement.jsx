@@ -16,8 +16,38 @@ import {
   MessageSquare
 } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
+import { toast } from 'react-toastify';
+import { getRole } from '../../utils/auth';
 
 const LeaveManagement = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,6 +55,9 @@ const LeaveManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [rejectingRequestId, setRejectingRequestId] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -103,26 +136,40 @@ const LeaveManagement = () => {
       if (selectedRequest && selectedRequest.id === requestId) {
         setSelectedRequest({ ...selectedRequest, status: 'approved', approvedBy: 'manager' });
       }
-      alert('Đã duyệt đơn nghỉ phép!');
+      toast.success('Đã duyệt đơn nghỉ phép thành công!');
     } catch {
-      alert('Có lỗi xảy ra khi duyệt đơn');
+      toast.error('Có lỗi xảy ra khi duyệt đơn');
     }
   };
 
-  const handleReject = async (requestId) => {
+  const openRejectModal = (requestId) => {
+    setRejectingRequestId(requestId);
+    setRejectReason('');
+    setShowRejectModal(true);
+  };
+
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      toast.warning('Vui lòng nhập lý do từ chối!');
+      return;
+    }
     try {
       const updatedRequests = leaveRequests.map(request =>
-        request.id === requestId
-          ? { ...request, status: 'rejected', approvedBy: 'manager' }
+        request.id === rejectingRequestId
+          ? { ...request, status: 'rejected', approvedBy: 'manager', rejectReason: rejectReason }
           : request
       );
       setLeaveRequests(updatedRequests);
-      if (selectedRequest && selectedRequest.id === requestId) {
-        setSelectedRequest({ ...selectedRequest, status: 'rejected', approvedBy: 'manager' });
+      if (selectedRequest && selectedRequest.id === rejectingRequestId) {
+        setSelectedRequest({ ...selectedRequest, status: 'rejected', approvedBy: 'manager', rejectReason: rejectReason });
       }
-      alert('Đã từ chối đơn nghỉ phép!');
+      setShowRejectModal(false);
+      setShowModal(false);
+      setRejectReason('');
+      setRejectingRequestId(null);
+      toast.success('Đã từ chối đơn nghỉ phép thành công!');
     } catch {
-      alert('Có lỗi xảy ra khi từ chối đơn');
+      toast.error('Có lỗi xảy ra khi từ chối đơn');
     }
   };
 
@@ -158,10 +205,10 @@ const LeaveManagement = () => {
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
-          <div className="bg-gradient-to-r from-green-600 to-green-700 text-white p-6 rounded-lg mb-6">
+          <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-lg mb-6`}>
             <div>
               <h1 className="text-3xl font-bold">Duyệt đơn nghỉ phép</h1>
-              <p className="text-green-100 mt-1">Xem và duyệt các đơn nghỉ phép của nhân viên</p>
+              <p className={`${getSubtitleColor()} mt-1`}>Xem và duyệt các đơn nghỉ phép của nhân viên</p>
             </div>
           </div>
 
@@ -229,7 +276,9 @@ const LeaveManagement = () => {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">NHÂN VIÊN</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">PHÒNG BAN</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">LOẠI NGHỈ</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">THỜI GIAN</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">SỐ NGÀY</th>
@@ -242,15 +291,20 @@ const LeaveManagement = () => {
                   {filteredRequests.map((request) => (
                     <tr key={request.id} className="border-b border-gray-100 hover:bg-gray-50">
                       <td className="py-3 px-4">
+                        <span className="text-sm font-medium text-blue-600">{request.employeeId}</span>
+                      </td>
+
+                      <td className="py-3 px-4">
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
                             {request.employeeName.charAt(0)}
                           </div>
-                          <div>
-                            <div className="font-medium text-gray-900">{request.employeeName}</div>
-                            <div className="text-sm text-gray-500">ID: {request.employeeId}</div>
-                          </div>
+                          <span className="font-medium text-gray-900">{request.employeeName}</span>
                         </div>
+                      </td>
+
+                      <td className="py-3 px-4">
+                        <span className="text-sm text-gray-700">{request.department || 'Chưa xác định'}</span>
                       </td>
 
                       <td className="py-3 px-4">
@@ -313,7 +367,7 @@ const LeaveManagement = () => {
                               <Button
                                 variant="secondary"
                                 size="sm"
-                                onClick={() => handleReject(request.id)}
+                                onClick={() => openRejectModal(request.id)}
                               >
                                 <AlertCircle className="h-4 w-4" />
                               </Button>
@@ -354,7 +408,8 @@ const LeaveManagement = () => {
                 </div>
                 <div>
                   <h4 className="text-lg font-semibold text-gray-900">{selectedRequest.employeeName}</h4>
-                  <p className="text-sm text-gray-500">Mã NV: {selectedRequest.employeeId}</p>
+                  <p className="text-sm text-gray-500">ID: {selectedRequest.employeeId}</p>
+                  <p className="text-sm text-gray-500">Phòng: {selectedRequest.department || 'Chưa xác định'}</p>
                 </div>
                 <div className="ml-auto">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedRequest.status)}`}>
@@ -423,6 +478,17 @@ const LeaveManagement = () => {
                 <p className="text-gray-900">{selectedRequest.reason}</p>
               </div>
 
+              {/* Lý do từ chối (nếu bị từ chối) */}
+              {selectedRequest.status === 'rejected' && selectedRequest.rejectReason && (
+                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                  <div className="flex items-center gap-2 text-red-600 mb-2">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="text-sm font-medium">Lý do từ chối</span>
+                  </div>
+                  <p className="text-red-700">{selectedRequest.rejectReason}</p>
+                </div>
+              )}
+
               {/* Thông tin bổ sung */}
               <div className="flex items-center justify-between text-sm text-gray-500 pt-4 border-t border-gray-200">
                 <span>Ngày nộp đơn: {new Date(selectedRequest.submittedDate).toLocaleDateString('vi-VN')}</span>
@@ -437,10 +503,7 @@ const LeaveManagement = () => {
               {selectedRequest.status === 'pending' ? (
                 <>
                   <button
-                    onClick={() => {
-                      handleReject(selectedRequest.id);
-                      setShowModal(false);
-                    }}
+                    onClick={() => openRejectModal(selectedRequest.id)}
                     className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
                   >
                     Từ chối
@@ -463,6 +526,67 @@ const LeaveManagement = () => {
                   Đóng
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal nhập lý do từ chối */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-md w-full shadow-xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-bold text-gray-900">Từ chối đơn nghỉ phép</h3>
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason('');
+                  setRejectingRequestId(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Lý do từ chối <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Nhập lý do từ chối đơn nghỉ phép..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                  rows={4}
+                />
+              </div>
+              <p className="text-sm text-gray-500">
+                Lý do này sẽ được gửi đến nhân viên để họ biết tại sao đơn bị từ chối.
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason('');
+                  setRejectingRequestId(null);
+                }}
+                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleReject}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Xác nhận từ chối
+              </button>
             </div>
           </div>
         </div>

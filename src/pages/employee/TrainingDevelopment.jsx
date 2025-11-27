@@ -141,7 +141,7 @@ const EmployeeTrainingDevelopment = () => {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex items-center gap-2">
-          <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-5 h-5 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>
           <span>Đang tải...</span>
         </div>
       </div>
@@ -152,10 +152,10 @@ const EmployeeTrainingDevelopment = () => {
     <div>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-center gap-4 mb-4">
-            <a 
-              href="/employee" 
+            <a
+              href="/employee"
               className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
             >
               <ArrowLeft size={18} />
@@ -164,7 +164,7 @@ const EmployeeTrainingDevelopment = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-2">Đào tạo & Phát triển</h1>
-            <p className="text-purple-100">Nâng cao kỹ năng và kiến thức chuyên môn</p>
+            <p className="text-orange-100">Nâng cao kỹ năng và kiến thức chuyên môn</p>
           </div>
         </div>
 
@@ -200,8 +200,8 @@ const EmployeeTrainingDevelopment = () => {
           
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <Award className="text-purple-600" size={24} />
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <Award className="text-orange-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Chứng chỉ</p>
@@ -233,7 +233,7 @@ const EmployeeTrainingDevelopment = () => {
                 placeholder="Tìm kiếm khóa học..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
             <div className="flex gap-2">
@@ -243,7 +243,7 @@ const EmployeeTrainingDevelopment = () => {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
                     selectedCategory === cat
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-orange-500 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
@@ -265,7 +265,7 @@ const EmployeeTrainingDevelopment = () => {
                 </div>
                 <div className="p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="px-2 py-1 bg-purple-100 text-purple-600 text-xs font-medium rounded">
+                    <span className="px-2 py-1 bg-orange-100 text-orange-600 text-xs font-medium rounded">
                       {course.category}
                     </span>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(course.status)}`}>
@@ -298,7 +298,7 @@ const EmployeeTrainingDevelopment = () => {
                   
                   <div className="flex gap-2">
                     {course.status === 'not-started' && (
-                      <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm">
+                      <button className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm">
                         <Play size={16} />
                         Bắt đầu
                       </button>
@@ -354,8 +354,8 @@ const EmployeeTrainingDevelopment = () => {
             {certificates.map(cert => (
               <div key={cert.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Award className="text-purple-600" size={24} />
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <Award className="text-orange-600" size={24} />
                   </div>
                   <div>
                     <h4 className="font-medium text-gray-900">{cert.name}</h4>
@@ -368,7 +368,7 @@ const EmployeeTrainingDevelopment = () => {
                   {cert.expiryDate && (
                     <p className="text-sm text-gray-600">Hết hạn: {cert.expiryDate}</p>
                   )}
-                  <button className="mt-2 px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors">
+                  <button className="mt-2 px-3 py-1 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 transition-colors">
                     Tải về
                   </button>
                 </div>

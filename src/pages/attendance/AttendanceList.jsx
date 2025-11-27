@@ -6,8 +6,37 @@ import Input from '../../components/ui/Input';
 import { PY_API } from '../../services/config';
 import { Calendar, Clock, Eye, Search } from 'lucide-react';
 import AttendanceDetailsModal from '../../components/attendance/AttendanceDetailsModal';
+import { getRole } from '../../utils/auth';
 
 const AttendanceList = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const [showAttendanceDetails, setShowAttendanceDetails] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [attendanceData, setAttendanceData] = useState([]);
@@ -29,7 +58,7 @@ const AttendanceList = () => {
     if (!record.check_in) {
       return { status: 'absent', color: 'bg-red-100 text-red-800', text: 'Vắng mặt' };
     }
-    
+
     if (!record.check_out) {
       return { status: 'working', color: 'bg-blue-100 text-blue-800', text: 'Đang làm việc' };
     }
@@ -38,22 +67,22 @@ const AttendanceList = () => {
     const checkOutTime = record.check_out;
     const standardStartTime = '08:00';
     const standardEndTime = '18:00';
-    
+
     const normalizeTime = (timeStr) => {
       const [hour, min] = timeStr.split(':').map(Number);
       return hour * 60 + min;
     };
-    
+
     const checkInMinutes = normalizeTime(checkInTime);
     const checkOutMinutes = normalizeTime(checkOutTime);
     const standardStartMinutes = normalizeTime(standardStartTime);
     const standardEndMinutes = normalizeTime(standardEndTime);
-    
+
     const isEarly = checkInMinutes < standardStartMinutes;
     const isLate = checkInMinutes > standardStartMinutes;
     const isEarlyCheckout = checkOutMinutes < standardEndMinutes;
     const isLateCheckout = checkOutMinutes > standardEndMinutes;
-    
+
     if (isEarly && isLateCheckout) {
       return { status: 'early-late', color: 'bg-cyan-100 text-cyan-800', text: 'Đi sớm & Về muộn' };
     } else if (isEarly && isEarlyCheckout) {
@@ -79,11 +108,11 @@ const AttendanceList = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       console.log('Loading attendance for date:', selectedDate);
 
       const flaskResponse = await fetch(`${PY_API}/api/attendance/daily?date=${selectedDate}`);
-      
+
       if (flaskResponse.ok) {
         const flaskData = await flaskResponse.json();
         console.log('Flask API data:', flaskData);
@@ -112,28 +141,27 @@ const AttendanceList = () => {
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
           <div className="animate-fade-in">
-            <div className="flex items-center justify-between mb-8">
-              <h1 className="text-3xl font-bold text-gray-900">
-                Chấm công nhân viên
-              </h1>
+            <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-xl shadow-lg mb-6`}>
+              <h1 className="text-3xl font-bold">Chấm công nhân viên</h1>
+              <p className={`${getSubtitleColor()} mt-1`}>Theo dõi và quản lý chấm công</p>
             </div>
-            
+
             {/* Date Selector */}
             <Card className="mb-6">
               <div className="flex items-center gap-4">
                 <div className="flex-1">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Chọn ngày để xem dữ liệu chấm công</label>
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(value) => {
+                  <Input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(value) => {
                       setSelectedDate(value);
                       if (typeof window !== 'undefined') {
                         window.sessionStorage.setItem('adminAttendanceDate', value);
                       }
                     }}
-                  className="w-full"
-                />
+                    className="w-full"
+                  />
                 </div>
                 <div className="text-sm text-gray-600">
                   <div>Ngày đang xem: <span className="font-medium">{selectedDate}</span></div>
@@ -166,8 +194,8 @@ const AttendanceList = () => {
                     icon={<Search className="h-4 w-4" />}
                     className="flex-1"
                   />
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     icon={<Clock className="h-4 w-4" />}
                     onClick={loadAttendanceData}
                     disabled={loading}
@@ -210,7 +238,7 @@ const AttendanceList = () => {
                             <div className="text-center">
                               <div className="text-sm text-gray-500">Số giờ làm</div>
                               <div className="font-medium text-blue-600">
-                                {record.check_in && record.check_out ? 
+                                {record.check_in && record.check_out ?
                                   (() => {
                                     const [inHour, inMin] = record.check_in.split(':').map(Number);
                                     const [outHour, outMin] = record.check_out.split(':').map(Number);
@@ -227,8 +255,8 @@ const AttendanceList = () => {
                             <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAttendanceStatus(record).color}`}>
                               {getAttendanceStatus(record).text}
                             </span>
-                            <Button 
-                              variant="secondary" 
+                            <Button
+                              variant="secondary"
                               size="sm"
                               onClick={() => handleOpenDetails(record)}
                             >
@@ -252,8 +280,8 @@ const AttendanceList = () => {
       </div>
 
       {/* Modals */}
-      <AttendanceDetailsModal 
-        isOpen={showAttendanceDetails} 
+      <AttendanceDetailsModal
+        isOpen={showAttendanceDetails}
         onClose={() => setShowAttendanceDetails(false)}
         selectedRecord={selectedEmployee}
       />

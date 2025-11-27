@@ -13,6 +13,8 @@ import EditEmployee from './pages/employee/EditEmployee';
 import EmployeeDetails from './pages/employee/EmployeeDetails';
 import FaceRecognition from './pages/face-recognition/FaceRecognition';
 import FaceRecognitionPortal from './pages/face-recognition/FaceRecognitionPortal';
+import FaceRecognitionManager from './pages/face-recognition/FaceRecognitionManager';
+import FaceRecognitionAccountant from './pages/face-recognition/FaceRecognitionAccountant';
 import AttendanceList from './pages/attendance/AttendanceList';
 import PayrollList from './pages/payroll/PayrollList';
 import PayrollPolicies from './pages/payroll/PayrollPolicies';
@@ -46,6 +48,7 @@ import EmployeeChat from './pages/employee/Chat';
 import EmployeeAttendanceSummary from './pages/employee/AttendanceSummary';
 import EmployeeBenefitsInsurance from './pages/employee/BenefitsInsurance';
 import EmployeeSupportHelp from './pages/employee/SupportHelp';
+import EmployeeMyEvaluation from './pages/employee/MyEvaluation';
 import SimpleEmployeeEvaluation from './pages/evaluation/SimpleEmployeeEvaluation';
 import RecruitmentManagement from './pages/recruitment/RecruitmentManagement';
 import PositionsList from './pages/recruitment/PositionsList';
@@ -95,8 +98,12 @@ const AppRoutes = () => {
         {/* Dashboard - All staff */}
         <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Face Recognition - Admin, Manager & Accountant */}
-        <Route path="/face-recognition" element={<AdminManagerAccountantRoute><FaceRecognition /></AdminManagerAccountantRoute>} />
+        {/* Face Recognition - Admin only */}
+        <Route path="/face-recognition" element={<AdminRoute><FaceRecognition /></AdminRoute>} />
+        {/* Face Recognition - Manager */}
+        <Route path="/face-recognition-manager" element={<ManagerRoute><FaceRecognitionManager /></ManagerRoute>} />
+        {/* Face Recognition - Accountant */}
+        <Route path="/face-recognition-accountant" element={<AccountantRoute><FaceRecognitionAccountant /></AccountantRoute>} />
 
         {/* Employees */}
         <Route path="/employees" element={<EmployeeList />} /> {/* All staff can view */}
@@ -158,6 +165,7 @@ const AppRoutes = () => {
         <Route path="chat" element={<EmployeeChat />} />
         <Route path="benefits" element={<EmployeeBenefitsInsurance />} />
         <Route path="support" element={<EmployeeSupportHelp />} />
+        <Route path="evaluation" element={<EmployeeMyEvaluation />} />
       </Route>
 
       {/* Shared Routes */}

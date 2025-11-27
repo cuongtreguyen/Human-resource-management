@@ -74,7 +74,7 @@ const EmployeeProfile = () => {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <div className="w-16 h-16 border-4 border-orange-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Đang tải thông tin...</p>
         </div>
       </div>
@@ -93,23 +93,15 @@ const EmployeeProfile = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-8 px-6 shadow-lg">
+      <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white py-8 px-6 shadow-lg">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              onClick={() => window.history.back()}
-              className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại
-            </button>
+          <div className="flex items-center justify-between mb-4">         
           </div>
-
           <div>
             <h1 className="text-3xl font-bold mb-2">Hồ sơ cá nhân</h1>
-            <p className="text-purple-100">Thông tin chi tiết của bạn trong hệ thống</p>
+            <p className="text-orange-100">Thông tin chi tiết của bạn trong hệ thống</p>
           </div>
         </div>
       </div>
@@ -118,7 +110,7 @@ const EmployeeProfile = () => {
         {/* Profile Card */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
           <div className="flex items-center gap-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
+            <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
               {employee.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
             </div>
 
@@ -127,18 +119,18 @@ const EmployeeProfile = () => {
                 <h2 className="text-2xl font-bold text-gray-900">{employee.name}</h2>
                 {getStatusBadge(employee.status)}
               </div>
-              <p className="text-xl text-purple-600 font-semibold mb-3">{employee.position}</p>
+              <p className="text-xl text-orange-600 font-semibold mb-3">{employee.position}</p>
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
-                  <Building2 className="w-4 h-4 text-purple-500" />
+                  <Building2 className="w-4 h-4 text-orange-500" />
                   {employee.department}
                 </div>
                 <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4 text-purple-500" />
-                  Mã NV: {employee.id}
+                  <CreditCard className="w-4 h-4 text-orange-500" />
+                  ID: {employee.id}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-purple-500" />
+                  <Clock className="w-4 h-4 text-orange-500" />
                   Thâm niên: {calculateWorkDuration(employee.hireDate)}
                 </div>
               </div>
@@ -152,7 +144,7 @@ const EmployeeProfile = () => {
           {/* Thông tin cá nhân */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
-              <User className="w-5 h-5 text-purple-600" />
+              <User className="w-5 h-5 text-orange-600" />
               Thông tin cá nhân
             </h3>
             <div className="space-y-1">
@@ -207,7 +199,7 @@ const EmployeeProfile = () => {
           {/* Thời gian làm việc */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
-              <Calendar className="w-5 h-5 text-indigo-600" />
+              <Calendar className="w-5 h-5 text-orange-600" />
               Thời gian làm việc
             </h3>
             <div className="space-y-1">

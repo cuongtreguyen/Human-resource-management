@@ -5,6 +5,82 @@
 // SHARED DATA STORES (để đồng bộ giữa Employee và Admin)
 // ============================================
 
+// Employee Evaluations - Shared store (Manager tạo, Employee xem)
+let evaluationsStore = [
+  {
+    id: 'eval001',
+    employeeId: 'emp001',
+    employeeName: 'Trần Ngọc Hải',
+    department: 'Công nghệ thông tin',
+    period: 'Quý 4/2024',
+    reviewDate: '2024-10-15',
+    workPerformance: 4,
+    teamwork: 4,
+    attitude: 5,
+    overallRating: 4.3,
+    strengths: 'Làm việc chăm chỉ, có tinh thần trách nhiệm cao. Hoàn thành tốt các nhiệm vụ được giao. Có khả năng giải quyết vấn đề tốt.',
+    improvements: 'Cần cải thiện kỹ năng giao tiếp với khách hàng và trình bày ý tưởng trước nhóm.',
+    comments: 'Nhân viên có tiềm năng phát triển tốt, cần tiếp tục phát huy điểm mạnh và cải thiện kỹ năng mềm.',
+    reviewer: 'Nguyễn Văn Quản Lý',
+    reviewerRole: 'manager',
+    createdAt: '2024-10-15T10:30:00Z'
+  },
+  {
+    id: 'eval002',
+    employeeId: 'emp001',
+    employeeName: 'Trần Ngọc Hải',
+    department: 'Công nghệ thông tin',
+    period: 'Quý 3/2024',
+    reviewDate: '2024-07-15',
+    workPerformance: 4,
+    teamwork: 3,
+    attitude: 4,
+    overallRating: 3.7,
+    strengths: 'Có khả năng tự học và nghiên cứu công nghệ mới. Tiếp thu nhanh, code sạch và có tổ chức.',
+    improvements: 'Cần nâng cao kỹ năng làm việc nhóm và chia sẻ kiến thức với đồng nghiệp.',
+    comments: 'Đã có sự tiến bộ so với kỳ trước, cần tiếp tục phát triển kỹ năng teamwork.',
+    reviewer: 'Nguyễn Văn Quản Lý',
+    reviewerRole: 'manager',
+    createdAt: '2024-07-15T14:00:00Z'
+  },
+  {
+    id: 'eval003',
+    employeeId: 'emp001',
+    employeeName: 'Trần Ngọc Hải',
+    department: 'Công nghệ thông tin',
+    period: 'Quý 2/2024',
+    reviewDate: '2024-04-15',
+    workPerformance: 3,
+    teamwork: 4,
+    attitude: 4,
+    overallRating: 3.7,
+    strengths: 'Nhiệt tình trong công việc, sẵn sàng hỗ trợ đồng nghiệp khi cần.',
+    improvements: 'Cần cải thiện kỹ năng quản lý thời gian và ưu tiên công việc.',
+    comments: 'Cần nỗ lực hơn trong việc hoàn thành deadline.',
+    reviewer: 'Nguyễn Văn Quản Lý',
+    reviewerRole: 'manager',
+    createdAt: '2024-04-15T09:00:00Z'
+  },
+  {
+    id: 'eval004',
+    employeeId: 'emp002',
+    employeeName: 'Trần Thị Bình',
+    department: 'Nhân sự',
+    period: 'Quý 4/2024',
+    reviewDate: '2024-10-15',
+    workPerformance: 5,
+    teamwork: 5,
+    attitude: 5,
+    overallRating: 5.0,
+    strengths: 'Xuất sắc trong quản lý nhân sự, kỹ năng giao tiếp tốt, giải quyết xung đột hiệu quả.',
+    improvements: 'Có thể phát triển thêm về chiến lược HR và coaching.',
+    comments: 'Nhân viên xuất sắc, xứng đáng được xem xét thăng chức.',
+    reviewer: 'Nguyễn Văn Quản Lý',
+    reviewerRole: 'manager',
+    createdAt: '2024-10-15T11:00:00Z'
+  }
+];
+
 // Support Tickets - Shared store
 let supportTicketsStore = [
   {
@@ -437,26 +513,83 @@ class FakeApiService {
   // Dashboard APIs
   async getDashboardStats() {
     const stats = {
+      // Thống kê tổng quan
       totalEmployees: 156,
       activeEmployees: 142,
+      inactiveEmployees: 14,
       newHiresThisMonth: 8,
+      resignedThisMonth: 2,
       employeesOnLeave: 12,
+
+      // Thống kê lương
       pendingPayroll: 23,
       completedPayroll: 130,
+      totalPayrollAmount: 2850000000,
+
+      // Thống kê chấm công
       averageAttendance: 94.5,
+      lateToday: 5,
+      absentToday: 3,
+      onTimeToday: 134,
+
+      // Thống kê nghỉ phép
+      pendingLeaveRequests: 7,
+      approvedLeaveThisMonth: 15,
+
+      // Thống kê hỗ trợ
+      pendingSupportTickets: 4,
+      resolvedTicketsThisMonth: 12,
+
+      // Phân bố phòng ban
       departments: [
-        { name: 'IT', count: 45 },
-        { name: 'Marketing', count: 28 },
-        { name: 'Sales', count: 32 },
-        { name: 'HR', count: 12 },
-        { name: 'Finance', count: 18 },
-        { name: 'Operations', count: 21 }
+        { name: 'Công nghệ thông tin', code: 'IT', count: 45, color: '#3B82F6' },
+        { name: 'Marketing', code: 'MKT', count: 28, color: '#10B981' },
+        { name: 'Kinh doanh', code: 'SALES', count: 32, color: '#F59E0B' },
+        { name: 'Nhân sự', code: 'HR', count: 12, color: '#EF4444' },
+        { name: 'Tài chính', code: 'FIN', count: 18, color: '#8B5CF6' },
+        { name: 'Vận hành', code: 'OPS', count: 21, color: '#EC4899' }
       ],
+
+      // Chấm công theo tuần (7 ngày gần nhất)
+      weeklyAttendance: [
+        { day: 'T2', present: 138, absent: 4, late: 6 },
+        { day: 'T3', present: 140, absent: 2, late: 4 },
+        { day: 'T4', present: 135, absent: 7, late: 5 },
+        { day: 'T5', present: 139, absent: 3, late: 4 },
+        { day: 'T6', present: 141, absent: 1, late: 3 },
+        { day: 'T7', present: 45, absent: 0, late: 2 },
+        { day: 'CN', present: 0, absent: 0, late: 0 }
+      ],
+
+      // Nhân viên sắp hết hạn hợp đồng (30 ngày tới)
+      expiringContracts: [
+        { id: 'emp005', name: 'Hoàng Đức Em', department: 'Kinh doanh', expiryDate: '2024-02-15', daysLeft: 20 },
+        { id: 'emp008', name: 'Vũ Thị Hoa', department: 'Marketing', expiryDate: '2024-02-20', daysLeft: 25 },
+        { id: 'emp012', name: 'Đặng Văn Khoa', department: 'Vận hành', expiryDate: '2024-02-28', daysLeft: 33 }
+      ],
+
+      // Sinh nhật trong tuần
+      upcomingBirthdays: [
+        { id: 'emp001', name: 'Trần Ngọc Hải', department: 'IT', birthDate: '01-28', daysUntil: 2 },
+        { id: 'emp003', name: 'Lê Minh Chính', department: 'Marketing', birthDate: '01-30', daysUntil: 4 },
+        { id: 'emp007', name: 'Nguyễn Thị Mai', department: 'HR', birthDate: '02-01', daysUntil: 6 }
+      ],
+
+      // Hoạt động gần đây
       recentActivities: [
-        { id: 1, type: 'hire', message: 'New employee Nguyen Van A joined', time: '2 hours ago' },
-        { id: 2, type: 'leave', message: 'Tran Thi B requested a leave', time: '4 hours ago' },
-        { id: 3, type: 'payroll', message: 'January payroll completed', time: '1 day ago' },
-        { id: 4, type: 'attendance', message: 'Attendance report generated', time: '2 days ago' }
+        { id: 1, type: 'hire', message: 'Nhân viên mới Nguyễn Văn A đã gia nhập', time: '2 giờ trước', icon: 'user-plus' },
+        { id: 2, type: 'leave', message: 'Trần Thị B đã gửi đơn xin nghỉ phép', time: '4 giờ trước', icon: 'calendar' },
+        { id: 3, type: 'payroll', message: 'Bảng lương tháng 1 đã hoàn thành', time: '1 ngày trước', icon: 'dollar' },
+        { id: 4, type: 'attendance', message: 'Báo cáo chấm công đã được tạo', time: '2 ngày trước', icon: 'clock' },
+        { id: 5, type: 'support', message: 'Ticket hỗ trợ #123 đã được giải quyết', time: '2 ngày trước', icon: 'help' },
+        { id: 6, type: 'contract', message: 'Hợp đồng của Lê Văn C sắp hết hạn', time: '3 ngày trước', icon: 'file' }
+      ],
+
+      // Thông báo quan trọng cho Admin
+      alerts: [
+        { id: 1, type: 'warning', message: '3 hợp đồng sẽ hết hạn trong 30 ngày tới', link: '/employees' },
+        { id: 2, type: 'info', message: '7 đơn nghỉ phép đang chờ duyệt', link: '/leaves' },
+        { id: 3, type: 'error', message: '4 ticket hỗ trợ chưa được xử lý', link: '/admin/support-tickets' }
       ]
     };
     return this.delayResponse({ data: stats, success: true });
@@ -575,11 +708,12 @@ class FakeApiService {
         id: 'leave001',
         employeeId: 'emp001',
         employeeName: 'Nguyễn Văn An',
+        department: 'Công nghệ thông tin',
         type: 'annual',
         startDate: '2024-02-01',
         endDate: '2024-02-05',
         days: 5,
-        reason: 'Family vacation',
+        reason: 'Nghỉ phép đi du lịch cùng gia đình',
         status: 'pending',
         submittedDate: '2024-01-15',
         approvedBy: null
@@ -588,14 +722,43 @@ class FakeApiService {
         id: 'leave002',
         employeeId: 'emp002',
         employeeName: 'Trần Thị Bình',
+        department: 'Marketing',
         type: 'sick',
         startDate: '2024-01-20',
         endDate: '2024-01-22',
         days: 3,
-        reason: 'Flu symptoms',
+        reason: 'Bị cảm cúm',
         status: 'approved',
         submittedDate: '2024-01-18',
         approvedBy: 'admin'
+      },
+      {
+        id: 'leave003',
+        employeeId: 'emp003',
+        employeeName: 'Lê Minh Cường',
+        department: 'Kinh doanh',
+        type: 'emergency',
+        startDate: '2024-01-25',
+        endDate: '2024-01-26',
+        days: 2,
+        reason: 'Việc gia đình cần giải quyết gấp',
+        status: 'pending',
+        submittedDate: '2024-01-24',
+        approvedBy: null
+      },
+      {
+        id: 'leave004',
+        employeeId: 'emp004',
+        employeeName: 'Phạm Thu Dung',
+        department: 'Nhân sự',
+        type: 'annual',
+        startDate: '2024-02-10',
+        endDate: '2024-02-14',
+        days: 5,
+        reason: 'Nghỉ tết về quê',
+        status: 'pending',
+        submittedDate: '2024-01-20',
+        approvedBy: null
       }
     ];
     return this.delayResponse({ data: leaveRequests, success: true });
@@ -2697,6 +2860,97 @@ class FakeApiService {
     }
 
     return recommendations;
+  }
+
+  // ============================================
+  // EMPLOYEE EVALUATION APIs
+  // ============================================
+
+  // Get all evaluations (for Manager/Admin)
+  async getAllEvaluations() {
+    return this.delayResponse({
+      success: true,
+      data: evaluationsStore
+    });
+  }
+
+  // Get evaluations for a specific employee (for Employee view)
+  async getMyEvaluations(employeeId) {
+    const myEvaluations = evaluationsStore.filter(e => e.employeeId === employeeId);
+    return this.delayResponse({
+      success: true,
+      data: myEvaluations.sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))
+    });
+  }
+
+  // Get latest evaluation for each employee (for Manager list view)
+  async getEmployeesWithEvaluations() {
+    const employees = await this.getEmployees();
+    const employeesWithEval = employees.data.map(emp => {
+      const empEvaluations = evaluationsStore.filter(e => e.employeeId === emp.id);
+      const latestEval = empEvaluations.sort((a, b) => new Date(b.reviewDate) - new Date(a.reviewDate))[0];
+      return {
+        ...emp,
+        lastEvaluation: latestEval || null,
+        evaluationCount: empEvaluations.length
+      };
+    });
+    return this.delayResponse({
+      success: true,
+      data: employeesWithEval
+    });
+  }
+
+  // Create new evaluation (Manager only)
+  async createEvaluation(evaluationData) {
+    const newEvaluation = {
+      id: 'eval' + this.generateId(),
+      ...evaluationData,
+      createdAt: new Date().toISOString()
+    };
+    evaluationsStore.unshift(newEvaluation);
+    return this.delayResponse({
+      success: true,
+      data: newEvaluation,
+      message: 'Đã lưu đánh giá thành công!'
+    });
+  }
+
+  // Update evaluation (Manager only)
+  async updateEvaluation(evaluationId, updateData) {
+    const index = evaluationsStore.findIndex(e => e.id === evaluationId);
+    if (index === -1) {
+      return this.delayResponse({
+        success: false,
+        message: 'Không tìm thấy đánh giá'
+      });
+    }
+    evaluationsStore[index] = {
+      ...evaluationsStore[index],
+      ...updateData,
+      updatedAt: new Date().toISOString()
+    };
+    return this.delayResponse({
+      success: true,
+      data: evaluationsStore[index],
+      message: 'Đã cập nhật đánh giá!'
+    });
+  }
+
+  // Delete evaluation (Admin only)
+  async deleteEvaluation(evaluationId) {
+    const index = evaluationsStore.findIndex(e => e.id === evaluationId);
+    if (index === -1) {
+      return this.delayResponse({
+        success: false,
+        message: 'Không tìm thấy đánh giá'
+      });
+    }
+    evaluationsStore.splice(index, 1);
+    return this.delayResponse({
+      success: true,
+      message: 'Đã xóa đánh giá!'
+    });
   }
 }
 

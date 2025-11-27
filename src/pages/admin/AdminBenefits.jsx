@@ -28,6 +28,33 @@ const AdminBenefits = () => {
   const userRole = getRole();
   const canApprove = userRole === 'accountant'; // Chỉ accountant được duyệt
 
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
+
   // States
   const [loading, setLoading] = useState(true);
   const [welfarePrograms, setWelfarePrograms] = useState([]);
@@ -140,11 +167,11 @@ const AdminBenefits = () => {
       <div className="space-y-6 p-6 min-h-screen bg-gray-50">
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-8 rounded-2xl shadow-xl">
+        <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-8 rounded-2xl shadow-xl`}>
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <p className="text-purple-100 text-sm uppercase tracking-wider">Quản trị / HR</p>
+                <p className={`${getSubtitleColor()} text-sm uppercase tracking-wider`}>Quản trị / HR</p>
                 {!canApprove && (
                   <span className="flex items-center gap-1 px-3 py-1 bg-white/20 rounded-full text-xs">
                     <Eye size={14} />
@@ -159,7 +186,7 @@ const AdminBenefits = () => {
                 )}
               </div>
               <h1 className="text-4xl font-bold mt-1">Quản Lý Phúc Lợi & Bảo Hiểm</h1>
-              <p className="text-purple-100 mt-3 max-w-3xl text-lg">
+              <p className={`${getSubtitleColor()} mt-3 max-w-3xl text-lg`}>
                 {canApprove
                   ? 'Quản lý chế độ phúc lợi, chính sách bảo hiểm và xử lý yêu cầu nhân viên.'
                   : 'Xem thông tin phúc lợi và bảo hiểm. Liên hệ Kế toán để phê duyệt yêu cầu.'}
@@ -279,9 +306,8 @@ const AdminBenefits = () => {
                         <p className="text-sm text-gray-500">{policy.provider}</p>
                       </div>
                     </div>
-                    <span className={`px-4 py-2 text-xs rounded-full font-bold ${
-                      policy.type === 'mandatory' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                    }`}>
+                    <span className={`px-4 py-2 text-xs rounded-full font-bold ${policy.type === 'mandatory' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                      }`}>
                       {policy.type === 'mandatory' ? 'Bắt buộc' : 'Tự nguyện'}
                     </span>
                   </div>

@@ -5,8 +5,37 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import fakeApi from '../../services/fakeApi';
+import { getRole } from '../../utils/auth';
 
 const EmployeeSupportHelp = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const [activeTab, setActiveTab] = useState('tickets');
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -177,7 +206,7 @@ const EmployeeSupportHelp = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 shadow-lg">
+      <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 shadow-lg`}>
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center gap-4 mb-4">
             <a
@@ -190,7 +219,7 @@ const EmployeeSupportHelp = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-2">Hỗ trợ & Trợ giúp</h1>
-            <p className="text-purple-100">Tạo yêu cầu hỗ trợ hoặc tìm kiếm câu trả lời</p>
+            <p className={getSubtitleColor()}>Tạo yêu cầu hỗ trợ hoặc tìm kiếm câu trả lời</p>
           </div>
         </div>
       </div>

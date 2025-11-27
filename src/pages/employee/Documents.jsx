@@ -15,7 +15,7 @@ const EmployeeDocuments = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
 
   const categories = ['all', 'Quy định', 'Biểu mẫu', 'Hướng dẫn'];
-  
+
   const filteredDocs = docs.filter(d => {
     const matchesSearch = d.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || d.category === selectedCategory;
@@ -30,10 +30,10 @@ const EmployeeDocuments = () => {
     <div>
       <div className="space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
+        <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-center gap-4 mb-4">
-            <a 
-              href="/employee" 
+            <a
+              href="/employee"
               className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
             >
               <ArrowLeft size={18} />
@@ -42,7 +42,7 @@ const EmployeeDocuments = () => {
           </div>
           <div>
             <h1 className="text-3xl font-bold mb-2">Tài liệu</h1>
-            <p className="text-purple-100">Văn bản, quy định và biểu mẫu dành cho nhân viên</p>
+            <p className="text-orange-100">Văn bản, quy định và biểu mẫu dành cho nhân viên</p>
           </div>
         </div>
 
@@ -59,7 +59,7 @@ const EmployeeDocuments = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-green-100 rounded-lg">
@@ -71,11 +71,11 @@ const EmployeeDocuments = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <FileText className="text-purple-600" size={24} />
+              <div className="p-3 bg-orange-100 rounded-lg">
+                <FileText className="text-orange-600" size={24} />
               </div>
               <div>
                 <p className="text-sm text-gray-500">Biểu mẫu</p>
@@ -95,7 +95,7 @@ const EmployeeDocuments = () => {
                 placeholder="Tìm kiếm tài liệu..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
             </div>
             <div className="flex gap-2">
@@ -103,11 +103,10 @@ const EmployeeDocuments = () => {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                    selectedCategory === cat
-                      ? 'bg-purple-600 text-white'
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${selectedCategory === cat
+                      ? 'bg-orange-500 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   {cat === 'all' ? 'Tất cả' : cat}
                 </button>
@@ -130,25 +129,25 @@ const EmployeeDocuments = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between mb-3 text-xs text-gray-500">
-                <span className="px-2 py-1 bg-purple-50 text-purple-600 rounded font-medium">{d.category}</span>
+                <span className="px-2 py-1 bg-orange-50 text-orange-600 rounded font-medium">{d.category}</span>
                 <span>{d.date}</span>
               </div>
-              
+
               <div className="flex gap-2">
                 <button className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors font-medium">
                   <Eye size={16} />
                   Xem
                 </button>
-                <button className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-colors font-medium">
+                <button className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors font-medium">
                   <Download size={16} />
                   Tải
                 </button>
               </div>
             </div>
           ))}
-          
+
           {filteredDocs.length === 0 && (
             <div className="col-span-3 py-12 text-center text-gray-500">
               Không tìm thấy tài liệu nào

@@ -81,24 +81,26 @@ const Settings = () => {
     <Layout>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <SettingsIcon className="w-6 h-6 text-blue-600" />
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <SettingsIcon className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold">Cài đặt hệ thống</h1>
+                <p className="text-blue-100 text-sm">Quản lý cấu hình hệ thống</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Cài đặt hệ thống</h1>
-              <p className="text-gray-500 text-sm">Quản lý cấu hình hệ thống</p>
-            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 disabled:opacity-50 font-medium"
+            >
+              <Save className="w-4 h-4" />
+              {saving ? 'Đang lưu...' : 'Lưu cài đặt'}
+            </button>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-          >
-            <Save className="w-4 h-4" />
-            {saving ? 'Đang lưu...' : 'Lưu cài đặt'}
-          </button>
         </div>
 
         <div className="space-y-6">

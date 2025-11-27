@@ -229,14 +229,13 @@ const EmployeeAttendance = () => {
   return (
     <div>
       <div className="space-y-6">
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <a
               href="/employee"
               className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
             >
-              <ArrowLeft size={18} />
-              <span>Quay lại</span>
+             
             </a>
             <button className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm">
               <Download size={18} />
@@ -246,8 +245,8 @@ const EmployeeAttendance = () => {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold mb-2">Chấm công của tôi</h1>
-              <p className="text-purple-100">Theo dõi lịch sử điểm danh, đi muộn, nghỉ phép</p>
-              <p className="text-purple-200 text-sm mt-1">Nhân viên: {employeeName}</p>
+              <p className="text-indigo-100">Theo dõi lịch sử điểm danh, đi muộn, nghỉ phép</p>
+              <p className="text-indigo-200 text-sm mt-1">Nhân viên: {employeeName}</p>
             </div>
           </div>
         </div>

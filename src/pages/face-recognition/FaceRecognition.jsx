@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Layout from '../../components/layout/Layout';
 import {
   Camera,
@@ -12,6 +12,7 @@ import {
   Square as StopIcon,
 } from 'lucide-react';
 import faceRecognitionApi from '../../services/faceRecognitionApi';
+import { getRole } from '../../utils/auth';
 
 const FaceRecognition = () => {
   const [activeTab, setActiveTab] = useState('register');
@@ -21,6 +22,82 @@ const FaceRecognition = () => {
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [attendanceResult, setAttendanceResult] = useState(null);
+
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const roleColors = useMemo(() => {
+    switch (userRole) {
+      case 'admin':
+        return {
+          primary: 'blue',
+          headerGradient: 'from-blue-500 to-blue-600',
+          sidebarGradient: 'from-blue-50 to-blue-100',
+          iconBg: 'from-blue-100 to-blue-200',
+          iconColor: 'text-blue-500',
+          textAccent: 'text-blue-600',
+          infoBg: 'bg-blue-50',
+          infoText: 'text-blue-700',
+          infoIcon: 'text-blue-400',
+          btnPrimary: 'bg-blue-600 hover:bg-blue-700',
+          btnSecondary: 'bg-blue-500 hover:bg-blue-600',
+          focusRing: 'focus:ring-blue-500',
+          tabActive: 'border-blue-500 text-blue-600',
+          recognizeBg: 'from-blue-50 to-blue-100',
+        };
+      case 'manager':
+        return {
+          primary: 'purple',
+          headerGradient: 'from-purple-600 to-purple-700',
+          sidebarGradient: 'from-purple-50 to-purple-100',
+          iconBg: 'from-purple-100 to-purple-200',
+          iconColor: 'text-purple-500',
+          textAccent: 'text-purple-600',
+          infoBg: 'bg-purple-50',
+          infoText: 'text-purple-700',
+          infoIcon: 'text-purple-400',
+          btnPrimary: 'bg-purple-600 hover:bg-purple-700',
+          btnSecondary: 'bg-purple-500 hover:bg-purple-600',
+          focusRing: 'focus:ring-purple-500',
+          tabActive: 'border-purple-500 text-purple-600',
+          recognizeBg: 'from-purple-50 to-purple-100',
+        };
+      case 'accountant':
+        return {
+          primary: 'emerald',
+          headerGradient: 'from-emerald-600 to-emerald-700',
+          sidebarGradient: 'from-emerald-50 to-emerald-100',
+          iconBg: 'from-emerald-100 to-emerald-200',
+          iconColor: 'text-emerald-500',
+          textAccent: 'text-emerald-600',
+          infoBg: 'bg-emerald-50',
+          infoText: 'text-emerald-700',
+          infoIcon: 'text-emerald-400',
+          btnPrimary: 'bg-emerald-600 hover:bg-emerald-700',
+          btnSecondary: 'bg-emerald-500 hover:bg-emerald-600',
+          focusRing: 'focus:ring-emerald-500',
+          tabActive: 'border-emerald-500 text-emerald-600',
+          recognizeBg: 'from-emerald-50 to-emerald-100',
+        };
+      default: // employee
+        return {
+          primary: 'orange',
+          headerGradient: 'from-orange-500 to-orange-600',
+          sidebarGradient: 'from-orange-50 to-orange-100',
+          iconBg: 'from-orange-100 to-orange-200',
+          iconColor: 'text-orange-500',
+          textAccent: 'text-orange-600',
+          infoBg: 'bg-orange-50',
+          infoText: 'text-orange-700',
+          infoIcon: 'text-orange-400',
+          btnPrimary: 'bg-orange-600 hover:bg-orange-700',
+          btnSecondary: 'bg-orange-500 hover:bg-orange-600',
+          focusRing: 'focus:ring-orange-500',
+          tabActive: 'border-orange-500 text-orange-600',
+          recognizeBg: 'from-orange-50 to-orange-100',
+        };
+    }
+  }, [userRole]);
 
   // 🕒 Check backend system status every 2s
   useEffect(() => {
@@ -108,20 +185,20 @@ const FaceRecognition = () => {
     <Layout>
       <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-lg shadow-lg text-white">
-          <h1 className="text-2xl font-bold">Face Recognition System</h1>
-          <p className="text-purple-100">Automatic photo capture & attendance</p>
+        <div className={`bg-gradient-to-r ${roleColors.headerGradient} p-6 rounded-lg shadow-lg text-white`}>
+          <h1 className="text-2xl font-bold">Hệ thống nhận diện khuôn mặt</h1>
+          <p className="text-white/80">Chụp ảnh tự động & chấm công</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Sidebar */}
           <div className="w-full lg:w-80 flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-blue-50 text-center">
-              <div className="w-32 h-32 mx-auto bg-gradient-to-r from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
-                <Camera className="h-16 w-16 text-purple-500" />
+            <div className={`p-6 border-b border-gray-100 bg-gradient-to-r ${roleColors.sidebarGradient} text-center`}>
+              <div className={`w-32 h-32 mx-auto bg-gradient-to-r ${roleColors.iconBg} rounded-full flex items-center justify-center`}>
+                <Camera className={`h-16 w-16 ${roleColors.iconColor}`} />
               </div>
               <h2 className="mt-4 text-xl font-semibold text-gray-800">Face Recognition</h2>
-              <p className="text-sm text-purple-600 font-medium">Attendance System</p>
+              <p className={`text-sm ${roleColors.textAccent} font-medium`}>Attendance System</p>
             </div>
 
             <div className="p-4 space-y-4">
@@ -151,8 +228,8 @@ const FaceRecognition = () => {
           <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
             <nav className="flex border-b border-gray-200 bg-gray-50">
               {[
-                ['register', 'Register User'],
-                ['recognize', 'Recognize'],
+                ['register', 'Đăng ký khuôn mặt'],
+                ['recognize', 'Chấm công'],
               ].map(([tab, label]) => (
                 <button
                   key={tab}
@@ -160,7 +237,7 @@ const FaceRecognition = () => {
                   onClick={() => setActiveTab(tab)}
                   className={`px-6 py-3 text-sm font-medium transition-colors ${
                     activeTab === tab
-                      ? 'border-b-2 border-purple-500 text-purple-600'
+                      ? `border-b-2 ${roleColors.tabActive}`
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -173,50 +250,50 @@ const FaceRecognition = () => {
               {/* Register */}
               {activeTab === 'register' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-800">Register New User</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">Đăng ký khuôn mặt mới</h3>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Mã nhân viên</label>
                       <input
                         value={userId}
                         onChange={(e) => setUserId(e.target.value)}
-                        placeholder="e.g., 101"
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500"
+                        placeholder="VD: NV001"
+                        className={`w-full px-3 py-2 border rounded-md focus:ring-2 ${roleColors.focusRing}`}
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
                       <input
                         value={userName}
                         onChange={(e) => setUserName(e.target.value)}
-                        placeholder="Enter your name"
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500"
+                        placeholder="Nhập họ và tên"
+                        className={`w-full px-3 py-2 border rounded-md focus:ring-2 ${roleColors.focusRing}`}
                       />
                     </div>
                   </div>
 
-                  <div className="bg-purple-50 rounded-md p-4 text-sm text-purple-700 flex">
-                    <Info className="h-5 w-5 text-purple-400 mr-2" />
+                  <div className={`${roleColors.infoBg} rounded-md p-4 text-sm ${roleColors.infoText} flex`}>
+                    <Info className={`h-5 w-5 ${roleColors.infoIcon} mr-2 flex-shrink-0`} />
                     <p>
-                      The system will <strong>automatically capture 50 photos</strong> when your face is detected.  
-                      Move your face slightly in different directions for better recognition accuracy.
+                      Hệ thống sẽ <strong>tự động chụp 50 ảnh</strong> khi phát hiện khuôn mặt của bạn.
+                      Di chuyển khuôn mặt nhẹ theo các hướng khác nhau để tăng độ chính xác nhận diện.
                     </p>
                   </div>
 
                   <div className="camera-container bg-gray-100 rounded-md p-4 text-center">
                     <Camera className="h-16 w-16 mx-auto text-gray-400 mb-2" />
-                    <p className="text-gray-600">Camera will appear when backend starts auto capture.</p>
+                    <p className="text-gray-600">Camera sẽ hiển thị khi bắt đầu chụp tự động.</p>
                   </div>
 
                   <div className="flex justify-end space-x-3">
                     <button
                       onClick={handleTakePhotos}
                       disabled={isLoading}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm disabled:opacity-50"
+                      className={`px-4 py-2 ${roleColors.btnPrimary} text-white rounded-md flex items-center gap-2 text-sm disabled:opacity-50`}
                     >
                       <Video className="w-4 h-4" />
-                      Start Auto Capture
+                      Bắt đầu chụp
                     </button>
                     <button
                       onClick={handleStopProcess}
@@ -224,7 +301,7 @@ const FaceRecognition = () => {
                       className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center gap-2 text-sm disabled:opacity-50"
                     >
                       <StopIcon className="w-4 h-4" />
-                      Stop Process
+                      Dừng
                     </button>
                   </div>
                 </div>
@@ -234,11 +311,11 @@ const FaceRecognition = () => {
               {/* Recognize */}
               {activeTab === 'recognize' && (
                 <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-800">Face Recognition</h3>
-                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-md p-6 text-center">
-                    <Eye className="h-16 w-16 mx-auto text-purple-400 mb-2" />
+                  <h3 className="text-lg font-semibold text-gray-800">Chấm công bằng khuôn mặt</h3>
+                  <div className={`bg-gradient-to-r ${roleColors.recognizeBg} rounded-md p-6 text-center`}>
+                    <Eye className={`h-16 w-16 mx-auto ${roleColors.iconColor} mb-2`} />
                     <p className="text-gray-600 mb-2">
-                      Start recognition to automatically clock in/out when your face is detected.
+                      Bắt đầu nhận diện để tự động chấm công vào/ra khi phát hiện khuôn mặt của bạn.
                     </p>
                   </div>
 
@@ -260,23 +337,23 @@ const FaceRecognition = () => {
                       className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center gap-2 text-sm disabled:opacity-50"
                     >
                       <StopIcon className="w-4 h-4" />
-                      Stop
+                      Dừng
                     </button>
                     <button
                       onClick={() => handleStartRecognition('clockin')}
                       disabled={isLoading}
-                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm disabled:opacity-50"
+                      className={`px-4 py-2 ${roleColors.btnPrimary} text-white rounded-md flex items-center gap-2 text-sm disabled:opacity-50`}
                     >
                       <CheckCircle className="w-4 h-4" />
-                      Clock In
+                      Chấm công vào
                     </button>
                     <button
                       onClick={() => handleStartRecognition('clockout')}
                       disabled={isLoading}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm disabled:opacity-50"
+                      className={`px-4 py-2 ${roleColors.btnSecondary} text-white rounded-md flex items-center gap-2 text-sm disabled:opacity-50`}
                     >
                       <Clock className="w-4 h-4" />
-                      Clock Out
+                      Chấm công ra
                     </button>
                   </div>
                 </div>

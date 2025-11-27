@@ -1,10 +1,15 @@
-Total users: 1
-Total samples: 30
-User IDs: 1
+Total users: 2
+Total samples: 76
+User IDs: 1, 2
 
 User Details:
 User 1:
-  Name: Tran Ngoc Hai
+  Name: Nguyen Van Cuong
   ID: 1
-  Date: 2025-11-11 02:39:03
+  Date: 2025-11-27 23:41:42
+  Photos: 60
+User 2:
+  Name: Nguyen Van Vinh
+  ID: 2
+  Date: 2025-11-27 23:44:21
   Photos: 60

@@ -25,7 +25,7 @@ const EmployeePayroll = () => {
     <div>
       <div className="space-y-6">
         {/* Header với nút quay lại */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
+        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-2xl shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <a 
               href="/employee" 

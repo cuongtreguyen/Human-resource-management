@@ -5,8 +5,37 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import fakeApi from '../../services/fakeApi';
+import { getRole } from '../../utils/auth';
 
 const AdminSupportTickets = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedTicket, setSelectedTicket] = useState(null);
@@ -163,9 +192,9 @@ const AdminSupportTickets = () => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Quản lý yêu cầu hỗ trợ</h1>
-        <p className="text-gray-600 mt-1">Xem và xử lý các yêu cầu hỗ trợ từ nhân viên</p>
+      <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-xl shadow-lg mb-6`}>
+        <h1 className="text-2xl font-bold">Quản lý yêu cầu hỗ trợ</h1>
+        <p className={`${getSubtitleColor()} mt-1`}>Xem và xử lý các yêu cầu hỗ trợ từ nhân viên</p>
       </div>
 
       {/* Stats */}

@@ -27,12 +27,14 @@ const TaskColumn = ({ column, tasks, onAddTask, onEditTask, onDeleteTask }) => {
               {tasks.length}
             </span>
           </h3>
-          <button
-            onClick={() => onAddTask(column.id)}
-            className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
-          >
-            <Plus size={18} />
-          </button>
+          {column.id === 'todo' && (
+            <button
+              onClick={() => onAddTask(column.id)}
+              className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+            >
+              <Plus size={18} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -56,14 +58,16 @@ const TaskColumn = ({ column, tasks, onAddTask, onEditTask, onDeleteTask }) => {
 
         {tasks.length === 0 && (
           <div className="text-center py-8 text-gray-400">
-            <p className="text-sm mb-2">Không có task</p>
-            <button
-              onClick={() => onAddTask(column.id)}
-              className="text-blue-500 hover:text-blue-600 text-sm flex items-center gap-1 mx-auto"
-            >
-              <Plus size={14} />
-              Thêm task mới
-            </button>
+            <p className="text-sm">Không có task</p>
+            {column.id === 'todo' && (
+              <button
+                onClick={() => onAddTask(column.id)}
+                className="text-blue-500 hover:text-blue-600 text-sm flex items-center gap-1 mx-auto mt-2"
+              >
+                <Plus size={14} />
+                Thêm task mới
+              </button>
+            )}
           </div>
         )}
       </div>

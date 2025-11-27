@@ -7,9 +7,38 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { EmployeeSummaryCards, Pagination } from '../../components/employee';
 import fakeApi from '../../services/fakeApi';
+import { getRole } from '../../utils/auth';
 
 const EmployeeList = () => {
   const navigate = useNavigate();
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,7 +77,7 @@ const EmployeeList = () => {
 
   const filteredEmployees = employees.filter(employee => {
     const matchesSearch = employee.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                         employee.email.toLowerCase().includes(filters.search.toLowerCase());
+      employee.email.toLowerCase().includes(filters.search.toLowerCase());
     const matchesDepartment = filters.department === 'Tất cả phòng ban' || employee.department === filters.department;
     const matchesPosition = filters.position === 'Tất cả chức vụ' || employee.position === filters.position;
 
@@ -207,7 +236,7 @@ const EmployeeList = () => {
             </div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Lỗi tải danh sách nhân viên</h2>
             <p className="text-gray-600 mb-4">{error}</p>
-            <button 
+            <button
               onClick={loadEmployees}
               className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
             >
@@ -222,20 +251,13 @@ const EmployeeList = () => {
   return (
     <Layout>
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-lg mb-6">
+      <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-lg mb-6`}>
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold">Quản lý Nhân viên</h1>
-            <p className="text-purple-100 mt-1">Quản lý lực lượng lao động của tổ chức</p>
+            <p className={`${getSubtitleColor()} mt-1`}>Quản lý lực lượng lao động của tổ chức</p>
           </div>
           <div className="flex space-x-3">
-            <Button variant="secondary" size="md" onClick={handleAddEmployee}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              Thêm nhân viên
-            </Button>
-         
           </div>
         </div>
       </div>
@@ -278,7 +300,7 @@ const EmployeeList = () => {
               onChange={(value) => handleFilterChange('salaryRange', value)}
             />
           </div>
-          
+
           {/* Filter Actions */}
           <div className="flex justify-between items-center">
             <Button variant="danger" size="sm" onClick={clearFilters}>
@@ -388,7 +410,7 @@ const EmployeeList = () => {
               ))}
             </tbody>
           </table>
-          
+
           {filteredEmployees.length === 0 && (
             <div className="text-center py-12">
               <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,7 +421,7 @@ const EmployeeList = () => {
             </div>
           )}
         </div>
-        
+
         {/* Pagination */}
         <Pagination
           currentPage={currentPage}

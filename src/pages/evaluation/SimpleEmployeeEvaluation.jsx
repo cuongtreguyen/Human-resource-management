@@ -1,8 +1,38 @@
 import React, { useEffect, useState } from 'react';
+import ReactDOM from 'react-dom';
 import { Search, Plus, Award, Star, Eye, X, Save } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
+import { getRole } from '../../utils/auth';
 
 const SimpleEmployeeEvaluation = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getBannerColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'from-blue-500 to-blue-600';
+      case 'manager':
+        return 'from-purple-600 to-purple-700';
+      case 'accountant':
+        return 'from-emerald-600 to-emerald-700';
+      default:
+        return 'from-orange-500 to-orange-600';
+    }
+  };
+
+  const getSubtitleColor = () => {
+    switch (userRole) {
+      case 'admin':
+        return 'text-blue-100';
+      case 'manager':
+        return 'text-purple-100';
+      case 'accountant':
+        return 'text-emerald-100';
+      default:
+        return 'text-orange-100';
+    }
+  };
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,23 +60,12 @@ const SimpleEmployeeEvaluation = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getEmployees();
-      // Thêm mock data đánh giá
-      const employeesWithEval = response.data.map(emp => ({
-        ...emp,
-        lastEvaluation: {
-          date: '2024-10-15',
-          overallRating: Math.floor(Math.random() * 2) + 3 + Math.random(),
-          workPerformance: Math.floor(Math.random() * 2) + 3,
-          teamwork: Math.floor(Math.random() * 2) + 3,
-          attitude: Math.floor(Math.random() * 2) + 3,
-          strengths: 'Làm việc chăm chỉ, có tinh thần trách nhiệm',
-          improvements: 'Cần cải thiện kỹ năng giao tiếp',
-          comments: 'Nhân viên có tiềm năng phát triển tốt'
-        }
-      }));
-      setEmployees(employeesWithEval);
-      setFilteredEmployees(employeesWithEval);
+      // Sử dụng API mới để lấy employees với evaluations từ store chung
+      const response = await fakeApi.getEmployeesWithEvaluations();
+      if (response.success) {
+        setEmployees(response.data);
+        setFilteredEmployees(response.data);
+      }
     } catch (error) {
       console.error('Error loading employees:', error);
     } finally {
@@ -109,19 +128,47 @@ const SimpleEmployeeEvaluation = () => {
   };
 
   const handleSave = async () => {
+    const overallRating = parseFloat(calculateOverall());
     const evaluationData = {
       employeeId: selectedEmployee?.id,
-      ...formData,
-      overallRating: calculateOverall(),
-      createdAt: new Date().toISOString()
+      employeeName: selectedEmployee?.name,
+      department: selectedEmployee?.department,
+      period: getPeriodName(),
+      reviewDate: formData.reviewDate,
+      workPerformance: formData.workPerformance,
+      teamwork: formData.teamwork,
+      attitude: formData.attitude,
+      overallRating: overallRating,
+      strengths: formData.strengths,
+      improvements: formData.improvements,
+      comments: formData.comments,
+      reviewer: 'Nguyễn Văn Quản Lý', // Trong thực tế lấy từ user đăng nhập
+      reviewerRole: userRole
     };
 
-    console.log('Saving evaluation:', evaluationData);
-    // TODO: Gọi API backend để lưu
-    // await api.saveEvaluation(evaluationData);
+    try {
+      const response = await fakeApi.createEvaluation(evaluationData);
+      if (response.success) {
+        alert(response.message);
+        setShowModal(false);
+        // Reload danh sách để cập nhật
+        loadEmployees();
+      }
+    } catch (error) {
+      console.error('Error saving evaluation:', error);
+      alert('Có lỗi xảy ra khi lưu đánh giá!');
+    }
+  };
 
-    alert('Đã lưu đánh giá thành công!');
-    setShowModal(false);
+  // Tự động tính period dựa trên ngày đánh giá
+  const getPeriodName = () => {
+    const date = new Date(formData.reviewDate);
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    if (month <= 3) return `Quý 1/${year}`;
+    if (month <= 6) return `Quý 2/${year}`;
+    if (month <= 9) return `Quý 3/${year}`;
+    return `Quý 4/${year}`;
   };
 
   const getScoreColor = (score) => {
@@ -143,9 +190,9 @@ const SimpleEmployeeEvaluation = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-6 rounded-xl">
+      <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-xl`}>
         <h1 className="text-2xl font-bold">Đánh giá nhân viên</h1>
-        <p className="text-blue-100 mt-1">Quản lý đánh giá hiệu suất làm việc</p>
+        <p className={`${getSubtitleColor()} mt-1`}>Quản lý đánh giá hiệu suất làm việc</p>
       </div>
 
       {/* Search */}
@@ -232,8 +279,8 @@ const SimpleEmployeeEvaluation = () => {
       </div>
 
       {/* Modal Đánh giá */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      {showModal && ReactDOM.createPortal(
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-5 rounded-t-xl">
@@ -319,25 +366,13 @@ const SimpleEmployeeEvaluation = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Điểm cần cải thiện</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Mục tiêu</label>
                 <textarea
                   value={formData.improvements}
                   onChange={(e) => setFormData({ ...formData, improvements: e.target.value })}
                   disabled={isViewMode}
                   rows="2"
                   placeholder="Nhập điểm cần cải thiện..."
-                  className="w-full px-4 py-2 border rounded-lg disabled:bg-gray-100"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nhận xét chung</label>
-                <textarea
-                  value={formData.comments}
-                  onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                  disabled={isViewMode}
-                  rows="3"
-                  placeholder="Nhập nhận xét chung..."
                   className="w-full px-4 py-2 border rounded-lg disabled:bg-gray-100"
                 />
               </div>
@@ -362,7 +397,8 @@ const SimpleEmployeeEvaluation = () => {
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

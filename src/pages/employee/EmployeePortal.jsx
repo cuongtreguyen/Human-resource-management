@@ -106,9 +106,9 @@ const EmployeePortal = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-100">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-amber-100">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto" />
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-orange-600 mx-auto" />
           <p className="text-gray-600 mt-6 text-lg">Đang tải cổng nhân viên...</p>
         </div>
       </div>
@@ -116,12 +116,12 @@ const EmployeePortal = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
       {/* Background hiệu ứng */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-indigo-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-1/2 -left-10 w-80 h-80 bg-pink-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-amber-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-1/2 -left-10 w-80 h-80 bg-yellow-400 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
       <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto">
@@ -130,29 +130,26 @@ const EmployeePortal = () => {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="bg-gradient-to-r from-purple-800 to-indigo-700 text-white p-8 rounded-2xl mb-8 shadow-2xl"
+          className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-8 rounded-2xl mb-8 shadow-2xl"
         >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight">
                 Xin chào{employee ? `, ${employee.name}` : ""} 
               </h1>
-              <p className="text-purple-100 mt-3 text-lg">
+              <p className="text-orange-100 mt-3 text-lg">
                 Chúc bạn một ngày làm việc thật hiệu quả và vui vẻ!
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
-              <Button variant="secondary" className="bg-white text-purple-700 hover:bg-purple-50 font-medium" onClick={() => navigate("/employee/leave")}>
+              <Button variant="secondary" className="bg-white text-orange-700 hover:bg-orange-50 font-medium" onClick={() => navigate("/employee/leave")}>
                 Xin nghỉ phép
               </Button>
               <Button variant="outline" className="bg-white/20 backdrop-blur border-white/30 text-white hover:bg-white/30" onClick={() => navigate("/employee/tasks")}>
                 Xem nhiệm vụ
               </Button>
-              <Button variant="primary" className="bg-fuchsia-500 hover:bg-fuchsia-600 font-medium" onClick={() => navigate("/employee/attendance")}>
+              <Button variant="primary" className="bg-orange-600 hover:bg-orange-700 font-medium" onClick={() => navigate("/employee/attendance")}>
                 Chấm công
-              </Button>
-              <Button variant="outline" className="bg-white/20 backdrop-blur border-white/30 text-white hover:bg-white/30" onClick={() => navigate(-1)}>
-                Quay lại
               </Button>
               <Button variant="danger" className="bg-red-500 hover:bg-red-600 font-medium" onClick={() => { clearRole(); navigate("/login"); }}>
                 Đăng xuất
@@ -201,7 +198,7 @@ const EmployeePortal = () => {
                 onClick={qa.action}
                 className="p-6 border border-gray-200 rounded-2xl bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-300 text-left group"
               >
-                <div className="text-xl font-bold text-gray-800 group-hover:text-purple-600 transition-colors">
+                <div className="text-xl font-bold text-gray-800 group-hover:text-orange-600 transition-colors">
                   {qa.title}
                 </div>
                 <div className="text-sm text-gray-500 mt-2 group-hover:text-gray-700">
@@ -249,7 +246,7 @@ const EmployeePortal = () => {
                     onClick={() => setTaskFilter(filter)}
                     className={`px-5 py-2 rounded-full font-medium text-sm transition-all ${
                       taskFilter === filter
-                        ? 'bg-purple-600 text-white shadow-lg'
+                        ? 'bg-orange-500 text-white shadow-lg'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
@@ -288,10 +285,10 @@ const EmployeePortal = () => {
                           <div className="mt-3">
                             <div className="flex justify-between text-sm mb-1">
                               <span className="text-gray-600">Tiến độ</span>
-                              <span className="font-bold text-purple-600">{progress.currentProgress}%</span>
+                              <span className="font-bold text-orange-600">{progress.currentProgress}%</span>
                             </div>
                             <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div className="bg-gradient-to-r from-purple-600 to-indigo-600 h-2 rounded-full transition-all" style={{ width: `${progress.currentProgress}%` }}></div>
+                              <div className="bg-gradient-to-r from-orange-500 to-amber-500 h-2 rounded-full transition-all" style={{ width: `${progress.currentProgress}%` }}></div>
                             </div>
                           </div>
                         )}
@@ -336,7 +333,7 @@ const EmployeePortal = () => {
           <div className="space-y-6">
             <Card title="Thông tin cá nhân" className="bg-white/95 backdrop-blur shadow-lg">
               <div className="flex items-center gap-5 mb-6">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-600 to-indigo-700 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-3xl font-bold text-white shadow-lg">
                   {employee?.name?.split(" ").map(n => n[0]).join("") || "NV"}
                 </div>
                 <div>
@@ -361,10 +358,10 @@ const EmployeePortal = () => {
       {showTaskDetail && selectedTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6 rounded-t-2xl flex justify-between items-center sticky top-0">
+            <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-t-2xl flex justify-between items-center sticky top-0">
               <div>
                 <h2 className="text-2xl font-bold">Chi tiết nhiệm vụ</h2>
-                <p className="text-purple-100">{selectedTask.title}</p>
+                <p className="text-orange-100">{selectedTask.title}</p>
               </div>
               <button onClick={() => { setShowTaskDetail(false); setSelectedTask(null); }} className="text-white hover:bg-white/20 p-2 rounded-lg transition">
                 <X size={28} />
@@ -390,11 +387,11 @@ const EmployeePortal = () => {
       {showTaskUpdate && selectedTask && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white rounded-2xl shadow-2xl max-w-lg w-full">
-            <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white p-6 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-t-2xl">
               <div className="flex justify-between items-center">
                 <div>
                   <h2 className="text-2xl font-bold">Cập nhật nhiệm vụ</h2>
-                  <p className="text-purple-100 text-sm mt-1">{selectedTask.title}</p>
+                  <p className="text-orange-100 text-sm mt-1">{selectedTask.title}</p>
                 </div>
                 <button onClick={() => { setShowTaskUpdate(false); setSelectedTask(null); }} className="text-white hover:bg-white/20 p-2 rounded-lg">
                   <X size={28} />
@@ -404,7 +401,7 @@ const EmployeePortal = () => {
             <div className="p-6 space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Trạng thái</label>
-                <select value={updateStatus} onChange={e => setUpdateStatus(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <select value={updateStatus} onChange={e => setUpdateStatus(e.target.value)} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500">
                   <option value="new">Mới</option>
                   <option value="in-progress">Đang làm</option>
                   <option value="pending">Chờ xử lý</option>
@@ -415,11 +412,11 @@ const EmployeePortal = () => {
                 <div className="flex justify-between mb-2">
                   <label className="text-sm font-medium text-gray-700">Tiến độ: {updateProgress}%</label>
                 </div>
-                <input type="range" min="0" max="100" value={updateProgress} onChange={e => setUpdateProgress(+e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600" />
+                <input type="range" min="0" max="100" value={updateProgress} onChange={e => setUpdateProgress(+e.target.value)} className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Ghi chú</label>
-                <textarea value={updateNote} onChange={e => setUpdateNote(e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 resize-none" placeholder="Nhập ghi chú..."></textarea>
+                <textarea value={updateNote} onChange={e => setUpdateNote(e.target.value)} rows={4} className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 resize-none" placeholder="Nhập ghi chú..."></textarea>
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => setShowTaskUpdate(false)}>Hủy</Button>

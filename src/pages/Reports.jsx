@@ -4,8 +4,26 @@ import {
   Download, Calendar, TrendingUp, Filter, Search,
   BarChart2, PieChart
 } from 'lucide-react';
+import { getRole } from '../utils/auth';
 
 const Reports = () => {
+  const userRole = getRole();
+
+  // Màu sắc theo role
+  const getRoleColors = () => {
+    switch (userRole) {
+      case 'admin':
+        return { bg: 'bg-blue-100', text: 'text-blue-600', ring: 'focus:ring-blue-500' };
+      case 'manager':
+        return { bg: 'bg-purple-100', text: 'text-purple-600', ring: 'focus:ring-purple-500' };
+      case 'accountant':
+        return { bg: 'bg-emerald-100', text: 'text-emerald-600', ring: 'focus:ring-emerald-500' };
+      default:
+        return { bg: 'bg-orange-100', text: 'text-orange-600', ring: 'focus:ring-orange-500' };
+    }
+  };
+
+  const roleColors = getRoleColors();
   const [selectedReport, setSelectedReport] = useState(null);
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [searchQuery, setSearchQuery] = useState('');
@@ -238,8 +256,8 @@ const Reports = () => {
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <BarChart2 className="w-6 h-6 text-purple-600" />
+            <div className={`p-2 ${roleColors.bg} rounded-lg`}>
+              <BarChart2 className={`w-6 h-6 ${roleColors.text}`} />
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Báo cáo</h1>
           </div>
@@ -255,14 +273,14 @@ const Reports = () => {
                 type="date"
                 value={dateRange.from}
                 onChange={(e) => setDateRange({ ...dateRange, from: e.target.value })}
-                className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                className={`px-3 py-2 border rounded-lg text-sm focus:ring-2 ${roleColors.ring}`}
               />
               <span className="text-gray-400">-</span>
               <input
                 type="date"
                 value={dateRange.to}
                 onChange={(e) => setDateRange({ ...dateRange, to: e.target.value })}
-                className="px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                className={`px-3 py-2 border rounded-lg text-sm focus:ring-2 ${roleColors.ring}`}
               />
             </div>
             <div className="relative flex-1 max-w-xs">
@@ -290,9 +308,8 @@ const Reports = () => {
               return (
                 <div
                   key={report.id}
-                  className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-all duration-200 ${
-                    isSelected ? 'ring-2 ring-purple-500' : 'hover:shadow-md'
-                  }`}
+                  className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-all duration-200 ${isSelected ? 'ring-2 ring-purple-500' : 'hover:shadow-md'
+                    }`}
                 >
                   {/* Report Header */}
                   <div
