@@ -2,6 +2,7 @@ import cv2
 import os
 import sys
 import time
+from s3_helper import upload_face_image_to_s3, S3_TRAIN_IMAGES_PREFIX
 
 
 def setup_paths():
@@ -27,11 +28,39 @@ def setup_paths():
 
 
 def initialize_camera():
-    """Initialize webcam"""
-    cam = cv2.VideoCapture(0)
-    cam.set(3, 640)  # Width
-    cam.set(4, 480)  # Height
-    return cam
+    """
+    Initialize webcam
+    Thử nhiều backend và index để tìm camera
+    """
+    import os
+    # Suppress OpenCV warnings
+    os.environ['OPENCV_LOG_LEVEL'] = 'SILENT'
+    cv2.setLogLevel(0)
+    
+    # Thử các backend theo thứ tự ưu tiên
+    backends = [
+        (cv2.CAP_MSMF, "MSMF"),
+        (cv2.CAP_ANY, "Default"),
+        (cv2.CAP_DSHOW, "DirectShow"),
+    ]
+    
+    for backend, name in backends:
+        for index in range(3):  # Thử index 0, 1, 2
+            try:
+                cam = cv2.VideoCapture(index, backend)
+                if cam.isOpened():
+                    # Test đọc frame
+                    ret, frame = cam.read()
+                    if ret and frame is not None and frame.size > 0:
+                        cam.set(3, 640)  # Width
+                        cam.set(4, 480)  # Height
+                        return cam
+                    cam.release()
+            except Exception:
+                pass
+    
+    # Nếu không tìm thấy, trả về camera index 0 (sẽ báo lỗi sau)
+    return cv2.VideoCapture(0)
 
 
 def detect_faces(image, face_detector):
@@ -47,12 +76,20 @@ def detect_faces(image, face_detector):
     return gray, faces
 
 
-def save_face_image(gray, x, y, w, h, user_path, user_id, count):
-    """Save cropped face image"""
+def save_face_image_to_s3(gray, x, y, w, h, user_id, count):
+    """
+    Save cropped face image directly to AWS S3 (không lưu local)
+    Upload tự động khi chụp ảnh
+    """
     face_roi = gray[y:y+h, x:x+w]
-    file_path = os.path.join(user_path, f"User.{user_id}.{count}.jpg")
-    cv2.imwrite(file_path, face_roi)
-    return file_path
+    
+    # Upload trực tiếp lên S3
+    success = upload_face_image_to_s3(face_roi, user_id, count)
+    
+    if success:
+        s3_key = f"{S3_TRAIN_IMAGES_PREFIX}{user_id}/User.{user_id}.{count}.jpg"
+        return s3_key
+    return None
 
 
 def create_user_info(user_path, user_id, user_name, count):
@@ -68,6 +105,7 @@ def take_photos(user_id, user_name=None):
     """
     Automatically capture 50 photos of a user's face
     without needing to press any key.
+    Upload ảnh trực tiếp lên AWS S3 (không lưu local)
     """
     paths = setup_paths()
     face_detector = cv2.CascadeClassifier(paths["cascade_path"])
@@ -76,8 +114,8 @@ def take_photos(user_id, user_name=None):
         print("[ERROR] Failed to load face detector.")
         return False
 
-    user_path = os.path.join(paths["dataset_path"], str(user_id))
-    os.makedirs(user_path, exist_ok=True)
+    # Không tạo folder local nữa, upload trực tiếp lên S3
+    print(f"[INFO] Images will be uploaded to AWS S3: {S3_TRAIN_IMAGES_PREFIX}{user_id}/")
 
     cam = initialize_camera()
     print("=" * 50)
@@ -115,9 +153,13 @@ def take_photos(user_id, user_name=None):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
                 if face_quality == "Good":
-                    save_face_image(gray, x, y, w, h, user_path, user_id, count)
-                    count += 1
-                    print(f"[INFO] Saved image {count}/{max_photos}")
+                    # Upload trực tiếp lên S3 (không lưu local)
+                    s3_key = save_face_image_to_s3(gray, x, y, w, h, user_id, count)
+                    if s3_key:
+                        count += 1
+                        print(f"[INFO] Uploaded to S3: {s3_key} ({count}/{max_photos})")
+                    else:
+                        print(f"[ERROR] Failed to upload image {count} to S3")
                     time.sleep(delay)
                     break  # Capture one face per frame
 
@@ -136,8 +178,11 @@ def take_photos(user_id, user_name=None):
     finally:
         cam.release()
         cv2.destroyAllWindows()
-        create_user_info(user_path, user_id, user_name, count)
-        print(f"[INFO] Total images captured: {count}")
+        # Không tạo info.txt local nữa, có thể lưu metadata lên S3 nếu cần
+        print(f"[INFO] Total images uploaded to AWS S3: {count}")
+        if count > 0:
+            print(f"[INFO] All images saved to: {S3_TRAIN_IMAGES_PREFIX}{user_id}/")
+            print(f"[INFO] View in AWS S3: {S3_TRAIN_IMAGES_PREFIX}{user_id}/")
         return count > 0
 
 

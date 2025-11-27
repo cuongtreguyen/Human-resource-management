@@ -7,6 +7,20 @@ import json
 import requests
 from datetime import datetime
 from collections import Counter
+import io
+from s3_helper import (
+    download_bytes_from_s3,
+    upload_image_to_s3,
+    S3_MODELS_PREFIX,
+    S3_RECOGNITION_IMAGES_PREFIX
+)
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+# Java API URL
+JAVA_API_URL = os.getenv('JAVA_API_URL', 'http://localhost:8085')
 
 def setup_paths():
     """
@@ -28,6 +42,36 @@ def setup_paths():
 
     return paths
 
+# Global model cache (RAM cache)
+_model_cache = None
+
+def load_model_from_s3():
+    """
+    Load model từ S3 vào RAM cache (chỉ load 1 lần)
+    
+    Returns:
+        bytes: Model bytes, or None if error
+    """
+    global _model_cache
+    
+    # Nếu đã cache trong RAM, return luôn
+    if _model_cache is not None:
+        print("[INFO] Using cached model from RAM")
+        return _model_cache
+    
+    # Load từ S3
+    s3_model_key = f"{S3_MODELS_PREFIX}trainer.yml"
+    print(f"[INFO] Loading model from AWS S3: {s3_model_key}")
+    
+    model_bytes = download_bytes_from_s3(s3_model_key)
+    if model_bytes:
+        _model_cache = model_bytes
+        print(f"[INFO] Model loaded from S3 and cached in RAM ({len(model_bytes)} bytes)")
+        return model_bytes
+    else:
+        print(f"[ERROR] Failed to load model from S3")
+        return None
+
 def check_files(paths):
     """
     Checks if necessary files exist and downloads them if needed.
@@ -38,9 +82,19 @@ def check_files(paths):
     Returns:
         bool: True if all files are ready, False if there's a problem
     """
-    if not os.path.exists(paths["model_path"]):
-        print("Error: Model file not found. Please train the model first.")
+    # Check model từ S3
+    model_bytes = load_model_from_s3()
+    if model_bytes is None:
+        print("Error: Model file not found in S3. Please train the model first.")
         return False
+    
+    # Save model tạm thời vào local để recognizer.read() có thể đọc
+    # (OpenCV LBPHFaceRecognizer cần file path, không thể load từ bytes trực tiếp)
+    os.makedirs(paths["trainer_path"], exist_ok=True)
+    temp_model_path = paths["model_path"]
+    with open(temp_model_path, 'wb') as f:
+        f.write(model_bytes)
+    print(f"[INFO] Model saved temporarily to: {temp_model_path}")
 
     if not os.path.exists(paths["cascade_path"]):
         print(f"Error: Face detection file not found. Downloading it now...")
@@ -53,8 +107,9 @@ def check_files(paths):
 
 def load_user_names(dataset_path):
     """
-    Loads the names of all users from their info files.
-
+    Loads the names of all users from their info files (local dataset).
+    Nếu không có local dataset, return empty dict (sẽ dùng "User {id}" làm fallback).
+    
     Args:
         dataset_path (str): Path to the datasets folder
 
@@ -62,18 +117,42 @@ def load_user_names(dataset_path):
         dict: Dictionary mapping user IDs to their names
     """
     user_names = {}
-
-    for user_id in os.listdir(dataset_path):
-        user_path = os.path.join(dataset_path, user_id)
-        if os.path.isdir(user_path):
-            info_path = os.path.join(user_path, "info.txt")
-            if os.path.exists(info_path):
-                with open(info_path, 'r') as info_file:
-                    for line in info_file:
-                        if line.startswith("Name:"):
-                            user_names[int(user_id)] = line.replace("Name:", "").strip()
-                            break
-
+    
+    # Kiểm tra xem có local dataset không
+    if not os.path.exists(dataset_path):
+        print(f"[INFO] No local dataset found at {dataset_path}. Using default names (User {{id}}).")
+        return user_names
+    
+    try:
+        for user_id_str in os.listdir(dataset_path):
+            user_path = os.path.join(dataset_path, user_id_str)
+            if os.path.isdir(user_path):
+                # Chỉ xử lý nếu user_id là số
+                try:
+                    user_id = int(user_id_str)
+                except ValueError:
+                    # Bỏ qua folder không phải số (như "Hoang Van E")
+                    continue
+                
+                info_path = os.path.join(user_path, "info.txt")
+                if os.path.exists(info_path):
+                    try:
+                        with open(info_path, 'r', encoding='utf-8') as info_file:
+                            for line in info_file:
+                                if line.startswith("Name:"):
+                                    user_names[user_id] = line.replace("Name:", "").strip()
+                                    break
+                    except Exception as e:
+                        print(f"[WARN] Error reading info.txt for user {user_id}: {e}")
+                        continue
+    except Exception as e:
+        print(f"[WARN] Error loading user names from local dataset: {e}")
+    
+    if len(user_names) > 0:
+        print(f"[INFO] Loaded {len(user_names)} user names from local dataset")
+    else:
+        print(f"[INFO] No user names found in local dataset. Will use 'User {{id}}' as default.")
+    
     return user_names
 
 def setup_attendance(paths):
@@ -243,7 +322,7 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
             print(f"[ATTENDANCE] Sending to Java API: {recognition_data}")
 
             resp = requests.post(
-                "http://localhost:8080/api/attendance/face-recognition/recognition-success",
+                f"{JAVA_API_URL}/api/attendance/face-recognition/recognition-success",
                 json=recognition_data,
                 timeout=8
             )
@@ -274,11 +353,12 @@ def recognize_faces():
         recognition_type = sys.argv[1]
     paths = setup_paths()
 
+    # Load model từ S3 (vào RAM cache, sau đó save tạm local để recognizer đọc)
     if not check_files(paths):
         return False
-
+    
     recognizer = cv2.face.LBPHFaceRecognizer_create()
-    recognizer.read(paths["model_path"])
+    recognizer.read(paths["model_path"])  # Đọc từ file tạm (đã load từ S3)
 
     cam = cv2.VideoCapture(0)
     cam.set(3, 640)
@@ -364,7 +444,7 @@ def recognize_faces():
                 face_key = f"{x}_{y}_{w}_{h}"
                 id, confidence, confidence_text = recognize_face(recognizer, face_roi, recent_predictions, face_key, prediction_window)
 
-                min_confidence_percent = 40
+                min_confidence_percent = 20  # 20% là thành công
 
                 if id is not None and confidence is not None:
                     confidence_value = max(0, min(100, 100 - confidence))
@@ -391,6 +471,22 @@ def recognize_faces():
 
                 # Chỉ ghi nhận khi đủ số frame liên tiếp
                 if stable_count >= stable_required and last_id is not None:
+                    # Upload ảnh nhận diện lên S3
+                    try:
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        date_folder = datetime.now().strftime("%Y-%m-%d")
+                        s3_recognition_key = f"{S3_RECOGNITION_IMAGES_PREFIX}{date_folder}/recognition_{last_id}_{timestamp}.jpg"
+                        
+                        # Crop ảnh khuôn mặt
+                        face_img = img[y:y+h, x:x+w]
+                        
+                        if upload_image_to_s3(face_img, s3_recognition_key):
+                            print(f"[INFO] Recognition image uploaded to S3: {s3_recognition_key}")
+                        else:
+                            print(f"[WARN] Failed to upload recognition image to S3")
+                    except Exception as e:
+                        print(f"[WARN] Error uploading recognition image: {e}")
+                    
                     recognized_users, current_api_success, current_name = update_attendance(
                         last_id, name, attendance_data, attendance_file,
                         recognized_users, confidence_text, recognition_type

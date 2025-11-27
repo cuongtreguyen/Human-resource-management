@@ -10,6 +10,50 @@ import json
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
+
+
+# Load environment variables
+try:
+    from dotenv import load_dotenv
+    import os
+    # Chỉ load .env nếu file tồn tại và có thể đọc được
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    if os.path.exists(env_path):
+        try:
+            # Thử đọc với UTF-8 trước
+            load_dotenv(env_path, encoding='utf-8')
+        except (UnicodeDecodeError, UnicodeError) as e:
+            # Nếu lỗi encoding, thử đọc lại file với encoding khác và convert
+            try:
+                with open(env_path, 'rb') as f:
+                    content = f.read()
+                    # Detect encoding
+                    if content.startswith(b'\xff\xfe'):  # UTF-16 LE BOM
+                        content = content[2:].decode('utf-16-le').encode('utf-8')
+                    elif content.startswith(b'\xfe\xff'):  # UTF-16 BE BOM
+                        content = content[2:].decode('utf-16-be').encode('utf-8')
+                    else:
+                        content = content.decode('utf-8', errors='ignore').encode('utf-8')
+                    
+                    # Write lại với UTF-8
+                    with open(env_path, 'wb') as f:
+                        f.write(content)
+                    # Load lại
+                    load_dotenv(env_path, encoding='utf-8')
+            except Exception:
+                # Nếu vẫn lỗi, bỏ qua file .env
+                pass
+        except Exception:
+            # Bỏ qua nếu có lỗi khác
+            pass
+    else:
+        # Nếu không có file .env, vẫn load để tìm trong các vị trí khác
+        load_dotenv(override=False)
+except ImportError:
+    pass  # python-dotenv không bắt buộc
+except Exception:
+    pass  # Bỏ qua nếu có lỗi bất kỳ
+
 # optional: logger + resume parser (đang có trong dự án của bạn)
 try:
     from logger_config import setup_logger
@@ -21,6 +65,9 @@ except Exception:
         def error(self,*a,**k): pass
     logger = _Dummy()
     ResumeParser = None
+
+# ---------------- Java API Configuration ---------------- 
+JAVA_API_URL = os.getenv('JAVA_API_URL', 'http://localhost:8085')
 
 # ---------------- Paths / Helpers ----------------
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
@@ -49,6 +96,43 @@ def _load_json(path, default):
 def _save_json(path, data):
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
+
+# ---------------- Java API Helper ---------------- 
+def _call_java_api(endpoint, method='POST', data=None):
+    """
+    Helper function để gọi Java API
+    Args:
+        endpoint: API endpoint (ví dụ: '/api/face-recognition/recognition-success')
+        method: HTTP method ('GET', 'POST', 'PUT', 'DELETE')
+        data: Data để gửi (dict)
+    Returns:
+        Response từ Java API hoặc None nếu lỗi
+    """
+    try:
+        import requests
+        url = f"{JAVA_API_URL}{endpoint}"
+        headers = {'Content-Type': 'application/json'}
+        
+        if method == 'GET':
+            response = requests.get(url, headers=headers, timeout=5)
+        elif method == 'POST':
+            response = requests.post(url, json=data, headers=headers, timeout=5)
+        elif method == 'PUT':
+            response = requests.put(url, json=data, headers=headers, timeout=5)
+        elif method == 'DELETE':
+            response = requests.delete(url, headers=headers, timeout=5)
+        else:
+            logger.error(f"Unsupported HTTP method: {method}")
+            return None
+        
+        if response.status_code in [200, 201]:
+            return response.json()
+        else:
+            logger.warning(f"Java API call failed: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        logger.error(f"Error calling Java API {endpoint}: {e}")
+        return None
 
 # ---------------- Flask app ----------------
 os.environ['PYTHONUNBUFFERED'] = '1'
@@ -359,6 +443,7 @@ def recognition_success():
     """
     Nhận notify khi nhận diện thành công. Ở đây chỉ lưu 1 log nhẹ (không ghi chấm công
     vì file attendance đã được face_recognition.py ghi).
+    Có thể forward sang Java API nếu cần.
     """
     try:
         payload = request.get_json(force=True) or {}
@@ -367,6 +452,10 @@ def recognition_success():
         logs = _load_json(logs_file, [])
         logs.append({"received_at": datetime.now().isoformat(timespec='seconds'), **payload})
         _save_json(logs_file, logs)
+        
+        # Optional: Forward sang Java API
+        _call_java_api('/api/face-recognition/recognition-success', 'POST', payload)
+        
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

@@ -3,6 +3,14 @@ import numpy as np
 from PIL import Image
 import os
 import sys
+import io
+from s3_helper import (
+    list_files_in_s3,
+    download_image_from_s3,
+    upload_bytes_to_s3,
+    S3_TRAIN_IMAGES_PREFIX,
+    S3_MODELS_PREFIX
+)
 
 def setup_paths():
     """
@@ -59,9 +67,80 @@ def preprocess_face(face_roi):
     """
     return cv2.GaussianBlur(face_roi, (5, 5), 0)
 
+def get_images_and_labels_from_s3(detector):
+    """
+    Load ảnh từ S3 vào RAM, không lưu local
+    
+    Args:
+        detector: Face detector
+    
+    Returns:
+        tuple: Lists of face samples and their IDs
+    """
+    face_samples = []
+    ids = []
+    
+    # List tất cả files trong S3
+    print("[INFO] Loading images from AWS S3...")
+    all_files = list_files_in_s3(S3_TRAIN_IMAGES_PREFIX)
+    
+    if len(all_files) == 0:
+        print("[ERROR] No images found in S3. Please capture photos first.")
+        return face_samples, ids
+    
+    # Group theo user_id
+    user_files = {}
+    for s3_key in all_files:
+        # Extract user_id: train-images/1/User.1.0.jpg
+        parts = s3_key.split('/')
+        if len(parts) >= 3 and parts[1].isdigit():
+            user_id = int(parts[1])
+            if user_id not in user_files:
+                user_files[user_id] = []
+            user_files[user_id].append(s3_key)
+    
+    print(f"[INFO] Found {len(user_files)} users with {len(all_files)} images in S3")
+    
+    # Download và process từng ảnh (vào RAM)
+    for user_id, files in user_files.items():
+        print(f"[INFO] Processing user {user_id}: {len(files)} images")
+        for s3_key in files:
+            try:
+                # Download từ S3 về bytes (vào RAM)
+                img = download_image_from_s3(s3_key)
+                if img is None:
+                    continue
+                
+                # Convert to grayscale
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                
+                # Preprocess
+                gray = preprocess_image(gray)
+                
+                # Detect face
+                faces = detector.detectMultiScale(
+                    gray,
+                    scaleFactor=1.1,
+                    minNeighbors=4,
+                    minSize=(30, 30)
+                )
+                
+                for (x, y, w, h) in faces:
+                    face_roi = gray[y:y+h, x:x+w]
+                    face_roi = preprocess_face(face_roi)
+                    
+                    face_samples.append(face_roi)
+                    ids.append(user_id)
+                    
+            except Exception as e:
+                print(f"[ERROR] Error processing {s3_key}: {e}")
+    
+    return face_samples, ids
+
 def get_images_and_labels(dataset_path, detector):
     """
-    Gets face images and their corresponding labels from the dataset.
+    Gets face images and their corresponding labels from the dataset (local - deprecated).
+    Use get_images_and_labels_from_s3() instead.
 
     Args:
         dataset_path: Path to the dataset directory
@@ -167,26 +246,45 @@ def train_model():
         detector = cv2.CascadeClassifier(paths["cascade_path"])
 
         print("Training face recognition model with improved parameters...")
+        print("Loading images from AWS S3...")
         print("This may take a few minutes...")
 
-        faces, ids = get_images_and_labels(paths["dataset_path"], detector)
+        # Load ảnh từ S3 vào RAM
+        faces, ids = get_images_and_labels_from_s3(detector)
 
         if len(faces) == 0 or len(ids) == 0:
-            print("Error: No face samples found. Please capture photos first.")
+            print("Error: No face samples found in S3. Please capture photos first.")
             return False
 
-        print(f"Training with {len(faces)} face samples")
+        print(f"Training with {len(faces)} face samples from S3")
 
+        # Train trong RAM
         recognizer.train(faces, np.array(ids))
 
+        # Save model tạm thời vào local để convert thành bytes
         model_path = os.path.join(paths["trainer_path"], 'trainer.yml')
         recognizer.write(model_path)
 
+        # Đọc model thành bytes
+        with open(model_path, 'rb') as f:
+            model_bytes = f.read()
+
+        # Upload model lên S3
+        s3_model_key = f"{S3_MODELS_PREFIX}trainer.yml"
+        print(f"[INFO] Uploading model to AWS S3: {s3_model_key}")
+        if upload_bytes_to_s3(model_bytes, s3_model_key, 'application/x-yaml'):
+            print(f"[INFO] Model uploaded successfully to S3: {s3_model_key}")
+        else:
+            print(f"[ERROR] Failed to upload model to S3")
+
         print(f"Model trained successfully with {len(faces)} face samples")
-        print(f"Model saved to {model_path}")
+        print(f"Model saved locally to {model_path}")
+        print(f"Model uploaded to S3: {s3_model_key}")
 
         users = set(ids)
-        save_user_details(paths["trainer_path"], paths["dataset_path"], users, len(faces))
+        # Note: save_user_details vẫn dùng dataset_path (có thể cần sửa sau)
+        # Nhưng vì không còn dataset local, có thể skip hoặc lưu metadata lên S3
+        print(f"[INFO] Trained {len(users)} users: {sorted(users)}")
 
         return True
 

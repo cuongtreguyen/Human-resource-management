@@ -2,7 +2,7 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-# Cài đặt thư viện hệ thống cần cho OpenCV & các dependency
+# Cài thư viện hệ thống cần cho OpenCV
 RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     libsm6 \
@@ -26,8 +26,13 @@ RUN apt-get update && apt-get install -y \
 # Copy file requirements
 COPY requirements.txt .
 
-# Cài Python dependencies
+# Cập nhật pip và cài dependencies
+RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir gevent
+
+# Cài Gunicorn
+RUN pip install --no-cache-dir gunicorn
 
 # Copy toàn bộ source code vào container
 COPY . .
@@ -38,5 +43,6 @@ RUN mkdir -p attendance datasets uploads trainer faces logs
 # Expose cổng Flask
 EXPOSE 5000
 
-# Lệnh chạy ứng dụng Flask
-CMD ["python", "app.py"]
+# Lệnh chạy ứng dụng Flask bằng Gunicorn (4 worker)
+CMD ["gunicorn", "-w", "4", "-k", "gevent", "-b", "0.0.0.0:5000", "--timeout", "300", "app:app"]
+
