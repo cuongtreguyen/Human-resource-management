@@ -26,3 +26,18 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Database
+*.sql.bak
+*.dump
+*.backup
+
+# Backend specific
+backend/venv/
+backend/__pycache__/
+backend/*.pyc
