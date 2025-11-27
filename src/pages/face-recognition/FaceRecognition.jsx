@@ -1,349 +1,287 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../../components/layout/Layout';
-import { Calendar, Clock, LogIn, LogOut, User } from 'lucide-react';
+import {
+  Camera,
+  User,
+  Eye,
+  CheckCircle,
+  Clock,
+  Video,
+  AlertCircle,
+  Info,
+  Square as StopIcon,
+} from 'lucide-react';
 import faceRecognitionApi from '../../services/faceRecognitionApi';
-import { getUserInfo } from '../../utils/auth';
-
-const STATUS_CONFIG = {
-  present: { label: 'Có mặt', className: 'bg-green-100 text-green-700' },
-  late: { label: 'Đi muộn', className: 'bg-yellow-100 text-yellow-700' },
-  overtime: { label: 'Tăng ca', className: 'bg-purple-100 text-purple-700' },
-  pending: { label: 'Đang ghi nhận', className: 'bg-blue-100 text-blue-700' },
-  absent: { label: 'Vắng', className: 'bg-red-100 text-red-700' }
-};
-
-const parseTimeToMinutes = (time) => {
-  if (!time || time === '-') return null;
-  const parts = time.split(':').map(Number);
-  if (parts.length < 2 || Number.isNaN(parts[0]) || Number.isNaN(parts[1])) return null;
-  const [h, m, s = 0] = parts;
-  return h * 60 + m + (Number.isNaN(s) ? 0 : s / 60);
-};
-
-const calculateHours = (checkIn, checkOut) => {
-  const inMinutes = parseTimeToMinutes(checkIn);
-  const outMinutes = parseTimeToMinutes(checkOut);
-  if (inMinutes == null || outMinutes == null) return 0;
-  const diff = outMinutes - inMinutes;
-  return diff > 0 ? Number((diff / 60).toFixed(1)) : 0;
-};
-
-const deriveStatus = (checkIn, checkOut, hours) => {
-  if (!checkIn && !checkOut) return 'absent';
-  if (checkIn && !checkOut) return 'pending';
-  if (hours >= 10) return 'overtime';
-  const inMinutes = parseTimeToMinutes(checkIn);
-  if (inMinutes != null && inMinutes > 9 * 60) return 'late';
-  return 'present';
-};
-
-const transformBackendRecords = (items = []) =>
-  items
-    .map((item, index) => {
-      const checkIn = item.check_in || '-';
-      const checkOut = item.check_out || '-';
-      const hoursWorked = calculateHours(checkIn, checkOut);
-      const status = deriveStatus(checkIn !== '-' ? checkIn : null, checkOut !== '-' ? checkOut : null, hoursWorked);
-
-      return {
-        id: `${item.id}-${item.date}-${index}`,
-        date: item.date,
-        checkIn,
-        checkOut,
-        status,
-        hoursWorked,
-        hoursLabel: `${hoursWorked.toFixed(1)}h`
-      };
-    })
-    .sort((a, b) => {
-      const aTime = `${a.date}T${a.checkOut !== '-' ? a.checkOut : a.checkIn !== '-' ? a.checkIn : '00:00:00'}`;
-      const bTime = `${b.date}T${b.checkOut !== '-' ? b.checkOut : b.checkIn !== '-' ? b.checkIn : '00:00:00'}`;
-      return new Date(bTime).getTime() - new Date(aTime).getTime();
-    })
-    .slice(0, 20);
 
 const FaceRecognition = () => {
-  const userInfo = getUserInfo();
-  const employeeId = userInfo?.employeeId || '1';
-  const employeeName = userInfo?.name || 'Quản lý';
+  const [activeTab, setActiveTab] = useState('register');
+  const [systemStatus, setSystemStatus] = useState('idle');
+  const [systemMessage, setSystemMessage] = useState('System is idle');
+  const [userId, setUserId] = useState('');
+  const [userName, setUserName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [attendanceResult, setAttendanceResult] = useState(null);
 
-  const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [isRecognizing, setIsRecognizing] = useState(false);
-  const [recognitionInfo, setRecognitionInfo] = useState({ status: null, message: '' });
-  const recognitionTimerRef = useRef(null);
-
-  const refreshAttendance = useCallback(
-    async (showLoader = true) => {
-      if (showLoader) setLoading(true);
-      try {
-        const data = await faceRecognitionApi.getEmployeeAttendance(employeeId);
-        const transformed = transformBackendRecords(Array.isArray(data) ? data : []);
-        setRecords(transformed);
-        return transformed;
-      } catch (error) {
-        console.error('getEmployeeAttendance failed:', error);
-        setRecords([]);
-        return [];
-      } finally {
-        if (showLoader) setLoading(false);
-      }
-    },
-    [employeeId]
-  );
-
+  // 🕒 Check backend system status every 2s
   useEffect(() => {
-    refreshAttendance();
-    return () => {
-      if (recognitionTimerRef.current) {
-        clearTimeout(recognitionTimerRef.current);
+    const checkStatus = async () => {
+      try {
+        const data = await faceRecognitionApi.checkSystemStatus();
+        setSystemStatus(data.status || 'idle');
+        setSystemMessage(data.message || 'System is idle');
+      } catch {
+        setSystemStatus('error');
+        setSystemMessage('Cannot connect to recognition system');
       }
     };
-  }, [refreshAttendance]);
+    checkStatus();
+    const interval = setInterval(checkStatus, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const totalHours = useMemo(
-    () => records.reduce((sum, r) => sum + (Number.isFinite(r.hoursWorked) ? r.hoursWorked : 0), 0),
-    [records]
-  );
-
-  const presentDays = useMemo(
-    () => records.filter(r => r.status === 'present' || r.status === 'overtime').length,
-    [records]
-  );
-
-  const handleRecognition = useCallback(
-    async (type) => {
-      if (!employeeId) {
-        setRecognitionInfo({
-          status: 'error',
-          message: 'Không xác định được mã nhân viên. Vui lòng đăng nhập lại.'
-        });
-        return;
-      }
-
-      const previousFirst = records[0];
-
-      setIsRecognizing(true);
-      setRecognitionInfo({
-        status: 'running',
-        message:
-          type === 'clockout'
-            ? 'Đang nhận diện để ghi nhận giờ ra về...'
-            : 'Đang nhận diện để ghi nhận giờ vào làm...'
-      });
-
-      try {
-        const response = await faceRecognitionApi.startRecognition(type);
-
-        if (response.status !== 'success') {
-          setRecognitionInfo({
-            status: 'error',
-            message: response.message || 'Không thể khởi động nhận diện. Vui lòng thử lại.'
-          });
-          return;
-        }
-
-        setRecognitionInfo({
-          status: 'running',
-          message: 'Hệ thống đang xử lý dữ liệu nhận diện. Vui lòng giữ nguyên trong vài giây...'
-        });
-
-        recognitionTimerRef.current = setTimeout(async () => {
-          const updated = await refreshAttendance(false);
-          const latest = updated && updated[0];
-
-          if (latest) {
-            let action = type === 'clockout' ? 'Check-out' : 'Check-in';
-            let time = action === 'Check-out' ? latest.checkOut : latest.checkIn;
-
-            if (previousFirst) {
-              if (latest.checkOut !== previousFirst.checkOut && latest.checkOut && latest.checkOut !== '-') {
-                action = 'Check-out';
-                time = latest.checkOut;
-              } else if (latest.checkIn !== previousFirst.checkIn && latest.checkIn && latest.checkIn !== '-') {
-                action = 'Check-in';
-                time = latest.checkIn;
-              }
-            } else {
-              if (latest.checkOut && latest.checkOut !== '-') {
-                action = 'Check-out';
-                time = latest.checkOut;
-              } else {
-                action = 'Check-in';
-                time = latest.checkIn;
-              }
-            }
-
-            setRecognitionInfo({
-              status: 'success',
-              message: `${action} được ghi nhận lúc ${time || '---'} ngày ${latest.date}.`
-            });
-          } else {
-            setRecognitionInfo({
-              status: 'success',
-              message: 'Đã cập nhật bảng chấm công của bạn.'
-            });
-          }
-        }, 6000);
-      } catch (error) {
-        console.error('startRecognition failed:', error);
-        setRecognitionInfo({
-          status: 'error',
-          message: 'Không thể kết nối tới hệ thống nhận diện. Vui lòng kiểm tra lại và thử lại sau.'
-        });
-      } finally {
-        setIsRecognizing(false);
-      }
-    },
-    [employeeId, records, refreshAttendance]
-  );
-
-  const statusBadgeFor = (status) => {
-    const config = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
-    return (
-      <span className={`px-3 py-1 text-xs font-medium rounded-full ${config.className}`}>
-        {config.label}
-      </span>
-    );
+  const updateStatus = (status, message) => {
+    setSystemStatus(status);
+    setSystemMessage(message);
   };
+
+  const handleTakePhotos = async () => {
+    if (!userId) {
+      alert('Please enter a User ID');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const data = await faceRecognitionApi.takePhotos(userId, userName);
+      updateStatus(data.status, data.message);
+    } catch {
+      updateStatus('error', 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  const handleStartRecognition = async (type) => {
+    setIsLoading(true);
+    setAttendanceResult(null);
+    try {
+      const data = await faceRecognitionApi.startRecognition(type);
+      updateStatus(data.status, data.message);
+      alert(data.message);
+      setAttendanceResult(data);
+    } catch {
+      updateStatus('error', 'An error occurred');
+      alert('❌ Có lỗi xảy ra. Vui lòng thử lại.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStopProcess = async () => {
+    setIsLoading(true);
+    try {
+      const data = await faceRecognitionApi.stopProcess();
+      updateStatus(data.status, data.message);
+    } catch {
+      updateStatus('error', 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getStatusColor = () => ({
+    running: 'bg-yellow-400',
+    success: 'bg-green-400',
+    error: 'bg-red-400',
+    idle: 'bg-gray-300',
+  }[systemStatus] || 'bg-gray-300');
+
+  const getStatusBgColor = () => ({
+    running: 'bg-yellow-50',
+    success: 'bg-green-50',
+    error: 'bg-red-50',
+    idle: 'bg-gray-50',
+  }[systemStatus] || 'bg-gray-50');
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="p-6 space-y-6">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-2xl shadow-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold mb-2">Chấm công</h1>
-              <p className="text-purple-100">Theo dõi lịch sử điểm danh, đi muộn, nghỉ phép</p>
-              <p className="text-purple-200 text-sm mt-1">Người dùng: {employeeName}</p>
-            </div>
-          </div>
+        <div className="bg-gradient-to-r from-purple-600 to-blue-600 p-6 rounded-lg shadow-lg text-white">
+          <h1 className="text-2xl font-bold">Face Recognition System</h1>
+          <p className="text-purple-100">Automatic photo capture & attendance</p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-green-100 rounded-lg">
-                <Calendar className="text-green-600" size={24} />
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar */}
+          <div className="w-full lg:w-80 flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-blue-50 text-center">
+              <div className="w-32 h-32 mx-auto bg-gradient-to-r from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                <Camera className="h-16 w-16 text-purple-500" />
               </div>
+              <h2 className="mt-4 text-xl font-semibold text-gray-800">Face Recognition</h2>
+              <p className="text-sm text-purple-600 font-medium">Attendance System</p>
+            </div>
+
+            <div className="p-4 space-y-4">
               <div>
-                <p className="text-sm text-gray-500">Ngày làm việc</p>
-                <p className="text-2xl font-bold text-gray-900">{presentDays}</p>
+                <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wider">System Status</h3>
+                <div className={`mt-2 p-3 rounded-md ${getStatusBgColor()}`}>
+                  <div className="flex items-center">
+                    <div className={`h-3 w-3 rounded-full ${getStatusColor()} mr-2`} />
+                    <p className="text-sm text-gray-600">{systemMessage}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4">
+                <h3 className="text-sm font-medium text-gray-700 uppercase tracking-wider">Instructions</h3>
+                <ul className="mt-2 space-y-2 text-sm text-gray-600">
+                  <li>① Enter your ID and name to register.</li>
+                  <li>② The system will automatically capture <strong>50 photos</strong> when your face is visible.</li>
+                  <li>③ Move your face slightly for multiple angles.</li>
+                  <li>④ After capturing, the system is ready for recognition.</li>
+                </ul>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-100 rounded-lg">
-                <Clock className="text-blue-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Tổng giờ làm</p>
-                <p className="text-2xl font-bold text-gray-900">{totalHours.toFixed(1)}h</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3">
-              <div className="p-3 bg-purple-100 rounded-lg">
-                <User className="text-purple-600" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Bản ghi</p>
-                <p className="text-2xl font-bold text-gray-900">{records.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Attendance Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-gray-200 flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-gray-50">
-            <div>
-              <div className="font-semibold text-gray-700">Lịch sử gần đây</div>
-              <div className="text-sm text-gray-500">Hiển thị {records.length} mục</div>
-            </div>
-
-            <div className="flex flex-col gap-2 md:flex-row md:items-center">
-              {recognitionInfo.status && (
-                <div
-                  className={`px-3 py-2 text-sm rounded-lg ${
-                    recognitionInfo.status === 'success'
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : recognitionInfo.status === 'running'
-                      ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
+          {/* Main Panel */}
+          <div className="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col">
+            <nav className="flex border-b border-gray-200 bg-gray-50">
+              {[
+                ['register', 'Register User'],
+                ['recognize', 'Recognize'],
+              ].map(([tab, label]) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-3 text-sm font-medium transition-colors ${
+                    activeTab === tab
+                      ? 'border-b-2 border-purple-500 text-purple-600'
+                      : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  {recognitionInfo.message}
+                  {label}
+                </button>
+              ))}
+            </nav>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {/* Register */}
+              {activeTab === 'register' && (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-gray-800">Register New User</h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">User ID</label>
+                      <input
+                        value={userId}
+                        onChange={(e) => setUserId(e.target.value)}
+                        placeholder="e.g., 101"
+                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                      <input
+                        value={userName}
+                        onChange={(e) => setUserName(e.target.value)}
+                        placeholder="Enter your name"
+                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-purple-50 rounded-md p-4 text-sm text-purple-700 flex">
+                    <Info className="h-5 w-5 text-purple-400 mr-2" />
+                    <p>
+                      The system will <strong>automatically capture 50 photos</strong> when your face is detected.  
+                      Move your face slightly in different directions for better recognition accuracy.
+                    </p>
+                  </div>
+
+                  <div className="camera-container bg-gray-100 rounded-md p-4 text-center">
+                    <Camera className="h-16 w-16 mx-auto text-gray-400 mb-2" />
+                    <p className="text-gray-600">Camera will appear when backend starts auto capture.</p>
+                  </div>
+
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={handleTakePhotos}
+                      disabled={isLoading}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm disabled:opacity-50"
+                    >
+                      <Video className="w-4 h-4" />
+                      Start Auto Capture
+                    </button>
+                    <button
+                      onClick={handleStopProcess}
+                      disabled={isLoading}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center gap-2 text-sm disabled:opacity-50"
+                    >
+                      <StopIcon className="w-4 h-4" />
+                      Stop Process
+                    </button>
+                  </div>
                 </div>
               )}
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleRecognition('clockin')}
-                  disabled={isRecognizing}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all duration-200 disabled:opacity-60"
-                >
-                  <LogIn size={18} />
-                  {isRecognizing ? 'Đang xử lý...' : 'Check-in bằng khuôn mặt'}
-                </button>
-                <button
-                  onClick={() => handleRecognition('clockout')}
-                  disabled={isRecognizing}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 disabled:opacity-60"
-                >
-                  <LogOut size={18} />
-                  {isRecognizing ? 'Đang xử lý...' : 'Check-out bằng khuôn mặt'}
-                </button>
-              </div>
-            </div>
-          </div>
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Giờ làm</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {!loading && records.map((r) => (
-                  <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{r.date}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{r.checkIn}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{r.checkOut}</td>
-                    <td className="px-6 py-4">{statusBadgeFor(r.status)}</td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{r.hoursLabel}</td>
-                  </tr>
-                ))}
-                {loading && (
-                  <tr>
-                    <td className="px-6 py-12 text-center text-gray-500" colSpan={5}>
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
-                        <span>Đang tải...</span>
+              {/* Recognize */}
+              {activeTab === 'recognize' && (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-gray-800">Face Recognition</h3>
+                  <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-md p-6 text-center">
+                    <Eye className="h-16 w-16 mx-auto text-purple-400 mb-2" />
+                    <p className="text-gray-600 mb-2">
+                      Start recognition to automatically clock in/out when your face is detected.
+                    </p>
+                  </div>
+
+                  {attendanceResult && (
+                    <div className="bg-green-50 border border-green-200 rounded-md p-4">
+                      <div className="flex items-center">
+                        <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                        <div>
+                          <p className="text-green-700">{attendanceResult.message}</p>
+                        </div>
                       </div>
-                    </td>
-                  </tr>
-                )}
-                {!loading && records.length === 0 && (
-                  <tr>
-                    <td className="px-6 py-12 text-center text-gray-500" colSpan={5}>
-                      Chưa có dữ liệu chấm công
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between">
+                    <button
+                      onClick={handleStopProcess}
+                      disabled={isLoading}
+                      className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 flex items-center gap-2 text-sm disabled:opacity-50"
+                    >
+                      <StopIcon className="w-4 h-4" />
+                      Stop
+                    </button>
+                    <button
+                      onClick={() => handleStartRecognition('clockin')}
+                      disabled={isLoading}
+                      className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center gap-2 text-sm disabled:opacity-50"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Clock In
+                    </button>
+                    <button
+                      onClick={() => handleStartRecognition('clockout')}
+                      disabled={isLoading}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center gap-2 text-sm disabled:opacity-50"
+                    >
+                      <Clock className="w-4 h-4" />
+                      Clock Out
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
