@@ -7,7 +7,7 @@ import {
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import fakeApi from '../../services/fakeApi';
-import { getRole } from '../../utils/auth';
+import { getRole, getCurrentEmployeeId } from '../../utils/auth';
 
 const EmployeeBenefitsInsurance = () => {
   const userRole = getRole();
@@ -83,11 +83,12 @@ const EmployeeBenefitsInsurance = () => {
   const loadData = async () => {
     try {
       setLoading(true);
+      const employeeId = getCurrentEmployeeId();
       // Gọi API lấy dữ liệu
       const [benefitsRes, voluntaryRes, requestsRes] = await Promise.all([
-        fakeApi.getEmployeeBenefits('emp001'),
+        fakeApi.getEmployeeBenefits(employeeId),
         fakeApi.getVoluntaryInsurance(),
-        fakeApi.getEmployeeBenefitRequests('emp001')
+        fakeApi.getEmployeeBenefitRequests(employeeId)
       ]);
 
       if (benefitsRes.success) {
@@ -130,8 +131,9 @@ const EmployeeBenefitsInsurance = () => {
 
     setIsSubmitting(true);
     try {
+      const employeeId = getCurrentEmployeeId();
       const result = await fakeApi.createBenefitRequest({
-        employeeId: 'emp001',
+        employeeId: employeeId,
         type: selectedType,
         typeLabel: requestTypes.find(t => t.value === selectedType)?.label,
         reason,
@@ -145,7 +147,7 @@ const EmployeeBenefitsInsurance = () => {
         setReason('');
         setFiles([]);
         // Reload requests
-        const requestsRes = await fakeApi.getEmployeeBenefitRequests('emp001');
+        const requestsRes = await fakeApi.getEmployeeBenefitRequests(employeeId);
         if (requestsRes.success) {
           setMyRequests(requestsRes.data);
         }

@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import {
   FileText, Users, Clock, DollarSign, Briefcase,
   Download, Calendar, TrendingUp, Filter, Search,
-  BarChart2, PieChart
+  BarChart2, PieChart, Lock
 } from 'lucide-react';
-import { getRole } from '../utils/auth';
+import { getRole, isAdmin } from '../utils/auth';
 
 const Reports = () => {
   const userRole = getRole();
@@ -28,14 +28,26 @@ const Reports = () => {
   const [dateRange, setDateRange] = useState({ from: '', to: '' });
   const [searchQuery, setSearchQuery] = useState('');
 
+  // ===== PERMISSION CHECKS =====
+  const canViewReport = (reportId) => {
+    const permissions = {
+      employees: ['admin', 'manager'], // Chỉ Admin & Manager
+      attendance: ['admin', 'manager', 'accountant'], // Admin, Manager, Accountant
+      payroll: ['admin', 'accountant'], // CHỈ Admin & Accountant
+      tasks: ['admin', 'manager'], // Chỉ Admin & Manager
+    };
+    return permissions[reportId]?.includes(userRole) || false;
+  };
+
   // Danh sách báo cáo
-  const reports = [
+  const allReports = [
     {
       id: 'employees',
       name: 'Báo cáo Nhân sự',
       description: 'Tổng hợp thông tin nhân viên theo phòng ban',
       icon: Users,
       color: 'blue',
+      allowedRoles: ['admin', 'manager'],
       data: {
         total: 156,
         byDepartment: [
@@ -53,6 +65,7 @@ const Reports = () => {
       description: 'Thống kê giờ làm việc và nghỉ phép',
       icon: Clock,
       color: 'green',
+      allowedRoles: ['admin', 'manager', 'accountant'],
       data: {
         totalWorkDays: 22,
         avgAttendance: 95.5,
@@ -66,6 +79,7 @@ const Reports = () => {
       description: 'Tổng hợp chi phí lương tháng',
       icon: DollarSign,
       color: 'yellow',
+      allowedRoles: ['admin', 'accountant'], // CHỈ Admin & Accountant
       data: {
         totalSalary: 2850000000,
         avgSalary: 18269230,
@@ -79,6 +93,7 @@ const Reports = () => {
       description: 'Tiến độ và hiệu suất công việc',
       icon: Briefcase,
       color: 'purple',
+      allowedRoles: ['admin', 'manager'],
       data: {
         totalTasks: 89,
         completed: 45,
@@ -87,6 +102,9 @@ const Reports = () => {
       }
     }
   ];
+
+  // Filter reports theo quyền
+  const reports = allReports.filter(report => canViewReport(report.id));
 
   const colorClasses = {
     blue: { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200', gradient: 'from-blue-500 to-blue-600' },
@@ -100,10 +118,24 @@ const Reports = () => {
   };
 
   const handleExport = (reportId) => {
+    if (!canViewReport(reportId) && reportId !== 'all' && reportId !== 'pdf') {
+      alert('Bạn không có quyền xuất báo cáo này!');
+      return;
+    }
     alert(`Đang xuất báo cáo ${reportId}...`);
   };
 
   const renderReportDetail = (report) => {
+    // Kiểm tra quyền trước khi render
+    if (!canViewReport(report.id)) {
+      return (
+        <div className="p-6 text-center">
+          <Lock className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-600">Bạn không có quyền xem báo cáo này</p>
+        </div>
+      );
+    }
+
     const color = colorClasses[report.color];
 
     switch (report.id) {
@@ -213,7 +245,6 @@ const Reports = () => {
                 <p className="text-xs text-gray-500">{Math.round((report.data.pending / total) * 100)}%</p>
               </div>
             </div>
-            {/* Simple progress bar */}
             <div className="bg-white border rounded-lg p-4">
               <h4 className="font-medium text-gray-900 mb-3">Tiến độ tổng thể</h4>
               <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden flex">
@@ -261,7 +292,11 @@ const Reports = () => {
             </div>
             <h1 className="text-3xl font-bold text-gray-900">Báo cáo</h1>
           </div>
-          <p className="text-gray-500 ml-12">Xem và xuất các báo cáo tổng hợp</p>
+          <p className="text-gray-500 ml-12">
+            Xem và xuất các báo cáo tổng hợp 
+            {userRole === 'manager' && ' (Nhân sự & Công việc)'}
+            {userRole === 'accountant' && ' (Lương & Chấm công)'}
+          </p>
         </div>
 
         {/* Filters */}
@@ -308,8 +343,9 @@ const Reports = () => {
               return (
                 <div
                   key={report.id}
-                  className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-all duration-200 ${isSelected ? 'ring-2 ring-purple-500' : 'hover:shadow-md'
-                    }`}
+                  className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-all duration-200 ${
+                    isSelected ? 'ring-2 ring-purple-500' : 'hover:shadow-md'
+                  }`}
                 >
                   {/* Report Header */}
                   <div
@@ -356,33 +392,46 @@ const Reports = () => {
             })}
         </div>
 
-        {/* Quick Actions */}
-        <div className="mt-8 bg-white rounded-xl border shadow-sm p-6">
-          <h3 className="font-semibold text-gray-900 mb-4">Xuất báo cáo nhanh</h3>
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => handleExport('all')}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Xuất tất cả (Excel)
-            </button>
-            <button
-              onClick={() => handleExport('pdf')}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
-            >
-              <FileText className="w-4 h-4" />
-              Xuất PDF
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
-            >
-              <PieChart className="w-4 h-4" />
-              In báo cáo
-            </button>
+        {/* Empty State */}
+        {reports.length === 0 && (
+          <div className="bg-white rounded-xl border shadow-sm p-12 text-center">
+            <Lock className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Không có báo cáo</h3>
+            <p className="text-gray-600">
+              Bạn không có quyền xem báo cáo nào hoặc không tìm thấy kết quả phù hợp.
+            </p>
           </div>
-        </div>
+        )}
+
+        {/* Quick Actions */}
+        {reports.length > 0 && (
+          <div className="mt-8 bg-white rounded-xl border shadow-sm p-6">
+            <h3 className="font-semibold text-gray-900 mb-4">Xuất báo cáo nhanh</h3>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => handleExport('all')}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Xuất báo cáo của tôi (Excel)
+              </button>
+              <button
+                onClick={() => handleExport('pdf')}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <FileText className="w-4 h-4" />
+                Xuất PDF
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+              >
+                <PieChart className="w-4 h-4" />
+                In báo cáo
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

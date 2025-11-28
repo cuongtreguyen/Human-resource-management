@@ -8,10 +8,12 @@ import Select from '../../components/ui/Select';
 import { EmployeeSummaryCards, Pagination } from '../../components/employee';
 import fakeApi from '../../services/fakeApi';
 import { getRole } from '../../utils/auth';
+import { canViewSalary, getCurrentUserDepartment } from '../../utils/fieldPermissions';
 
 const EmployeeList = () => {
   const navigate = useNavigate();
   const userRole = getRole();
+  const userDepartment = getCurrentUserDepartment();
 
   // Màu sắc theo role
   const getBannerColor = () => {
@@ -293,12 +295,14 @@ const EmployeeList = () => {
               value={filters.position}
               onChange={(value) => handleFilterChange('position', value)}
             />
-            <Select
-              label="Mức lương"
-              options={salaryRanges.map(range => ({ value: range, label: range }))}
-              value={filters.salaryRange}
-              onChange={(value) => handleFilterChange('salaryRange', value)}
-            />
+            {canViewSalary(userRole) && (
+              <Select
+                label="Mức lương"
+                options={salaryRanges.map(range => ({ value: range, label: range }))}
+                value={filters.salaryRange}
+                onChange={(value) => handleFilterChange('salaryRange', value)}
+              />
+            )}
           </div>
 
           {/* Filter Actions */}
@@ -331,9 +335,11 @@ const EmployeeList = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày bắt đầu
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Lương tháng
-                </th>
+                {canViewSalary(userRole) && (
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lương tháng
+                  </th>
+                )}
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
                 </th>
@@ -365,9 +371,15 @@ const EmployeeList = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {employee.hireDate ? new Date(employee.hireDate).toLocaleDateString('vi-VN') : 'N/A'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {employee.salary ? employee.salary.toLocaleString('vi-VN') + ' VNĐ' : 'N/A'}
-                  </td>
+                  {canViewSalary(userRole, employee.department, userDepartment) ? (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {employee.salary ? employee.salary.toLocaleString('vi-VN') + ' VNĐ' : 'N/A'}
+                    </td>
+                  ) : (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic">
+                      ***
+                    </td>
+                  )}
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getStatusBadge(employee.status)}
                   </td>

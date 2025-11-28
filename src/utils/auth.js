@@ -83,3 +83,19 @@ export const getUserId = () => {
   return userInfo?.employeeId || null;
 };
 
+/**
+ * Lấy employee ID của user hiện tại
+ * Nếu không có trong userInfo, trả về fallback cho demo/testing
+ * @returns {string|null} Employee ID hoặc null
+ */
+export const getCurrentEmployeeId = () => {
+  const userInfo = getUserInfo();
+  // Nếu có employeeId trong userInfo, dùng nó
+  if (userInfo?.employeeId) {
+    return userInfo.employeeId;
+  }
+  // Fallback cho demo/testing - trong production nên throw error
+  // hoặc redirect về login nếu không có employeeId
+  return 'emp001';
+};
+
