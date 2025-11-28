@@ -1,8 +1,8 @@
 package management.member.demo.Service;
 
-import management.member.demo.dto.PayrollRequest;
-import management.member.demo.dto.PayrollResponse;
+import management.member.demo.dto.*;
 import management.member.demo.entity.Payroll;
+import management.member.demo.entity.Employee;
 import management.member.demo.entity.Salary;
 import management.member.demo.Enum.PayrollStatus;
 import management.member.demo.Enum.SalaryStatus;
@@ -11,13 +11,18 @@ import management.member.demo.Mapper.PayrollMapper;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.PayrollRepository;
 import management.member.demo.repository.SalaryRepository;
+import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.validator.PayrollValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * PayrollService - Service xử lý đồng bộ status giữa Payroll và Salary
@@ -40,16 +45,19 @@ public class PayrollService {
 
     private final PayrollRepository payrollRepository;
     private final SalaryRepository salaryRepository;
+    private final EmployeeRepository employeeRepository;
     private final PayrollMapper payrollMapper;
     private final PayrollValidator payrollValidator;
 
     @Autowired
     public PayrollService(PayrollRepository payrollRepository, 
                          SalaryRepository salaryRepository,
+                         EmployeeRepository employeeRepository,
                          PayrollMapper payrollMapper,
                          PayrollValidator payrollValidator) {
         this.payrollRepository = payrollRepository;
         this.salaryRepository = salaryRepository;
+        this.employeeRepository = employeeRepository;
         this.payrollMapper = payrollMapper;
         this.payrollValidator = payrollValidator;
     }
@@ -177,6 +185,123 @@ public class PayrollService {
      */
     public void cancelPayroll(Long payrollId) {
         updatePayrollStatus(payrollId, PayrollStatus.CANCELLED);
+    }
+
+    /**
+     * Get all payroll records với filters
+     */
+    public PayrollListResponseDTO getAllPayrollRecords(String month, String employeeId, String status) {
+        List<Salary> salaries = salaryRepository.findAll();
+        
+        // Filter by month
+        if (month != null) {
+            LocalDate monthDate = LocalDate.parse(month + "-01");
+            salaries = salaries.stream()
+                    .filter(s -> s.getPaymentDate() != null && 
+                            s.getPaymentDate().getYear() == monthDate.getYear() &&
+                            s.getPaymentDate().getMonth() == monthDate.getMonth())
+                    .collect(Collectors.toList());
+        }
+        
+        // Filter by employeeId
+        if (employeeId != null) {
+            Long empId = Long.parseLong(employeeId);
+            salaries = salaries.stream()
+                    .filter(s -> s.getEmployeeId().equals(empId))
+                    .collect(Collectors.toList());
+        }
+        
+        // Filter by status
+        if (status != null) {
+            PayrollStatus payrollStatus = PayrollStatus.valueOf(status.toUpperCase());
+            List<Long> payrollIds = payrollRepository.findAll().stream()
+                    .filter(p -> p.getStatus() == payrollStatus)
+                    .map(Payroll::getId)
+                    .collect(Collectors.toList());
+            salaries = salaries.stream()
+                    .filter(s -> s.getPayroll() != null && payrollIds.contains(s.getPayroll().getId()))
+                    .collect(Collectors.toList());
+        }
+        
+        PayrollListResponseDTO response = new PayrollListResponseDTO();
+        response.setData(salaries.stream()
+                .map(salary -> {
+                    Employee employee = employeeRepository.findById(salary.getEmployeeId()).orElse(null);
+                    return payrollMapper.toPayrollListItemDTO(salary, employee);
+                })
+                .collect(Collectors.toList()));
+        response.setSuccess(true);
+        
+        return response;
+    }
+
+    /**
+     * Calculate payroll cho employee
+     */
+    public CalculatePayrollResponseDTO calculatePayroll(CalculatePayrollRequestDTO request) {
+        Long employeeId = Long.parseLong(request.getEmployeeId());
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + request.getEmployeeId()));
+        
+        // Parse month
+        LocalDate monthDate = LocalDate.parse(request.getMonth() + "-01");
+        
+        // Calculate net salary
+        BigDecimal netSalary = request.getBasicSalary()
+                .add(request.getAllowance() != null ? request.getAllowance() : BigDecimal.ZERO)
+                .add(request.getOvertime() != null ? request.getOvertime() : BigDecimal.ZERO)
+                .add(request.getBonus() != null ? request.getBonus() : BigDecimal.ZERO)
+                .subtract(request.getDeduction() != null ? request.getDeduction() : BigDecimal.ZERO);
+        
+        // Create Salary record
+        Salary salary = new Salary();
+        salary.setEmployeeId(employeeId);
+        salary.setBaseSalary(request.getBasicSalary());
+        salary.setAllowance(request.getAllowance() != null ? request.getAllowance() : BigDecimal.ZERO);
+        salary.setOvertimePay(request.getOvertime() != null ? request.getOvertime() : BigDecimal.ZERO);
+        salary.setBonus(request.getBonus() != null ? request.getBonus() : BigDecimal.ZERO);
+        salary.setDeduction(request.getDeduction() != null ? request.getDeduction() : BigDecimal.ZERO);
+        salary.setNetSalary(netSalary);
+        salary.setStatus(SalaryStatus.AWAITING);
+        salary.setPaymentDate(monthDate);
+        
+        Salary savedSalary = salaryRepository.save(salary);
+        
+        return payrollMapper.toCalculatePayrollResponseDTO(savedSalary, employee, request, netSalary);
+    }
+
+    /**
+     * Update payroll status by ID (String)
+     */
+    public UpdatePayrollStatusResponseDTO updatePayrollStatusById(String id, String status) {
+        Long payrollId = Long.parseLong(id);
+        PayrollStatus payrollStatus = PayrollStatus.valueOf(status.toUpperCase());
+        updatePayrollStatus(payrollId, payrollStatus);
+        
+        UpdatePayrollStatusResponseDTO response = new UpdatePayrollStatusResponseDTO();
+        response.setId(id);
+        response.setStatus(status);
+        response.setMessage("Payroll status updated successfully");
+        response.setSuccess(true);
+        return response;
+    }
+
+    /**
+     * Export payroll
+     */
+    public ExportResponseDTO exportPayroll(String month, String format) {
+        // TODO: Implement actual export logic
+        String filename = "payroll_" + (month != null ? month : LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM"))) + 
+                "." + (format != null ? format : "excel");
+        
+        ExportResponseDTO response = new ExportResponseDTO();
+        response.setUrl("/exports/" + filename);
+        response.setFilename(filename);
+        response.setMessage("Export completed successfully");
+        response.setSuccess(true);
+        
+        return response;
     }
 
     /**

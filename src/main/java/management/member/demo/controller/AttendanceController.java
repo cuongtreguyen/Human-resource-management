@@ -7,6 +7,10 @@ import management.member.demo.dto.AttendanceDTO;
 import management.member.demo.dto.AttendanceFlaskResponseDTO;
 import management.member.demo.dto.AttendanceRequest;
 import management.member.demo.dto.AttendanceStatsDTO;
+import management.member.demo.dto.DailyAttendanceResponseDTO;
+import management.member.demo.dto.FaceRecognitionRequestDTO;
+import management.member.demo.dto.FaceRecognitionResponseDTO;
+import management.member.demo.dto.ExportResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -17,19 +21,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import management.member.demo.dto.RecognitionSuccessResponseDTO;
-import management.member.demo.entity.Attendance;
-import management.member.demo.repository.AttendanceRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/attendance")
@@ -43,32 +39,39 @@ public class AttendanceController {
     @Autowired
     private FlaskApiService flaskApiService;
     
-    @Autowired
-    private AttendanceRepository attendanceRepository;
-    
     private static final Logger logger = LoggerFactory.getLogger(AttendanceController.class);
 
-    // Get daily attendance from Flask API - Trả về format Flask
+    // Get daily attendance from local database - Trả về format API spec
     @GetMapping("/daily")
-    public ResponseEntity<List<AttendanceFlaskResponseDTO>> getDailyAttendance(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) String date) {
+    @Operation(summary = "Get daily attendance", description = "Get attendance records for a specific date (default: today)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success")
+    })
+    public ResponseEntity<List<DailyAttendanceResponseDTO>> getDailyAttendance(
+            @RequestParam(required = false) String date) {
         try {
-            List<AttendanceFlaskResponseDTO> attendance = flaskApiService.getDailyAttendanceFlaskFormat(date);
+            List<DailyAttendanceResponseDTO> attendance = attendanceService.getDailyAttendance(date);
             return ResponseEntity.ok(attendance);
         } catch (Exception e) {
+            logger.error("Error getting daily attendance: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // Get attendance range from Flask API - Trả về format Flask
+    // Get attendance range from local database - Trả về format API spec
     @GetMapping("/range")
-    public ResponseEntity<List<AttendanceFlaskResponseDTO>> getAttendanceRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) String startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) String endDate) {
+    @Operation(summary = "Get attendance range", description = "Get attendance records for a date range")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success")
+    })
+    public ResponseEntity<List<DailyAttendanceResponseDTO>> getAttendanceRange(
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
         try {
-            List<AttendanceFlaskResponseDTO> attendance = flaskApiService.getAttendanceRangeFlaskFormat(startDate, endDate);
+            List<DailyAttendanceResponseDTO> attendance = attendanceService.getAttendanceRange(startDate, endDate);
             return ResponseEntity.ok(attendance);
         } catch (Exception e) {
+            logger.error("Error getting attendance range: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -101,7 +104,7 @@ public class AttendanceController {
 
     // Local database operations
     @PostMapping("/local")
-    public ResponseEntity<AttendanceDTO> createAttendance(@RequestBody AttendanceDTO attendanceDTO) {
+    public ResponseEntity<AttendanceDTO> createAttendance(@Valid @RequestBody AttendanceDTO attendanceDTO) {
         try {
             AttendanceDTO created = attendanceService.createAttendance(attendanceDTO);
             return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -134,7 +137,7 @@ public class AttendanceController {
     @PutMapping("/local/{id}")
     public ResponseEntity<AttendanceDTO> updateAttendance(
             @PathVariable Long id,
-            @RequestBody AttendanceDTO attendanceDTO) {
+            @Valid @RequestBody AttendanceDTO attendanceDTO) {
         try {
             AttendanceDTO updated = attendanceService.updateAttendance(id, attendanceDTO);
             if (updated != null) {
@@ -179,22 +182,25 @@ public class AttendanceController {
         }
     }
 
-    // Lấy tất cả attendance của một employee
+    // Lấy attendance của một employee (hỗ trợ Long id, employeeId, hoặc employeeCode)
     @GetMapping("/employee/{employeeId}")
     @Operation(
-            summary = "Get all attendance by employee ID",
-            description = "Lấy tất cả attendance của một nhân viên"
+            summary = "Get employee attendance",
+            description = "Get attendance records for a specific employee. Supports Long id, employeeId (String), or employeeCode (String). Optional date range filter."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Employee not found")
     })
-    public ResponseEntity<List<AttendanceDTO>> getAttendanceByEmployeeId(
-            @PathVariable Long employeeId) {
+    public ResponseEntity<List<DailyAttendanceResponseDTO>> getAttendanceByEmployeeId(
+            @PathVariable String employeeId,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate) {
         try {
-            List<AttendanceDTO> attendance = attendanceService.getAttendanceByEmployeeId(employeeId);
+            List<DailyAttendanceResponseDTO> attendance = attendanceService.getEmployeeAttendance(employeeId, startDate, endDate);
             return ResponseEntity.ok(attendance);
         } catch (Exception e) {
+            logger.error("Error getting employee attendance: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -289,115 +295,65 @@ public class AttendanceController {
     }
 
     /**
-     * Endpoint để Flask gọi vào khi nhận diện thành công (alias của /api/face-recognition/recognition-success)
+     * Endpoint để Flask gọi vào khi nhận diện thành công
      * Flask sẽ POST đến endpoint này với payload từ face recognition
      */
     @PostMapping("/face-recognition/recognition-success")
     @Operation(
             summary = "Handle face recognition success",
-            description = "Nhận notification khi nhận diện khuôn mặt thành công từ Flask API"
+            description = "Nhận notification khi nhận diện khuôn mặt thành công từ Flask API. Validates confidence score and records attendance."
     )
-    public ResponseEntity<RecognitionSuccessResponseDTO> handleRecognitionSuccess(@RequestBody Map<String, Object> payload) {
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Attendance recorded successfully"),
+            @ApiResponse(responseCode = "400", description = "Low confidence score or invalid request")
+    })
+    public ResponseEntity<FaceRecognitionResponseDTO> handleRecognitionSuccess(
+            @Valid @RequestBody FaceRecognitionRequestDTO request) {
         try {
-            // Lấy thông tin từ payload Flask
-            String employeeIdStr = (String) payload.get("id");
-            String employeeName = (String) payload.get("name");
-            String timestamp = (String) payload.get("timestamp");
-            String confidence = (String) payload.get("confidence");
+            logger.info("Received face recognition request: employeeId={}, name={}, timestamp={}, confidence={}", 
+                    request.getEmployeeId(), request.getEmployeeName(), request.getTimestamp(), request.getConfidence());
             
-            logger.info("Received face recognition success: id={}, name={}, timestamp={}, confidence={}", 
-                    employeeIdStr, employeeName, timestamp, confidence);
-            
-            // Tạo response với thông tin cơ bản
-            RecognitionSuccessResponseDTO response = new RecognitionSuccessResponseDTO(
-                true, 
-                "Face recognition successful",
-                employeeIdStr,
-                employeeName
+            // Delegate to service layer
+            FaceRecognitionResponseDTO response = attendanceService.handleFaceRecognitionSuccess(
+                    request.getEmployeeId(),
+                    request.getEmployeeName(),
+                    request.getConfidence(),
+                    request.getTimestamp()
             );
-            response.setTimestamp(timestamp);
             
-            // Tự động lưu attendance vào database
-            try {
-                // Parse employee ID (có thể là String hoặc Long)
-                Long employeeId = null;
-                try {
-                    employeeId = Long.parseLong(employeeIdStr);
-                } catch (NumberFormatException e) {
-                    // Nếu không parse được, tìm employee theo employeeId (String)
-                    logger.warn("Cannot parse employee ID as Long: {}, will try to find by employeeId string", employeeIdStr);
+            if (!response.isSuccess()) {
+                // Check if it's a low confidence error
+                if (response.getConfidence() != null && response.getConfidence() < 70.0) {
+                    logger.warn("Low confidence score: {} (threshold: 70.0)", response.getConfidence());
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
                 }
-                
-                // Parse timestamp để lấy date và time
-                LocalDate attendanceDate = LocalDate.now();
-                LocalTime checkInTime = LocalTime.now();
-                
-                if (timestamp != null && !timestamp.isEmpty()) {
-                    try {
-                        // Parse timestamp format: "2025-11-28 00:07:08"
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                        LocalDateTime dateTime = LocalDateTime.parse(timestamp, formatter);
-                        attendanceDate = dateTime.toLocalDate();
-                        checkInTime = dateTime.toLocalTime();
-                    } catch (Exception e) {
-                        logger.warn("Cannot parse timestamp: {}, using current time", timestamp);
-                    }
-                }
-                
-                if (employeeId != null) {
-                    // Tìm employee và lưu attendance với timestamp từ Flask
-                    Optional<Attendance> existing = attendanceRepository.findByEmployeeIdAndDate(employeeId, attendanceDate);
-                    
-                    if (existing.isEmpty()) {
-                        // Chưa check-in, tạo mới với timestamp từ Flask
-                        logger.info("Creating new attendance for employee {} on {} with checkIn={}", 
-                                employeeId, attendanceDate, checkInTime);
-                        
-                        // Tạo attendance request với timestamp từ Flask
-                        AttendanceRequest request = new AttendanceRequest();
-                        request.setEmployeeId(employeeId);
-                        request.setAttendanceDate(attendanceDate);
-                        request.setCheckIn(checkInTime); // Dùng timestamp từ Flask
-                        
-                        AttendanceDTO attendance = attendanceService.createAttendance(request);
-                        response.setAttendanceId(attendance.getId());
-                        response.setCheckInTime(attendance.getCheckIn() != null ? attendance.getCheckIn().toString() : null);
-                        response.setMessage("Face recognized and checked in successfully");
-                        logger.info("Attendance saved to database: id={}, employeeId={}, date={}, checkIn={}", 
-                                attendance.getId(), employeeId, attendanceDate, attendance.getCheckIn());
-                    } else {
-                        // Đã check-in rồi, có thể update check-out nếu chưa có
-                        Attendance att = existing.get();
-                        response.setAttendanceId(att.getId());
-                        response.setCheckInTime(att.getCheckIn() != null ? att.getCheckIn().toString() : null);
-                        
-                        if (att.getCheckOut() == null) {
-                            // Chưa check-out, có thể set check-out với timestamp hiện tại
-                            att.setCheckOut(checkInTime); // Dùng timestamp từ Flask làm check-out
-                            attendanceRepository.save(att);
-                            response.setMessage("Face recognized and checked out successfully");
-                            logger.info("Updated check-out for attendance id={} with time={}", att.getId(), checkInTime);
-                        } else {
-                            response.setMessage("Face recognized (already checked in and out)");
-                            logger.info("Attendance already completed: id={}", att.getId());
-                        }
-                    }
-                } else {
-                    // Không tìm thấy employee ID hợp lệ
-                    logger.warn("Cannot save attendance: invalid employee ID {}", employeeIdStr);
-                    response.setMessage("Face recognized but could not save attendance (invalid employee ID)");
-                }
-            } catch (Exception e) {
-                logger.error("Error saving attendance to database: {}", e.getMessage(), e);
-                // Vẫn trả về success nhưng không có attendance info
-                response.setMessage("Face recognized but failed to save attendance: " + e.getMessage());
+                // Other errors (e.g., employee not found)
+                logger.warn("Face recognition failed: {}", response.getMessage());
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
             
+            logger.info("Face recognition success: attendanceId={}, status={}", 
+                    response.getAttendanceId(), response.getStatus());
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error handling recognition success: {}", e.getMessage(), e);
-            RecognitionSuccessResponseDTO errorResponse = new RecognitionSuccessResponseDTO(false, e.getMessage(), null, null);
+            FaceRecognitionResponseDTO errorResponse = new FaceRecognitionResponseDTO();
+            errorResponse.setSuccess(false);
+            errorResponse.setMessage("Internal server error: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export attendance data", description = "Export attendance data to file")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Export completed successfully")
+    })
+    public ResponseEntity<ExportResponseDTO> exportAttendance(
+            @RequestParam(required = true) String startDate,
+            @RequestParam(required = true) String endDate,
+            @RequestParam(required = false, defaultValue = "excel") String format) {
+        ExportResponseDTO response = attendanceService.exportAttendance(startDate, endDate, format);
+        return ResponseEntity.ok(response);
     }
 }

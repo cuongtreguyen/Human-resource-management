@@ -1,6 +1,9 @@
 package management.member.demo.Service;
 
 import management.member.demo.exception.base.BusinessException;
+import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.validator.AuthValidator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +29,9 @@ public class OtpService {
     
     // Rate limiting storage: email -> (attempts, first attempt time)
     private final ConcurrentHashMap<String, RateLimitData> rateLimitStorage = new ConcurrentHashMap<>();
+    
+    @Autowired
+    private AuthValidator authValidator;
 
     /**
      * Tạo và lưu OTP cho email
@@ -33,9 +39,12 @@ public class OtpService {
      * @return OTP được tạo
      */
     public String generateOtp(String email) {
+        // Validate email format
+        authValidator.validateEmail(email);
+        
         // Kiểm tra rate limiting
         if (!canGenerateOtp(email)) {
-            throw new BusinessException("RATE_LIMIT_EXCEEDED", 
+            throw ErrorCode.RATE_LIMIT_EXCEEDED.toException(
                 "Quá nhiều yêu cầu OTP. Vui lòng thử lại sau " + RATE_LIMIT_WINDOW_MINUTES + " phút");
         }
         

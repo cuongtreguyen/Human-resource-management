@@ -4,6 +4,7 @@ import management.member.demo.Service.OtpService;
 import management.member.demo.Service.EmailService;
 import management.member.demo.dto.ForgotPasswordRequest;
 import management.member.demo.dto.VerifyOtpRequest;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -38,7 +39,7 @@ public class OtpController {
             @ApiResponse(responseCode = "200", description = "OTP generated and sent successfully"),
             @ApiResponse(responseCode = "400", description = "Failed to generate or send OTP")
     })
-    public ResponseEntity<Map<String, String>> generateOtp(@RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<Map<String, String>> generateOtp(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
             String otp = otpService.generateOtp(request.getEmail());
             
@@ -61,7 +62,7 @@ public class OtpController {
             @ApiResponse(responseCode = "200", description = "OTP verified successfully"),
             @ApiResponse(responseCode = "400", description = "OTP_NOT_FOUND/OTP_EXPIRED/INVALID_OTP")
     })
-    public ResponseEntity<Map<String, Object>> verifyOtp(@RequestBody VerifyOtpRequest request) {
+    public ResponseEntity<Map<String, Object>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         try {
             boolean isValid = otpService.verifyOtp(request.getEmail(), request.getOtp());
             long remainingMinutes = otpService.getOtpRemainingMinutes(request.getEmail());

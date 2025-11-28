@@ -18,6 +18,10 @@ public enum ErrorCode {
     // Employee field validation errors
     INVALID_FULL_NAME("INVALID_FULL_NAME", "Họ và tên không được để trống"),
     INVALID_EMAIL("INVALID_EMAIL", "Email không được để trống"),
+    INVALID_EMAIL_FORMAT("INVALID_EMAIL_FORMAT", "Email không đúng định dạng"),
+    INVALID_PHONE_FORMAT("INVALID_PHONE_FORMAT", "Số điện thoại không đúng định dạng (phải có 10-11 chữ số)"),
+    INVALID_DATE_OF_BIRTH("INVALID_DATE_OF_BIRTH", "Ngày sinh không hợp lệ"),
+    INVALID_DATE_RANGE("INVALID_DATE_RANGE", "Khoảng thời gian không hợp lệ"),
     INVALID_EMPLOYEE_CODE("INVALID_EMPLOYEE_CODE", "Mã nhân viên không được để trống"),
     INVALID_DEPARTMENT("INVALID_DEPARTMENT", "Phòng ban không được để trống"),
     INVALID_POSITION("INVALID_POSITION", "Chức vụ không được để trống"),
@@ -61,10 +65,80 @@ public enum ErrorCode {
     EMPLOYEE_BENEFITS_NOT_FOUND("EMPLOYEE_BENEFITS_NOT_FOUND", "Không tìm thấy phúc lợi nhân viên"),
     INVALID_EMPLOYEE_BENEFITS_ID("INVALID_EMPLOYEE_BENEFITS_ID", "ID phúc lợi nhân viên không hợp lệ"),
     
+    // OnLeave errors
+    INSUFFICIENT_LEAVE_DAYS("INSUFFICIENT_LEAVE_DAYS", "Không đủ ngày nghỉ phép"),
+    
+    // Notification errors
+    NOTIFICATION_NOT_FOUND("NOTIFICATION_NOT_FOUND", "Thông báo không tồn tại"),
+    INVALID_NOTIFICATION_ID("INVALID_NOTIFICATION_ID", "ID thông báo không hợp lệ"),
+    
+    // Task Delegation errors
+    DELEGATION_NOT_FOUND("DELEGATION_NOT_FOUND", "Ủy quyền không tồn tại"),
+    INVALID_DELEGATION_ID("INVALID_DELEGATION_ID", "ID ủy quyền không hợp lệ"),
+    
+    // Employee Evaluation errors
+    EVALUATION_NOT_FOUND("EVALUATION_NOT_FOUND", "Đánh giá không tồn tại"),
+    INVALID_EVALUATION_ID("INVALID_EVALUATION_ID", "ID đánh giá không hợp lệ"),
+    
+    // Policy errors
+    POLICY_NOT_FOUND("POLICY_NOT_FOUND", "Chính sách không tồn tại"),
+    INVALID_POLICY_ID("INVALID_POLICY_ID", "ID chính sách không hợp lệ"),
+    INVALID_POLICY_NAME("INVALID_POLICY_NAME", "Tên chính sách không được để trống"),
+    INVALID_POLICY_TYPE("INVALID_POLICY_TYPE", "Loại chính sách không được để trống"),
+    
+    // Attendance errors
+    ATTENDANCE_NOT_FOUND("ATTENDANCE_NOT_FOUND", "Chấm công không tồn tại"),
+    INVALID_ATTENDANCE_ID("INVALID_ATTENDANCE_ID", "ID chấm công không hợp lệ"),
+    
+    // Chat errors
+    INVALID_CHAT_CONTACT_ID("INVALID_CHAT_CONTACT_ID", "ID liên hệ chat không hợp lệ"),
+    
+    // Audit Log errors
+    INVALID_DATE_FORMAT("INVALID_DATE_FORMAT", "Định dạng ngày không hợp lệ (yêu cầu: yyyy-MM-dd)"),
+    
+    // Pagination errors
+    INVALID_PAGE_NUMBER("INVALID_PAGE_NUMBER", "Số trang không hợp lệ (phải >= 0)"),
+    INVALID_PAGE_SIZE("INVALID_PAGE_SIZE", "Kích thước trang không hợp lệ (phải > 0)"),
+    
     // Security/Authentication errors
     AUTHENTICATION_FAILED("AUTHENTICATION_FAILED", "Xác thực thất bại"),
     INVALID_CREDENTIALS("INVALID_CREDENTIALS", "Tên đăng nhập hoặc mật khẩu không đúng"),
     ACCESS_DENIED("ACCESS_DENIED", "Bạn không có quyền truy cập tài nguyên này"),
+    USERNAME_EXISTS("USERNAME_EXISTS", "Tên đăng nhập đã tồn tại"),
+    EMAIL_EXISTS("EMAIL_EXISTS", "Email đã tồn tại"),
+    INVALID_PASSWORD_FORMAT("INVALID_PASSWORD_FORMAT", "Mật khẩu không đúng định dạng (tối thiểu 8 ký tự)"),
+    INVALID_OTP_FORMAT("INVALID_OTP_FORMAT", "OTP không đúng định dạng"),
+    OTP_EXPIRED("OTP_EXPIRED", "OTP đã hết hạn"),
+    OTP_INVALID("OTP_INVALID", "OTP không đúng"),
+    ACCOUNT_LOCKED_OR_INACTIVE("ACCOUNT_LOCKED_OR_INACTIVE", "Tài khoản bị khóa hoặc không hoạt động"),
+    TOKEN_GENERATION_ERROR("TOKEN_GENERATION_ERROR", "Lỗi khi tạo token"),
+    RATE_LIMIT_EXCEEDED("RATE_LIMIT_EXCEEDED", "Quá nhiều yêu cầu. Vui lòng thử lại sau"),
+    
+    // User errors
+    USER_NOT_FOUND("USER_NOT_FOUND", "Người dùng không tồn tại"),
+    INVALID_OLD_PASSWORD("INVALID_OLD_PASSWORD", "Mật khẩu cũ không đúng"),
+    
+    // File I/O errors
+    FILE_UPLOAD_ERROR("FILE_UPLOAD_ERROR", "Lỗi khi upload file"),
+    FILE_DOWNLOAD_ERROR("FILE_DOWNLOAD_ERROR", "Lỗi khi download file"),
+    FILE_SERIALIZATION_ERROR("FILE_SERIALIZATION_ERROR", "Lỗi khi serialize dữ liệu"),
+    
+    // Email errors
+    EMAIL_SEND_ERROR("EMAIL_SEND_ERROR", "Lỗi khi gửi email"),
+    
+    // Task errors
+    TASK_NOT_FOUND("TASK_NOT_FOUND", "Task không tồn tại"),
+    NO_TASKS_FOUND("NO_TASKS_FOUND", "Không tìm thấy task nào"),
+    INVALID_TASK_STATUS("INVALID_TASK_STATUS", "Trạng thái task không hợp lệ"),
+    INVALID_TASK_PRIORITY("INVALID_TASK_PRIORITY", "Độ ưu tiên task không hợp lệ"),
+    
+    // OnLeave errors (old methods)
+    NO_LEAVE_FOUND("NO_LEAVE_FOUND", "Không tìm thấy đơn nghỉ phép nào"),
+    
+    // Flask API errors
+    FLASK_API_ERROR("FLASK_API_ERROR", "Lỗi khi gọi Flask API"),
+    FLASK_API_TIMEOUT("FLASK_API_TIMEOUT", "Flask API không phản hồi"),
+    FLASK_API_INVALID_RESPONSE("FLASK_API_INVALID_RESPONSE", "Dữ liệu từ Flask API không hợp lệ"),
     
     // Common errors
     INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "Lỗi hệ thống nội bộ"),

@@ -12,24 +12,35 @@ public class AttendanceStatsDTO {
     @JsonProperty("totalEmployees")
     private Integer totalEmployees;
     
+    @JsonProperty("present")
+    private Integer present;
+    
+    @JsonProperty("absent")
+    private Integer absent;
+    
+    @JsonProperty("checkedOut")
+    private Integer checkedOut;
+    
+    @JsonProperty("stillWorking")
+    private Integer stillWorking;
+    
+    // Keep for backward compatibility
     @JsonProperty("presentToday")
-    private Integer presentToday; // Flask yêu cầu "presentToday" thay vì "present"
+    private Integer presentToday;
     
     @JsonProperty("absentToday")
-    private Integer absentToday; // Flask yêu cầu "absentToday" thay vì "absent"
+    private Integer absentToday;
     
     @JsonProperty("lateToday")
-    private Integer lateToday; // Flask yêu cầu field này
-    
-    // Giữ lại các field cũ để tương thích với code hiện tại
-    private Integer checkedOut;
-    private Integer stillWorking;
+    private Integer lateToday;
     
     // Constructor để tương thích với code cũ
     public AttendanceStatsDTO(Integer totalEmployees, Integer present, Integer absent, Integer checkedOut, Integer stillWorking) {
         this.totalEmployees = totalEmployees;
-        this.presentToday = present;
-        this.absentToday = absent;
+        this.present = present;
+        this.presentToday = present; // For backward compatibility
+        this.absent = absent;
+        this.absentToday = absent; // For backward compatibility
         this.checkedOut = checkedOut;
         this.stillWorking = stillWorking;
         this.lateToday = 0; // Default value

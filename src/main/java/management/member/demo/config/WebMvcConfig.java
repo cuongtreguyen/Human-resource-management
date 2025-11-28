@@ -1,5 +1,8 @@
 package management.member.demo.config;
 
+import management.member.demo.converter.EmployeeStatusConverter;
+import management.member.demo.converter.PayrollStatusConverter;
+import management.member.demo.converter.SalaryStatusConverter;
 import management.member.demo.exception.util.TraceIdUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -8,15 +11,29 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.format.FormatterRegistry;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
 
 /**
  * Configuration để tự động tạo và quản lý Trace ID cho mỗi request
+ * Và đăng ký Spring Web Converters cho HTTP param parsing
  */
 @Configuration
-public class WebMvcConfig {
+public class WebMvcConfig implements WebMvcConfigurer {
+    
+    /**
+     * Đăng ký Spring Web Converters để parse HTTP params → Enum
+     * Chạy ở tầng Web MVC
+     */
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addConverter(new EmployeeStatusConverter());
+        registry.addConverter(new PayrollStatusConverter());
+        registry.addConverter(new SalaryStatusConverter());
+    }
     
     /**
      * Filter để tự động tạo Trace ID cho mỗi request

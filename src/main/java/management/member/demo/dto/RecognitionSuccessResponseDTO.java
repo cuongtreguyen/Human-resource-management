@@ -25,6 +25,12 @@ public class RecognitionSuccessResponseDTO {
     @JsonProperty("checkInTime")
     private String checkInTime; // Thời gian check-in (nếu có)
     
+    @JsonProperty("checkOutTime")
+    private String checkOutTime; // Thời gian check-out (nếu có)
+    
+    @JsonProperty("status")
+    private String status; // "checked_in" hoặc "checked_out"
+    
     @JsonProperty("timestamp")
     private String timestamp; // Timestamp của recognition
     

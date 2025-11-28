@@ -3,11 +3,15 @@ package management.member.demo.controller;
 import jakarta.validation.Valid;
 import management.member.demo.Service.EmployeeService;
 import management.member.demo.dto.AddEmployeeRequest;
-import management.member.demo.dto.EmployeeRequest;
-import management.member.demo.dto.EmployeeResponse;
-import management.member.demo.dto.EmployeeSearchFilterRequest;
+import management.member.demo.dto.CreateEmployeeResponseDTO;
+import management.member.demo.dto.DeleteEmployeeResponseDTO;
+import management.member.demo.dto.EmployeeDetailDTO;
+import management.member.demo.dto.EmployeeListResponse;
 import management.member.demo.dto.ProfileResponse;
 import management.member.demo.dto.ProfileUpdateRequest;
+import management.member.demo.dto.UpdateEmployeeRequest;
+import management.member.demo.dto.UpdateEmployeeResponseDTO;
+import management.member.demo.dto.ExportResponseDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,11 +20,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/employees")
+@RequestMapping("/api/employees")
 @Tag(name = "Employee", description = "Employee management endpoints")
 public class EmployeeController {
 
@@ -38,26 +41,31 @@ public class EmployeeController {
             description = "Thêm nhân viên mới với đầy đủ thông tin"
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Employee created successfully"),
+            @ApiResponse(responseCode = "201", description = "Employee created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request data"),
             @ApiResponse(responseCode = "409", description = "Email already exists")
     })
-    public ResponseEntity<EmployeeResponse> addEmployee(
+    public ResponseEntity<CreateEmployeeResponseDTO> addEmployee(
             @Valid @RequestBody AddEmployeeRequest request) {
-        return ResponseEntity.ok(service.addEmployee(request));
+        CreateEmployeeResponseDTO response = service.createEmployee(request);
+        return ResponseEntity.status(201).body(response);
     }
 
-    // Lấy danh sách tất cả nhân viên bao gồm: Employee Name, Department, Position, Start Date, Monthly Salary, Status
+    // Lấy danh sách tất cả nhân viên với filter và search
     @GetMapping
     @Operation(
             summary = "Get all employees list",
-            description = "Lấy danh sách tất cả nhân viên bao gồm: Employee Name, Department, Position, Start Date, Monthly Salary, Status"
+            description = "Lấy danh sách nhân viên với filter và search. Hỗ trợ: search (name/email), department, position, status"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success")
     })
-    public ResponseEntity<List<EmployeeResponse>> getAllEmployees() {
-        return ResponseEntity.ok(service.getAllEmployees());
+    public ResponseEntity<EmployeeListResponse> getAllEmployees(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String position,
+            @RequestParam(required = false) String status) {
+        return ResponseEntity.ok(service.getEmployeesWithFilters(search, department, position, status));
     }
 
     // Đếm tổng số lượng nhân viên trong hệ thống
@@ -88,43 +96,30 @@ public class EmployeeController {
         return ResponseEntity.ok(Map.of("activeEmployeesCount", activeCount));
     }
 
-    // Tìm kiếm và lọc nhân viên theo các tiêu chí: Department, Position, Salary Range
-    @PostMapping("/search")
-    @Operation(
-            summary = "Search and filter employees",
-            description = "Tìm kiếm và lọc nhân viên theo các tiêu chí: Department, Position, Salary Range"
-    )
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "400", description = "Invalid filter criteria")
-    })
-    public ResponseEntity<List<EmployeeResponse>> searchAndFilterEmployees(
-            @RequestBody(required = false) EmployeeSearchFilterRequest filterRequest) {
-        return ResponseEntity.ok(service.searchAndFilterEmployees(filterRequest));
-    }
-
-    // Lấy thông tin nhân viên theo ID
+    // Lấy thông tin nhân viên theo ID (hỗ trợ Long id, employeeId, hoặc employeeCode)
     @GetMapping("/{id}")
-    @Operation(summary = "Get employee by id", description = "Get employee information by id")
+    @Operation(summary = "Get employee by id", description = "Get employee information by id. Supports Long id, employeeId (String), or employeeCode (String)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Employee not found")
     })
-    public ResponseEntity<EmployeeResponse> getEmployee(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getEmployeeById(id));
+    public ResponseEntity<EmployeeDetailDTO> getEmployee(@PathVariable String id) {
+        return ResponseEntity.ok(service.getEmployeeDetailById(id));
     }
 
-    // Cập nhật thông tin nhân viên theo ID
+    // Cập nhật thông tin nhân viên theo ID (hỗ trợ Long id, employeeId, hoặc employeeCode)
     @PutMapping("/{id}")
-    @Operation(summary = "Update employee", description = "Update employee information by id")
+    @Operation(summary = "Update employee", description = "Update employee information by id. Supports Long id, employeeId (String), or employeeCode (String)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Employee not found")
+            @ApiResponse(responseCode = "404", description = "Employee not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "409", description = "Email already exists")
     })
-    public ResponseEntity<EmployeeResponse> updateEmployee(
-            @PathVariable Long id,
-            @Valid @RequestBody EmployeeRequest request) {
-        return ResponseEntity.ok(service.updateEmployee(id, request));
+    public ResponseEntity<UpdateEmployeeResponseDTO> updateEmployee(
+            @PathVariable String id,
+            @Valid @RequestBody UpdateEmployeeRequest request) {
+        return ResponseEntity.ok(service.updateEmployeeById(id, request));
     }
 
     // Lấy thông tin profile của nhân viên theo ID (bao gồm thông tin liên hệ và công việc)
@@ -152,20 +147,33 @@ public class EmployeeController {
         return ResponseEntity.ok(service.updateProfile(id, request));
     }
 
-    // Xóa nhân viên theo ID
+    // Xóa nhân viên theo ID (hỗ trợ Long id, employeeId, hoặc employeeCode)
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete employee",
-            description = "Xóa nhân viên theo ID"
+            description = "Xóa nhân viên theo ID. Supports Long id, employeeId (String), or employeeCode (String)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Employee deleted successfully"),
             @ApiResponse(responseCode = "404", description = "Employee not found"),
             @ApiResponse(responseCode = "400", description = "Invalid employee ID")
     })
-    public ResponseEntity<Map<String, String>> deleteEmployee(@PathVariable Long id) {
-        service.deleteEmployee(id);
-        return ResponseEntity.ok(Map.of("message", "Employee deleted successfully", "id", String.valueOf(id)));
+    public ResponseEntity<DeleteEmployeeResponseDTO> deleteEmployee(@PathVariable String id) {
+        return ResponseEntity.ok(service.deleteEmployeeById(id));
+    }
+
+    @GetMapping("/export")
+    @Operation(summary = "Export employees", description = "Export employees to file (csv|excel|pdf)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Export completed successfully")
+    })
+    public ResponseEntity<ExportResponseDTO> exportEmployees(
+            @RequestParam(required = false, defaultValue = "excel") String format,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String department,
+            @RequestParam(required = false) String status) {
+        ExportResponseDTO response = service.exportEmployees(format, search, department, status);
+        return ResponseEntity.ok(response);
     }
 }
 

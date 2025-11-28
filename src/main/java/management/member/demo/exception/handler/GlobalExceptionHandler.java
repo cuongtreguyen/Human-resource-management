@@ -4,6 +4,7 @@ import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.Mapper.HttpStatusMapper;
 import management.member.demo.exception.base.BusinessException;
 import management.member.demo.exception.model.ErrorResponse;
+import management.member.demo.exception.specifiic.FlaskApiException;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.exception.util.ErrorResponseBuilder;
 import management.member.demo.exception.util.ExceptionLogger;
@@ -184,6 +185,29 @@ public class GlobalExceptionHandler {
         exceptionLogger.logAuthorizationException(error.getTraceId(), ErrorCode.ACCESS_DENIED.getCode(), ex.getMessage());
         
         return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+    
+    /**
+     * Xử lý FlaskApiException
+     */
+    @ExceptionHandler(FlaskApiException.class)
+    public ResponseEntity<ErrorResponse> handleFlaskApiException(FlaskApiException ex, WebRequest request) {
+        String errorCode = ex.getErrorCode() == null ? ErrorCode.FLASK_API_ERROR.getCode() : ex.getErrorCode();
+        HttpStatus status = HttpStatus.BAD_GATEWAY; // 502 Bad Gateway cho external API errors
+        
+        ErrorResponse error = errorResponseBuilder.build(
+                status.value(),
+                errorCode,
+                ex.getMessage(),
+                request);
+        
+        exceptionLogger.logBusinessException(
+            error.getTraceId(), 
+            errorCode, 
+            String.format("Flask API Error [%s]: %s", ex.getApiEndpoint(), ex.getMessage())
+        );
+        
+        return new ResponseEntity<>(error, status);
     }
     
     /**

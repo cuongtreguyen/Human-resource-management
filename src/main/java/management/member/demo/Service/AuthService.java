@@ -13,6 +13,9 @@ import management.member.demo.repository.UserRepository;
 import management.member.demo.entity.User;
 import management.member.demo.Enum.Role;
 import management.member.demo.exception.base.BusinessException;
+import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.validator.AuthValidator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.authentication.BadCredentialsException;
 
@@ -33,17 +36,19 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final OtpService otpService;
+    private final AuthValidator authValidator;
 
     private static final int MAX_FAILED_ATTEMPTS = 5;
 
     @Autowired
-    public AuthService(AuthenticationManager authenticationManager, JwtService jwtService, UserDetailsService userDetailsService, UserRepository userRepository, PasswordEncoder passwordEncoder, OtpService otpService) {
+    public AuthService(AuthenticationManager authenticationManager, JwtService jwtService, UserDetailsService userDetailsService, UserRepository userRepository, PasswordEncoder passwordEncoder, OtpService otpService, AuthValidator authValidator) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.otpService = otpService;
+        this.authValidator = authValidator;
     }
 
     // Xác thực user bằng email và password, tạo JWT token
@@ -172,9 +177,12 @@ public class AuthService {
      * Gửi OTP cho quên mật khẩu
      */
     public String sendForgotPasswordOtp(String email) {
+        // Validate email format
+        authValidator.validateEmail(email);
+        
         // Kiểm tra email có tồn tại không
         if (!userRepository.existsByEmail(email)) {
-            throw new BusinessException("EMAIL_NOT_FOUND", "Email not found in system");
+            throw ErrorCode.EMAIL_EXISTS.toException("Email không tồn tại trong hệ thống");
         }
 
         // Tạo OTP sử dụng OtpService
@@ -192,13 +200,17 @@ public class AuthService {
      * Đặt lại mật khẩu với OTP
      */
     public void resetPassword(String email, String otp, String newPassword) {
+        // Validate email và password format
+        authValidator.validateEmail(email);
+        authValidator.validatePassword(newPassword);
+        
         // Xác thực OTP trước
         otpService.verifyOtp(email, otp);
         
         // Tìm user và cập nhật mật khẩu
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
-            throw new BusinessException("USER_NOT_FOUND", "User not found");
+            throw ErrorCode.USER_NOT_FOUND.toException();
         }
         
         User user = userOpt.get();
@@ -215,7 +227,7 @@ public class AuthService {
     public void testResetPassword(String email, String newPassword) {
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
-            throw new BusinessException("USER_NOT_FOUND", "User not found");
+            throw ErrorCode.USER_NOT_FOUND.toException();
         }
         
         User user = userOpt.get();
@@ -268,6 +280,28 @@ public class AuthService {
             }
             userRepository.save(u);
         });
+    }
+
+    /**
+     * Đổi mật khẩu
+     */
+    public void changePassword(String oldPassword, String newPassword) {
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw ErrorCode.USER_NOT_FOUND.toException();
+        }
+        
+        // Validate password format
+        authValidator.validatePassword(newPassword);
+        
+        // Kiểm tra old password
+        if (!passwordEncoder.matches(oldPassword, currentUser.getPassword())) {
+            throw ErrorCode.INVALID_OLD_PASSWORD.toException();
+        }
+        
+        // Cập nhật mật khẩu mới
+        currentUser.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(currentUser);
     }
 
     /**

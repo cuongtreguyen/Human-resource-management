@@ -25,7 +25,7 @@ import management.member.demo.dto.TokenRequest;
  * Bao gồm đăng nhập, kiểm tra sức khỏe service
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @Tag(name = "Authentication", description = "Authentication endpoints")
 public class AuthController {
 
@@ -49,14 +49,35 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
         AuthService.Tokens tokens = authService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
         LoginResponse response = new LoginResponse();
-        // Lấy thông tin user để trả về username
+        
+        // Lấy thông tin user
         User currentUser = authService.getUserByEmail(loginRequest.getEmail());
+        
+        // Set token (main field for API spec)
+        response.setToken(tokens.getAccessToken());
+        
+        // Set user info object
+        management.member.demo.dto.UserInfoDTO userInfo = new management.member.demo.dto.UserInfoDTO();
+        if (currentUser != null) {
+            userInfo.setId(String.valueOf(currentUser.getId()));
+            userInfo.setEmail(currentUser.getEmail());
+            userInfo.setRole(currentUser.getRole() != null ? currentUser.getRole().name().toLowerCase() : "employee");
+            userInfo.setEmployeeId(currentUser.getEmployeeId() != null ? currentUser.getEmployeeId() : null);
+        } else {
+            userInfo.setId(null);
+            userInfo.setEmail(loginRequest.getEmail());
+            userInfo.setRole("employee");
+            userInfo.setEmployeeId(null);
+        }
+        response.setUser(userInfo);
+        
+        // Keep backward compatibility fields
         response.setUsername(currentUser != null ? currentUser.getUsername() : loginRequest.getEmail());
         response.setAccessToken(tokens.getAccessToken());
         response.setRefreshToken(tokens.getRefreshToken());
         response.setAccessTokenExpiresAt(LocalDateTime.now().plusSeconds(3600));
-        // Lấy role từ user
         response.setRole(currentUser != null && currentUser.getRole() != null ? currentUser.getRole().name() : "EMPLOYEE");
+        
         return ResponseEntity.ok(response);
     }
 
@@ -77,10 +98,45 @@ public class AuthController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Token revoked")
     })
-    public ResponseEntity<Map<String, String>> logout(@RequestBody TokenRequest body) {
+    public ResponseEntity<Map<String, Object>> logout(@RequestBody TokenRequest body) {
         String token = body.getToken();
         authService.logout(token);
-        return ResponseEntity.ok(Map.of("status", "revoked"));
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully", "success", true));
+    }
+
+    @PostMapping("/change-password")
+    @Operation(summary = "Change password", description = "Change user password")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Password changed successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid old password")
+    })
+    public ResponseEntity<Map<String, Object>> changePassword(@RequestBody Map<String, String> request) {
+        String oldPassword = request.get("oldPassword");
+        String newPassword = request.get("newPassword");
+        
+        if (oldPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Validation failed",
+                    "message", "oldPassword and newPassword are required"
+            ));
+        }
+        
+        if (newPassword.length() < 8) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Validation failed",
+                    "message", "New password must be at least 8 characters"
+            ));
+        }
+        
+        try {
+            authService.changePassword(oldPassword, newPassword);
+            return ResponseEntity.ok(Map.of("message", "Password changed successfully", "success", true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid old password",
+                    "message", e.getMessage() != null ? e.getMessage() : "Old password is incorrect"
+            ));
+        }
     }
 
     /**

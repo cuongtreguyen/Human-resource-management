@@ -66,6 +66,9 @@ public class AddEmployeeRequest {
     @Size(max = 50, message = "Employee ID must not exceed 50 characters")
     private String employeeId;
 
+    @Size(max = 50, message = "Employee code must not exceed 50 characters")
+    private String employeeCode;
+
     @Size(max = 50, message = "Contract code must not exceed 50 characters")
     private String contractCode;
 

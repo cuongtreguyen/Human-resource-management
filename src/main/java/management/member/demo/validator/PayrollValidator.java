@@ -30,6 +30,20 @@ public class PayrollValidator {
     }
 
     /**
+     * Validate Employee ID String
+     */
+    public void validateEmployeeIdString(String employeeId) {
+        if (employeeId == null || employeeId.trim().isEmpty()) {
+            throw ErrorCode.INVALID_EMPLOYEE_ID.toException("ID nhân viên không được để trống");
+        }
+        try {
+            Long.parseLong(employeeId.trim());
+        } catch (NumberFormatException e) {
+            throw ErrorCode.INVALID_EMPLOYEE_ID.toException("ID nhân viên không hợp lệ: " + employeeId);
+        }
+    }
+
+    /**
      * Validate Payroll entity không null
      */
     public void validatePayroll(Payroll payroll) {

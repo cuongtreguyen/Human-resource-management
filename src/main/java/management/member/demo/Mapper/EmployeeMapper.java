@@ -1,5 +1,7 @@
 package management.member.demo.Mapper;
 
+import management.member.demo.dto.EmployeeDetailDTO;
+import management.member.demo.dto.EmployeeListItemDTO;
 import management.member.demo.dto.EmployeeRequest;
 import management.member.demo.dto.EmployeeResponse;
 import management.member.demo.dto.ProfileResponse;
@@ -74,5 +76,57 @@ public class EmployeeMapper {
         employee.setHireDate(request.getHireDate());
         employee.setStatus(request.getStatus());
         employee.setBaseSalary(request.getBaseSalary());
+    }
+
+    /**
+     * Map Employee entity sang EmployeeListItemDTO for list endpoint
+     */
+    public EmployeeListItemDTO toListItem(Employee employee) {
+        EmployeeListItemDTO dto = new EmployeeListItemDTO();
+        // Use employeeId if available, otherwise use employeeCode, otherwise use id as string
+        dto.setId(employee.getEmployeeId() != null ? employee.getEmployeeId() : 
+                  (employee.getEmployeeCode() != null ? employee.getEmployeeCode() : String.valueOf(employee.getId())));
+        dto.setName(employee.getFullName());
+        dto.setEmail(employee.getEmail());
+        dto.setPosition(employee.getPosition());
+        dto.setDepartment(employee.getDepartment());
+        dto.setPhone(employee.getPhone());
+        // Convert status enum to lowercase string (ACTIVE -> active, ON_LEAVE -> on_leave)
+        dto.setStatus(employee.getStatus() != null ? employee.getStatus().name().toLowerCase() : null);
+        dto.setAvatar("/api/placeholder/150/150"); // Placeholder avatar URL
+        dto.setHireDate(employee.getHireDate());
+        dto.setSalary(employee.getBaseSalary());
+        return dto;
+    }
+
+    /**
+     * Map Employee entity sang EmployeeDetailDTO for detail endpoint
+     */
+    public EmployeeDetailDTO toDetail(Employee employee) {
+        EmployeeDetailDTO dto = new EmployeeDetailDTO();
+        // Use employeeId if available, otherwise use employeeCode, otherwise use id as string
+        dto.setId(employee.getEmployeeId() != null ? employee.getEmployeeId() : 
+                  (employee.getEmployeeCode() != null ? employee.getEmployeeCode() : String.valueOf(employee.getId())));
+        dto.setFirstName(employee.getFirstName());
+        dto.setLastName(employee.getLastName());
+        dto.setEmail(employee.getEmail());
+        dto.setPhone(employee.getPhone());
+        dto.setPosition(employee.getPosition());
+        dto.setDepartment(employee.getDepartment());
+        // Convert status enum to lowercase string
+        dto.setStatus(employee.getStatus() != null ? employee.getStatus().name().toLowerCase() : null);
+        dto.setHireDate(employee.getHireDate());
+        dto.setSalary(employee.getBaseSalary());
+        dto.setPersonalEmail(employee.getPersonalEmail());
+        dto.setDateOfBirth(employee.getDateOfBirth());
+        dto.setGender(employee.getGender());
+        dto.setIdNumber(employee.getIdNumber());
+        dto.setTaxCode(employee.getTaxCode());
+        dto.setPermanentAddress(employee.getPermanentAddress());
+        dto.setTemporaryAddress(employee.getTemporaryAddress());
+        dto.setEmployeeCode(employee.getEmployeeCode());
+        dto.setContractCode(employee.getContractCode());
+        dto.setContractType(employee.getContractType());
+        return dto;
     }
 }

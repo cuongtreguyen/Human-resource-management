@@ -1,6 +1,5 @@
 package management.member.demo.dto;
 
-import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import management.member.demo.Enum.TaskPriorityStatus;

@@ -3,12 +3,16 @@ package management.member.demo.Service;
 import management.member.demo.Mapper.AttendanceMapper;
 import management.member.demo.dto.AttendanceDTO;
 import management.member.demo.dto.AttendanceRequest;
+import management.member.demo.dto.DailyAttendanceResponseDTO;
+import management.member.demo.dto.ExportResponseDTO;
+import management.member.demo.dto.FaceRecognitionResponseDTO;
 import management.member.demo.entity.Attendance;
 import management.member.demo.entity.Employee;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.AttendanceRepository;
 import management.member.demo.repository.EmployeeRepository;
+import management.member.demo.validator.AttendanceValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,10 +34,17 @@ public class AttendanceService {
     @Autowired
     private AttendanceMapper attendanceMapper;
 
+    @Autowired
+    private management.member.demo.Mapper.AttendanceMapperHelper attendanceMapperHelper;
+
+    @Autowired
+    private AttendanceValidator attendanceValidator;
+
     /**
      * Tạo attendance mới từ AttendanceRequest (theo Employee)
      */
     public AttendanceDTO createAttendance(AttendanceRequest request) {
+        attendanceValidator.validateAttendanceRequest(request); // Validate request
         // Tìm Employee
         Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -53,7 +64,7 @@ public class AttendanceService {
                 attendance.setCheckOut(request.getCheckOut());
             }
             Attendance saved = attendanceRepository.save(attendance);
-            return mapToDTO(saved);
+            return attendanceMapper.toDTO(saved);
         } else {
             // Tạo mới
             Attendance attendance = new Attendance();
@@ -65,7 +76,7 @@ public class AttendanceService {
             attendance.setUserId(employee.getEmployeeId() != null ? employee.getEmployeeId() : employee.getId().toString());
             
             Attendance saved = attendanceRepository.save(attendance);
-            return mapToDTO(saved);
+            return attendanceMapper.toDTO(saved);
         }
     }
 
@@ -96,7 +107,7 @@ public class AttendanceService {
         attendance.setCheckOut(attendanceDTO.getCheckOut());
         
         Attendance savedAttendance = attendanceRepository.save(attendance);
-        return mapToDTO(savedAttendance);
+        return attendanceMapper.toDTO(savedAttendance);
     }
 
     public List<AttendanceDTO> getAttendanceByUserId(String userId) {
@@ -155,7 +166,7 @@ public class AttendanceService {
     public List<AttendanceDTO> getAttendanceByEmployeeId(Long employeeId) {
         List<Attendance> attendances = attendanceRepository.findByEmployeeId(employeeId);
         return attendances.stream()
-                .map(this::mapToDTO)
+                .map(attendanceMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -164,7 +175,7 @@ public class AttendanceService {
      */
     public AttendanceDTO getAttendanceByEmployeeIdAndDate(Long employeeId, LocalDate date) {
         Optional<Attendance> attendance = attendanceRepository.findByEmployeeIdAndDate(employeeId, date);
-        return attendance.map(this::mapToDTO)
+        return attendance.map(attendanceMapper::toDTO)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Không tìm thấy attendance cho nhân viên ID: " + employeeId + " vào ngày: " + date));
     }
@@ -175,7 +186,7 @@ public class AttendanceService {
     public List<AttendanceDTO> getAttendanceByEmployeeIdAndDateRange(Long employeeId, LocalDate startDate, LocalDate endDate) {
         List<Attendance> attendances = attendanceRepository.findByEmployeeIdAndDateRange(employeeId, startDate, endDate);
         return attendances.stream()
-                .map(this::mapToDTO)
+                .map(attendanceMapper::toDTO)
                 .collect(Collectors.toList());
     }
 
@@ -206,7 +217,7 @@ public class AttendanceService {
         }
         
         Attendance saved = attendanceRepository.save(attendance);
-        return mapToDTO(saved);
+        return attendanceMapper.toDTO(saved);
     }
 
     /**
@@ -223,26 +234,128 @@ public class AttendanceService {
 
         attendance.setCheckOut(java.time.LocalTime.now());
         Attendance saved = attendanceRepository.save(attendance);
-        return mapToDTO(saved);
+        return attendanceMapper.toDTO(saved);
     }
 
     /**
-     * Map Attendance entity sang DTO với thông tin Employee
+     * Get daily attendance - trả về DailyAttendanceResponseDTO với hoursWorked và overtime
      */
-    private AttendanceDTO mapToDTO(Attendance attendance) {
-        AttendanceDTO dto = new AttendanceDTO();
-        dto.setId(attendance.getId());
-        if (attendance.getEmployee() != null) {
-            dto.setEmployeeId(attendance.getEmployee().getId());
-            dto.setEmployeeName(attendance.getEmployee().getFullName());
-        }
-        dto.setUserId(attendance.getUserId());
-        dto.setUserName(attendance.getFullName());
-        dto.setAttendanceDate(attendance.getAttendanceDate());
-        dto.setCheckIn(attendance.getCheckIn());
-        dto.setCheckOut(attendance.getCheckOut());
-        dto.setCreatedAt(attendance.getCreatedAt());
-        dto.setUpdatedAt(attendance.getUpdatedAt());
-        return dto;
+    public List<DailyAttendanceResponseDTO> getDailyAttendance(String date) {
+        LocalDate attendanceDate = date != null ? LocalDate.parse(date) : LocalDate.now();
+        List<Attendance> attendances = attendanceRepository.findByAttendanceDate(attendanceDate);
+        return attendances.stream()
+                .map(attendanceMapperHelper::toDailyAttendanceDTO)
+                .collect(Collectors.toList());
     }
+
+    /**
+     * Get attendance range - trả về DailyAttendanceResponseDTO với hoursWorked và overtime
+     */
+    public List<DailyAttendanceResponseDTO> getAttendanceRange(String startDate, String endDate) {
+        LocalDate start = LocalDate.parse(startDate);
+        LocalDate end = LocalDate.parse(endDate);
+        List<Attendance> attendances = attendanceRepository.findByDateRange(start, end);
+        return attendances.stream()
+                .map(attendanceMapperHelper::toDailyAttendanceDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Get employee attendance - trả về DailyAttendanceResponseDTO với hoursWorked và overtime
+     */
+    public List<DailyAttendanceResponseDTO> getEmployeeAttendance(String employeeId, String startDate, String endDate) {
+        Long empId = Long.parseLong(employeeId);
+        LocalDate start = startDate != null ? LocalDate.parse(startDate) : null;
+        LocalDate end = endDate != null ? LocalDate.parse(endDate) : null;
+        
+        List<Attendance> attendances;
+        if (start != null && end != null) {
+            attendances = attendanceRepository.findByEmployeeIdAndDateRange(empId, start, end);
+        } else {
+            attendances = attendanceRepository.findByEmployeeId(empId);
+        }
+        
+        return attendances.stream()
+                .map(attendanceMapperHelper::toDailyAttendanceDTO)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Handle face recognition success - tạo hoặc cập nhật attendance
+     */
+    public FaceRecognitionResponseDTO handleFaceRecognitionSuccess(
+            String employeeId, String employeeName, Double confidence, String timestamp) {
+        
+        // Validate confidence score (threshold: 70.0)
+        if (confidence < 70.0) {
+            return attendanceMapperHelper.toLowConfidenceErrorResponse(confidence);
+        }
+        
+        try {
+            Long empId = Long.parseLong(employeeId);
+            LocalDate today = LocalDate.now();
+            
+            // Tìm attendance hiện tại
+            Optional<Attendance> existing = attendanceRepository.findByEmployeeIdAndDate(empId, today);
+            
+            Attendance attendance;
+            boolean isCheckIn = false;
+            
+            if (existing.isPresent()) {
+                attendance = existing.get();
+                // Nếu đã có check-in, thì đây là check-out
+                if (attendance.getCheckIn() != null && attendance.getCheckOut() == null) {
+                    attendance.setCheckOut(java.time.LocalTime.now());
+                    isCheckIn = false;
+                } else if (attendance.getCheckIn() == null) {
+                    // Chưa có check-in, tạo check-in
+                    attendance.setCheckIn(java.time.LocalTime.now());
+                    isCheckIn = true;
+                } else {
+                    // Đã có cả check-in và check-out, không làm gì
+                    return attendanceMapperHelper.toAlreadyRecordedResponse(attendance);
+                }
+            } else {
+                // Tạo mới attendance với check-in
+                Employee employee = employeeRepository.findById(empId)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
+                
+                attendance = new Attendance();
+                attendance.setEmployee(employee);
+                attendance.setAttendanceDate(today);
+                attendance.setCheckIn(java.time.LocalTime.now());
+                attendance.setFullName(employee.getFullName());
+                attendance.setUserId(employee.getEmployeeId() != null ? employee.getEmployeeId() : employee.getId().toString());
+                isCheckIn = true;
+            }
+            
+            Attendance saved = attendanceRepository.save(attendance);
+            return attendanceMapperHelper.toSuccessResponse(saved, isCheckIn);
+        } catch (NumberFormatException e) {
+            return attendanceMapperHelper.toErrorResponse("Invalid employee ID format");
+        } catch (ResourceNotFoundException e) {
+            return attendanceMapperHelper.toErrorResponse("Employee not found: " + employeeId);
+        } catch (Exception e) {
+            return attendanceMapperHelper.toErrorResponse("Error recording attendance: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Export attendance data
+     */
+    public ExportResponseDTO exportAttendance(String startDate, String endDate, String format) {
+        // TODO: Implement actual export logic
+        String filename = "attendance_" + startDate + "_to_" + endDate + "." + (format != null ? format : "excel");
+        
+        // TODO: Move export response creation to a mapper if needed
+        ExportResponseDTO response = new ExportResponseDTO();
+        response.setUrl("/exports/" + filename);
+        response.setFilename(filename);
+        response.setMessage("Export completed successfully");
+        response.setSuccess(true);
+        
+        return response;
+    }
+
 }

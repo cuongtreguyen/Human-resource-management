@@ -1,5 +1,6 @@
 package management.member.demo.Service;
 
+import management.member.demo.exception.model.ErrorCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.ses.SesClient;
@@ -65,7 +66,7 @@ public class EmailService {
             sesClient.sendEmail(emailRequest);
             
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send email via AWS SES: " + e.getMessage(), e);
+            throw ErrorCode.EMAIL_SEND_ERROR.toException("Không thể gửi email qua AWS SES: " + e.getMessage());
         }
     }
 
@@ -121,7 +122,7 @@ public class EmailService {
             sesClient.sendEmail(emailRequest);
             
         } catch (Exception e) {
-            throw new RuntimeException("Failed to send OTP email via AWS SES: " + e.getMessage(), e);
+            throw ErrorCode.EMAIL_SEND_ERROR.toException("Không thể gửi email OTP qua AWS SES: " + e.getMessage());
         }
     }
 }
