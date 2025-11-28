@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import fakeApi from '../services/fakeApi';
-import { getRole, getUserId } from '../utils/auth';
+import { getRole, getCurrentEmployeeId } from '../utils/auth';
 import Layout from '../components/layout/Layout';
 
 const Profile = () => {
@@ -32,7 +32,7 @@ const Profile = () => {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      const userId = getUserId() || 'emp001';
+      const userId = getCurrentEmployeeId();
       const response = await fakeApi.getEmployeeProfile(userId);
       setProfile(response.data);
       setFormData({

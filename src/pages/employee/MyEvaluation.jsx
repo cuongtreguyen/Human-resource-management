@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { Award, Star, Eye, X, TrendingUp, Calendar, User } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
+import { getCurrentEmployeeId } from '../../utils/auth';
 
 const MyEvaluation = () => {
   const [evaluations, setEvaluations] = useState([]);
@@ -9,8 +10,8 @@ const MyEvaluation = () => {
   const [showModal, setShowModal] = useState(false);
   const [selectedEvaluation, setSelectedEvaluation] = useState(null);
 
-  // Mock current employee ID (trong thực tế lấy từ auth/token)
-  const currentEmployeeId = 'emp001';
+  // Lấy employee ID từ authentication
+  const currentEmployeeId = getCurrentEmployeeId();
 
   useEffect(() => {
     loadMyEvaluations();

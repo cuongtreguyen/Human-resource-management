@@ -4,7 +4,7 @@ import { X, Eye, Edit, CheckCircle, Clock, AlertCircle, Calendar, User, Trending
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import fakeApi from "../../services/fakeApi";
-import { clearRole } from "../../utils/auth";
+import { clearRole, getCurrentEmployeeId } from "../../utils/auth";
 import { motion } from "framer-motion";
 
 const EmployeePortal = () => {
@@ -26,11 +26,23 @@ const EmployeePortal = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const empRes = await fakeApi.getEmployees();
-        const current = empRes.data[0];
-        setEmployee(current);
-        const summary = await fakeApi.getEmployeeTaskSummary(current.id);
-        setTaskSummary(summary.data);
+        const employeeId = getCurrentEmployeeId();
+        // Lấy thông tin employee hiện tại
+        const empRes = await fakeApi.getEmployeeById(employeeId);
+        if (empRes.success && empRes.data) {
+          setEmployee(empRes.data);
+          const summary = await fakeApi.getEmployeeTaskSummary(employeeId);
+          setTaskSummary(summary.data);
+        } else {
+          // Fallback: lấy employee đầu tiên nếu không tìm thấy
+          const allEmpRes = await fakeApi.getEmployees();
+          if (allEmpRes.success && allEmpRes.data.length > 0) {
+            const current = allEmpRes.data[0];
+            setEmployee(current);
+            const summary = await fakeApi.getEmployeeTaskSummary(current.id);
+            setTaskSummary(summary.data);
+          }
+        }
 
         const tasksRes = await fakeApi.getTasks();
         const loadedTasks = tasksRes.data;

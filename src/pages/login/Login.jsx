@@ -31,7 +31,7 @@ const Login = () => {
       role: "employee",
       route: "/employee",
       info: {
-        employeeId: "1",
+        employeeId: "emp001",
         name: "Trần Ngọc Hải",
       },
     },

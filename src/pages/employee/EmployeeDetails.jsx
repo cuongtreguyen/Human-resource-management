@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import fakeApi from '../../services/fakeApi';
-import { isAdmin } from '../../utils/auth';
+import { isAdmin, getRole } from '../../utils/auth';
+import { canViewPersonalInfo, canViewEmergencyContact, maskSensitiveData } from '../../utils/fieldPermissions';
 import {
   User, Mail, Phone, Briefcase, Calendar,
   DollarSign, Edit, Trash2, ArrowLeft, CheckCircle,
@@ -16,6 +17,7 @@ const EmployeeDetails = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const userRole = getRole();
 
   useEffect(() => {
     loadEmployeeDetails();
@@ -206,35 +208,63 @@ const EmployeeDetails = () => {
             <div className="space-y-1">
               <InfoRow label="Email" value={employee.email} />
               <InfoRow label="Số điện thoại" value={employee.phone} />
-              <InfoRow label="Địa chỉ" value={employee.address} />
+              {/* Địa chỉ chỉ hiển thị cho Admin/Manager */}
+              {canViewPersonalInfo(userRole) && (
+                <InfoRow label="Địa chỉ" value={employee.address} />
+              )}
             </div>
           </div>
 
-          {/* Thông tin cá nhân */}
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-purple-600" />
-              Thông tin cá nhân
-            </h3>
-            <div className="space-y-1">
-              <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth)} />
-              <InfoRow label="Giới tính" value={employee.gender} />
-              <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus} />
-            </div>
-          </div>
+          {/* Thông tin cá nhân - Chỉ Admin/Manager */}
+          {canViewPersonalInfo(userRole) && (
+  <>
+    <div className="bg-white rounded-xl border p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <User className="w-5 h-5 text-purple-600" />
+        Thông tin cá nhân
+      </h3>
+      <div className="space-y-1">
+        <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth)} />
+        <InfoRow label="Giới tính" value={employee.gender} />
+        <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus} />
+      </div>
+    </div>
 
-          {/* Giấy tờ tùy thân */}
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-green-600" />
-              Giấy tờ tùy thân
-            </h3>
-            <div className="space-y-1">
-              <InfoRow label="Số CCCD/CMND" value={employee.idCard} />
-              <InfoRow label="Ngày cấp" value={formatDate(employee.idCardIssueDate)} />
-              <InfoRow label="Nơi cấp" value={employee.idCardIssuePlace} />
-            </div>
-          </div>
+    {/* Giấy tờ tùy thân - Admin xem đầy đủ, Manager xem mask */}
+    <div className="bg-white rounded-xl border p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <CreditCard className="w-5 h-5 text-green-600" />
+        Giấy tờ tùy thân
+      </h3>
+      <div className="space-y-1">
+        <InfoRow 
+          label="Số CCCD/CMND" 
+          value={
+            isAdmin() 
+              ? employee.idCard 
+              : maskSensitiveData(employee.idCard, 4)
+          } 
+        />
+        <InfoRow 
+          label="Ngày cấp" 
+          value={
+            isAdmin() 
+              ? formatDate(employee.idCardIssueDate) 
+              : '***'
+          } 
+        />
+        <InfoRow 
+          label="Nơi cấp" 
+          value={
+            isAdmin() 
+              ? employee.idCardIssuePlace 
+              : '***'
+          } 
+        />
+      </div>
+    </div>
+  </>
+)}
 
           {/* Thông tin công việc */}
           <div className="bg-white rounded-xl border p-6">
@@ -278,31 +308,33 @@ const EmployeeDetails = () => {
             </div>
           )}
 
-          {/* Liên hệ khẩn cấp */}
-          <div className="bg-white rounded-xl border p-6 md:col-span-2">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Heart className="w-5 h-5 text-red-600" />
-              Liên hệ khẩn cấp
-            </h3>
-            {employee.emergencyContact ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <span className="text-gray-500 text-sm">Họ và tên</span>
-                  <p className="text-gray-900 font-medium">{employee.emergencyContact.name || 'Chưa cập nhật'}</p>
+          {/* Liên hệ khẩn cấp - Chỉ Admin/Manager */}
+          {canViewEmergencyContact(userRole) && (
+            <div className="bg-white rounded-xl border p-6 md:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <Heart className="w-5 h-5 text-red-600" />
+                Liên hệ khẩn cấp
+              </h3>
+              {employee.emergencyContact ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <span className="text-gray-500 text-sm">Họ và tên</span>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContact.name || 'Chưa cập nhật'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-sm">Mối quan hệ</span>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContact.relationship || 'Chưa cập nhật'}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500 text-sm">Số điện thoại</span>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContact.phone || 'Chưa cập nhật'}</p>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-gray-500 text-sm">Mối quan hệ</span>
-                  <p className="text-gray-900 font-medium">{employee.emergencyContact.relationship || 'Chưa cập nhật'}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500 text-sm">Số điện thoại</span>
-                  <p className="text-gray-900 font-medium">{employee.emergencyContact.phone || 'Chưa cập nhật'}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-500">Chưa cập nhật thông tin liên hệ khẩn cấp</p>
-            )}
-          </div>
+              ) : (
+                <p className="text-gray-500">Chưa cập nhật thông tin liên hệ khẩn cấp</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Delete Confirmation Modal */}
