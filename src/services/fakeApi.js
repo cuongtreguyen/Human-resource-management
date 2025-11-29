@@ -327,6 +327,84 @@ class FakeApiService {
         bankAccount: '9988776655',
         bankName: 'ACB',
         bankBranch: 'Chi nhánh Sài Gòn'
+      },
+      {
+        id: 'mgr001',
+        name: 'Nguyễn Văn Quản Lý',
+        email: 'manager@company.com',
+        position: 'Quản lý phòng IT',
+        department: 'IT',
+        phone: '0901234599',
+        status: 'active',
+        avatar: '/api/placeholder/150/150',
+        hireDate: '2020-03-15',
+        salary: 25000000,
+        // Personal Information
+        dateOfBirth: '1988-07-15',
+        gender: 'Nam',
+        nationality: 'Việt Nam',
+        idCard: '001088056789',
+        idCardIssueDate: '2008-08-01',
+        idCardIssuePlace: 'Công an TP. Hà Nội',
+        address: '456 Lê Lợi, Quận 1, TP.HCM',
+        maritalStatus: 'Đã kết hôn',
+        // Employment Details
+        employeeType: 'Toàn thời gian',
+        contractType: 'Hợp đồng không xác định thời hạn',
+        manager: 'Giám đốc IT',
+        workLocation: 'Văn phòng TP.HCM',
+        // Education
+        education: 'Thạc sĩ',
+        educationDetails: 'Thạc sĩ Công nghệ Thông tin - ĐH Bách Khoa',
+        // Emergency Contact
+        emergencyContact: {
+          name: 'Nguyễn Thị Lan',
+          relationship: 'Vợ',
+          phone: '0987654399'
+        },
+        // Bank Information
+        bankAccount: '8877665544',
+        bankName: 'Vietcombank',
+        bankBranch: 'Chi nhánh TP.HCM'
+      },
+      {
+        id: 'acc001',
+        name: 'Trần Thị Kế Toán',
+        email: 'accountant@company.com',
+        position: 'Kế toán trưởng',
+        department: 'Tài chính',
+        phone: '0901234598',
+        status: 'active',
+        avatar: '/api/placeholder/150/150',
+        hireDate: '2019-06-01',
+        salary: 22000000,
+        // Personal Information
+        dateOfBirth: '1990-11-20',
+        gender: 'Nữ',
+        nationality: 'Việt Nam',
+        idCard: '001090087654',
+        idCardIssueDate: '2010-12-01',
+        idCardIssuePlace: 'Công an TP. Hà Nội',
+        address: '789 Nguyễn Trãi, Quận 5, TP.HCM',
+        maritalStatus: 'Đã kết hôn',
+        // Employment Details
+        employeeType: 'Toàn thời gian',
+        contractType: 'Hợp đồng không xác định thời hạn',
+        manager: 'Giám đốc Tài chính',
+        workLocation: 'Văn phòng TP.HCM',
+        // Education
+        education: 'Cử nhân',
+        educationDetails: 'Cử nhân Kế toán - ĐH Kinh Tế Quốc Dân',
+        // Emergency Contact
+        emergencyContact: {
+          name: 'Trần Văn Nam',
+          relationship: 'Chồng',
+          phone: '0987654398'
+        },
+        // Bank Information
+        bankAccount: '7766554433',
+        bankName: 'Techcombank',
+        bankBranch: 'Chi nhánh TP.HCM'
       }
     ];
     return this.delayResponse({ data: employees, success: true });
