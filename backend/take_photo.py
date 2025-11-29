@@ -3,8 +3,13 @@ import cv2
 import os
 import sys
 import time
+import io
 from train_model import train_model
 import numpy as np # Đảm bảo đã import
+
+# Fix Unicode encoding for Vietnamese characters on Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 def setup_paths():
     """
@@ -122,7 +127,7 @@ def take_photos(user_id, user_name=None):
     else:
         print(f"[INFO] Starting auto photo capture for User ID: {user_id}")
 
-    max_photos = 60
+    max_photos = 20
     min_face_size = 100
     delay = 0.2
     count = 0

@@ -75,8 +75,13 @@ const transformMockRecords = (items = []) =>
 
 const EmployeeAttendance = () => {
   const userInfo = getUserInfo();
-  const employeeId = userInfo?.employeeId || '1';
+  // Lấy ID từ userInfo - có thể là employeeId, id, hoặc mặc định là '1'
+  const employeeId = userInfo?.employeeId || userInfo?.id || '1';
   const employeeName = userInfo?.name || 'Nhân viên';
+
+  // Debug: Log để kiểm tra
+  console.log('userInfo:', userInfo);
+  console.log('employeeId đang dùng:', employeeId);
 
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);

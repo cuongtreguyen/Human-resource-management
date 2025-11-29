@@ -749,11 +749,9 @@ def recognize():
         global current_process, system_status
         try:
             script_path = os.path.join(BASE_DIR, "face_recognition.py")
-            DETACHED_PROCESS = 0x00000008  # hide console
+            # Không dùng DETACHED_PROCESS để OpenCV window có thể hiển thị
             current_process = subprocess.Popen(
-                [sys.executable, script_path, type_param],
-                creationflags=DETACHED_PROCESS,
-                close_fds=True
+                [sys.executable, script_path, type_param]
             )
             current_process.wait()
             system_status.update({
@@ -880,6 +878,192 @@ def attendance_stats():
         "absent": absent,
         "checkedOut": checked_out,
         "stillWorking": still_working
+    })
+
+# ---------------- Employees API (lấy danh sách nhân viên đã đăng ký) ----------------
+@app.get('/api/employees')
+def get_employees():
+    """
+    Lấy danh sách nhân viên đã đăng ký trong hệ thống (từ datasets folder).
+    Mỗi folder trong datasets là 1 nhân viên với format: User.{id}.{name}
+    """
+    employees = []
+    try:
+        if os.path.isdir(DATASET_DIR):
+            for folder in os.listdir(DATASET_DIR):
+                folder_path = os.path.join(DATASET_DIR, folder)
+                if os.path.isdir(folder_path):
+                    # Parse folder name: User.{id}.{name}
+                    parts = folder.split('.')
+                    if len(parts) >= 3:
+                        emp_id = parts[1]
+                        emp_name = '.'.join(parts[2:])  # Tên có thể chứa dấu chấm
+                    else:
+                        emp_id = folder
+                        emp_name = folder
+
+                    # Đếm số ảnh đã đăng ký
+                    photo_count = len([f for f in os.listdir(folder_path) if f.endswith(('.jpg', '.jpeg', '.png'))])
+
+                    employees.append({
+                        "id": emp_id,
+                        "name": emp_name,
+                        "folder": folder,
+                        "photoCount": photo_count,
+                        "registered": True
+                    })
+    except Exception as e:
+        logger.error(f"Error getting employees: {e}")
+
+    return jsonify(employees)
+
+@app.get('/api/employees/<emp_id>')
+def get_employee(emp_id):
+    """Lấy thông tin 1 nhân viên theo ID"""
+    try:
+        if os.path.isdir(DATASET_DIR):
+            for folder in os.listdir(DATASET_DIR):
+                folder_path = os.path.join(DATASET_DIR, folder)
+                if os.path.isdir(folder_path):
+                    parts = folder.split('.')
+                    if len(parts) >= 2 and parts[1] == str(emp_id):
+                        emp_name = '.'.join(parts[2:]) if len(parts) >= 3 else folder
+                        photo_count = len([f for f in os.listdir(folder_path) if f.endswith(('.jpg', '.jpeg', '.png'))])
+                        return jsonify({
+                            "id": emp_id,
+                            "name": emp_name,
+                            "folder": folder,
+                            "photoCount": photo_count,
+                            "registered": True
+                        })
+        return jsonify({"error": "Employee not found"}), 404
+    except Exception as e:
+        logger.error(f"Error getting employee {emp_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.get('/api/attendance/monthly-stats/<emp_id>')
+def get_monthly_stats(emp_id):
+    """
+    Lấy thống kê chấm công theo tháng của 1 nhân viên.
+    Dùng cho tab "Chấm công của tôi" để hiển thị thống kê.
+    """
+    month = request.args.get('month')  # Format: YYYY-MM
+    if not month:
+        month = datetime.now().strftime("%Y-%m")
+
+    year, mon = month.split('-')
+    start_date = f"{year}-{mon}-01"
+
+    # Tính ngày cuối tháng
+    if int(mon) == 12:
+        end_date = f"{int(year)+1}-01-01"
+    else:
+        end_date = f"{year}-{int(mon)+1:02d}-01"
+    end_date = (datetime.strptime(end_date, "%Y-%m-%d") - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # Lấy dữ liệu chấm công
+    records = []
+    stats = {
+        "totalDays": 0,
+        "presentDays": 0,
+        "lateDays": 0,
+        "earlyLeaveDays": 0,
+        "absentDays": 0,
+        "overtimeHours": 0,
+        "totalWorkMinutes": 0
+    }
+
+    cur = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+
+    while cur <= end:
+        date = cur.strftime("%Y-%m-%d")
+        weekday = cur.weekday()
+
+        # Chỉ tính ngày làm việc (T2-T6)
+        if weekday < 5:
+            stats["totalDays"] += 1
+
+            data = _load_json(os.path.join(ATT_DIR, f"attendance_{date}.json"), {})
+            if str(emp_id) in data:
+                rec = data[str(emp_id)]
+                check_in = rec.get("check_in")
+                check_out = rec.get("check_out")
+
+                status = "present"
+                work_minutes = 0
+
+                if check_in:
+                    stats["presentDays"] += 1
+
+                    # Parse check_in time
+                    try:
+                        in_time = datetime.strptime(check_in, "%H:%M:%S")
+                        standard_in = datetime.strptime("08:00:00", "%H:%M:%S")
+                        if in_time > standard_in + timedelta(minutes=15):
+                            stats["lateDays"] += 1
+                            status = "late"
+                    except:
+                        pass
+
+                    # Tính giờ làm việc
+                    if check_out:
+                        try:
+                            out_time = datetime.strptime(check_out, "%H:%M:%S")
+                            standard_out = datetime.strptime("17:30:00", "%H:%M:%S")
+
+                            if out_time < standard_out - timedelta(minutes=15):
+                                stats["earlyLeaveDays"] += 1
+                                if status == "late":
+                                    status = "late_and_early"
+                                else:
+                                    status = "early_leave"
+                            elif out_time > standard_out + timedelta(minutes=30):
+                                overtime_mins = (out_time - standard_out).seconds // 60
+                                stats["overtimeHours"] += overtime_mins / 60
+                                status = "overtime"
+
+                            work_minutes = (out_time - in_time).seconds // 60
+                            stats["totalWorkMinutes"] += work_minutes
+                        except:
+                            pass
+                else:
+                    stats["absentDays"] += 1
+                    status = "absent"
+
+                records.append({
+                    "date": date,
+                    "checkIn": check_in,
+                    "checkOut": check_out,
+                    "status": status,
+                    "workMinutes": work_minutes
+                })
+            else:
+                stats["absentDays"] += 1
+                records.append({
+                    "date": date,
+                    "checkIn": None,
+                    "checkOut": None,
+                    "status": "absent",
+                    "workMinutes": 0
+                })
+
+        cur += timedelta(days=1)
+
+    # Tính trung bình giờ làm việc
+    if stats["presentDays"] > 0:
+        avg_minutes = stats["totalWorkMinutes"] / stats["presentDays"]
+        stats["avgWorkHours"] = f"{int(avg_minutes // 60)}h {int(avg_minutes % 60)}m"
+    else:
+        stats["avgWorkHours"] = "0h 0m"
+
+    stats["overtimeHours"] = round(stats["overtimeHours"], 1)
+
+    return jsonify({
+        "month": month,
+        "employeeId": emp_id,
+        "stats": stats,
+        "records": records
     })
 
 if __name__ == '__main__':

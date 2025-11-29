@@ -276,11 +276,11 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
         {/* Modal */}
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4">
+          <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-4">
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold">Face Recognition System</h2>
-                <p className="text-blue-100 text-sm">Biometric attendance management</p>
+                <p className="text-purple-100 text-sm">Biometric attendance management</p>
               </div>
               <button
                 onClick={onClose}
@@ -297,11 +297,11 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
               <div className="space-y-6">
                 {/* Logo */}
                 <div className="text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <Camera className="h-6 w-6 text-blue-600" />
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <Camera className="h-6 w-6 text-purple-600" />
                   </div>
                   <h3 className="text-base font-bold text-gray-900">Face Recognition</h3>
-                  <p className="text-xs text-blue-600">Attendance System</p>
+                  <p className="text-xs text-purple-600">Attendance System</p>
                 </div>
 
                 {/* System Status */}
@@ -343,7 +343,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                       "Start recognition to check in/out"
                     ].map((instruction, index) => (
                       <div key={index} className="flex items-start">
-                        <div className="w-4 h-4 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">
+                        <div className="w-4 h-4 bg-purple-600 text-white rounded-full flex items-center justify-center text-xs font-bold mr-2 mt-0.5">
                           {index + 1}
                         </div>
                         <p className="text-xs text-gray-700 leading-relaxed">{instruction}</p>
@@ -362,7 +362,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                   onClick={() => setActiveTab('register')}
                   className={`px-4 py-2 font-medium text-sm ${
                     activeTab === 'register'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      ? 'text-purple-600 border-b-2 border-purple-600'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -372,7 +372,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                   onClick={() => setActiveTab('train')}
                   className={`px-4 py-2 font-medium text-sm ${
                     activeTab === 'train'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      ? 'text-purple-600 border-b-2 border-purple-600'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -382,7 +382,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                   onClick={() => setActiveTab('recognize')}
                   className={`px-4 py-2 font-medium text-sm ${
                     activeTab === 'recognize'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      ? 'text-purple-600 border-b-2 border-purple-600'
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
@@ -425,12 +425,12 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                       </div>
 
                       {/* Info Box */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
                         <div className="flex items-start">
-                          <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center mr-2 mt-0.5">
+                          <div className="w-4 h-4 bg-purple-600 rounded-full flex items-center justify-center mr-2 mt-0.5">
                             <span className="text-white text-xs font-bold">i</span>
                           </div>
-                          <p className="text-xs text-blue-800">
+                          <p className="text-xs text-purple-800">
                             When the camera starts, press the 's' key to capture a photo. Take multiple photos from different angles for better recognition.
                           </p>
                         </div>
@@ -441,7 +441,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                         <Button 
                           onClick={startCamera}
                           disabled={!employeeCode || !fullName}
-                          className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-xs px-3 py-2"
+                          className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-xs px-3 py-2"
                         >
                           <Camera className="h-3 w-3" />
                           Start Camera
@@ -498,7 +498,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                       <Button 
                         onClick={registerEmployee}
                         disabled={isLoading || !employeeCode || !fullName || capturedPhotos.length === 0}
-                        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-sm"
+                        className="w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-sm"
                       >
                         <Database className="h-4 w-4" />
                         {isLoading ? 'Registering...' : 'Register Employee'}
@@ -545,8 +545,8 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                       <h3 className="text-lg font-bold text-gray-900">Face Recognition</h3>
                       
                       <div className="bg-gray-50 rounded-lg p-6 text-center">
-                        <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                          <Camera className="h-8 w-8 text-blue-600" />
+                        <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                          <Camera className="h-8 w-8 text-purple-600" />
                         </div>
                         
                         <p className="text-gray-700 mb-2 text-sm">
@@ -568,7 +568,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                           <Button 
                             onClick={() => recognizeFace('check_in')}
                             disabled={isLoading || !isCameraActive}
-                            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-xs px-3 py-2"
+                            className="flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-xs px-3 py-2"
                           >
                             <Clock className="h-3 w-3" />
                             Clock In
@@ -576,7 +576,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                           <Button 
                             onClick={() => recognizeFace('check_out')}
                             disabled={isLoading || !isCameraActive}
-                            className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-xs px-3 py-2"
+                            className="flex items-center gap-1 bg-purple-500 hover:bg-purple-600 text-xs px-3 py-2"
                           >
                             <Clock className="h-3 w-3" />
                             Clock Out

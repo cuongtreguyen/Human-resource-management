@@ -31,8 +31,11 @@ const Login = () => {
       role: "employee",
       route: "/employee",
       info: {
+        id: "1",
         employeeId: "1",
-        name: "Trần Ngọc Hải",
+        name: "Chau Thanh Dat",
+        department: "IT",
+        position: "Nhân viên",
       },
     },
     admin: {
@@ -48,8 +51,11 @@ const Login = () => {
       role: "manager",
       route: "/dashboard",
       info: {
-        name: "Nguyễn Văn Quản Lý",
-        department: "IT", // Manager của phòng IT
+        id: "2",
+        employeeId: "2",
+        name: "Nguyen Minh Hieu",
+        department: "IT",
+        position: "Quản lý",
       },
     },
     accountant: {
@@ -58,8 +64,11 @@ const Login = () => {
       role: "accountant",
       route: "/dashboard",
       info: {
+        id: "3",
+        employeeId: "3",
         name: "Trần Thị Kế Toán",
         department: "Tài chính",
+        position: "Kế toán",
       },
     },
   };

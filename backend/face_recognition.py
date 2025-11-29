@@ -3,11 +3,16 @@ import cv2
 import numpy as np
 import os
 import sys
+import io
 import time
 import json
 import requests
 from datetime import datetime
 from collections import Counter
+
+# Fix Unicode encoding for Vietnamese characters on Windows
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
 
 def setup_paths():
     """Gets all the important file paths needed for the program."""
@@ -83,15 +88,51 @@ def setup_attendance(paths):
 
 
 def detect_faces(gray_image, cascade_path):
-    """Detects faces in the grayscale image."""
+    """
+    Detects faces in the grayscale image.
+    Cải thiện: Lọc khuôn mặt lớn nhất và gần trung tâm nhất để tập trung vào người thật.
+    """
     face_detector = cv2.CascadeClassifier(cascade_path)
     faces = face_detector.detectMultiScale(
         gray_image,
-        scaleFactor=1.1,
-        minNeighbors=4,
-        minSize=(30, 30),
+        scaleFactor=1.2,        # Tăng lên để bỏ qua các vật thể nhỏ
+        minNeighbors=6,         # Tăng lên để giảm false positive (nhận nhầm vật thể)
+        minSize=(100, 100),     # Tăng kích thước tối thiểu để chỉ nhận mặt người gần camera
         flags=cv2.CASCADE_SCALE_IMAGE
     )
+
+    if len(faces) == 0:
+        return faces
+
+    # Lọc: Chỉ lấy khuôn mặt lớn nhất (gần camera nhất, thường là người đang chấm công)
+    img_height, img_width = gray_image.shape
+    img_center_x = img_width // 2
+    img_center_y = img_height // 2
+
+    best_face = None
+    best_score = -1
+
+    for (x, y, w, h) in faces:
+        # Tính điểm dựa trên: kích thước mặt + độ gần trung tâm
+        face_area = w * h
+        face_center_x = x + w // 2
+        face_center_y = y + h // 2
+
+        # Khoảng cách từ tâm mặt đến tâm ảnh (càng nhỏ càng tốt)
+        distance_to_center = ((face_center_x - img_center_x) ** 2 + (face_center_y - img_center_y) ** 2) ** 0.5
+        max_distance = (img_width ** 2 + img_height ** 2) ** 0.5
+
+        # Điểm = diện tích mặt * (1 - khoảng cách tương đối)
+        # Ưu tiên mặt lớn và ở giữa màn hình
+        score = face_area * (1 - distance_to_center / max_distance)
+
+        if score > best_score:
+            best_score = score
+            best_face = (x, y, w, h)
+
+    # Chỉ trả về 1 khuôn mặt tốt nhất
+    if best_face is not None:
+        return np.array([best_face])
     return faces
 
 def preprocess_face(gray_image, x, y, w, h):
@@ -141,6 +182,7 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                       confidence_text, recognition_type):
     """
     Cập nhật vào JSON và bắn về Spring Boot khi nhận diện thành công lần đầu trong phiên.
+    Mỗi ngày chỉ cho phép 1 lần check-in và 1 lần check-out.
     """
     api_success = False
     recognized_name = None
@@ -149,16 +191,50 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
         timestamp = datetime.now().strftime("%H:%M:%S")
         date_str = datetime.now().strftime("%Y-%m-%d")
 
-        if str(id) not in attendance_data:
+        # Kiểm tra trạng thái hiện tại của nhân viên
+        existing_record = attendance_data.get(str(id))
+
+        if recognition_type == "clockin" or recognition_type == "check_in":
+            # Check-in: Chỉ cho phép nếu chưa có check_in hôm nay
+            if existing_record and existing_record.get("check_in"):
+                print(f"[ATTENDANCE] ❌ ID={id} đã check-in hôm nay lúc {existing_record['check_in']}. Bỏ qua.")
+                return recognized_users, False, None
+
             attendance_data[str(id)] = {
                 "name": name,
                 "check_in": timestamp,
                 "check_out": None
             }
             action = "check_in"
-        else:
+
+        elif recognition_type == "clockout" or recognition_type == "check_out":
+            # Check-out: Chỉ cho phép nếu đã check-in và chưa check-out
+            if not existing_record or not existing_record.get("check_in"):
+                print(f"[ATTENDANCE] ❌ ID={id} chưa check-in hôm nay. Không thể check-out.")
+                return recognized_users, False, None
+
+            if existing_record.get("check_out"):
+                print(f"[ATTENDANCE] ❌ ID={id} đã check-out hôm nay lúc {existing_record['check_out']}. Bỏ qua.")
+                return recognized_users, False, None
+
             attendance_data[str(id)]["check_out"] = timestamp
             action = "check_out"
+
+        else:
+            # Mặc định: auto detect (check-in nếu chưa có, check-out nếu đã check-in)
+            if str(id) not in attendance_data:
+                attendance_data[str(id)] = {
+                    "name": name,
+                    "check_in": timestamp,
+                    "check_out": None
+                }
+                action = "check_in"
+            elif not attendance_data[str(id)].get("check_out"):
+                attendance_data[str(id)]["check_out"] = timestamp
+                action = "check_out"
+            else:
+                print(f"[ATTENDANCE] ❌ ID={id} đã hoàn thành chấm công hôm nay. Bỏ qua.")
+                return recognized_users, False, None
 
         try:
             with open(attendance_file, 'w', encoding='utf-8') as f:
@@ -251,7 +327,7 @@ def recognize_faces():
     success_time = None
     last_id = None
     stable_count = 0
-    stable_required = 10  # Số frame liên tiếp cần nhận diện đúng
+    stable_required = 5  # Số frame liên tiếp cần nhận diện đúng (giảm từ 10 xuống 5)
 
     print("Starting face recognition...")
     print("Press 'q' to quit or wait for successful recognition")

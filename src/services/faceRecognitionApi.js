@@ -2,7 +2,10 @@
 import { PY_API, JAVA_API, http } from './config';
 
 class FaceRecognitionApi {
-  // --- Hệ thống (Flask) ---
+  // ============================================================
+  // PYTHON API (PY_API) - Dieu khien camera, nhan dien, train model
+  // ============================================================
+
   async checkSystemStatus() {
     try {
       const res = await http(`${PY_API}/api/status`, {}, 5000);
@@ -29,7 +32,7 @@ class FaceRecognitionApi {
       return await res.json();
     } catch (err) {
       console.error('startRecognition failed:', err);
-      return { status: 'error', message: '❌ Chấm công thất bại. Vui lòng thử lại.' };
+      return { status: 'error', message: 'Cham cong that bai. Vui long thu lai.' };
     }
   }
 
@@ -63,7 +66,7 @@ class FaceRecognitionApi {
       return await res.json();
     } catch (err) {
       console.error('takePhotos failed:', err);
-      return { status: 'error', message: 'Không thể bắt đầu chụp ảnh từ backend' };
+      return { status: 'error', message: 'Khong the bat dau chup anh tu backend' };
     }
   }
 
@@ -86,31 +89,79 @@ class FaceRecognitionApi {
     }
   }
 
-  async getEmployeeAttendance(employeeId) {
+  async trainModel() {
+    try {
+      const res = await http(
+        `${PY_API}/api/train`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' } },
+        60000
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('trainModel failed:', err);
+      return { status: 'error', message: 'Failed to train model' };
+    }
+  }
+
+  // Lay danh sach nhan vien da dang ky (tu Python - doc folder datasets)
+  async getRegisteredEmployees() {
+    try {
+      const res = await http(`${PY_API}/api/employees`, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getRegisteredEmployees failed:', err);
+      return [];
+    }
+  }
+
+  // Lay thong tin 1 nhan vien (tu Python)
+  async getEmployee(employeeId) {
+    try {
+      const res = await http(`${PY_API}/api/employees/${encodeURIComponent(employeeId)}`, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getEmployee failed:', err);
+      return null;
+    }
+  }
+
+  // ============================================================
+  // JAVA API (JAVA_API) - Doc du lieu cham cong tu Database
+  // ============================================================
+
+  async getEmployeeAttendance(employeeId, startDate = null, endDate = null) {
     if (!employeeId) {
       throw new Error('employeeId is required');
     }
-    const res = await http(
-      `${PY_API}/api/attendance/employee/${encodeURIComponent(employeeId)}`,
-      {},
-      10000
-    );
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}`);
+    try {
+      let url = `${JAVA_API}/attendance/employee/${encodeURIComponent(employeeId)}`;
+      if (startDate && endDate) {
+        url += `?startDate=${startDate}&endDate=${endDate}`;
+      }
+      const res = await http(url, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getEmployeeAttendance from Java failed, fallback to Python:', err);
+      // Fallback to Python API neu Java khong chay
+      return this._getEmployeeAttendanceFallback(employeeId, startDate, endDate);
     }
-    return await res.json();
   }
 
-  // --- Dữ liệu demo/phụ trợ ---
-  async getRegisteredEmployees() {
+  async _getEmployeeAttendanceFallback(employeeId, startDate, endDate) {
     try {
-      // Flask hiện chưa có endpoint này -> trả mock
-      return [
-        { id: 1, code: 'EMP001', name: 'Nguyễn Văn A', department: 'IT', position: 'Developer' },
-        { id: 2, code: 'EMP002', name: 'Trần Thị B', department: 'HR', position: 'Manager' },
-        { id: 3, code: 'EMP003', name: 'Lê Văn C', department: 'Finance', position: 'Accountant' }
-      ];
-    } catch {
+      let url = `${PY_API}/api/attendance/employee/${encodeURIComponent(employeeId)}`;
+      if (startDate && endDate) {
+        url += `?startDate=${startDate}&endDate=${endDate}`;
+      }
+      const res = await http(url, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getEmployeeAttendance fallback failed:', err);
       return [];
     }
   }
@@ -122,8 +173,113 @@ class FaceRecognitionApi {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (err) {
-      console.error('getTodayAttendance failed:', err);
+      console.error('getTodayAttendance from Java failed, fallback to Python:', err);
+      return this._getTodayAttendanceFallback();
+    }
+  }
+
+  async _getTodayAttendanceFallback() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await http(`${PY_API}/api/attendance/daily?date=${today}`, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getTodayAttendance fallback failed:', err);
       return [];
+    }
+  }
+
+  async getDailyAttendance(date) {
+    try {
+      const d = date || new Date().toISOString().split('T')[0];
+      const res = await http(`${JAVA_API}/attendance/daily?date=${d}`, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getDailyAttendance from Java failed, fallback to Python:', err);
+      return this._getDailyAttendanceFallback(date);
+    }
+  }
+
+  async _getDailyAttendanceFallback(date) {
+    try {
+      const d = date || new Date().toISOString().split('T')[0];
+      const res = await http(`${PY_API}/api/attendance/daily?date=${d}`, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getDailyAttendance fallback failed:', err);
+      return [];
+    }
+  }
+
+  async getAttendanceRange(startDate, endDate) {
+    try {
+      const res = await http(
+        `${JAVA_API}/attendance/range?startDate=${startDate}&endDate=${endDate}`,
+        {},
+        15000
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getAttendanceRange from Java failed, fallback to Python:', err);
+      return this._getAttendanceRangeFallback(startDate, endDate);
+    }
+  }
+
+  async _getAttendanceRangeFallback(startDate, endDate) {
+    try {
+      const res = await http(
+        `${PY_API}/api/attendance/range?startDate=${startDate}&endDate=${endDate}`,
+        {},
+        15000
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getAttendanceRange fallback failed:', err);
+      return [];
+    }
+  }
+
+  async getAttendanceStats(date = null) {
+    try {
+      let url = `${JAVA_API}/attendance/stats`;
+      if (date) url += `?date=${date}`;
+      const res = await http(url, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getAttendanceStats from Java failed, fallback to Python:', err);
+      return this._getAttendanceStatsFallback(date);
+    }
+  }
+
+  async _getAttendanceStatsFallback(date) {
+    try {
+      let url = `${PY_API}/api/attendance/stats`;
+      if (date) url += `?date=${date}`;
+      const res = await http(url, {}, 10000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getAttendanceStats fallback failed:', err);
+      return { totalEmployees: 0, present: 0, absent: 0, checkedOut: 0, stillWorking: 0 };
+    }
+  }
+
+  async getMonthlyStats(employeeId, month = null) {
+    try {
+      let url = `${PY_API}/api/attendance/monthly-stats/${encodeURIComponent(employeeId)}`;
+      if (month) url += `?month=${month}`;
+      const res = await http(url, {}, 15000);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('getMonthlyStats failed:', err);
+      return { stats: {}, records: [] };
     }
   }
 }
