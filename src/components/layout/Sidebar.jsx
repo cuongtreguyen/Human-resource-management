@@ -110,6 +110,7 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
     const allItems = [
       { name: 'Trang chủ', href: '/dashboard', icon: Home, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Chat nội bộ', href: '/chat', icon: MessageCircle, allowedRoles: ['admin', 'manager', 'accountant'] },
+      { name: 'Hồ sơ cá nhân', href: '/profile', icon: User, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Nhận diện khuôn mặt', href: '/face-recognition', icon: User, allowedRoles: ['admin'] },
       { name: 'Chấm công khuôn mặt', href: '/face-recognition-manager', icon: User, allowedRoles: ['manager'] },
       { name: 'Chấm công khuôn mặt', href: '/face-recognition-accountant', icon: User, allowedRoles: ['accountant'] },

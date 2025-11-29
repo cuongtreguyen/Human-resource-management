@@ -102,9 +102,11 @@ const Login = () => {
         // Set role in localStorage
         setRole(user.role);
         if (user.info) {
-          setUserInfo(user.info);
+          // Thêm email vào userInfo để có thể tìm employee sau này
+          setUserInfo({ ...user.info, email: user.email });
         } else {
-          clearUserInfo();
+          // Nếu không có info, vẫn lưu email để có thể tìm employee
+          setUserInfo({ email: user.email });
         }
         // Navigate to appropriate route based on role
         navigate(user.route);

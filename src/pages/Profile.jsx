@@ -1,29 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import {
+  User, Mail, Phone, MapPin, Briefcase, Calendar,
+  Building2, CreditCard, Heart, Clock, FileText, Users
+} from 'lucide-react';
 import fakeApi from '../services/fakeApi';
-import { getRole, getCurrentEmployeeId } from '../utils/auth';
+import { getRole, getUserInfo } from '../utils/auth';
 import Layout from '../components/layout/Layout';
 
 const Profile = () => {
-  const navigate = useNavigate();
-  const [profile, setProfile] = useState(null);
+  const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [editing, setEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState('personal');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    position: '',
-    department: '',
-    address: '',
-    birthday: '',
-    emergencyContactName: '',
-    emergencyContactPhone: '',
-    emergencyContactRelationship: ''
-  });
-
   const userRole = getRole();
+  const userInfo = getUserInfo();
 
   useEffect(() => {
     loadProfile();
@@ -32,21 +20,27 @@ const Profile = () => {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      const userId = getCurrentEmployeeId();
-      const response = await fakeApi.getEmployeeProfile(userId);
-      setProfile(response.data);
-      setFormData({
-        name: response.data.name,
-        email: response.data.email,
-        phone: response.data.phone,
-        position: response.data.position,
-        department: response.data.department,
-        address: response.data.address,
-        birthday: response.data.birthday,
-        emergencyContactName: response.data.emergencyContact?.name || '',
-        emergencyContactPhone: response.data.emergencyContact?.phone || '',
-        emergencyContactRelationship: response.data.emergencyContact?.relationship || ''
-      });
+      // Lấy danh sách employees và tìm employee theo email hoặc name từ userInfo
+      const res = await fakeApi.getEmployees();
+      let foundEmployee = null;
+
+      if (userInfo) {
+        // Tìm theo email nếu có
+        if (userInfo.email) {
+          foundEmployee = res.data.find(emp => emp.email === userInfo.email);
+        }
+        // Nếu không tìm thấy theo email, tìm theo name
+        if (!foundEmployee && userInfo.name) {
+          foundEmployee = res.data.find(emp => emp.name === userInfo.name);
+        }
+      }
+
+      // Nếu không tìm thấy, lấy employee đầu tiên làm fallback (cho demo)
+      if (!foundEmployee && res.data.length > 0) {
+        foundEmployee = res.data[0];
+      }
+
+      setEmployee(foundEmployee);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -54,340 +48,293 @@ const Profile = () => {
     }
   };
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Chưa cập nhật';
+    return new Date(dateString).toLocaleDateString('vi-VN');
   };
 
-  const handleSave = async () => {
-    try {
-      const profileData = {
-        ...formData,
-        emergencyContact: {
-          name: formData.emergencyContactName,
-          phone: formData.emergencyContactPhone,
-          relationship: formData.emergencyContactRelationship
-        }
-      };
-      await fakeApi.updateSettings('profile', profileData);
-      setProfile({ ...profile, ...profileData });
-      setEditing(false);
-      alert('Cập nhật thông tin thành công!');
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      alert('Lỗi khi cập nhật thông tin!');
+  const calculateWorkDuration = (hireDate) => {
+    if (!hireDate) return 'Chưa cập nhật';
+    const startDate = new Date(hireDate);
+    const today = new Date();
+    const diffTime = Math.abs(today - startDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const years = Math.floor(diffDays / 365);
+    const months = Math.floor((diffDays % 365) / 30);
+
+    if (years > 0) {
+      return `${years} năm ${months} tháng`;
+    } else {
+      return `${months} tháng`;
     }
   };
 
-  const handleCancel = () => {
-    setFormData({
-      name: profile.name,
-      email: profile.email,
-      phone: profile.phone,
-      position: profile.position,
-      department: profile.department,
-      address: profile.address,
-      birthday: profile.birthday,
-      emergencyContactName: profile.emergencyContact?.name || '',
-      emergencyContactPhone: profile.emergencyContact?.phone || '',
-      emergencyContactRelationship: profile.emergencyContact?.relationship || ''
-    });
-    setEditing(false);
+  const getStatusBadge = (status) => {
+    const statusConfig = {
+      active: { bg: 'bg-green-100', text: 'text-green-700', label: 'Đang làm việc' },
+      inactive: { bg: 'bg-red-100', text: 'text-red-700', label: 'Nghỉ việc' },
+      on_leave: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Nghỉ phép' }
+    };
+    const config = statusConfig[status] || statusConfig.active;
+    return (
+      <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
+        {config.label}
+      </span>
+    );
   };
 
-  const tabs = [
-    { id: 'personal', name: 'Thông tin cá nhân', icon: '👤' },
-    { id: 'skills', name: 'Kỹ năng', icon: '💼' },
-    { id: 'education', name: 'Học vấn', icon: '🎓' },
-    { id: 'emergency', name: 'Liên hệ khẩn cấp', icon: '🚨' }
-  ];
+  const getRoleBadge = () => {
+    const roleLabels = {
+      admin: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Quản trị viên' },
+      manager: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Quản lý' },
+      accountant: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Kế toán' }
+    };
+    const config = roleLabels[userRole] || roleLabels.admin;
+    return (
+      <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
+        {config.label}
+      </span>
+    );
+  };
+
+  const InfoRow = ({ label, value, icon: Icon }) => (
+    <div className="flex justify-between items-center py-3 border-b border-gray-100 last:border-0">
+      <span className="text-gray-500 flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4" />}
+        {label}
+      </span>
+      <span className="text-gray-900 font-medium text-right">{value || 'Chưa cập nhật'}</span>
+    </div>
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Đang tải thông tin...</p>
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Đang tải thông tin...</p>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
+  if (!employee) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600">Không tìm thấy thông tin nhân viên</p>
+            <p className="text-sm text-gray-500 mt-2">Vui lòng liên hệ phòng Nhân sự để cập nhật thông tin</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Màu sắc theo role
+  const roleColors = {
+    admin: {
+      gradient: 'from-blue-500 to-blue-600',
+      text: 'text-blue-600',
+      bg: 'bg-blue-500'
+    },
+    manager: {
+      gradient: 'from-purple-500 to-purple-600',
+      text: 'text-purple-600',
+      bg: 'bg-purple-500'
+    },
+    accountant: {
+      gradient: 'from-emerald-500 to-emerald-600',
+      text: 'text-emerald-600',
+      bg: 'bg-emerald-500'
+    }
+  };
+
+  const currentTheme = roleColors[userRole] || roleColors.admin;
+
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-50 to-gray-100">
         {/* Header */}
-        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-8 rounded-lg mx-6 mt-6">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center space-x-6">
-            <div className="relative">
-              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center text-purple-600 text-3xl font-bold shadow-lg">
-                {profile?.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-              </div>
-              <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-500 rounded-full border-4 border-white"></div>
-            </div>
+        <div className={`bg-gradient-to-r ${currentTheme.gradient} text-white py-8 px-6 shadow-lg`}>
+          <div className="max-w-5xl mx-auto">
             <div>
-              <h1 className="text-3xl font-bold">{profile?.name}</h1>
-              <p className="text-purple-100 mt-1">{profile?.position} • {profile?.department}</p>
-              <p className="text-purple-200 text-sm mt-1">{profile?.email}</p>
-              <div className="flex items-center space-x-2 mt-2">
-                <span className="px-3 py-1 bg-white/20 rounded-full text-sm">
-                  {userRole === 'admin' ? 'Quản trị viên' : userRole === 'manager' ? 'Quản lý' : 'Kế toán'}
-                </span>
-                <span className="px-3 py-1 bg-green-500/30 rounded-full text-sm">
-                  Đang làm việc
-                </span>
+              <h1 className="text-3xl font-bold mb-2">Hồ sơ cá nhân</h1>
+              <p className="opacity-90">Thông tin chi tiết của bạn trong hệ thống</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-5xl mx-auto px-6 py-8">
+          {/* Profile Card */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
+            <div className="flex items-center gap-6">
+              <div className={`w-24 h-24 bg-gradient-to-br ${currentTheme.gradient} rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg`}>
+                {employee.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+              </div>
+
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="text-2xl font-bold text-gray-900">{employee.name}</h2>
+                  {getStatusBadge(employee.status)}
+                  {getRoleBadge()}
+                </div>
+                <p className={`text-xl ${currentTheme.text} font-semibold mb-3`}>{employee.position}</p>
+                <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <Building2 className={`w-4 h-4 ${currentTheme.text}`} />
+                    {employee.department}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CreditCard className={`w-4 h-4 ${currentTheme.text}`} />
+                    ID: {employee.id}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className={`w-4 h-4 ${currentTheme.text}`} />
+                    Thâm niên: {calculateWorkDuration(employee.hireDate)}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex space-x-3">
-            {!editing ? (
-              <button
-                onClick={() => setEditing(true)}
-                className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-all duration-200 shadow-lg font-medium"
-              >
-                Chỉnh sửa
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={handleCancel}
-                  className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-all duration-200"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-all duration-200 shadow-lg font-medium"
-                >
-                  Lưu
-                </button>
-              </>
-            )}
+
+          {/* Grid thông tin */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Thông tin cá nhân */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
+                <User className={`w-5 h-5 ${currentTheme.text}`} />
+                Thông tin cá nhân
+              </h3>
+              <div className="space-y-1">
+                <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth || employee.birthDate || employee.birthday)} />
+                <InfoRow label="Giới tính" value={employee.gender} />
+                <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus} />
+              </div>
+            </div>
+
+            {/* Thông tin liên hệ */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
+                <Mail className="w-5 h-5 text-blue-600" />
+                Thông tin liên hệ
+              </h3>
+              <div className="space-y-1">
+                <InfoRow label="Email" value={employee.email} icon={Mail} />
+                <InfoRow label="Số điện thoại" value={employee.phone} icon={Phone} />
+              </div>
+            </div>
+
+            {/* Giấy tờ tùy thân */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
+                <CreditCard className="w-5 h-5 text-green-600" />
+                Giấy tờ tùy thân
+              </h3>
+              <div className="space-y-1">
+                <InfoRow label="Số CCCD/CMND" value={employee.idCard || employee.idNumber} />
+                <InfoRow label="Ngày cấp" value={formatDate(employee.idCardIssueDate)} />
+                <InfoRow label="Nơi cấp" value={employee.idCardIssuePlace} />
+                <InfoRow label="Mã số thuế" value={employee.taxCode} />
+              </div>
+            </div>
+
+            {/* Thông tin công việc */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
+                <Briefcase className={`w-5 h-5 ${currentTheme.text}`} />
+                Thông tin công việc
+              </h3>
+              <div className="space-y-1">
+                <InfoRow label="Phòng ban" value={employee.department} />
+                <InfoRow label="Chức vụ" value={employee.position} />
+                <InfoRow label="Quản lý trực tiếp" value={employee.manager} />
+                <InfoRow label="Địa điểm làm việc" value={employee.workLocation} />
+                <InfoRow label="Loại nhân viên" value={employee.employeeType} />
+                <InfoRow label="Loại hợp đồng" value={employee.contractType} />
+              </div>
+            </div>
+
+            {/* Thời gian làm việc */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
+                <Calendar className={`w-5 h-5 ${currentTheme.text}`} />
+                Thời gian làm việc
+              </h3>
+              <div className="space-y-1">
+                <InfoRow label="Ngày vào làm" value={formatDate(employee.hireDate)} />
+                <InfoRow label="Thâm niên" value={calculateWorkDuration(employee.hireDate)} />
+              </div>
+            </div>
+
+            {/* Địa chỉ */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
+                <MapPin className="w-5 h-5 text-red-600" />
+                Địa chỉ
+              </h3>
+              <div className="space-y-1">
+                <InfoRow label="Địa chỉ thường trú" value={employee.permanentAddress || employee.address} />
+                <InfoRow label="Địa chỉ tạm trú" value={employee.temporaryAddress} />
+              </div>
+            </div>
+
+            {/* Liên hệ khẩn cấp - Full width */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 md:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
+                <Heart className="w-5 h-5 text-red-600" />
+                Liên hệ khẩn cấp
+              </h3>
+              {employee.emergencyContact ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-500 mb-1">Họ và tên</p>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContact.name || 'Chưa cập nhật'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-500 mb-1">Mối quan hệ</p>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContact.relationship || 'Chưa cập nhật'}</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-sm text-gray-500 mb-1">Số điện thoại</p>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContact.phone || 'Chưa cập nhật'}</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                  <p>Chưa cập nhật thông tin liên hệ khẩn cấp</p>
+                  <p className="text-sm mt-1">Vui lòng liên hệ phòng Nhân sự để bổ sung</p>
+                </div>
+              )}
             </div>
           </div>
-        </div>
 
-        <div className="p-6">
-        {/* Tabs */}
-        <div className="mb-6">
-          <div className="flex space-x-2 bg-white rounded-lg shadow-sm p-2">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                  activeTab === tab.id
-                    ? 'bg-purple-600 text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tab Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          {activeTab === 'personal' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Thông tin cá nhân</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Ghi chú */}
+          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Họ và tên</label>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">{profile?.name}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  {editing ? (
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">{profile?.email}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại</label>
-                  {editing ? (
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">{profile?.phone}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Ngày sinh</label>
-                  {editing ? (
-                    <input
-                      type="date"
-                      value={formData.birthday}
-                      onChange={(e) => handleInputChange('birthday', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">
-                      {profile?.birthday ? new Date(profile.birthday).toLocaleDateString('vi-VN') : 'N/A'}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Chức vụ</label>
-                  <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">{profile?.position}</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Phòng ban</label>
-                  <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">{profile?.department}</p>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Địa chỉ</label>
-                  {editing ? (
-                    <textarea
-                      value={formData.address}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">{profile?.address}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Ngày vào làm</label>
-                  <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">
-                    {profile?.hireDate ? new Date(profile.hireDate).toLocaleDateString('vi-VN') : 'N/A'}
+                  <p className="font-medium text-blue-900">Cần cập nhật thông tin?</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Nếu có thay đổi về thông tin cá nhân, vui lòng gửi yêu cầu để phòng Nhân sự hỗ trợ cập nhật.
                   </p>
                 </div>
               </div>
+              <a
+                href="/admin/support-tickets"
+                className="flex-shrink-0 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+              >
+                Liên hệ HR
+              </a>
             </div>
-          )}
-
-          {activeTab === 'skills' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Kỹ năng</h2>
-              <div className="flex flex-wrap gap-3">
-                {profile?.skills?.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-medium"
-                  >
-                    {skill}
-                  </span>
-                ))}
-              </div>
-              {(!profile?.skills || profile.skills.length === 0) && (
-                <p className="text-gray-500 text-center py-8">Chưa có thông tin kỹ năng</p>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'education' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Học vấn</h2>
-              <div className="space-y-4">
-                <div className="border-l-4 border-purple-600 pl-4 py-2">
-                  <h3 className="font-semibold text-gray-900">{profile?.education}</h3>
-                </div>
-                {profile?.languages && (
-                  <div className="mt-6">
-                    <h3 className="font-semibold text-gray-900 mb-3">Ngôn ngữ</h3>
-                    <div className="space-y-2">
-                      {profile.languages.map((lang, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <span className="w-2 h-2 bg-purple-600 rounded-full"></span>
-                          <span className="text-gray-700">{lang}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'emergency' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-4">Liên hệ khẩn cấp</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tên người liên hệ</label>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.emergencyContactName}
-                      onChange={(e) => handleInputChange('emergencyContactName', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">
-                      {profile?.emergencyContact?.name || 'N/A'}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Mối quan hệ</label>
-                  {editing ? (
-                    <input
-                      type="text"
-                      value={formData.emergencyContactRelationship}
-                      onChange={(e) => handleInputChange('emergencyContactRelationship', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">
-                      {profile?.emergencyContact?.relationship || 'N/A'}
-                    </p>
-                  )}
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Số điện thoại</label>
-                  {editing ? (
-                    <input
-                      type="tel"
-                      value={formData.emergencyContactPhone}
-                      onChange={(e) => handleInputChange('emergencyContactPhone', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  ) : (
-                    <p className="px-4 py-2 bg-gray-50 rounded-lg text-gray-900">
-                      {profile?.emergencyContact?.phone || 'N/A'}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
       </div>
     </Layout>
   );
