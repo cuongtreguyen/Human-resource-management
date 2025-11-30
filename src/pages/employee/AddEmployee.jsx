@@ -195,20 +195,12 @@ const AddEmployee = () => {
       const response = await fakeApi.createEmployee(employeeData);
 
       if (response.success) {
-<<<<<<< HEAD
         // Ghi log khi tạo nhân viên mới
         await adminLogService.logEmployeeCreate(
           formData.employeeCode,
           `${formData.firstName} ${formData.lastName}`
         );
 
-=======
-        // Log hành động tạo nhân viên
-        const employeeName = `${formData.firstName} ${formData.lastName}`;
-        const employeeId = response.data?.id || response.data?.employeeId || 'unknown';
-        logCreateEmployee(employeeId, employeeName);
-        
->>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
         alert('Nhân viên mới đã được tạo thành công!');
         navigate('/employees');
       } else {

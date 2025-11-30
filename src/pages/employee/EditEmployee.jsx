@@ -6,11 +6,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
-<<<<<<< HEAD
 import adminLogService from '../../services/adminLogService';
-=======
-import { logUpdateEmployee } from '../../utils/systemLogger';
->>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
 
 const EditEmployee = () => {
   const { id } = useParams();
@@ -114,7 +110,6 @@ const EditEmployee = () => {
     try {
       setSaving(true);
       await fakeApi.updateEmployee(id, formData);
-<<<<<<< HEAD
 
       // Ghi log các thay đổi
       if (originalDataRef.current) {
@@ -130,17 +125,6 @@ const EditEmployee = () => {
         }
       }
 
-=======
-      
-      // Log hành động cập nhật nhân viên
-      logUpdateEmployee(id, formData.name || 'Unknown', { 
-        department: formData.department,
-        position: formData.position,
-        salary: formData.salary,
-        status: formData.status
-      });
-      
->>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
       alert('Cập nhật nhân viên thành công!');
       navigate('/employees');
     } catch (err) {

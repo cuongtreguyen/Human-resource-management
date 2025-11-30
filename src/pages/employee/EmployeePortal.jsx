@@ -615,10 +615,6 @@ const EmployeePortal = () => {
                   <p className="text-orange-600 font-medium mt-1">{employee?.department || "Chưa xác định"}</p>
                 </div>
               </div>
-<<<<<<< HEAD
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">Trạng thái</span><span className="font-medium text-green-600">Đang làm việc</span></div>
-=======
 
               {/* Right: Detailed info */}
               <div className="flex-1 space-y-4">
@@ -643,11 +639,10 @@ const EmployeePortal = () => {
                     </p>
                   </div>
                 </div>
-                
+
                 <Button className="w-full mt-4" variant="secondary" onClick={() => navigate("/employee/profile")}>
                   Cập nhật hồ sơ
                 </Button>
->>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
               </div>
             </div>
           </Card>

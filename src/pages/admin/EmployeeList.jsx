@@ -9,11 +9,7 @@ import { EmployeeSummaryCards, Pagination } from '../../components/employee';
 import fakeApi from '../../services/fakeApi';
 import { getRole, isAdmin } from '../../utils/auth';
 import { canViewSalary, getCurrentUserDepartment } from '../../utils/fieldPermissions';
-<<<<<<< HEAD:src/pages/employee/EmployeeList.jsx
 import { UserPlus } from 'lucide-react';
-=======
-import { logDeleteEmployee, logViewDetail } from '../../utils/systemLogger';
->>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7:src/pages/admin/EmployeeList.jsx
 
 const EmployeeList = () => {
   const navigate = useNavigate();
