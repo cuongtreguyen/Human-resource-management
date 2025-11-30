@@ -235,7 +235,8 @@ const EmployeeAttendance = () => {
               href="/employee"
               className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
             >
-             
+             <ArrowLeft size={18} />
+              <span>Quay lại</span>
             </a>
             <button className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm">
               <Download size={18} />
