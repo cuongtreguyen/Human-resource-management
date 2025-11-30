@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from './components/common';
 import Layout from './components/layout/Layout';
@@ -55,7 +55,6 @@ import Profile from './pages/Profile';
 
 // OT Management Pages
 import OTManagement from './pages/overtime/OTManagement';
-// OTPayroll đã được tích hợp vào PayrollList
 import OTRequest from './pages/employee/OTRequest';
 import OTReport from './pages/employee/OTReport';
 
@@ -72,6 +71,7 @@ const AccountantRoute = createRoleRoute(['accountant']);
 const AdminManagerRoute = createRoleRoute(['admin', 'manager']);
 const AdminAccountantRoute = createRoleRoute(['admin', 'accountant']);
 const ManagerAccountantRoute = createRoleRoute(['manager', 'accountant']);
+const AdminManagerAccountantRoute = createRoleRoute(['admin', 'manager', 'accountant']);
 const StaffRoute = createRoleRoute(['admin', 'manager', 'accountant']);
 
 const AppRoutes = () => {
@@ -98,17 +98,10 @@ const AppRoutes = () => {
         <Route path="payroll" element={<PayrollList />} />
         <Route path="payroll/policies" element={<AccountantRoute><PayrollPolicies /></AccountantRoute>} />
 
-<<<<<<< HEAD
-        {/* Leave Management - Manager only */}
-        <Route path="leaves" element={<ManagerRoute><LeaveManagement /></ManagerRoute>} />
-        <Route path="leaves/create" element={<ManagerRoute><LeaveRequest /></ManagerRoute>} />
+        {/* Leaves - Admin có thể duyệt tất cả, Manager và Accountant có thể xem */}
+        <Route path="leaves" element={<AdminManagerAccountantRoute><LeaveManagement /></AdminManagerAccountantRoute>} />
+        <Route path="leaves/create" element={<ManagerAccountantRoute><LeaveRequest /></ManagerAccountantRoute>} />
         <Route path="leaves/workflow" element={<ManagerRoute><WorkflowManager /></ManagerRoute>} />
-=======
-        {/* Leaves - Admin có thể duyệt tất cả đơn (bao gồm accountant và manager), Manager và Accountant có thể xem */}
-        <Route path="/leaves" element={<AdminManagerAccountantRoute><LeaveManagement /></AdminManagerAccountantRoute>} />
-        <Route path="/leaves/create" element={<ManagerAccountantRoute><LeaveRequest /></ManagerAccountantRoute>} />
-        <Route path="/leaves/workflow" element={<ManagerRoute><WorkflowManager /></ManagerRoute>} />
->>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
 
         {/* Tasks */}
         <Route path="tasks" element={<AdminManagerRoute><TaskManagement /></AdminManagerRoute>} />
@@ -116,7 +109,6 @@ const AppRoutes = () => {
 
         {/* OT Management */}
         <Route path="overtime" element={<ManagerRoute><OTManagement /></ManagerRoute>} />
-        {/* OT Payroll đã được tích hợp vào PayrollList */}
         <Route path="overtime/payroll" element={<Navigate to="/payroll" replace />} />
 
         {/* Documents - Manager & Accountant */}
