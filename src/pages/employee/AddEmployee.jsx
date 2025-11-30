@@ -7,6 +7,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
 import { User, Phone, Check, X } from 'lucide-react';
+import { logCreateEmployee } from '../../utils/systemLogger';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
@@ -156,6 +157,11 @@ const AddEmployee = () => {
       const response = await fakeApi.createEmployee(employeeData);
 
       if (response.success) {
+        // Log hành động tạo nhân viên
+        const employeeName = `${formData.firstName} ${formData.lastName}`;
+        const employeeId = response.data?.id || response.data?.employeeId || 'unknown';
+        logCreateEmployee(employeeId, employeeName);
+        
         alert('Nhân viên mới đã được tạo thành công!');
         navigate('/employees');
       } else {
@@ -196,12 +202,11 @@ const AddEmployee = () => {
   ];
 
   const departments = [
-    'Phòng IT',
-    'Phòng Nhân sự',
-    'Phòng Tài chính',
-    'Phòng Marketing',
-    'Phòng Kinh doanh',
-    'Phòng Vận hành'
+    'Công nghệ thông tin',
+    'Marketing',
+    'Kinh doanh',
+    'Nhân sự',
+    'Tài chính'
   ];
 
   const positions = [
