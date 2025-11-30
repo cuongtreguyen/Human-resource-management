@@ -119,8 +119,13 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
       { name: 'Danh sách chấm công', href: '/attendance', icon: Clock, allowedRoles: ['admin', 'accountant'] },
       { name: 'Danh sách lương', href: '/payroll', icon: DollarSign, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Chính sách tài chính', href: '/payroll/policies', icon: FileText, allowedRoles: ['accountant'] },
+<<<<<<< HEAD
       { name: 'Duyệt đơn nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['manager'] },
       { name: 'Duyệt OT', href: '/overtime', icon: Clock, allowedRoles: ['manager'] },
+=======
+      { name: 'Duyệt đơn nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['admin', 'manager', 'accountant'] },
+      { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: FileText, allowedRoles: ['manager', 'accountant'] },
+>>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
       { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['manager'] },
       { name: 'Đánh giá nhân viên', href: '/evaluations', icon: Award, allowedRoles: ['admin', 'manager'] },
       { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['manager', 'accountant'] },

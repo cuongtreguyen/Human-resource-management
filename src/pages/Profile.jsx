@@ -298,7 +298,7 @@ const Profile = () => {
                 href="/admin/support-tickets"
                 className="flex-shrink-0 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
               >
-                Liên hệ HR
+                Liên hệ Admin
               </a>
             </div>
           </div>

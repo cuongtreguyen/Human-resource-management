@@ -17,7 +17,7 @@ export const useTaskContext = () => {
 const defaultDepartments = [
     {
       id: 'it',
-      name: 'Phòng IT',
+      name: 'Công nghệ thông tin',
       code: 'IT',
       description: 'Phát triển và bảo trì hệ thống công nghệ',
       icon: 'Briefcase',
@@ -34,7 +34,7 @@ const defaultDepartments = [
     },
     {
       id: 'marketing',
-      name: 'Phòng Marketing',
+      name: 'Marketing',
       code: 'MKT',
       description: 'Quảng bá thương hiệu và phát triển chiến lược marketing',
       icon: 'TrendingUp',
@@ -49,7 +49,7 @@ const defaultDepartments = [
     },
     {
       id: 'hr',
-      name: 'Phòng Nhân sự',
+      name: 'Nhân sự',
       code: 'HR',
       description: 'Tuyển dụng và quản lý nhân sự',
       icon: 'Users',
@@ -64,7 +64,7 @@ const defaultDepartments = [
     },
     {
       id: 'sales',
-      name: 'Phòng Kinh doanh',
+      name: 'Kinh doanh',
       code: 'SALES',
       description: 'Phát triển khách hàng và doanh số',
       icon: 'Briefcase',
@@ -79,7 +79,7 @@ const defaultDepartments = [
     },
     {
       id: 'finance',
-      name: 'Phòng Tài chính',
+      name: 'Tài chính',
       code: 'FIN',
       description: 'Quản lý tài chính và kế toán',
       icon: 'TrendingUp',

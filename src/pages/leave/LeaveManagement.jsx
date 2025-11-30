@@ -18,6 +18,7 @@ import {
 import fakeApi from '../../services/fakeApi';
 import { toast } from 'react-toastify';
 import { getRole } from '../../utils/auth';
+import { logApproveLeave, logRejectLeave } from '../../utils/systemLogger';
 
 const LeaveManagement = () => {
   const userRole = getRole();
@@ -127,15 +128,23 @@ const LeaveManagement = () => {
 
   const handleApprove = async (requestId) => {
     try {
-      const updatedRequests = leaveRequests.map(request =>
-        request.id === requestId
-          ? { ...request, status: 'approved', approvedBy: 'manager' }
-          : request
+      const request = leaveRequests.find(r => r.id === requestId);
+      if (!request) return;
+      
+      const approverName = userRole === 'admin' ? 'Admin' : userRole === 'manager' ? 'Manager' : 'Accountant';
+      const updatedRequests = leaveRequests.map(req =>
+        req.id === requestId
+          ? { ...req, status: 'approved', approvedBy: approverName }
+          : req
       );
       setLeaveRequests(updatedRequests);
       if (selectedRequest && selectedRequest.id === requestId) {
-        setSelectedRequest({ ...selectedRequest, status: 'approved', approvedBy: 'manager' });
+        setSelectedRequest({ ...selectedRequest, status: 'approved', approvedBy: approverName });
       }
+      
+      // Log hành động duyệt đơn nghỉ phép
+      logApproveLeave(requestId, request.employeeName || request.employeeName || 'Unknown', request.days || 0);
+      
       toast.success('Đã duyệt đơn nghỉ phép thành công!');
     } catch {
       toast.error('Có lỗi xảy ra khi duyệt đơn');
@@ -154,15 +163,23 @@ const LeaveManagement = () => {
       return;
     }
     try {
-      const updatedRequests = leaveRequests.map(request =>
-        request.id === rejectingRequestId
-          ? { ...request, status: 'rejected', approvedBy: 'manager', rejectReason: rejectReason }
-          : request
+      const request = leaveRequests.find(r => r.id === rejectingRequestId);
+      if (!request) return;
+      
+      const approverName = userRole === 'admin' ? 'Admin' : userRole === 'manager' ? 'Manager' : 'Accountant';
+      const updatedRequests = leaveRequests.map(req =>
+        req.id === rejectingRequestId
+          ? { ...req, status: 'rejected', approvedBy: approverName, rejectReason: rejectReason }
+          : req
       );
       setLeaveRequests(updatedRequests);
       if (selectedRequest && selectedRequest.id === rejectingRequestId) {
-        setSelectedRequest({ ...selectedRequest, status: 'rejected', approvedBy: 'manager', rejectReason: rejectReason });
+        setSelectedRequest({ ...selectedRequest, status: 'rejected', approvedBy: approverName, rejectReason: rejectReason });
       }
+      
+      // Log hành động từ chối đơn nghỉ phép
+      logRejectLeave(rejectingRequestId, request.employeeName || 'Unknown', rejectReason);
+      
       setShowRejectModal(false);
       setShowModal(false);
       setRejectReason('');
@@ -171,6 +188,25 @@ const LeaveManagement = () => {
     } catch {
       toast.error('Có lỗi xảy ra khi từ chối đơn');
     }
+  };
+
+  // Kiểm tra quyền duyệt đơn nghỉ phép
+  const canApproveRequest = (request) => {
+    // Admin có thể duyệt tất cả đơn
+    if (userRole === 'admin') return true;
+    
+    // Manager có thể duyệt đơn của nhân viên (không phải manager và accountant)
+    // Kiểm tra dựa trên department hoặc employeeId - nếu đơn của manager/accountant thì chỉ admin mới duyệt được
+    if (userRole === 'manager') {
+      // Manager có thể duyệt đơn của nhân viên thường
+      // Để đơn giản, cho phép manager duyệt tất cả đơn (trừ khi là đơn của manager/accountant khác)
+      return true;
+    }
+    
+    // Accountant chỉ xem, không thể duyệt
+    if (userRole === 'accountant') return false;
+    
+    return false;
   };
 
   const filteredRequests = leaveRequests.filter(request => {
@@ -208,7 +244,13 @@ const LeaveManagement = () => {
           <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-lg mb-6`}>
             <div>
               <h1 className="text-3xl font-bold">Duyệt đơn nghỉ phép</h1>
-              <p className={`${getSubtitleColor()} mt-1`}>Xem và duyệt các đơn nghỉ phép của nhân viên</p>
+              <p className={`${getSubtitleColor()} mt-1`}>
+                {userRole === 'admin' 
+                  ? 'Xem và duyệt tất cả các đơn nghỉ phép (bao gồm accountant và manager)'
+                  : userRole === 'manager'
+                  ? 'Xem và duyệt các đơn nghỉ phép của nhân viên'
+                  : 'Xem các đơn nghỉ phép'}
+              </p>
             </div>
           </div>
 
@@ -355,7 +397,7 @@ const LeaveManagement = () => {
                             <Eye className="h-4 w-4" />
                           </Button>
 
-                          {request.status === 'pending' && (
+                          {request.status === 'pending' && canApproveRequest(request) && (
                             <>
                               <Button
                                 variant="primary"
@@ -500,7 +542,7 @@ const LeaveManagement = () => {
 
             {/* Modal Footer */}
             <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl">
-              {selectedRequest.status === 'pending' ? (
+              {selectedRequest.status === 'pending' && canApproveRequest(selectedRequest) ? (
                 <>
                   <button
                     onClick={() => openRejectModal(selectedRequest.id)}

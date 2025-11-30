@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Search, Filter, Eye, Calendar, BarChart3, Activity, AlertTriangle, CheckCircle, XCircle, Plus, Edit, Trash2, RefreshCw } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import logsApi from '../../services/logsApi';
+<<<<<<< HEAD
 import adminLogService from '../../services/adminLogService';
 
 // Mock data để demo
@@ -103,6 +104,9 @@ const MOCK_LOGS = [
     details: 'Tháng: 11/2025'
   },
 ];
+=======
+import { getFilteredLogs, getAllLogs, clearAllLogs, cleanOldLogs } from '../../utils/systemLogger';
+>>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
 
 const LogsMonitor = () => {
   const [logs, setLogs] = useState(MOCK_LOGS); // Sử dụng mock data
@@ -113,6 +117,7 @@ const LogsMonitor = () => {
   const [selectedLog, setSelectedLog] = useState(null); // Log đang xem chi tiết
   const [showDetailModal, setShowDetailModal] = useState(false);
 
+<<<<<<< HEAD
   // Load logs - kết hợp mock data và real data
   const loadLogs = async () => {
     try {
@@ -135,6 +140,21 @@ const LogsMonitor = () => {
       let filteredLogs = uniqueLogs;
       if (typeFilter !== 'all') {
         filteredLogs = filteredLogs.filter(log => log.type === typeFilter);
+=======
+  // Load logs from localStorage
+  useEffect(() => {
+    const loadLogs = () => {
+      try {
+        setLoading(true);
+        // Lấy logs từ localStorage với filter
+        const logsData = getFilteredLogs(searchTerm, typeFilter, dateFilter);
+        setLogs(logsData);
+      } catch (error) {
+        console.error('Failed to load logs:', error);
+        setLogs([]);
+      } finally {
+        setLoading(false);
+>>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
       }
 
       // Filter by search
@@ -162,6 +182,10 @@ const LogsMonitor = () => {
 
   useEffect(() => {
     loadLogs();
+    
+    // Refresh logs mỗi 2 giây để cập nhật real-time
+    const interval = setInterval(loadLogs, 2000);
+    return () => clearInterval(interval);
   }, [searchTerm, typeFilter, dateFilter]);
 
   // Filter logs (now handled by API, but keep for fallback)
@@ -174,6 +198,9 @@ const LogsMonitor = () => {
     navigate: filteredLogs.filter(l => l.type === 'Navigate').length,
     update: filteredLogs.filter(l => l.type === 'Update').length,
     create: filteredLogs.filter(l => l.type === 'Create').length,
+    delete: filteredLogs.filter(l => l.type === 'Delete').length,
+    approve: filteredLogs.filter(l => l.type === 'Approve').length,
+    reject: filteredLogs.filter(l => l.type === 'Reject').length,
     error: filteredLogs.filter(l => l.type === 'Error').length,
     attendance: filteredLogs.filter(l => l.type === 'Attendance').length
   };
@@ -195,6 +222,8 @@ const LogsMonitor = () => {
       case 'Update': return 'bg-yellow-100 text-yellow-700';
       case 'Create': return 'bg-purple-100 text-purple-700';
       case 'Delete': return 'bg-red-100 text-red-700';
+      case 'Approve': return 'bg-emerald-100 text-emerald-700';
+      case 'Reject': return 'bg-orange-100 text-orange-700';
       case 'Error': return 'bg-red-100 text-red-700';
       case 'Attendance': return 'bg-indigo-100 text-indigo-700';
       default: return 'bg-gray-100 text-gray-700';
@@ -225,20 +254,46 @@ const LogsMonitor = () => {
             <p className="text-gray-600 mt-1">Theo dõi các thay đổi và hoạt động của Admin</p>
           </div>
           <div className="flex gap-3">
+<<<<<<< HEAD
             <button
               onClick={loadLogs}
               className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
               Làm mới
+=======
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              onClick={() => {
+                if (window.confirm('Bạn có chắc chắn muốn xóa tất cả logs? Hành động này không thể hoàn tác.')) {
+                  clearAllLogs();
+                  setLogs([]);
+                  alert('Đã xóa tất cả logs thành công!');
+                  window.location.reload();
+                }
+              }}
+            >
+              <Trash2 size={20} />
+              Xóa Tất Cả
+            </button>
+            <button 
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+              onClick={() => {
+                const daysToKeep = prompt('Xóa logs cũ hơn bao nhiêu ngày? (Nhập số ngày, mặc định: 30)', '30');
+                if (daysToKeep) {
+                  const deleted = cleanOldLogs(parseInt(daysToKeep) || 30);
+                  alert(`Đã xóa ${getAllLogs().length - deleted} logs cũ!`);
+                  window.location.reload();
+                }
+              }}
+            >
+              <Filter size={20} />
+              Xóa Logs Cũ
+>>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
             </button>
             <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
               <Calendar size={20} />
               Xuất Nhật Ký
-            </button>
-            <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-              <BarChart3 size={20} />
-              Tạo Báo Cáo
             </button>
           </div>
         </div>
@@ -425,7 +480,10 @@ const LogsMonitor = () => {
                 <option value="Navigate">Điều hướng</option>
                 <option value="Update">Cập nhật</option>
                 <option value="Create">Tạo mới</option>
+                <option value="Update">Cập nhật</option>
                 <option value="Delete">Xóa</option>
+                <option value="Approve">Duyệt</option>
+                <option value="Reject">Từ chối</option>
                 <option value="Error">Lỗi</option>
                 <option value="Attendance">Chấm công</option>
               </select>
@@ -513,9 +571,18 @@ const LogsMonitor = () => {
                         {log.action}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+<<<<<<< HEAD
                         <button
                           onClick={() => handleViewDetail(log)}
                           className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+=======
+                        <button 
+                          className="text-blue-600 hover:text-blue-700 p-1 rounded"
+                          onClick={() => {
+                            const detailsStr = log.details ? JSON.stringify(log.details, null, 2) : 'Không có chi tiết';
+                            alert(`Chi tiết hành động:\n${detailsStr}\n\nUser Agent: ${log.userAgent || 'N/A'}\nIP: ${log.ip || 'N/A'}`);
+                          }}
+>>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
                           title="Xem chi tiết"
                         >
                           <Eye size={16} />
@@ -640,4 +707,14 @@ const LogsMonitor = () => {
   );
 };
 
-export default LogsMonitor;
+// export default LogsMonitor;
+// Trang "Nhật ký hệ thống" (Admin > Nhật ký hệ thống) hiện:
+// Lưu lại tất cả các hành động quan trọng
+// Hiển thị logs từ localStorage
+// Có thể filter, search và quản lý logs
+// Tự động refresh để cập nhật real-time
+// Các hành động được log bao gồm:
+// Tạo/Sửa/Xóa nhân viên
+// Duyệt/Từ chối đơn nghỉ phép
+// Tạo đơn nghỉ phép mới
+// Xem chi tiết nhân viên

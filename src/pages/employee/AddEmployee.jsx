@@ -8,6 +8,7 @@ import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
 import adminLogService from '../../services/adminLogService';
 import { User, Phone, Check, X } from 'lucide-react';
+import { logCreateEmployee } from '../../utils/systemLogger';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
@@ -194,12 +195,20 @@ const AddEmployee = () => {
       const response = await fakeApi.createEmployee(employeeData);
 
       if (response.success) {
+<<<<<<< HEAD
         // Ghi log khi tạo nhân viên mới
         await adminLogService.logEmployeeCreate(
           formData.employeeCode,
           `${formData.firstName} ${formData.lastName}`
         );
 
+=======
+        // Log hành động tạo nhân viên
+        const employeeName = `${formData.firstName} ${formData.lastName}`;
+        const employeeId = response.data?.id || response.data?.employeeId || 'unknown';
+        logCreateEmployee(employeeId, employeeName);
+        
+>>>>>>> 1ca03c9fc33ead406f505540c84dc2bd4a86c0b7
         alert('Nhân viên mới đã được tạo thành công!');
         navigate('/employees');
       } else {
@@ -240,12 +249,11 @@ const AddEmployee = () => {
   ];
 
   const departments = [
-    'Phòng IT',
-    'Phòng Nhân sự',
-    'Phòng Tài chính',
-    'Phòng Marketing',
-    'Phòng Kinh doanh',
-    'Phòng Vận hành'
+    'Công nghệ thông tin',
+    'Marketing',
+    'Kinh doanh',
+    'Nhân sự',
+    'Tài chính'
   ];
 
   const positions = [
