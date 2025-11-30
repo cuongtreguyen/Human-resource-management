@@ -1,53 +1,166 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Filter, Eye, Calendar, BarChart3, Activity, AlertTriangle, CheckCircle, XCircle, Plus, Edit, Trash2 } from 'lucide-react';
+import { Search, Filter, Eye, Calendar, BarChart3, Activity, AlertTriangle, CheckCircle, XCircle, Plus, Edit, Trash2, RefreshCw } from 'lucide-react';
 import Layout from '../../components/layout/Layout';
 import logsApi from '../../services/logsApi';
+import adminLogService from '../../services/adminLogService';
+
+// Mock data để demo
+const MOCK_LOGS = [
+  {
+    id: 1,
+    timestamp: new Date().toISOString(),
+    user: 'Admin Nguyễn Văn A',
+    type: 'Create',
+    action: 'Thêm nhân viên mới: Trần Thị B',
+    details: 'ID: NV005, Phòng: IT'
+  },
+  {
+    id: 2,
+    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    user: 'Admin Nguyễn Văn A',
+    type: 'Update',
+    action: 'Cập nhật lương nhân viên: Lê Văn C',
+    details: 'Lương cơ bản: 15,000,000 → 18,000,000'
+  },
+  {
+    id: 3,
+    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    user: 'Manager Phạm Thị D',
+    type: 'Update',
+    action: 'Duyệt đơn nghỉ phép: Hoàng Văn E',
+    details: 'Ngày nghỉ: 02/12/2025 - 04/12/2025'
+  },
+  {
+    id: 4,
+    timestamp: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    user: 'Admin Nguyễn Văn A',
+    type: 'Delete',
+    action: 'Xóa nhân viên: Ngô Văn F',
+    details: 'ID: NV002, Lý do: Nghỉ việc'
+  },
+  {
+    id: 5,
+    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    user: 'Admin Nguyễn Văn A',
+    type: 'View',
+    action: 'Xem báo cáo lương tháng 11/2025',
+    details: 'Tổng số nhân viên: 50'
+  },
+  {
+    id: 6,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    user: 'System',
+    type: 'Attendance',
+    action: 'Chấm công vào: Nguyễn Văn Cường',
+    details: 'Giờ vào: 08:15:00, Ca: Sáng'
+  },
+  {
+    id: 7,
+    timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+    user: 'Admin Nguyễn Văn A',
+    type: 'Update',
+    action: 'Sửa chấm công: Trần Văn G',
+    details: 'Giờ ra: 17:00 → 18:30 (OT)'
+  },
+  {
+    id: 8,
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    user: 'Manager Phạm Thị D',
+    type: 'Update',
+    action: 'Từ chối đăng ký OT: Lê Thị H',
+    details: 'Lý do: Không đủ điều kiện'
+  },
+  {
+    id: 9,
+    timestamp: new Date(Date.now() - 1000 * 60 * 150).toISOString(),
+    user: 'Admin Nguyễn Văn A',
+    type: 'Create',
+    action: 'Tạo phòng ban mới: Marketing',
+    details: 'Trưởng phòng: Võ Văn I'
+  },
+  {
+    id: 10,
+    timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+    user: 'System',
+    type: 'Error',
+    action: 'Lỗi kết nối camera chấm công',
+    details: 'Camera ID: CAM001, Retry: 3 lần'
+  },
+  {
+    id: 11,
+    timestamp: new Date(Date.now() - 1000 * 60 * 200).toISOString(),
+    user: 'Admin Nguyễn Văn A',
+    type: 'Navigate',
+    action: 'Truy cập trang Quản lý nhân viên',
+    details: '/employees'
+  },
+  {
+    id: 12,
+    timestamp: new Date(Date.now() - 1000 * 60 * 220).toISOString(),
+    user: 'Accountant Trần Thị K',
+    type: 'View',
+    action: 'Xem bảng lương nhân viên: Nguyễn Văn L',
+    details: 'Tháng: 11/2025'
+  },
+];
 
 const LogsMonitor = () => {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState(MOCK_LOGS); // Sử dụng mock data
+  const [loading, setLoading] = useState(false); // Không loading vì dùng mock
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
+  const [selectedLog, setSelectedLog] = useState(null); // Log đang xem chi tiết
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
-  // Load logs from API
-  useEffect(() => {
-    const loadLogs = async () => {
-      try {
-        setLoading(true);
-        const logsData = await logsApi.getLogs(searchTerm, typeFilter, dateFilter);
-        setLogs(logsData);
-      } catch (error) {
-        console.error('Failed to load logs:', error);
-        // Fallback to mock data
-        const mockLogs = [
-          {
-            id: 1,
-            timestamp: '2024-10-06T23:22:29Z',
-            user: 'admin',
-            type: 'View',
-            action: 'View user management page',
-            details: 'Accessed user management dashboard',
-            ip: '192.168.1.100',
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          },
-          {
-            id: 2,
-            timestamp: '2024-10-06T23:22:15Z',
-            user: 'admin',
-            type: 'View',
-            action: 'View edit user form for: admin',
-            details: 'Opened edit form for user admin',
-            ip: '192.168.1.100',
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        ];
-        setLogs(mockLogs);
-      } finally {
-        setLoading(false);
+  // Load logs - kết hợp mock data và real data
+  const loadLogs = async () => {
+    try {
+      setLoading(true);
+
+      // Get local admin logs
+      const localLogs = adminLogService.getLogs(typeFilter, searchTerm, 200);
+
+      // Kết hợp mock data + local logs
+      const combinedLogs = [...MOCK_LOGS, ...localLogs].sort((a, b) =>
+        new Date(b.timestamp) - new Date(a.timestamp)
+      );
+
+      // Remove duplicates by id
+      const uniqueLogs = combinedLogs.filter((log, index, self) =>
+        index === self.findIndex(l => l.id === log.id)
+      );
+
+      // Filter by type
+      let filteredLogs = uniqueLogs;
+      if (typeFilter !== 'all') {
+        filteredLogs = filteredLogs.filter(log => log.type === typeFilter);
       }
-    };
 
+      // Filter by search
+      if (searchTerm) {
+        const search = searchTerm.toLowerCase();
+        filteredLogs = filteredLogs.filter(log =>
+          log.action.toLowerCase().includes(search) ||
+          log.user.toLowerCase().includes(search)
+        );
+      }
+
+      // Filter by date if specified
+      if (dateFilter) {
+        filteredLogs = filteredLogs.filter(log => log.timestamp.startsWith(dateFilter));
+      }
+
+      setLogs(filteredLogs);
+    } catch (error) {
+      console.error('Failed to load logs:', error);
+      setLogs(MOCK_LOGS); // Fallback to mock data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     loadLogs();
   }, [searchTerm, typeFilter, dateFilter]);
 
@@ -96,6 +209,12 @@ const LogsMonitor = () => {
     return new Date(timestamp).toLocaleDateString('vi-VN');
   };
 
+  // Xem chi tiết log
+  const handleViewDetail = (log) => {
+    setSelectedLog(log);
+    setShowDetailModal(true);
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -103,9 +222,16 @@ const LogsMonitor = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Nhật Ký Hệ Thống</h1>
-            <p className="text-gray-600 mt-1">Theo dõi hành vi hệ thống và hoạt động người dùng</p>
+            <p className="text-gray-600 mt-1">Theo dõi các thay đổi và hoạt động của Admin</p>
           </div>
           <div className="flex gap-3">
+            <button
+              onClick={loadLogs}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+            >
+              <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
+              Làm mới
+            </button>
             <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
               <Calendar size={20} />
               Xuất Nhật Ký
@@ -168,39 +294,58 @@ const LogsMonitor = () => {
             </div>
           </div>
 
-          {/* Activities Chart */}
+          {/* Activities Chart - 7 ngày gần nhất */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Hoạt Động</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Hoạt Động 7 Ngày Gần Nhất</h3>
             <div className="h-64 flex items-end justify-between gap-2">
-              {['30/09', '01/10', '02/10', '03/10', '04/10', '05/10', '06/10'].map((date) => {
-                const dayLogs = logs.filter(log => formatDate(log.timestamp) === date);
-                const maxHeight = Math.max(...chartData.map(d => d.value));
-                // Calculate height for chart visualization - removed unused variable
-                
-                return (
-                  <div key={date} className="flex-1 flex flex-col items-center">
-                    <div className="w-full flex flex-col items-end gap-1" style={{ height: '200px' }}>
-                      {chartData.map((item) => {
-                        const count = dayLogs.filter(log => log.type === item.name).length;
-                        const itemHeight = count > 0 ? (count / maxHeight) * 200 : 0;
-                        
-                        return (
-                          <div
-                            key={item.name}
-                            className="w-full rounded-t"
-                            style={{ 
-                              height: `${itemHeight}px`,
-                              backgroundColor: item.color,
-                              opacity: 0.8
-                            }}
-                          ></div>
-                        );
-                      })}
+              {(() => {
+                // Tạo 7 ngày gần nhất
+                const last7Days = [];
+                for (let i = 6; i >= 0; i--) {
+                  const date = new Date();
+                  date.setDate(date.getDate() - i);
+                  last7Days.push({
+                    dateObj: date,
+                    label: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+                    dateStr: date.toLocaleDateString('vi-VN')
+                  });
+                }
+
+                // Tính số lượng log mỗi ngày
+                const dailyCounts = last7Days.map(day => {
+                  const count = filteredLogs.filter(log => {
+                    const logDate = new Date(log.timestamp).toLocaleDateString('vi-VN');
+                    return logDate === day.dateStr;
+                  }).length;
+                  return { ...day, count };
+                });
+
+                const maxCount = Math.max(...dailyCounts.map(d => d.count), 1);
+
+                return dailyCounts.map((day, index) => (
+                  <div key={index} className="flex-1 flex flex-col items-center">
+                    <div className="w-full flex flex-col justify-end" style={{ height: '200px' }}>
+                      <div
+                        className="w-full bg-gradient-to-t from-blue-600 to-blue-400 rounded-t-lg transition-all duration-300 hover:from-blue-700 hover:to-blue-500"
+                        style={{
+                          height: `${(day.count / maxCount) * 180}px`,
+                          minHeight: day.count > 0 ? '20px' : '4px'
+                        }}
+                      >
+                        {day.count > 0 && (
+                          <div className="text-center text-white text-xs font-medium pt-1">
+                            {day.count}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="mt-2 text-xs text-gray-500">{date}</div>
+                    <div className="mt-2 text-xs text-gray-500 font-medium">{day.label}</div>
                   </div>
-                );
-              })}
+                ));
+              })()}
+            </div>
+            <div className="mt-4 text-center text-sm text-gray-500">
+              Tổng hoạt động trong 7 ngày: <span className="font-semibold text-blue-600">{filteredLogs.length}</span>
             </div>
           </div>
         </div>
@@ -368,7 +513,11 @@ const LogsMonitor = () => {
                         {log.action}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button className="text-blue-600 hover:text-blue-700 p-1 rounded">
+                        <button
+                          onClick={() => handleViewDetail(log)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+                          title="Xem chi tiết"
+                        >
                           <Eye size={16} />
                         </button>
                       </td>
@@ -394,6 +543,98 @@ const LogsMonitor = () => {
             </div>
           </div>
         </div>
+
+        {/* Modal Chi tiết Log */}
+        {showDetailModal && selectedLog && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">Chi tiết nhật ký</h3>
+                  <button
+                    onClick={() => setShowDetailModal(false)}
+                    className="text-white hover:bg-white/20 p-1 rounded-lg transition-colors"
+                  >
+                    <XCircle size={24} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                {/* Thời gian */}
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Calendar size={20} className="text-gray-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Thời gian</div>
+                    <div className="font-medium">{formatTimestamp(selectedLog.timestamp)}</div>
+                  </div>
+                </div>
+
+                {/* Người thực hiện */}
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <span className="text-blue-600 font-medium">
+                      {selectedLog.user.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Người thực hiện</div>
+                    <div className="font-medium">{selectedLog.user}</div>
+                  </div>
+                </div>
+
+                {/* Loại hành động */}
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                    <Activity size={20} className="text-gray-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500">Loại hành động</div>
+                    <span className={`inline-block mt-1 px-3 py-1 text-sm font-medium rounded-full ${getTypeColor(selectedLog.type)}`}>
+                      {selectedLog.type}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Hành động */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="text-sm text-gray-500 mb-1">Hành động</div>
+                  <div className="font-medium text-gray-900">{selectedLog.action}</div>
+                </div>
+
+                {/* Chi tiết */}
+                {selectedLog.details && (
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="text-sm text-blue-600 mb-1">Chi tiết</div>
+                    <div className="text-blue-900">{selectedLog.details}</div>
+                  </div>
+                )}
+
+                {/* Target Info */}
+                {selectedLog.targetId && (
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <span>ID đối tượng:</span>
+                    <code className="bg-gray-100 px-2 py-1 rounded">{selectedLog.targetId}</code>
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="px-6 py-4 bg-gray-50 border-t flex justify-end">
+                <button
+                  onClick={() => setShowDetailModal(false)}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

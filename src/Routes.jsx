@@ -33,14 +33,12 @@ import Chat from './pages/Chat';
 import Reports from './pages/Reports';
 import Documents from './pages/Documents';
 import Settings from './pages/Settings';
-import Test from './pages/Test';
 import NotificationCenter from './pages/NotificationCenter';
 import WorkflowManager from './pages/WorkflowManager';
 import EmployeePortal from './pages/employee/EmployeePortal';
 import EmployeeAttendance from './pages/employee/Attendance';
 import EmployeeLeave from './pages/employee/Leave';
 import EmployeePayroll from './pages/employee/Payroll';
-import EmployeeTasks from './pages/employee/Tasks';
 import EmployeeTaskBoard from './pages/employee/EmployeeTaskBoard';
 import EmployeeDocuments from './pages/employee/Documents';
 import EmployeeProfile from './pages/employee/Profile';
@@ -55,123 +53,124 @@ import PositionsList from './pages/recruitment/PositionsList';
 import ApplicationsList from './pages/recruitment/ApplicationsList';
 import Profile from './pages/Profile';
 
-// Route wrappers for different access levels
-const AdminRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['admin']}>{children}</ProtectedRoute>
+// OT Management Pages
+import OTManagement from './pages/overtime/OTManagement';
+// OTPayroll đã được tích hợp vào PayrollList
+import OTRequest from './pages/employee/OTRequest';
+import OTReport from './pages/employee/OTReport';
+
+// ============================================
+// ROUTE WRAPPERS - Simplified với factory function
+// ============================================
+const createRoleRoute = (allowedRoles) => ({ children }) => (
+  <ProtectedRoute allowedRoles={allowedRoles}>{children}</ProtectedRoute>
 );
 
-const ManagerRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['manager']}>{children}</ProtectedRoute>
-);
-
-const AdminManagerRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['admin', 'manager']}>{children}</ProtectedRoute>
-);
-
-const AccountantRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['accountant']}>{children}</ProtectedRoute>
-);
-
-const AdminAccountantRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['admin', 'accountant']}>{children}</ProtectedRoute>
-);
-
-const ManagerAccountantRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['manager', 'accountant']}>{children}</ProtectedRoute>
-);
-
-const AdminManagerAccountantRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['admin', 'manager', 'accountant']}>{children}</ProtectedRoute>
-);
-
-const StaffRoute = ({ children }) => (
-  <ProtectedRoute allowedRoles={['admin', 'manager', 'accountant']}>{children}</ProtectedRoute>
-);
+const AdminRoute = createRoleRoute(['admin']);
+const ManagerRoute = createRoleRoute(['manager']);
+const AccountantRoute = createRoleRoute(['accountant']);
+const AdminManagerRoute = createRoleRoute(['admin', 'manager']);
+const AdminAccountantRoute = createRoleRoute(['admin', 'accountant']);
+const ManagerAccountantRoute = createRoleRoute(['manager', 'accountant']);
+const StaffRoute = createRoleRoute(['admin', 'manager', 'accountant']);
 
 const AppRoutes = () => {
   return (
     <Routes>
+
       <Route path="/login" element={<Login />} />
 
-      {/* Staff Area (Admin, Manager, Accountant) */}
       <Route element={<StaffRoute><Layout /></StaffRoute>}>
-        {/* Dashboard - All staff */}
-        <Route path="/dashboard" element={<Dashboard />} />
+        {/* Core */}
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="profile" element={<Profile />} />
 
-        {/* Face Recognition - Admin only */}
-        <Route path="/face-recognition" element={<AdminRoute><FaceRecognition /></AdminRoute>} />
-        {/* Face Recognition - Manager */}
-        <Route path="/face-recognition-manager" element={<ManagerRoute><FaceRecognitionManager /></ManagerRoute>} />
-        {/* Face Recognition - Accountant */}
-        <Route path="/face-recognition-accountant" element={<AccountantRoute><FaceRecognitionAccountant /></AccountantRoute>} />
+        {/* Employee Management */}
+        <Route path="employees" element={<EmployeeList />} />
+        <Route path="employees/view/:id" element={<EmployeeDetails />} />
+        <Route path="employees/add" element={<AdminRoute><AddEmployee /></AdminRoute>} />
+        <Route path="employees/edit/:id" element={<AdminRoute><EditEmployee /></AdminRoute>} />
 
-        {/* Employees */}
-        <Route path="/employees" element={<EmployeeList />} /> {/* All staff can view */}
-        <Route path="/employees/view/:id" element={<EmployeeDetails />} /> {/* All staff can view */}
-        <Route path="/employees/add" element={<AdminRoute><AddEmployee /></AdminRoute>} /> {/* Admin only */}
-        <Route path="/employees/edit/:id" element={<AdminRoute><EditEmployee /></AdminRoute>} /> {/* Admin only */}
-
-        {/* Attendance - Log chấm công */}
-        <Route path="/attendance" element={<AttendanceList />} /> {/* All staff can view */}
+        {/* Attendance */}
+        <Route path="attendance" element={<AttendanceList />} />
 
         {/* Payroll */}
-        <Route path="/payroll" element={<PayrollList />} /> {/* All staff can view */}
-        <Route path="/payroll/policies" element={<AccountantRoute><PayrollPolicies /></AccountantRoute>} /> {/* Accountant only */}
+        <Route path="payroll" element={<PayrollList />} />
+        <Route path="payroll/policies" element={<AccountantRoute><PayrollPolicies /></AccountantRoute>} />
 
-        {/* Leaves - Manager only */}
-        <Route path="/leaves" element={<ManagerRoute><LeaveManagement /></ManagerRoute>} />
-        <Route path="/leaves/create" element={<ManagerRoute><LeaveRequest /></ManagerRoute>} />
-        <Route path="/leaves/workflow" element={<ManagerRoute><WorkflowManager /></ManagerRoute>} />
+        {/* Leave Management - Manager only */}
+        <Route path="leaves" element={<ManagerRoute><LeaveManagement /></ManagerRoute>} />
+        <Route path="leaves/create" element={<ManagerRoute><LeaveRequest /></ManagerRoute>} />
+        <Route path="leaves/workflow" element={<ManagerRoute><WorkflowManager /></ManagerRoute>} />
 
-        {/* Task Delegation - Manager only */}
-        <Route path="/task-delegation" element={<ManagerRoute><TaskDelegation /></ManagerRoute>} />
+        {/* Tasks */}
+        <Route path="tasks" element={<AdminManagerRoute><TaskManagement /></AdminManagerRoute>} />
+        <Route path="task-delegation" element={<ManagerRoute><TaskDelegation /></ManagerRoute>} />
+
+        {/* OT Management */}
+        <Route path="overtime" element={<ManagerRoute><OTManagement /></ManagerRoute>} />
+        {/* OT Payroll đã được tích hợp vào PayrollList */}
+        <Route path="overtime/payroll" element={<Navigate to="/payroll" replace />} />
+
+        {/* Documents - Manager & Accountant */}
+        <Route path="documents" element={<ManagerAccountantRoute><Documents /></ManagerAccountantRoute>} />
+
+        {/* Reports - Manager & Accountant */}
+        <Route path="reports" element={<ManagerAccountantRoute><Reports /></ManagerAccountantRoute>} />
+
+        {/* Evaluations - Admin & Manager */}
+        <Route path="evaluations" element={<AdminManagerRoute><SimpleEmployeeEvaluation /></AdminManagerRoute>} />
 
         {/* Recruitment - Admin only */}
-        <Route path="/recruitment" element={<AdminRoute><RecruitmentManagement /></AdminRoute>} />
-        <Route path="/recruitment/positions" element={<AdminRoute><PositionsList /></AdminRoute>} />
-        <Route path="/recruitment/applications" element={<AdminRoute><ApplicationsList /></AdminRoute>} />
+        <Route path="recruitment" element={<AdminRoute><RecruitmentManagement /></AdminRoute>} />
+        <Route path="recruitment/positions" element={<AdminRoute><PositionsList /></AdminRoute>} />
+        <Route path="recruitment/applications" element={<AdminRoute><ApplicationsList /></AdminRoute>} />
 
-        {/* Admin Only */}
-        <Route path="/admin/logs" element={<AdminRoute><LogsMonitor /></AdminRoute>} />
-        <Route path="/settings" element={<AdminRoute><Settings /></AdminRoute>} />
+        {/* Face Recognition - Separate routes per role */}
+        <Route path="face-recognition" element={<AdminRoute><FaceRecognition /></AdminRoute>} />
+        <Route path="face-recognition-manager" element={<ManagerRoute><FaceRecognitionManager /></ManagerRoute>} />
+        <Route path="face-recognition-accountant" element={<AccountantRoute><FaceRecognitionAccountant /></AccountantRoute>} />
 
-        {/* Admin & Accountant - Admin chỉ xem, Accountant được duyệt */}
-        <Route path="/admin/benefits" element={<AdminAccountantRoute><AdminBenefits /></AdminAccountantRoute>} />
-
-        {/* Support Tickets - Admin & Manager có thể xem và xử lý */}
-        <Route path="/admin/support-tickets" element={<AdminManagerRoute><AdminSupportTickets /></AdminManagerRoute>} />
+        {/* Admin Functions */}
+        <Route path="admin/logs" element={<AdminRoute><LogsMonitor /></AdminRoute>} />
+        <Route path="admin/benefits" element={<AdminAccountantRoute><AdminBenefits /></AdminAccountantRoute>} />
+        <Route path="admin/support-tickets" element={<AdminManagerRoute><AdminSupportTickets /></AdminManagerRoute>} />
+        <Route path="settings" element={<AdminRoute><Settings /></AdminRoute>} />
 
         {/* System */}
-        <Route path="/notifications" element={<NotificationCenter />} /> {/* All staff */}
-        <Route path="/tasks" element={<AdminManagerRoute><TaskManagement /></AdminManagerRoute>} /> {/* Admin & Manager */}
-        <Route path="/evaluations" element={<AdminManagerRoute><SimpleEmployeeEvaluation /></AdminManagerRoute>} /> {/* Admin & Manager */}
-        <Route path="/chat" element={<Chat />} /> {/* All staff */}
-        <Route path="/profile" element={<Profile />} /> {/* All staff */}
-        <Route path="/reports" element={<ManagerAccountantRoute><Reports /></ManagerAccountantRoute>} /> {/* Manager & Accountant */}
-        <Route path="/documents" element={<ManagerAccountantRoute><Documents /></ManagerAccountantRoute>} /> {/* Manager & Accountant */}
-        <Route path="/test" element={<Test />} />
+        <Route path="notifications" element={<NotificationCenter />} />
+        <Route path="chat" element={<Chat />} />
       </Route>
 
-      {/* Employee Portal */}
-      <Route path="/employee" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeLayout /></ProtectedRoute>}>
+      {/* ============================================
+          EMPLOYEE ROUTES
+          Layout: EmployeeLayout với Sidebar
+          ============================================ */}
+      <Route path="employee" element={<ProtectedRoute allowedRoles={['employee']}><EmployeeLayout /></ProtectedRoute>}>
         <Route index element={<EmployeePortal />} />
+        <Route path="profile" element={<EmployeeProfile />} />
         <Route path="attendance" element={<EmployeeAttendance />} />
         <Route path="attendance/summary" element={<EmployeeAttendanceSummary />} />
         <Route path="leave" element={<EmployeeLeave />} />
         <Route path="payroll" element={<EmployeePayroll />} />
         <Route path="tasks" element={<EmployeeTaskBoard />} />
         <Route path="documents" element={<EmployeeDocuments />} />
-        <Route path="profile" element={<EmployeeProfile />} />
         <Route path="chat" element={<EmployeeChat />} />
         <Route path="benefits" element={<EmployeeBenefitsInsurance />} />
         <Route path="support" element={<EmployeeSupportHelp />} />
         <Route path="evaluation" element={<EmployeeMyEvaluation />} />
+        <Route path="ot" element={<OTRequest />} />
+        <Route path="ot/report" element={<OTReport />} />
       </Route>
 
-      {/* Shared Routes */}
-      <Route path="/face-recognition-portal" element={<ProtectedRoute allowedRoles={['admin', 'employee']}><FaceRecognitionPortal /></ProtectedRoute>} />
+      {/* ============================================
+          SHARED ROUTES
+          ============================================ */}
+      <Route path="face-recognition-portal" element={<ProtectedRoute allowedRoles={['admin', 'employee']}><FaceRecognitionPortal /></ProtectedRoute>} />
 
-      {/* Redirects */}
+      {/* ============================================
+          REDIRECTS
+          ============================================ */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

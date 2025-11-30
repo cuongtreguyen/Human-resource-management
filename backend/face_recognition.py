@@ -5,9 +5,36 @@ import os
 import sys
 import time
 import json
+import io
 import requests
 from datetime import datetime
 from collections import Counter
+
+# Fix encoding cho Windows console (hỗ trợ tiếng Việt)
+# Chỉ wrap stdout/stderr nếu chúng chưa bị đóng và có buffer
+def safe_wrap_stdio():
+    """Safely wrap stdout/stderr for UTF-8 encoding on Windows"""
+    if sys.platform != "win32":
+        return
+    try:
+        if sys.stdout and hasattr(sys.stdout, 'buffer') and not sys.stdout.closed:
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    except (ValueError, AttributeError, OSError):
+        pass
+    try:
+        if sys.stderr and hasattr(sys.stderr, 'buffer') and not sys.stderr.closed:
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    except (ValueError, AttributeError, OSError):
+        pass
+
+safe_wrap_stdio()
+
+def safe_print(*args, **kwargs):
+    """Safely print messages, ignoring errors if stdout is closed"""
+    try:
+        print(*args, **kwargs)
+    except (ValueError, OSError, IOError):
+        pass
 
 def setup_paths():
     """Gets all the important file paths needed for the program."""
@@ -25,17 +52,17 @@ def setup_paths():
 def check_files(paths):
     """Checks if necessary files exist and downloads them if needed."""
     if not os.path.exists(paths["model_path"]):
-        print("Error: Model file not found. Please train the model first.")
+        safe_print("Error: Model file not found. Please train the model first.")
         return False
     if not os.path.exists(paths["cascade_path"]):
-        print(f"Error: Face detection file not found. Downloading it now...")
+        safe_print(f"Error: Face detection file not found. Downloading it now...")
         import urllib.request
         url = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
         try:
             urllib.request.urlretrieve(url, paths["cascade_path"])
-            print(f"Downloaded face detection file successfully!")
+            safe_print(f"Downloaded face detection file successfully!")
         except Exception as e:
-            print(f"[ERROR] Failed to download cascade: {e}")
+            safe_print(f"[ERROR] Failed to download cascade: {e}")
             return False
     return True
 
@@ -57,7 +84,7 @@ def load_user_names(dataset_path):
                                 user_names[int(user_id)] = line.replace("Name:", "").strip()
                                 break
                 except Exception as e:
-                    print(f"[WARN] Could not read info file for user {user_id}: {e}")
+                    safe_print(f"[WARN] Could not read info file for user {user_id}: {e}")
     return user_names
 
 def setup_attendance(paths):
@@ -69,16 +96,16 @@ def setup_attendance(paths):
     if not os.path.exists(attendance_file):
         with open(attendance_file, 'w', encoding='utf-8') as f:
             json.dump({}, f, ensure_ascii=False, indent=4)
-        print(f"[ATTENDANCE] Created new empty file: {attendance_file}")
+        safe_print(f"[ATTENDANCE] Created new empty file: {attendance_file}")
 
     try:
         with open(attendance_file, 'r', encoding='utf-8') as f:
             attendance_data = json.load(f)
     except Exception as e:
-        print(f"[ATTENDANCE] Cannot read JSON; using empty dict. Error: {e}")
+        safe_print(f"[ATTENDANCE] Cannot read JSON; using empty dict. Error: {e}")
         attendance_data = {}
 
-    print(f"[ATTENDANCE] Using file: {os.path.abspath(attendance_file)}")
+    safe_print(f"[ATTENDANCE] Using file: {os.path.abspath(attendance_file)}")
     return attendance_file, attendance_data
 
 
@@ -134,7 +161,7 @@ def recognize_face(recognizer, face_roi, recent_predictions, face_key, predictio
             return None, None, "0%"
 
     except Exception as e:
-        print(f"Error during recognition: {str(e)}")
+        safe_print(f"Error during recognition: {str(e)}")
         return None, None, "Error"
 
 def update_attendance(id, name, attendance_data, attendance_file, recognized_users,
@@ -165,9 +192,9 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                 json.dump(attendance_data, f, ensure_ascii=False, indent=4)
                 f.flush()
                 os.fsync(f.fileno())
-            print(f"[ATTENDANCE] Wrote {action} for ID={id}, name={name} at {date_str} {timestamp}")
+            safe_print(f"[ATTENDANCE] Wrote {action} for ID={id}, name={name} at {date_str} {timestamp}")
         except Exception as e:
-            print(f"[ATTENDANCE] ERROR writing JSON: {e}")
+            safe_print(f"[ATTENDANCE] ERROR writing JSON: {e}")
 
         recognized_users.add(id)
         recognized_name = name
@@ -180,17 +207,17 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                 "confidence": confidence_text,
                 "type": recognition_type
             }
-            print(f"[ATTENDANCE] Sending to Java API: {recognition_data}")
+            safe_print(f"[ATTENDANCE] Sending to Java API: {recognition_data}")
 
             resp = requests.post(
                 "http://localhost:8080/api/attendance/face-recognition/recognition-success",
                 json=recognition_data,
                 timeout=8
             )
-            print(f"[ATTENDANCE] Java API status={resp.status_code} body={resp.text[:200]}")
+            safe_print(f"[ATTENDANCE] Java API status={resp.status_code} body={resp.text[:200]}")
             api_success = (resp.status_code == 200)
         except Exception as e:
-            print(f"[ATTENDANCE] ERROR calling Java API: {e}")
+            safe_print(f"[ATTENDANCE] ERROR calling Java API: {e}")
 
     return recognized_users, api_success, recognized_name
 
@@ -199,25 +226,25 @@ def initialize_camera_for_recognition():
     Initialize webcam, trying multiple indices and backends for better compatibility.
     (Sử dụng cv2.CAP_DSHOW cho Windows để khắc phục lỗi MSMF).
     """
-    print("[INFO] Initializing camera for recognition...")
+    safe_print("[INFO] Initializing camera for recognition...")
     
     cam = cv2.VideoCapture(0)
     
     if not cam.isOpened():
-        print("[WARN] Camera index 0 failed. Trying index 1...")
+        safe_print("[WARN] Camera index 0 failed. Trying index 1...")
         cam = cv2.VideoCapture(1)
 
     if not cam.isOpened() and sys.platform == "win32":
-        print("[WARN] Camera index 1 failed. Trying index 0 with DirectShow (CAP_DSHOW)...")
+        safe_print("[WARN] Camera index 1 failed. Trying index 0 with DirectShow (CAP_DSHOW)...")
         cam = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     
     if not cam.isOpened():
-        print("[ERROR] Failed to open any camera device. Aborting recognition.")
+        safe_print("[ERROR] Failed to open any camera device. Aborting recognition.")
         return None
         
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    print("[INFO] Camera initialized successfully.")
+    safe_print("[INFO] Camera initialized successfully.")
     return cam
 
 def recognize_faces():
@@ -253,17 +280,17 @@ def recognize_faces():
     stable_count = 0
     stable_required = 10  # Số frame liên tiếp cần nhận diện đúng
 
-    print("Starting face recognition...")
-    print("Press 'q' to quit or wait for successful recognition")
+    safe_print("Starting face recognition...")
+    safe_print("Press 'q' to quit or wait for successful recognition")
 
     while True:
         ret, img = cam.read()
         if not ret:
-            print("[ERROR] Failed to grab frame. Retrying...")
+            safe_print("[ERROR] Failed to grab frame. Retrying...")
             time.sleep(0.5)
             ret, img = cam.read()
             if not ret:
-                print("[ERROR] Failed to grab frame again. Aborting.")
+                safe_print("[ERROR] Failed to grab frame again. Aborting.")
                 break
 
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -298,7 +325,7 @@ def recognize_faces():
             cv2.imshow('Face Recognition', display_img)
             
             if elapsed >= 5:
-                print("Closing after successful recognition timeout.")
+                safe_print("Closing after successful recognition timeout.")
                 break
         
         else:
@@ -343,13 +370,13 @@ def recognize_faces():
                     api_success = True
                     recognized_name = current_name
                     success_time = time.time()
-                    print(f"[INFO] ✅ Recognized {name} ({confidence_text})")
+                    safe_print(f"[INFO] ✅ Recognized {name} ({confidence_text})")
 
             cv2.imshow('Face Recognition', display_img)
 
         k = cv2.waitKey(10) & 0xff
         if k == ord('q'):
-            print("Recognition stopped by user")
+            safe_print("Recognition stopped by user")
             break
 
     cam.release()

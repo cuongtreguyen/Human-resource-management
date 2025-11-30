@@ -3,6 +3,30 @@ import numpy as np
 from PIL import Image
 import os
 import sys
+import io
+
+# Fix encoding cho Windows console (hỗ trợ tiếng Việt)
+def safe_wrap_stdio():
+    if sys.platform != "win32":
+        return
+    try:
+        if sys.stdout and hasattr(sys.stdout, 'buffer') and not sys.stdout.closed:
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+    except (ValueError, AttributeError, OSError):
+        pass
+    try:
+        if sys.stderr and hasattr(sys.stderr, 'buffer') and not sys.stderr.closed:
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+    except (ValueError, AttributeError, OSError):
+        pass
+
+safe_wrap_stdio()
+
+def safe_print(*args, **kwargs):
+    try:
+        print(*args, **kwargs)
+    except (ValueError, OSError, IOError):
+        pass
 
 def setup_paths():
     """
@@ -23,15 +47,15 @@ def setup_paths():
     os.makedirs(paths["trainer_path"], exist_ok=True)
 
     if not os.path.exists(paths["dataset_path"]):
-        print(f"Error: Dataset directory not found at {paths['dataset_path']}")
+        safe_print(f"Error: Dataset directory not found at {paths['dataset_path']}")
         return None
 
     if not os.path.exists(paths["cascade_path"]):
-        print(f"Error: Cascade file not found. Downloading it now...")
+        safe_print(f"Error: Cascade file not found. Downloading it now...")
         import urllib.request
         url = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
         urllib.request.urlretrieve(url, paths["cascade_path"])
-        print(f"Downloaded face detection file successfully!")
+        safe_print(f"Downloaded face detection file successfully!")
 
     return paths
 
@@ -106,7 +130,7 @@ def get_images_and_labels(dataset_path, detector):
                 ids.append(user_id)
 
         except Exception as e:
-            print(f"Error processing image {image_path}: {str(e)}")
+            safe_print(f"Error processing image {image_path}: {str(e)}")
 
     return face_samples, ids
 
@@ -166,16 +190,16 @@ def train_model():
 
         detector = cv2.CascadeClassifier(paths["cascade_path"])
 
-        print("Training face recognition model with improved parameters...")
-        print("This may take a few minutes...")
+        safe_print("Training face recognition model with improved parameters...")
+        safe_print("This may take a few minutes...")
 
         faces, ids = get_images_and_labels(paths["dataset_path"], detector)
 
         if len(faces) == 0 or len(ids) == 0:
-            print("Error: No face samples found. Please capture photos first.")
+            safe_print("Error: No face samples found. Please capture photos first.")
             return False
 
-        print(f"Training with {len(faces)} face samples")
+        safe_print(f"Training with {len(faces)} face samples")
 
         recognizer.train(faces, np.array(ids))
 

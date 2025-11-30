@@ -7,8 +7,9 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { EmployeeSummaryCards, Pagination } from '../../components/employee';
 import fakeApi from '../../services/fakeApi';
-import { getRole } from '../../utils/auth';
+import { getRole, isAdmin } from '../../utils/auth';
 import { canViewSalary, getCurrentUserDepartment } from '../../utils/fieldPermissions';
+import { UserPlus } from 'lucide-react';
 
 const EmployeeList = () => {
   const navigate = useNavigate();
@@ -260,6 +261,15 @@ const EmployeeList = () => {
             <p className={`${getSubtitleColor()} mt-1`}>Quản lý lực lượng lao động của tổ chức</p>
           </div>
           <div className="flex space-x-3">
+            {isAdmin() && (
+              <button
+                onClick={handleAddEmployee}
+                className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-all duration-200 backdrop-blur-sm font-medium"
+              >
+                <UserPlus className="w-5 h-5" />
+                Thêm nhân viên
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -305,15 +315,6 @@ const EmployeeList = () => {
             )}
           </div>
 
-          {/* Filter Actions */}
-          <div className="flex justify-between items-center">
-            <Button variant="danger" size="sm" onClick={clearFilters}>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Xóa bộ lọc
-            </Button>
-          </div>
         </div>
       </Card>
 

@@ -206,6 +206,34 @@ export const TaskProvider = ({ children }) => {
     return allTasks;
   };
 
+  // Get tasks eligible for OT registration
+  // Only tasks that: have deadline, not completed, assigned to employee
+  const getOTEligibleTasks = (employeeName) => {
+    const eligibleTasks = [];
+    departments.forEach(dept => {
+      dept.tasks.forEach(task => {
+        // Must be assigned to this employee
+        if (!task.assignees?.some(a => a.toLowerCase().includes(employeeName.toLowerCase()))) {
+          return;
+        }
+        // Must not be completed
+        if (task.columnId === 'done') {
+          return;
+        }
+        // Must have a deadline
+        if (!task.dueDate) {
+          return;
+        }
+        eligibleTasks.push({
+          ...task,
+          departmentId: dept.id,
+          departmentName: dept.name
+        });
+      });
+    });
+    return eligibleTasks;
+  };
+
   // Calculate stats
   const getOverallStats = () => ({
     totalDepartments: departments.length,
@@ -250,6 +278,7 @@ export const TaskProvider = ({ children }) => {
     deleteTask,
     moveTask,
     getTasksForEmployee,
+    getOTEligibleTasks,
     getOverallStats,
     getDepartmentProgress,
     resetToDefault,

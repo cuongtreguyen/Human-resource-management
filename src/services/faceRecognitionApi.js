@@ -67,6 +67,24 @@ class FaceRecognitionApi {
     }
   }
 
+  async trainModel() {
+    try {
+      const res = await http(
+        `${PY_API}/api/train`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        },
+        60000 // Train model có thể mất thời gian lâu
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.error('trainModel failed:', err);
+      return { status: 'error', message: 'Không thể train model. Vui lòng thử lại.' };
+    }
+  }
+
   async savePhotoToServer(userId, userName, photoNumber, imageData) {
     try {
       const res = await http(

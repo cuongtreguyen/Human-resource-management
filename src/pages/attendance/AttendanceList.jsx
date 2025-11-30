@@ -4,9 +4,19 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { PY_API } from '../../services/config';
-import { Calendar, Clock, Eye, Search } from 'lucide-react';
+import { Calendar, Clock, Eye, Search, Save, Edit2 } from 'lucide-react';
 import AttendanceDetailsModal from '../../components/attendance/AttendanceDetailsModal';
 import { getRole } from '../../utils/auth';
+
+// Danh sách các trạng thái có thể chọn
+const STATUS_OPTIONS = [
+  { value: 'working', label: 'Đang làm', color: 'bg-blue-100 text-blue-800' },
+  { value: 'done', label: 'Tan ca', color: 'bg-green-100 text-green-800' },
+  { value: 'late', label: 'Đi muộn', color: 'bg-yellow-100 text-yellow-800' },
+  { value: 'early_leave', label: 'Về sớm', color: 'bg-orange-100 text-orange-800' },
+  { value: 'absent', label: 'Vắng mặt', color: 'bg-red-100 text-red-800' },
+  { value: 'leave', label: 'Nghỉ phép', color: 'bg-purple-100 text-purple-800' },
+];
 
 const AttendanceList = () => {
   const userRole = getRole();
@@ -42,6 +52,8 @@ const AttendanceList = () => {
   const [attendanceData, setAttendanceData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [editingStatus, setEditingStatus] = useState({}); // Track status being edited: { recordId: statusValue }
+  const [editingRowId, setEditingRowId] = useState(null); // Which row is being edited
   const [selectedDate, setSelectedDate] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = window.sessionStorage.getItem('adminAttendanceDate');
@@ -54,54 +66,38 @@ const AttendanceList = () => {
     loadAttendanceData();
   }, [selectedDate]);
 
+  // Xác định ca làm việc dựa vào giờ vào
+  const getShift = (checkInTime) => {
+    if (!checkInTime) return { text: '-', color: 'text-gray-400' };
+    const [hour] = checkInTime.split(':').map(Number);
+    if (hour < 12) {
+      return { text: 'Ca sáng', color: 'text-blue-600' };
+    } else if (hour < 18) {
+      return { text: 'Ca chiều', color: 'text-orange-600' };
+    } else {
+      return { text: 'Ca tối', color: 'text-purple-600' };
+    }
+  };
+
+  // Trạng thái chấm công: Đang làm, Tan ca, OT
   const getAttendanceStatus = (record) => {
     if (!record.check_in) {
       return { status: 'absent', color: 'bg-red-100 text-red-800', text: 'Vắng mặt' };
     }
 
+    // Chưa check out -> Đang làm
     if (!record.check_out) {
-      return { status: 'working', color: 'bg-blue-100 text-blue-800', text: 'Đang làm việc' };
+      return { status: 'working', color: 'bg-blue-100 text-blue-800', text: 'Đang làm' };
     }
 
-    const checkInTime = record.check_in;
-    const checkOutTime = record.check_out;
-    const standardStartTime = '08:00';
-    const standardEndTime = '18:00';
-
-    const normalizeTime = (timeStr) => {
-      const [hour, min] = timeStr.split(':').map(Number);
-      return hour * 60 + min;
-    };
-
-    const checkInMinutes = normalizeTime(checkInTime);
-    const checkOutMinutes = normalizeTime(checkOutTime);
-    const standardStartMinutes = normalizeTime(standardStartTime);
-    const standardEndMinutes = normalizeTime(standardEndTime);
-
-    const isEarly = checkInMinutes < standardStartMinutes;
-    const isLate = checkInMinutes > standardStartMinutes;
-    const isEarlyCheckout = checkOutMinutes < standardEndMinutes;
-    const isLateCheckout = checkOutMinutes > standardEndMinutes;
-
-    if (isEarly && isLateCheckout) {
-      return { status: 'early-late', color: 'bg-cyan-100 text-cyan-800', text: 'Đi sớm & Về muộn' };
-    } else if (isEarly && isEarlyCheckout) {
-      return { status: 'early-early', color: 'bg-teal-100 text-teal-800', text: 'Đi sớm & Về sớm' };
-    } else if (isLate && isEarlyCheckout) {
-      return { status: 'late-early', color: 'bg-orange-100 text-orange-800', text: 'Đi trễ & Về sớm' };
-    } else if (isLate && isLateCheckout) {
-      return { status: 'late-late', color: 'bg-amber-100 text-amber-800', text: 'Đi trễ & Về muộn' };
-    } else if (isEarly) {
-      return { status: 'early', color: 'bg-emerald-100 text-emerald-800', text: 'Đi sớm' };
-    } else if (isLate) {
-      return { status: 'late', color: 'bg-yellow-100 text-yellow-800', text: 'Đi trễ' };
-    } else if (isEarlyCheckout) {
-      return { status: 'early-checkout', color: 'bg-purple-100 text-purple-800', text: 'Về sớm' };
-    } else if (isLateCheckout) {
-      return { status: 'late-checkout', color: 'bg-indigo-100 text-indigo-800', text: 'Về muộn' };
-    } else {
-      return { status: 'ontime', color: 'bg-green-100 text-green-800', text: 'Đúng giờ' };
+    // Kiểm tra OT (nếu check_out sau 18:00)
+    const [outHour] = record.check_out.split(':').map(Number);
+    if (outHour >= 18) {
+      return { status: 'ot', color: 'bg-purple-100 text-purple-800', text: 'OT' };
     }
+
+    // Đã check out -> Tan ca
+    return { status: 'done', color: 'bg-green-100 text-green-800', text: 'Tan ca' };
   };
 
   const loadAttendanceData = async () => {
@@ -214,58 +210,71 @@ const AttendanceList = () => {
                       </div>
                     </div>
                   ) : attendanceData.length > 0 ? (
-                    attendanceData.map((record) => (
-                      <div key={record.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                              {record.name ? record.name.charAt(0).toUpperCase() : 'U'}
-                            </div>
-                            <div>
-                              <div className="font-medium text-gray-900">{record.name || 'Không xác định'}</div>
-                              <div className="text-sm text-gray-500">{record.date}</div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <div className="text-center">
-                              <div className="text-sm text-gray-500">Giờ vào</div>
-                              <div className="font-medium">{record.check_in || '-'}</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-sm text-gray-500">Giờ ra</div>
-                              <div className="font-medium">{record.check_out || '-'}</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-sm text-gray-500">Số giờ làm</div>
-                              <div className="font-medium text-blue-600">
-                                {record.check_in && record.check_out ?
-                                  (() => {
-                                    const [inHour, inMin] = record.check_in.split(':').map(Number);
-                                    const [outHour, outMin] = record.check_out.split(':').map(Number);
-                                    const inMinutes = inHour * 60 + inMin;
-                                    const outMinutes = outHour * 60 + outMin;
-                                    const totalMinutes = outMinutes - inMinutes;
-                                    const hours = Math.floor(totalMinutes / 60);
-                                    const minutes = totalMinutes % 60;
-                                    return `${hours}h ${minutes}m`;
-                                  })() : '-'
-                                }
-                              </div>
-                            </div>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${getAttendanceStatus(record).color}`}>
-                              {getAttendanceStatus(record).text}
-                            </span>
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleOpenDetails(record)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200 bg-gray-50">
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">ID</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">HỌ TÊN</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-700">PHÒNG BAN</th>
+                            <th className="text-center py-3 px-4 font-medium text-gray-700">CA LÀM</th>
+                            <th className="text-center py-3 px-4 font-medium text-gray-700">GIỜ VÀO</th>
+                            <th className="text-center py-3 px-4 font-medium text-gray-700">GIỜ RA</th>
+                            <th className="text-center py-3 px-4 font-medium text-gray-700">TRẠNG THÁI</th>
+                            <th className="text-center py-3 px-4 font-medium text-gray-700">THAO TÁC</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {attendanceData.map((record, index) => {
+                            const shift = getShift(record.check_in);
+                            const status = getAttendanceStatus(record);
+                            return (
+                              <tr key={record.id || index} className="border-b border-gray-100 hover:bg-gray-50">
+                                <td className="py-3 px-4">
+                                  <span className="text-sm font-mono text-gray-600">
+                                    {record.employee_id || record.id || `NV${String(index + 1).padStart(3, '0')}`}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
+                                      {record.name ? record.name.charAt(0).toUpperCase() : 'U'}
+                                    </div>
+                                    <div className="font-medium text-gray-900">{record.name || 'Không xác định'}</div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="text-sm text-gray-600">{record.department || 'IT'}</span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className={`text-sm font-medium ${shift.color}`}>{shift.text}</span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className="font-medium text-gray-900">{record.check_in || '-'}</span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className="font-medium text-gray-900">{record.check_out || '-'}</span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <span className={`px-3 py-1 text-xs font-medium rounded-full ${status.color}`}>
+                                    {status.text}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => handleOpenDetails(record)}
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
                       <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />

@@ -7,7 +7,7 @@ import { canViewPersonalInfo, canViewEmergencyContact, maskSensitiveData } from 
 import {
   User, Mail, Phone, Briefcase, Calendar,
   DollarSign, Edit, Trash2, ArrowLeft, CheckCircle,
-  XCircle, Clock, Building2, CreditCard, Heart
+  XCircle, Building2, CreditCard, Heart
 } from 'lucide-react';
 
 const EmployeeDetails = () => {
@@ -63,22 +63,6 @@ const EmployeeDetails = () => {
   const formatCurrency = (amount) => {
     if (!amount) return 'Chưa cập nhật';
     return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
-  };
-
-  const calculateWorkDuration = (hireDate) => {
-    if (!hireDate) return 'Chưa cập nhật';
-    const startDate = new Date(hireDate);
-    const today = new Date();
-    const diffTime = Math.abs(today - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const years = Math.floor(diffDays / 365);
-    const months = Math.floor((diffDays % 365) / 30);
-
-    if (years > 0) {
-      return `${years} năm ${months} tháng`;
-    } else {
-      return `${months} tháng`;
-    }
   };
 
   if (loading) {
@@ -280,18 +264,6 @@ const EmployeeDetails = () => {
               <InfoRow label="Địa điểm làm việc" value={employee.workLocation} />
               <InfoRow label="Loại nhân viên" value={employee.employeeType} />
               <InfoRow label="Loại hợp đồng" value={employee.contractType} />
-            </div>
-          </div>
-
-          {/* Thời gian làm việc */}
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-indigo-600" />
-              Thời gian làm việc
-            </h3>
-            <div className="space-y-1">
-              <InfoRow label="Ngày vào làm" value={formatDate(employee.hireDate)} />
-              <InfoRow label="Thâm niên" value={calculateWorkDuration(employee.hireDate)} />
             </div>
           </div>
 

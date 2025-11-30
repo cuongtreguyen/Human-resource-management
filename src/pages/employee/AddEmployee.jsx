@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
+import adminLogService from '../../services/adminLogService';
 import { User, Phone, Check, X } from 'lucide-react';
 
 const AddEmployee = () => {
@@ -20,7 +21,10 @@ const AddEmployee = () => {
     lastName: '',
     dateOfBirth: '',
     gender: '',
+    maritalStatus: '',
     idNumber: '',
+    idCardIssueDate: '',
+    idCardIssuePlace: '',
     taxCode: '',
     personalEmail: '',
     phone: '',
@@ -35,7 +39,15 @@ const AddEmployee = () => {
     contractCode: '',
     contractType: '',
     baseSalary: '',
-    signDate: ''
+    signDate: '',
+    manager: '',
+    workLocation: '',
+    employeeType: '',
+    
+    // Emergency Contact
+    emergencyContactName: '',
+    emergencyContactRelationship: '',
+    emergencyContactPhone: ''
   });
 
   const handleInputChange = (field, value) => {
@@ -132,30 +144,62 @@ const AddEmployee = () => {
 
     try {
       // Prepare employee data for API
+      // Đảm bảo mapping đúng với Profile.jsx và EmployeeDetails.jsx
       const employeeData = {
+        // Basic Info
+        id: formData.employeeCode, // Mã nhân viên (dùng làm id)
         name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.companyEmail,
-        position: formData.position,
-        department: formData.department,
+        email: formData.companyEmail, // Email công ty (chính)
+        personalEmail: formData.personalEmail, // Email cá nhân
         phone: formData.phone,
         status: 'active',
-        hireDate: formData.signDate || new Date().toISOString().split('T')[0],
-        salary: formData.baseSalary ? parseInt(formData.baseSalary) * 1000000 : 0,
-        personalEmail: formData.personalEmail,
+        
+        // Personal Information
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
-        idNumber: formData.idNumber,
+        maritalStatus: formData.maritalStatus,
+        
+        // ID Card Information
+        idCard: formData.idNumber, // Profile.jsx dùng idCard hoặc idNumber
+        idNumber: formData.idNumber, // Để tương thích với cả 2
+        idCardIssueDate: formData.idCardIssueDate,
+        idCardIssuePlace: formData.idCardIssuePlace,
         taxCode: formData.taxCode,
+        
+        // Address
+        address: formData.permanentAddress, // Profile.jsx dùng address hoặc permanentAddress
         permanentAddress: formData.permanentAddress,
         temporaryAddress: formData.temporaryAddress,
+        
+        // Employment Details
+        department: formData.department,
+        position: formData.position,
         employeeCode: formData.employeeCode,
+        manager: formData.manager,
+        workLocation: formData.workLocation,
+        employeeType: formData.employeeType,
+        contractType: formData.contractType,
         contractCode: formData.contractCode,
-        contractType: formData.contractType
+        hireDate: formData.signDate || new Date().toISOString().split('T')[0],
+        salary: formData.baseSalary ? parseInt(formData.baseSalary) * 1000000 : 0,
+        
+        // Emergency Contact
+        emergencyContact: formData.emergencyContactName || formData.emergencyContactRelationship || formData.emergencyContactPhone ? {
+          name: formData.emergencyContactName,
+          relationship: formData.emergencyContactRelationship,
+          phone: formData.emergencyContactPhone
+        } : null
       };
 
       const response = await fakeApi.createEmployee(employeeData);
 
       if (response.success) {
+        // Ghi log khi tạo nhân viên mới
+        await adminLogService.logEmployeeCreate(
+          formData.employeeCode,
+          `${formData.firstName} ${formData.lastName}`
+        );
+
         alert('Nhân viên mới đã được tạo thành công!');
         navigate('/employees');
       } else {
@@ -219,6 +263,14 @@ const AddEmployee = () => {
     'Hợp đồng',
     'Thực tập'
   ];
+
+  const maritalStatuses = ['Độc thân', 'Đã kết hôn', 'Ly hôn', 'Góa'];
+  const workLocations = ['Văn phòng Hà Nội', 'Văn phòng TP. Hồ Chí Minh', 'Văn phòng Đà Nẵng', 'Remote', 'Hybrid'];
+  const employeeTypes = ['Toàn thời gian', 'Bán thời gian', 'Hợp đồng', 'Thực tập'];
+  const relationships = ['Cha', 'Mẹ', 'Vợ', 'Chồng', 'Anh/Chị/Em', 'Người thân khác'];
+  
+  // Get managers list (for now, use employees as managers)
+  const managers = ['Nguyễn Văn A', 'Trần Thị B', 'Lê Minh C', 'Phạm Thu D'];
 
 
   return (
@@ -373,6 +425,27 @@ const AddEmployee = () => {
                       placeholder="Nhập mã số thuế"
                       helperText="Mã số thuế cá nhân (MST) - dùng để khai báo thuế thu nhập cá nhân"
                     />
+                    <div>
+                      <Select
+                        label="Tình trạng hôn nhân"
+                        value={formData.maritalStatus}
+                        onChange={(value) => handleInputChange('maritalStatus', value)}
+                        options={maritalStatuses.map(status => ({ value: status, label: status }))}
+                        placeholder="-- Chọn tình trạng hôn nhân --"
+                      />
+                    </div>
+                    <Input
+                      label="Ngày cấp CMND/CCCD"
+                      type="date"
+                      value={formData.idCardIssueDate}
+                      onChange={(value) => handleInputChange('idCardIssueDate', value)}
+                    />
+                    <Input
+                      label="Nơi cấp CMND/CCCD"
+                      value={formData.idCardIssuePlace}
+                      onChange={(value) => handleInputChange('idCardIssuePlace', value)}
+                      placeholder="Nhập nơi cấp"
+                    />
                   </div>
                 </div>
 
@@ -514,8 +587,68 @@ const AddEmployee = () => {
                       value={formData.signDate}
                       onChange={(value) => handleInputChange('signDate', value)}
                     />
+                    <div>
+                      <Select
+                        label="Quản lý trực tiếp"
+                        value={formData.manager}
+                        onChange={(value) => handleInputChange('manager', value)}
+                        options={managers.map(mgr => ({ value: mgr, label: mgr }))}
+                        placeholder="-- Chọn quản lý trực tiếp --"
+                      />
+                    </div>
+                    <div>
+                      <Select
+                        label="Địa điểm làm việc"
+                        value={formData.workLocation}
+                        onChange={(value) => handleInputChange('workLocation', value)}
+                        options={workLocations.map(loc => ({ value: loc, label: loc }))}
+                        placeholder="-- Chọn địa điểm làm việc --"
+                      />
+                    </div>
+                    <div>
+                      <Select
+                        label="Loại nhân viên"
+                        value={formData.employeeType}
+                        onChange={(value) => handleInputChange('employeeType', value)}
+                        options={employeeTypes.map(type => ({ value: type, label: type }))}
+                        placeholder="-- Chọn loại nhân viên --"
+                      />
+                    </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">Nhập số tiền theo triệu đồng (ví dụ: 10 cho 10 triệu)</p>
+                </div>
+
+                {/* Emergency Contact */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Liên hệ khẩn cấp</h3>
+                    <Phone className="w-4 h-4 ml-2 text-purple-500" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">Thông tin người liên hệ khẩn cấp</p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      label="Họ và tên"
+                      value={formData.emergencyContactName}
+                      onChange={(value) => handleInputChange('emergencyContactName', value)}
+                      placeholder="Nhập họ và tên"
+                    />
+                    <div>
+                      <Select
+                        label="Mối quan hệ"
+                        value={formData.emergencyContactRelationship}
+                        onChange={(value) => handleInputChange('emergencyContactRelationship', value)}
+                        options={relationships.map(rel => ({ value: rel, label: rel }))}
+                        placeholder="-- Chọn mối quan hệ --"
+                      />
+                    </div>
+                    <Input
+                      label="Số điện thoại"
+                      value={formData.emergencyContactPhone}
+                      onChange={(value) => handleInputChange('emergencyContactPhone', value)}
+                      placeholder="Nhập số điện thoại"
+                    />
+                  </div>
                 </div>
 
               </div>

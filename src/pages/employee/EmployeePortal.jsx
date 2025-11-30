@@ -355,7 +355,6 @@ const EmployeePortal = () => {
                 </div>
               </div>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">Ngày vào làm</span><span className="font-medium">{employee?.hireDate || "Chưa có"}</span></div>
                 <div className="flex justify-between"><span className="text-gray-500">Trạng thái</span><span className="font-medium text-green-600">Đang làm việc</span></div>
               </div>
               <Button className="w-full mt-6" variant="secondary" onClick={() => navigate("/employee/profile")}>
