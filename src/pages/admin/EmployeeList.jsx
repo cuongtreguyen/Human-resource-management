@@ -9,6 +9,7 @@ import { EmployeeSummaryCards, Pagination } from '../../components/employee';
 import fakeApi from '../../services/fakeApi';
 import { getRole } from '../../utils/auth';
 import { canViewSalary, getCurrentUserDepartment } from '../../utils/fieldPermissions';
+import { logDeleteEmployee, logViewDetail } from '../../utils/systemLogger';
 
 const EmployeeList = () => {
   const navigate = useNavigate();
@@ -73,7 +74,7 @@ const EmployeeList = () => {
     }
   };
 
-  const departments = ['Tất cả phòng ban', 'Phát triển', 'Marketing', 'Nhân sự', 'Tài chính', 'Vận hành'];
+  const departments = ['Tất cả phòng ban', 'Công nghệ thông tin', 'Marketing', 'Kinh doanh', 'Nhân sự', 'Tài chính'];
   const positions = ['Tất cả chức vụ', 'Lập trình viên', 'Quản lý', 'Chuyên viên', 'Phân tích viên', 'Giám đốc'];
   const salaryRanges = ['Tất cả mức lương', '10 - 15 triệu', '15 - 20 triệu', '20 - 30 triệu', 'Trên 30 triệu'];
 
@@ -131,11 +132,18 @@ const EmployeeList = () => {
       return;
     }
 
+    const employee = employees.find(emp => emp.id === employeeId);
+    const employeeName = employee?.name || 'Unknown';
+
     if (window.confirm('Bạn có chắc chắn muốn xóa nhân viên này không?')) {
       try {
         setLoading(true);
         await fakeApi.deleteEmployee(employeeId);
         setEmployees(employees.filter(emp => emp.id !== employeeId));
+        
+        // Log hành động xóa nhân viên
+        logDeleteEmployee(employeeId, employeeName);
+        
         alert('Xóa nhân viên thành công');
       } catch (err) {
         alert('Không thể xóa nhân viên: ' + (err.message || 'Lỗi không xác định'));
@@ -171,6 +179,10 @@ const EmployeeList = () => {
       alert('ID nhân viên không hợp lệ');
       return;
     }
+    const employee = employees.find(emp => emp.id === employeeId);
+    if (employee) {
+      logViewDetail('employee', employeeId, employee.name);
+    }
     navigate(`/employees/view/${employeeId}`);
   };
 
@@ -202,6 +214,30 @@ const EmployeeList = () => {
         {config.label}
       </span>
     );
+  };
+
+  const calculateSeniority = (hireDate) => {
+    if (!hireDate) return 'N/A';
+    
+    const hire = new Date(hireDate);
+    const now = new Date();
+    
+    if (isNaN(hire.getTime())) return 'N/A';
+    
+    const diffTime = Math.abs(now - hire);
+    const diffYears = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 365));
+    const diffMonths = Math.floor((diffTime % (1000 * 60 * 60 * 24 * 365)) / (1000 * 60 * 60 * 24 * 30));
+    
+    if (diffYears === 0 && diffMonths === 0) {
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      return `${diffDays} ngày`;
+    } else if (diffYears === 0) {
+      return `${diffMonths} tháng`;
+    } else if (diffMonths === 0) {
+      return `${diffYears} năm`;
+    } else {
+      return `${diffYears} năm ${diffMonths} tháng`;
+    }
   };
 
   const totalEmployees = employees.length;
@@ -335,11 +371,9 @@ const EmployeeList = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ngày bắt đầu
                 </th>
-                {canViewSalary(userRole) && (
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Lương tháng
-                  </th>
-                )}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Thâm niên
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Trạng thái
                 </th>
@@ -371,15 +405,9 @@ const EmployeeList = () => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {employee.hireDate ? new Date(employee.hireDate).toLocaleDateString('vi-VN') : 'N/A'}
                   </td>
-                  {canViewSalary(userRole, employee.department, userDepartment) ? (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {employee.salary ? employee.salary.toLocaleString('vi-VN') + ' VNĐ' : 'N/A'}
-                    </td>
-                  ) : (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400 italic">
-                      ***
-                    </td>
-                  )}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {calculateSeniority(employee.hireDate)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getStatusBadge(employee.status)}
                   </td>

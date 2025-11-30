@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
+import { logUpdateEmployee } from '../../utils/systemLogger';
 
 const EditEmployee = () => {
   const { id } = useParams();
@@ -105,6 +106,15 @@ const EditEmployee = () => {
     try {
       setSaving(true);
       await fakeApi.updateEmployee(id, formData);
+      
+      // Log hành động cập nhật nhân viên
+      logUpdateEmployee(id, formData.name || 'Unknown', { 
+        department: formData.department,
+        position: formData.position,
+        salary: formData.salary,
+        status: formData.status
+      });
+      
       alert('Cập nhật nhân viên thành công!');
       navigate('/employees');
     } catch (err) {
@@ -115,7 +125,7 @@ const EditEmployee = () => {
     }
   };
 
-  const departments = ['Công nghệ thông tin', 'Nhân sự', 'Marketing', 'Tài chính', 'Kinh doanh', 'Vận hành'];
+  const departments = ['Công nghệ thông tin', 'Marketing', 'Kinh doanh', 'Nhân sự', 'Tài chính'];
   const positions = ['Lập trình viên', 'Quản lý nhân sự', 'Chuyên viên Marketing', 'Kế toán viên', 'Nhân viên kinh doanh', 'Quản lý vận hành'];
   const statuses = [
     { value: 'active', label: 'Đang làm việc' },

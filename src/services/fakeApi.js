@@ -624,8 +624,7 @@ class FakeApiService {
         { name: 'Marketing', code: 'MKT', count: 28, color: '#10B981' },
         { name: 'Kinh doanh', code: 'SALES', count: 32, color: '#F59E0B' },
         { name: 'Nhân sự', code: 'HR', count: 12, color: '#EF4444' },
-        { name: 'Tài chính', code: 'FIN', count: 18, color: '#8B5CF6' },
-        { name: 'Vận hành', code: 'OPS', count: 21, color: '#EC4899' }
+        { name: 'Tài chính', code: 'FIN', count: 18, color: '#8B5CF6' }
       ],
 
       // Chấm công theo tuần (7 ngày gần nhất)
@@ -643,7 +642,7 @@ class FakeApiService {
       expiringContracts: [
         { id: 'emp005', name: 'Hoàng Đức Em', department: 'Kinh doanh', expiryDate: '2024-02-15', daysLeft: 20 },
         { id: 'emp008', name: 'Vũ Thị Hoa', department: 'Marketing', expiryDate: '2024-02-20', daysLeft: 25 },
-        { id: 'emp012', name: 'Đặng Văn Khoa', department: 'Vận hành', expiryDate: '2024-02-28', daysLeft: 33 }
+        { id: 'emp012', name: 'Đặng Văn Khoa', department: 'Kinh doanh', expiryDate: '2024-02-28', daysLeft: 33 }
       ],
 
       // Sinh nhật trong tuần
@@ -720,12 +719,11 @@ class FakeApiService {
   // Department APIs
   async getDepartments() {
     const departments = [
-      { id: 'dept001', name: 'Information Technology', code: 'IT', head: 'Nguyen Van A', employeeCount: 45 },
-      { id: 'dept002', name: 'Human Resources', code: 'HR', head: 'Tran Thi B', employeeCount: 12 },
+      { id: 'dept001', name: 'Công nghệ thông tin', code: 'IT', head: 'Nguyen Van A', employeeCount: 45 },
+      { id: 'dept002', name: 'Nhân sự', code: 'HR', head: 'Tran Thi B', employeeCount: 12 },
       { id: 'dept003', name: 'Marketing', code: 'MKT', head: 'Le Minh C', employeeCount: 28 },
-      { id: 'dept004', name: 'Sales', code: 'SALES', head: 'Pham Thu D', employeeCount: 32 },
-      { id: 'dept005', name: 'Finance', code: 'FIN', head: 'Hoang Duc E', employeeCount: 18 },
-      { id: 'dept006', name: 'Operations', code: 'OPS', head: 'Vu Thi F', employeeCount: 21 }
+      { id: 'dept004', name: 'Kinh doanh', code: 'SALES', head: 'Pham Thu D', employeeCount: 32 },
+      { id: 'dept005', name: 'Tài chính', code: 'FIN', head: 'Hoang Duc E', employeeCount: 18 }
     ];
     return this.delayResponse({ data: departments, success: true });
   }

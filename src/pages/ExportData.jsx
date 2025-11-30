@@ -62,12 +62,11 @@ const ExportData = () => {
 
   const departmentOptions = [
     { value: 'all', label: 'Tất cả phòng ban' },
-    { value: 'it', label: 'Phòng IT' },
-    { value: 'hr', label: 'Phòng Nhân sự' },
-    { value: 'finance', label: 'Phòng Tài chính' },
-    { value: 'marketing', label: 'Phòng Marketing' },
-    { value: 'sales', label: 'Phòng Kinh doanh' },
-    { value: 'operations', label: 'Phòng Vận hành' }
+    { value: 'it', label: 'Công nghệ thông tin' },
+    { value: 'hr', label: 'Nhân sự' },
+    { value: 'finance', label: 'Tài chính' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'sales', label: 'Kinh doanh' }
   ];
 
   const positionOptions = [

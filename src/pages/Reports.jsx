@@ -51,11 +51,11 @@ const Reports = () => {
       data: {
         total: 156,
         byDepartment: [
-          { name: 'Phòng IT', count: 45 },
-          { name: 'Phòng Marketing', count: 28 },
-          { name: 'Phòng Nhân sự', count: 15 },
-          { name: 'Phòng Kinh doanh', count: 38 },
-          { name: 'Phòng Tài chính', count: 30 },
+          { name: 'Công nghệ thông tin', count: 45 },
+          { name: 'Marketing', count: 28 },
+          { name: 'Kinh doanh', count: 38 },
+          { name: 'Nhân sự', count: 15 },
+          { name: 'Tài chính', count: 30 },
         ]
       }
     },
