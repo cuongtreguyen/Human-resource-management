@@ -27,11 +27,16 @@ class AdminLogService {
     }
   }
 
-  // Get current user from localStorage
+  // Get current user from auth (using sessionStorage for per-tab sessions)
   getCurrentUser() {
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-      return user.name || user.username || 'admin';
+      // Import dynamically to avoid circular dependency
+      const userInfoStr = sessionStorage.getItem('hrm_user_info');
+      if (userInfoStr) {
+        const userInfo = JSON.parse(userInfoStr);
+        return userInfo.name || userInfo.employeeId || 'admin';
+      }
+      return 'admin';
     } catch {
       return 'admin';
     }
