@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  X, Users, UserPlus, Calendar, Clock, DollarSign, FileText, Settings, Home,
-  BarChart3, MessageCircle, CheckSquare, User, Bell, Activity, Heart, Award,
-  HelpCircle, LogOut, ChevronLeft, Menu, BookOpen, TrendingUp, Shield
+  X, Users, Calendar, Clock, DollarSign, FileText, Settings, Home,
+  BarChart3, CheckSquare, User, Bell, Activity, Heart, Award,
+  HelpCircle, LogOut, ChevronLeft, Menu, BookOpen, Shield
 } from 'lucide-react';
 import { getRole, clearRole } from '../../utils/auth';
 
@@ -95,13 +95,13 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
       return [
         { name: 'Trang chủ', href: '/employee', icon: Home },
         { name: 'Chấm công', href: '/employee/attendance', icon: Calendar },
+        { name: 'Đăng ký OT', href: '/employee/ot', icon: Clock },
         { name: 'Nghỉ phép', href: '/employee/leave', icon: FileText },
         { name: 'Bảng lương', href: '/employee/payroll', icon: DollarSign },
         { name: 'Nhiệm vụ', href: '/employee/tasks', icon: CheckSquare },
         { name: 'Đánh giá của tôi', href: '/employee/evaluation', icon: Award },
         { name: 'Tài liệu', href: '/employee/documents', icon: BookOpen },
         { name: 'Hồ sơ', href: '/employee/profile', icon: User },
-        { name: 'Chat', href: '/employee/chat', icon: MessageCircle },
         { name: 'Phúc lợi', href: '/employee/benefits', icon: Shield },
       ];
     }
@@ -109,7 +109,6 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
     // Admin, Manager, Accountant navigation
     const allItems = [
       { name: 'Trang chủ', href: '/dashboard', icon: Home, allowedRoles: ['admin', 'manager', 'accountant'] },
-      { name: 'Chat nội bộ', href: '/chat', icon: MessageCircle, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Hồ sơ cá nhân', href: '/profile', icon: User, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Nhận diện khuôn mặt', href: '/face-recognition', icon: User, allowedRoles: ['admin'] },
       { name: 'Chấm công khuôn mặt', href: '/face-recognition-manager', icon: User, allowedRoles: ['manager'] },
@@ -120,12 +119,13 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
       { name: 'Chính sách tài chính', href: '/payroll/policies', icon: FileText, allowedRoles: ['accountant'] },
       { name: 'Duyệt đơn nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: FileText, allowedRoles: ['manager', 'accountant'] },
+      { name: 'Duyệt OT', href: '/overtime', icon: Clock, allowedRoles: ['manager'] },
       { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['manager'] },
       { name: 'Đánh giá nhân viên', href: '/evaluations', icon: Award, allowedRoles: ['admin', 'manager'] },
       { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['manager', 'accountant'] },
       { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['manager', 'accountant'] },
       { name: 'Thông báo', href: '/notifications', icon: Bell, allowedRoles: ['admin', 'manager', 'accountant'] },
-      { name: 'Yêu cầu hỗ trợ', href: '/admin/support-tickets', icon: HelpCircle, allowedRoles: ['admin', 'manager'] },
+      { name: 'Quản lý yêu cầu hỗ trợ', href: '/admin/support-tickets', icon: HelpCircle, allowedRoles: ['admin', 'manager'] },
       { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart, allowedRoles: ['accountant'] },
       { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity, allowedRoles: ['admin'] },
       { name: 'Cài đặt', href: '/settings', icon: Settings, allowedRoles: ['admin'] },
@@ -137,9 +137,7 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
   const navigationItems = getNavigationItems();
 
   const handleLogout = () => {
-    clearRole();
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearRole(); // clearRole now clears all auth data
     navigate('/login');
   };
 

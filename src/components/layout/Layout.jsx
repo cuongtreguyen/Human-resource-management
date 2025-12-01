@@ -2,6 +2,7 @@ import React, { useState, createContext, useContext } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import { clearAuth } from '../../utils/auth';
 
 const LayoutContext = createContext(false);
 
@@ -16,8 +17,7 @@ const Layout = ({ children }) => {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearAuth();
     navigate('/login');
   };
 

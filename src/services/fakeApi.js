@@ -82,33 +82,70 @@ let evaluationsStore = [
 ];
 
 // Support Tickets - Shared store
+// Support Tickets Flow: pending → forwarded → processing → admin_resolved → notified
 let supportTicketsStore = [
   {
     id: 'ticket001',
     subject: 'Cập nhật số CCCD mới',
     category: 'profile-update',
-    priority: 'medium',
-    status: 'resolved',
+    status: 'notified', // Đã hoàn thành và thông báo cho nhân viên
     description: 'Tôi vừa đổi CCCD mới, số mới là 001234567890. Vui lòng cập nhật vào hệ thống.',
     createdDate: '2024-01-20',
     lastUpdate: '2024-01-22',
     employeeId: 'emp001',
     employeeName: 'Trần Ngọc Hải',
     assignedTo: 'HR Department',
-    response: 'Đã cập nhật CCCD mới vào hệ thống. Vui lòng kiểm tra lại thông tin trong Hồ sơ cá nhân.'
+    adminResponse: 'Đã cập nhật CCCD mới vào hệ thống thành công.',
+    managerNote: 'Yêu cầu đã được xử lý. Vui lòng kiểm tra lại thông tin trong Hồ sơ cá nhân của bạn.'
   },
   {
     id: 'ticket002',
     subject: 'Không thể truy cập hệ thống chấm công',
     category: 'technical',
-    priority: 'high',
-    status: 'in-progress',
+    status: 'admin_resolved', // Admin đã xử lý, chờ Manager thông báo
     description: 'Máy tính của tôi không mở được trang chấm công, báo lỗi 403. Đã thử xóa cache và đổi trình duyệt nhưng vẫn không được.',
     createdDate: '2024-01-21',
     lastUpdate: '2024-01-21',
     employeeId: 'emp002',
     employeeName: 'Trần Thị Bình',
-    assignedTo: 'IT Support'
+    assignedTo: 'IT Support',
+    adminResponse: 'Đã reset quyền truy cập cho tài khoản. Vui lòng đăng nhập lại.'
+  },
+  {
+    id: 'ticket003',
+    subject: 'Yêu cầu cấp lại thẻ nhân viên',
+    category: 'other',
+    status: 'processing', // Admin đang xử lý
+    description: 'Thẻ nhân viên của tôi bị mất. Xin phép được cấp lại thẻ mới.',
+    createdDate: '2024-01-22',
+    lastUpdate: '2024-01-22',
+    employeeId: 'emp003',
+    employeeName: 'Lê Văn Cường',
+    assignedTo: 'HR Department'
+  },
+  {
+    id: 'ticket004',
+    subject: 'Hỏi về chế độ bảo hiểm thai sản',
+    category: 'benefits',
+    status: 'forwarded', // Manager đã chuyển lên Admin
+    description: 'Tôi muốn hỏi về chế độ bảo hiểm thai sản và các giấy tờ cần chuẩn bị.',
+    createdDate: '2024-01-23',
+    lastUpdate: '2024-01-23',
+    employeeId: 'emp004',
+    employeeName: 'Nguyễn Thị Dung',
+    assignedTo: 'HR Department'
+  },
+  {
+    id: 'ticket005',
+    subject: 'Yêu cầu điều chỉnh lương tháng 12',
+    category: 'payroll',
+    status: 'pending', // Mới tạo, chờ Manager xem xét
+    description: 'Lương tháng 12 của tôi bị thiếu phụ cấp đi lại. Xin kiểm tra và điều chỉnh.',
+    createdDate: '2024-01-24',
+    lastUpdate: '2024-01-24',
+    employeeId: 'emp005',
+    employeeName: 'Phạm Văn Em',
+    assignedTo: 'HR Department'
   }
 ];
 
@@ -2589,6 +2626,7 @@ class FakeApiService {
   }
 
   // Employee tạo ticket mới
+  // Flow: Employee tạo → status: 'pending' → Manager xem xét
   async createSupportTicket(ticketData) {
     const today = new Date();
     const dateStr = today.toLocaleDateString('vi-VN');
@@ -2596,7 +2634,7 @@ class FakeApiService {
     const newTicket = {
       id: 'ticket' + this.generateId(),
       ...ticketData,
-      status: 'open',
+      status: 'pending', // Bắt đầu với trạng thái chờ Manager xem xét
       createdDate: dateStr,
       lastUpdate: dateStr,
       employeeId: ticketData.employeeId || 'emp001',
@@ -2610,23 +2648,42 @@ class FakeApiService {
     return this.delayResponse({
       data: newTicket,
       success: true,
-      message: 'Yêu cầu hỗ trợ đã được tạo'
+      message: 'Yêu cầu hỗ trợ đã được tạo và gửi đến Manager'
     });
   }
 
   // Cập nhật ticket (status)
+  // Flow: pending → forwarded (Manager chuyển Admin)
+  //       forwarded → processing (Admin bắt đầu xử lý)
+  //       processing → admin_resolved (Admin hoàn thành)
+  //       admin_resolved → notified (Manager thông báo Employee)
   async updateSupportTicket(ticketId, updates) {
     const ticketIndex = supportTicketsStore.findIndex(t => t.id === ticketId);
     if (ticketIndex !== -1) {
+      const currentTicket = supportTicketsStore[ticketIndex];
+
+      // Tạo message phù hợp với từng action
+      let message = 'Yêu cầu hỗ trợ đã được cập nhật';
+      if (updates.status === 'forwarded') {
+        message = 'Đã chuyển yêu cầu lên Admin xử lý';
+      } else if (updates.status === 'processing') {
+        message = 'Admin đã bắt đầu xử lý yêu cầu';
+      } else if (updates.status === 'admin_resolved') {
+        message = 'Admin đã xử lý xong, đã gửi về Manager';
+      } else if (updates.status === 'notified') {
+        message = 'Đã thông báo kết quả cho nhân viên';
+      }
+
       supportTicketsStore[ticketIndex] = {
-        ...supportTicketsStore[ticketIndex],
+        ...currentTicket,
         ...updates,
         lastUpdate: new Date().toLocaleDateString('vi-VN')
       };
+
       return this.delayResponse({
         data: supportTicketsStore[ticketIndex],
         success: true,
-        message: 'Yêu cầu hỗ trợ đã được cập nhật'
+        message: message
       });
     }
     return this.delayResponse({
@@ -2641,22 +2698,23 @@ class FakeApiService {
     return this.delayResponse({ data: [...supportTicketsStore].reverse(), success: true });
   }
 
-  // Admin/Manager phản hồi ticket
+  // Admin phản hồi và xử lý ticket
+  // Flow: Admin xử lý → status: 'admin_resolved' → Gửi về Manager
   async respondToTicket(ticketId, responseData) {
     const ticketIndex = supportTicketsStore.findIndex(t => t.id === ticketId);
     if (ticketIndex !== -1) {
       supportTicketsStore[ticketIndex] = {
         ...supportTicketsStore[ticketIndex],
-        response: responseData.response,
-        status: responseData.status || 'resolved',
+        adminResponse: responseData.adminResponse || responseData.response,
+        status: responseData.status || 'admin_resolved',
         lastUpdate: new Date().toLocaleDateString('vi-VN'),
         respondedAt: new Date().toISOString(),
-        respondedBy: 'HR Admin'
+        respondedBy: 'Admin'
       };
       return this.delayResponse({
         data: supportTicketsStore[ticketIndex],
         success: true,
-        message: 'Đã gửi phản hồi thành công'
+        message: 'Admin đã xử lý xong, đã gửi về Manager'
       });
     }
     return this.delayResponse({

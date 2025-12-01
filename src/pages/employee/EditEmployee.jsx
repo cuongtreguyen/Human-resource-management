@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
@@ -6,13 +6,14 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
-import { logUpdateEmployee } from '../../utils/systemLogger';
+import adminLogService from '../../services/adminLogService';
 
 const EditEmployee = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const originalDataRef = useRef(null); // Lưu dữ liệu gốc để so sánh
 
   const [formData, setFormData] = useState({
     // Personal Information
@@ -55,7 +56,7 @@ const EditEmployee = () => {
         const response = await fakeApi.getEmployeeById(id);
         if (response.success && response.data) {
           const data = response.data;
-          setFormData({
+          const loadedData = {
             name: data.name || '',
             email: data.email || '',
             phone: data.phone || '',
@@ -78,7 +79,10 @@ const EditEmployee = () => {
             emergencyContactName: data.emergencyContact?.name || '',
             emergencyContactRelationship: data.emergencyContact?.relationship || '',
             emergencyContactPhone: data.emergencyContact?.phone || ''
-          });
+          };
+          setFormData(loadedData);
+          // Lưu dữ liệu gốc để so sánh khi log
+          originalDataRef.current = { ...loadedData };
         } else {
           alert('Không tìm thấy thông tin nhân viên');
           navigate('/employees');
@@ -106,15 +110,21 @@ const EditEmployee = () => {
     try {
       setSaving(true);
       await fakeApi.updateEmployee(id, formData);
-      
-      // Log hành động cập nhật nhân viên
-      logUpdateEmployee(id, formData.name || 'Unknown', { 
-        department: formData.department,
-        position: formData.position,
-        salary: formData.salary,
-        status: formData.status
-      });
-      
+
+      // Ghi log các thay đổi
+      if (originalDataRef.current) {
+        const changes = {};
+        Object.keys(formData).forEach(key => {
+          if (formData[key] !== originalDataRef.current[key]) {
+            changes[key] = `${originalDataRef.current[key] || '(trống)'} → ${formData[key] || '(trống)'}`;
+          }
+        });
+
+        if (Object.keys(changes).length > 0) {
+          await adminLogService.logEmployeeUpdate(id, formData.name, changes);
+        }
+      }
+
       alert('Cập nhật nhân viên thành công!');
       navigate('/employees');
     } catch (err) {

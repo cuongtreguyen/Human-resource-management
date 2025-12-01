@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ArrowLeft, User, Mail, Phone, MapPin, Briefcase, Calendar,
-  Building2, CreditCard, Heart, Clock, FileText, Users
+  ArrowLeft, User, Mail, Phone, MapPin, Briefcase,
+  Building2, CreditCard, Heart, FileText, Users
 } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
 
@@ -28,22 +28,6 @@ const EmployeeProfile = () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa cập nhật';
     return new Date(dateString).toLocaleDateString('vi-VN');
-  };
-
-  const calculateWorkDuration = (hireDate) => {
-    if (!hireDate) return 'Chưa cập nhật';
-    const startDate = new Date(hireDate);
-    const today = new Date();
-    const diffTime = Math.abs(today - startDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const years = Math.floor(diffDays / 365);
-    const months = Math.floor((diffDays % 365) / 30);
-
-    if (years > 0) {
-      return `${years} năm ${months} tháng`;
-    } else {
-      return `${months} tháng`;
-    }
   };
 
   const getStatusBadge = (status) => {
@@ -129,10 +113,6 @@ const EmployeeProfile = () => {
                   <CreditCard className="w-4 h-4 text-orange-500" />
                   ID: {employee.id}
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-orange-500" />
-                  Thâm niên: {calculateWorkDuration(employee.hireDate)}
-                </div>
               </div>
             </div>
           </div>
@@ -193,18 +173,6 @@ const EmployeeProfile = () => {
               <InfoRow label="Địa điểm làm việc" value={employee.workLocation} />
               <InfoRow label="Loại nhân viên" value={employee.employeeType} />
               <InfoRow label="Loại hợp đồng" value={employee.contractType} />
-            </div>
-          </div>
-
-          {/* Thời gian làm việc */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2 pb-3 border-b">
-              <Calendar className="w-5 h-5 text-orange-600" />
-              Thời gian làm việc
-            </h3>
-            <div className="space-y-1">
-              <InfoRow label="Ngày vào làm" value={formatDate(employee.hireDate)} />
-              <InfoRow label="Thâm niên" value={calculateWorkDuration(employee.hireDate)} />
             </div>
           </div>
 

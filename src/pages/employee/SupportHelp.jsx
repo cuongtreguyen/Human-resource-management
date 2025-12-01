@@ -42,7 +42,6 @@ const EmployeeSupportHelp = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [ticketForm, setTicketForm] = useState({
     category: '',
-    priority: 'medium',
     subject: '',
     description: ''
   });
@@ -127,29 +126,17 @@ const EmployeeSupportHelp = () => {
            faq.answer.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'high': return 'bg-red-100 text-red-700';
-      case 'medium': return 'bg-yellow-100 text-yellow-700';
-      case 'low': return 'bg-green-100 text-green-700';
-      default: return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const getPriorityLabel = (priority) => {
-    switch (priority) {
-      case 'high': return 'Cao';
-      case 'medium': return 'Trung bình';
-      case 'low': return 'Thấp';
-      default: return priority;
-    }
-  };
-
+  // Trạng thái mới: pending → forwarded → processing → admin_resolved → notified
   const getStatusColor = (status) => {
     switch (status) {
-      case 'open': return 'bg-blue-100 text-blue-700';
-      case 'in-progress': return 'bg-yellow-100 text-yellow-700';
-      case 'resolved': return 'bg-green-100 text-green-700';
+      case 'open':
+      case 'pending': return 'bg-blue-100 text-blue-700';
+      case 'forwarded': return 'bg-purple-100 text-purple-700';
+      case 'in-progress':
+      case 'processing': return 'bg-yellow-100 text-yellow-700';
+      case 'admin_resolved': return 'bg-orange-100 text-orange-700';
+      case 'resolved':
+      case 'notified': return 'bg-green-100 text-green-700';
       case 'closed': return 'bg-gray-100 text-gray-700';
       default: return 'bg-gray-100 text-gray-700';
     }
@@ -157,9 +144,14 @@ const EmployeeSupportHelp = () => {
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'open': return 'Mới tạo';
-      case 'in-progress': return 'Đang xử lý';
-      case 'resolved': return 'Đã giải quyết';
+      case 'open':
+      case 'pending': return 'Chờ xử lý';
+      case 'forwarded': return 'Đã chuyển Admin';
+      case 'in-progress':
+      case 'processing': return 'Admin đang xử lý';
+      case 'admin_resolved': return 'Admin đã xử lý';
+      case 'resolved':
+      case 'notified': return 'Đã giải quyết';
       case 'closed': return 'Đã đóng';
       default: return 'Không xác định';
     }
@@ -186,11 +178,10 @@ const EmployeeSupportHelp = () => {
       });
 
       if (res.success) {
-        toast.success('Ticket đã được tạo thành công! HR sẽ phản hồi trong 1-2 ngày làm việc.');
+        toast.success('Yêu cầu đã được gửi thành công! Manager sẽ xem xét và chuyển Admin xử lý.');
         setTickets([res.data, ...tickets]);
         setTicketForm({
           category: '',
-          priority: 'medium',
           subject: '',
           description: ''
         });
@@ -247,7 +238,7 @@ const EmployeeSupportHelp = () => {
               <div>
                 <p className="text-sm text-gray-500">Đang xử lý</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tickets.filter(t => t.status === 'open' || t.status === 'in-progress').length}
+                  {tickets.filter(t => ['open', 'pending', 'forwarded', 'processing', 'in-progress'].includes(t.status)).length}
                 </p>
               </div>
             </div>
@@ -261,7 +252,7 @@ const EmployeeSupportHelp = () => {
               <div>
                 <p className="text-sm text-gray-500">Đã giải quyết</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {tickets.filter(t => t.status === 'resolved').length}
+                  {tickets.filter(t => ['resolved', 'notified', 'admin_resolved'].includes(t.status)).length}
                 </p>
               </div>
             </div>
@@ -388,37 +379,6 @@ const EmployeeSupportHelp = () => {
                     </div>
                   </div>
 
-                  {/* Mức độ ưu tiên */}
-                  {/* <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Mức độ ưu tiên</label>
-                    <div className="flex gap-3">
-                      {[
-                        { value: 'low', label: 'Thấp', color: 'green' },
-                        { value: 'medium', label: 'Trung bình', color: 'yellow' },
-                        { value: 'high', label: 'Cao', color: 'red' }
-                      ].map(p => (
-                        <label
-                          key={p.value}
-                          className={`flex-1 flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                            ticketForm.priority === p.value
-                              ? `border-${p.color}-500 bg-${p.color}-50`
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="priority"
-                            value={p.value}
-                            checked={ticketForm.priority === p.value}
-                            onChange={(e) => setTicketForm({ ...ticketForm, priority: e.target.value })}
-                            className="sr-only"
-                          /> */}
-                          {/* <span className={`w-3 h-3 rounded-full bg-${p.color}-500`}></span>
-                          <span className="font-medium">{p.label}</span>
-                        </label>
-                      ))} */}
-                    {/* </div>
-                  </div> */}
                   {/* Tiêu đề */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -488,24 +448,37 @@ const EmployeeSupportHelp = () => {
                             {getCategoryLabel(ticket.category)} • Tạo ngày {ticket.createdDate || ticket.createdAt}
                           </p>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`px-3 py-1 text-xs font-bold rounded-full ${getPriorityColor(ticket.priority)}`}>
-                            {getPriorityLabel(ticket.priority)}
-                          </span>
-                          <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(ticket.status)}`}>
-                            {getStatusText(ticket.status)}
-                          </span>
-                        </div>
+                        <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusColor(ticket.status)}`}>
+                          {getStatusText(ticket.status)}
+                        </span>
                       </div>
 
                       {ticket.description && (
                         <p className="text-gray-600 text-sm line-clamp-2">{ticket.description}</p>
                       )}
 
-                      {ticket.response && (
+                      {/* Phản hồi từ Manager */}
+                      {ticket.managerNote && (
+                        <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                          <p className="text-sm text-purple-800">
+                            <strong>Thông báo từ Manager:</strong> {ticket.managerNote}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Phản hồi từ Admin */}
+                      {ticket.adminResponse && (
+                        <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-sm text-blue-800">
+                            <strong>Kết quả xử lý:</strong> {ticket.adminResponse}
+                          </p>
+                        </div>
+                      )}
+
+                      {ticket.response && !ticket.adminResponse && (
                         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                           <p className="text-sm text-green-800">
-                            <strong>Phản hồi từ HR:</strong> {ticket.response}
+                            <strong>Phản hồi:</strong> {ticket.response}
                           </p>
                         </div>
                       )}
@@ -611,29 +584,33 @@ const EmployeeSupportHelp = () => {
 
             {/* Hướng dẫn */}
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-              <h3 className="text-xl font-bold text-gray-900 mb-6">Lưu ý khi tạo yêu cầu</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Quy trình xử lý yêu cầu</h3>
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                  <h4 className="font-bold text-blue-900 mb-2">Cập nhật thông tin cá nhân</h4>
+                  <h4 className="font-bold text-blue-900 mb-2">1. Gửi yêu cầu</h4>
                   <p className="text-sm text-blue-700">
-                    Chọn danh mục "Cập nhật thông tin cá nhân" và mô tả rõ thông tin cần thay đổi.
-                    Đính kèm giấy tờ nếu cần (CCCD, giấy đăng ký kết hôn, v.v.)
+                    Tạo yêu cầu với đầy đủ thông tin. Yêu cầu sẽ được gửi đến Manager để xem xét.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-purple-50 border border-purple-200 rounded-xl">
+                  <h4 className="font-bold text-purple-900 mb-2">2. Manager xem xét</h4>
+                  <p className="text-sm text-purple-700">
+                    Manager sẽ xem xét và chuyển yêu cầu lên Admin để xử lý.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-orange-50 border border-orange-200 rounded-xl">
+                  <h4 className="font-bold text-orange-900 mb-2">3. Admin xử lý</h4>
+                  <p className="text-sm text-orange-700">
+                    Admin sẽ xử lý yêu cầu và gửi kết quả về Manager.
                   </p>
                 </div>
 
                 <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                  <h4 className="font-bold text-green-900 mb-2">Thời gian xử lý</h4>
+                  <h4 className="font-bold text-green-900 mb-2">4. Thông báo kết quả</h4>
                   <p className="text-sm text-green-700">
-                    Ticket thường được xử lý trong 1-2 ngày làm việc.
-                    Yêu cầu khẩn cấp chọn mức ưu tiên "Cao" để được xử lý nhanh hơn.
-                  </p>
-                </div>
-
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                  <h4 className="font-bold text-amber-900 mb-2">Theo dõi trạng thái</h4>
-                  <p className="text-sm text-amber-700">
-                    Bạn có thể theo dõi trạng thái yêu cầu trong tab "Ticket hỗ trợ".
-                    Khi có phản hồi, bạn sẽ nhận được thông báo.
+                    Manager sẽ thông báo kết quả xử lý cho bạn. Theo dõi trong tab "Ticket hỗ trợ".
                   </p>
                 </div>
               </div>

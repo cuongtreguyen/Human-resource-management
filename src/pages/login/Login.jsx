@@ -24,6 +24,7 @@ const Login = () => {
   const [error, setError] = useState("");
 
   // Mock users with different roles
+  // MỖI USER PHẢI CÓ employeeId để xác định danh tính
   const mockUsers = {
     employee: {
       email: "employee@company.com",
@@ -33,6 +34,8 @@ const Login = () => {
       info: {
         employeeId: "emp001",
         name: "Trần Ngọc Hải",
+        department: "IT",
+        position: "Nhân viên",
       },
     },
     admin: {
@@ -40,7 +43,12 @@ const Login = () => {
       password: "admin123",
       role: "admin",
       route: "/dashboard",
-      info: null,
+      info: {
+        employeeId: "admin001",
+        name: "Nguyễn Văn Admin",
+        department: "Quản trị",
+        position: "Quản trị viên hệ thống",
+      },
     },
     manager: {
       email: "manager@company.com",
@@ -48,8 +56,10 @@ const Login = () => {
       role: "manager",
       route: "/dashboard",
       info: {
+        employeeId: "mgr001",
         name: "Nguyễn Văn Quản Lý",
-        department: "IT", // Manager của phòng IT
+        department: "IT",
+        position: "Trưởng phòng IT",
       },
     },
     accountant: {
@@ -58,8 +68,10 @@ const Login = () => {
       role: "accountant",
       route: "/dashboard",
       info: {
+        employeeId: "acc001",
         name: "Trần Thị Kế Toán",
         department: "Tài chính",
+        position: "Kế toán trưởng",
       },
     },
   };
@@ -99,19 +111,14 @@ const Login = () => {
       );
 
       if (user) {
-        // Set role in localStorage
+        // Set role và userInfo trong localStorage
         setRole(user.role);
-        if (user.info) {
-          // Thêm email vào userInfo để có thể tìm employee sau này
-          setUserInfo({ ...user.info, email: user.email });
-        } else {
-          // Nếu không có info, vẫn lưu email để có thể tìm employee
-          setUserInfo({ email: user.email });
-        }
+        // Luôn lưu đầy đủ userInfo với email
+        setUserInfo({ ...user.info, email: user.email, role: user.role });
         // Navigate to appropriate route based on role
         navigate(user.route);
       } else {
-        setError("Invalid email or password. Please try again.");
+        setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
       }
       setIsLoading(false);
     }, 1500);

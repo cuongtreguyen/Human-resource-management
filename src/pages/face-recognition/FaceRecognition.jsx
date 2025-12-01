@@ -10,6 +10,8 @@ import {
   AlertCircle,
   Info,
   Square as StopIcon,
+  Cpu,
+  RefreshCw,
 } from 'lucide-react';
 import faceRecognitionApi from '../../services/faceRecognitionApi';
 import { getRole } from '../../utils/auth';
@@ -21,6 +23,8 @@ const FaceRecognition = () => {
   const [userId, setUserId] = useState('');
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isTraining, setIsTraining] = useState(false);
+  const [trainResult, setTrainResult] = useState(null);
   const [attendanceResult, setAttendanceResult] = useState(null);
 
   const userRole = getRole();
@@ -138,6 +142,25 @@ const FaceRecognition = () => {
     }
   };
 
+  const handleTrainModel = async () => {
+    setIsTraining(true);
+    setTrainResult(null);
+    try {
+      const data = await faceRecognitionApi.trainModel();
+      updateStatus(data.status, data.message);
+      setTrainResult(data);
+      if (data.status === 'success') {
+        alert('✅ Train model thành công!');
+      } else {
+        alert(`❌ ${data.message}`);
+      }
+    } catch {
+      updateStatus('error', 'Không thể train model');
+      alert('❌ Có lỗi xảy ra khi train model');
+    } finally {
+      setIsTraining(false);
+    }
+  };
 
   const handleStartRecognition = async (type) => {
     setIsLoading(true);
@@ -229,6 +252,7 @@ const FaceRecognition = () => {
             <nav className="flex border-b border-gray-200 bg-gray-50">
               {[
                 ['register', 'Đăng ký khuôn mặt'],
+                ['train', 'Train Model'],
                 ['recognize', 'Chấm công'],
               ].map(([tab, label]) => (
                 <button
@@ -307,6 +331,71 @@ const FaceRecognition = () => {
                 </div>
               )}
 
+              {/* Train Model */}
+              {activeTab === 'train' && (
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold text-gray-800">Train Model nhận diện</h3>
+
+                  <div className={`bg-gradient-to-r ${roleColors.recognizeBg} rounded-md p-6 text-center`}>
+                    <Cpu className={`h-16 w-16 mx-auto ${roleColors.iconColor} mb-4`} />
+                    <p className="text-gray-700 font-medium mb-2">
+                      Huấn luyện model nhận diện khuôn mặt
+                    </p>
+                    <p className="text-gray-500 text-sm">
+                      Sau khi đăng ký khuôn mặt, bạn cần train model để hệ thống có thể nhận diện.
+                    </p>
+                  </div>
+
+                  <div className={`${roleColors.infoBg} rounded-md p-4 text-sm ${roleColors.infoText}`}>
+                    <div className="flex items-start">
+                      <Info className={`h-5 w-5 ${roleColors.infoIcon} mr-2 flex-shrink-0 mt-0.5`} />
+                      <div>
+                        <p className="font-medium mb-1">Lưu ý quan trọng:</p>
+                        <ul className="list-disc list-inside space-y-1">
+                          <li>Đảm bảo đã đăng ký đủ ảnh khuôn mặt trước khi train</li>
+                          <li>Quá trình train có thể mất vài phút tùy số lượng nhân viên</li>
+                          <li>Không tắt trang trong khi đang train model</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  {trainResult && (
+                    <div className={`rounded-md p-4 ${trainResult.status === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                      <div className="flex items-center">
+                        {trainResult.status === 'success' ? (
+                          <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
+                        )}
+                        <p className={trainResult.status === 'success' ? 'text-green-700' : 'text-red-700'}>
+                          {trainResult.message}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex justify-center">
+                    <button
+                      onClick={handleTrainModel}
+                      disabled={isTraining}
+                      className={`px-6 py-3 ${roleColors.btnPrimary} text-white rounded-md flex items-center gap-2 text-sm disabled:opacity-50 font-medium`}
+                    >
+                      {isTraining ? (
+                        <>
+                          <RefreshCw className="w-5 h-5 animate-spin" />
+                          Đang train model...
+                        </>
+                      ) : (
+                        <>
+                          <Cpu className="w-5 h-5" />
+                          Bắt đầu Train Model
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Recognize */}
               {activeTab === 'recognize' && (

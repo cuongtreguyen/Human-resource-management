@@ -6,6 +6,10 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
 import { getRole } from '../../utils/auth';
+import { useOTContext } from '../../context/OTContext';
+
+// OT Rate: 100,000 VND per hour
+const OT_HOURLY_RATE = 100000;
 import {
   DollarSign,
   Download,
@@ -14,7 +18,8 @@ import {
   Users,
   TrendingUp,
   Building,
-  FileText
+  FileText,
+  Clock
 } from 'lucide-react';
 import {
   PayrollDetailsModal,
@@ -24,6 +29,7 @@ import {
 
 const PayrollList = () => {
   const userRole = getRole(); // Lấy role của user hiện tại
+  const { otRequests } = useOTContext(); // Get OT data
 
   // Màu sắc theo role
   const getBannerColor = () => {
@@ -67,6 +73,28 @@ const PayrollList = () => {
     loadEmployees();
   }, []);
 
+  // Get approved OT hours for an employee in selected month
+  // OT is visible when Manager approves (status: approved, completed, reviewed, payroll_approved)
+  const getEmployeeOTData = useCallback((employeeId, month) => {
+    const approvedOT = otRequests.filter(ot =>
+      ot.employeeId === employeeId &&
+      ot.otDate.startsWith(month) &&
+      ['approved', 'completed', 'reviewed', 'payroll_approved'].includes(ot.status)
+    );
+
+    const totalHours = approvedOT.reduce((sum, ot) =>
+      sum + (ot.report?.actualHours || ot.plannedHours), 0
+    );
+
+    const otPay = totalHours * OT_HOURLY_RATE;
+
+    return {
+      requests: approvedOT,
+      totalHours,
+      otPay
+    };
+  }, [otRequests]);
+
   const loadEmployees = async () => {
     try {
       setLoading(true);
@@ -88,8 +116,13 @@ const PayrollList = () => {
     const bonuses = 0;
     const deductions = 0;
 
-    // 💰 Tính tổng thu nhập
-    const grossIncome = basicSalary + allowances + bonuses;
+    // 🕐 Lấy thông tin OT từ context
+    const otData = getEmployeeOTData(employee.id, selectedMonth);
+    const otHours = otData.totalHours;
+    const otPay = otData.otPay;
+
+    // 💰 Tính tổng thu nhập (bao gồm OT)
+    const grossIncome = basicSalary + allowances + bonuses + otPay;
 
     // 🧾 Bảo hiểm (BHXH 8% + BHYT 1.5% + BHTN 1% = 10.5%)
     const socialInsurance = basicSalary * 0.08; // BHXH 8%
@@ -115,6 +148,8 @@ const PayrollList = () => {
       allowances: allowances,
       bonuses: bonuses,
       deductions: deductions,
+      otHours: otHours, // Số giờ OT
+      otPay: Math.round(otPay), // Tiền OT
       grossIncome: Math.round(grossIncome),
       socialInsurance: Math.round(socialInsurance),
       healthInsurance: Math.round(healthInsurance),
@@ -126,7 +161,7 @@ const PayrollList = () => {
       status: 'Paid',
       paidDate: new Date().toLocaleDateString()
     };
-  }, [selectedMonth]);
+  }, [selectedMonth, getEmployeeOTData]);
 
   // Generate all payroll records
   const generateAllPayrolls = useCallback(() => {
@@ -205,11 +240,13 @@ const PayrollList = () => {
 
     // Simulate CSV export
     const csvContent = [
-      ['Employee', 'Department', 'Basic Salary', 'Net Salary', 'Status', 'Paid Date'],
+      ['Employee', 'Department', 'Basic Salary', 'OT Hours', 'OT Pay', 'Net Salary', 'Status', 'Paid Date'],
       ...filteredPayrolls.map(payroll => [
         payroll.name,
         payroll.department,
         payroll.basicSalary.toLocaleString(),
+        payroll.otHours || 0,
+        (payroll.otPay || 0).toLocaleString(),
         payroll.netSalary.toLocaleString(),
         payroll.status,
         payroll.paidDate
@@ -232,16 +269,18 @@ const PayrollList = () => {
     totalEmployees: stats.totalEmployees + 1,
     totalPayroll: stats.totalPayroll + payroll.netSalary,
     totalTax: stats.totalTax + (payroll.socialInsurance + payroll.healthInsurance + payroll.unemploymentInsurance),
-    totalInsurance: stats.totalInsurance + (payroll.socialInsurance + payroll.healthInsurance + payroll.unemploymentInsurance)
-  }), { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 }) :
-    { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0 };
+    totalInsurance: stats.totalInsurance + (payroll.socialInsurance + payroll.healthInsurance + payroll.unemploymentInsurance),
+    totalOTHours: stats.totalOTHours + (payroll.otHours || 0),
+    totalOTPay: stats.totalOTPay + (payroll.otPay || 0)
+  }), { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0, totalOTHours: 0, totalOTPay: 0 }) :
+    { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0, totalOTHours: 0, totalOTPay: 0 };
 
-  // Generate payrolls when employees are loaded
+  // Generate payrolls when employees are loaded or OT data changes
   useEffect(() => {
     if (employees.length > 0) {
       generateAllPayrolls();
     }
-  }, [employees, generateAllPayrolls]);
+  }, [employees, generateAllPayrolls, otRequests]);
 
   return (
     <Layout>
@@ -326,7 +365,7 @@ const PayrollList = () => {
           </Card>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
             <Card title="Tổng nhân viên" icon={<Users className="h-5 w-5 text-blue-500" />}>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{payrollStats.totalEmployees}</div>
@@ -343,21 +382,30 @@ const PayrollList = () => {
               </div>
             </Card>
 
-            <Card title="Tổng thuế" icon={<TrendingUp className="h-5 w-5 text-orange-500" />}>
+            <Card title="Tiền OT" icon={<Clock className="h-5 w-5 text-purple-500" />}>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">
-                  {payrollStats.totalTax > 0 ? `${(payrollStats.totalTax / 1000000).toFixed(1)}M VND` : '0 VND'}
+                <div className="text-2xl font-bold text-purple-600">
+                  {payrollStats.totalOTPay > 0 ? `${(payrollStats.totalOTPay / 1000000).toFixed(1)}M VND` : '0 VND'}
                 </div>
-                <div className="text-sm text-gray-500">Thuế đã thu</div>
+                <div className="text-sm text-gray-500">{payrollStats.totalOTHours}h OT tháng này</div>
               </div>
             </Card>
 
-            <Card title="Tổng bảo hiểm" icon={<Building className="h-5 w-5 text-purple-500" />}>
+            <Card title="Tổng bảo hiểm" icon={<Building className="h-5 w-5 text-orange-500" />}>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">
+                <div className="text-2xl font-bold text-orange-600">
                   {payrollStats.totalInsurance > 0 ? `${(payrollStats.totalInsurance / 1000000).toFixed(1)}M VND` : '0 VND'}
                 </div>
                 <div className="text-sm text-gray-500">Bảo hiểm xã hội</div>
+              </div>
+            </Card>
+
+            <Card title="Tổng thuế" icon={<TrendingUp className="h-5 w-5 text-red-500" />}>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  {payrollStats.totalTax > 0 ? `${(payrollStats.totalTax / 1000000).toFixed(1)}M VND` : '0 VND'}
+                </div>
+                <div className="text-sm text-gray-500">Thuế đã thu</div>
               </div>
             </Card>
           </div>
@@ -385,6 +433,8 @@ const PayrollList = () => {
                     <th className="text-left py-3 px-4 font-medium text-gray-700">NHÂN VIÊN</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">PHÒNG BAN</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">LƯƠNG CƠ BẢN</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-700">GIỜ OT</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-700">TIỀN OT</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">LƯƠNG THỰC LĨNH</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">TRẠNG THÁI</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">THAO TÁC</th>
@@ -418,6 +468,24 @@ const PayrollList = () => {
                             <div className="font-medium text-gray-900">
                               {payroll.basicSalary?.toLocaleString()} VND
                             </div>
+                          </td>
+                          <td className="py-3 px-4 text-center">
+                            {payroll.otHours > 0 ? (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">
+                                {payroll.otHours}h
+                              </span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            {payroll.otPay > 0 ? (
+                              <div className="font-medium text-purple-600">
+                                {payroll.otPay?.toLocaleString()} VND
+                              </div>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
                           </td>
                           <td className="py-3 px-4">
                             <div className="font-medium text-green-600">
