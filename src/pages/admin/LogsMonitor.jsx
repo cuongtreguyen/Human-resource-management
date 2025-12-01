@@ -421,7 +421,8 @@ const LogsMonitor = () => {
   );
 };
 
-// export default LogsMonitor;
+export default LogsMonitor;
+
 // Trang "Nhật ký hệ thống" (Admin > Nhật ký hệ thống) hiện:
 // Lưu lại tất cả các hành động quan trọng
 // Hiển thị logs từ localStorage
