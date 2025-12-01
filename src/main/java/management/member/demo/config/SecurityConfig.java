@@ -43,14 +43,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints - không cần authentication
                         .requestMatchers(
-                                "/auth/**",
+                                "/api/auth/**",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/swagger-resources/**",
                                 "/swagger-ui.html",
                                 "/api/face-recognition/**",
                                 "/api/attendance/**",
-                                "/api/resume/**"
+                                "/api/resume/**",
+                                "/error"
                         ).permitAll()
                         // Admin endpoints - chỉ ADMIN mới truy cập được
                         .requestMatchers(

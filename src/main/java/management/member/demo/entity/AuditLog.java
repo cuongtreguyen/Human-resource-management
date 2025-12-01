@@ -18,7 +18,7 @@ public class AuditLog {
     @Column(nullable = false)
     private LocalDateTime timestamp;
     
-    @Column(nullable = false)
+    @Column(nullable = false, name = "\"user\"")
     private String user; // Email or username
     
     @Column(nullable = false)
