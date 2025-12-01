@@ -1,6 +1,6 @@
 package management.member.demo.controller;
 
-import management.member.demo.Service.EmployeeBenefitsService;
+import management.member.demo.service.EmployeeBenefitsService;
 import management.member.demo.dto.EmployeeBenefitsResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

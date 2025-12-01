@@ -1,7 +1,7 @@
 package management.member.demo.validator;
 
-import management.member.demo.Enum.OnLeaveStatus;
-import management.member.demo.Enum.OnLeaveType;
+import management.member.demo.enums.OnLeaveStatus;
+import management.member.demo.enums.OnLeaveType;
 import management.member.demo.dto.CreateLeaveRequestDTO;
 import management.member.demo.dto.UpdateLeaveStatusRequestDTO;
 import management.member.demo.exception.model.ErrorCode;

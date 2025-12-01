@@ -1,6 +1,6 @@
 package management.member.demo.validator;
 
-import management.member.demo.Enum.EmployeeStatus;
+import management.member.demo.enums.EmployeeStatus;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.dto.AddEmployeeRequest;
 import management.member.demo.dto.EmployeeRequest;

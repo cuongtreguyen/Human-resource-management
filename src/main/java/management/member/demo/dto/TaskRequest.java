@@ -1,10 +1,9 @@
 package management.member.demo.dto;
 
-import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import management.member.demo.Enum.TaskPriorityStatus;
-import management.member.demo.Enum.TaskStatus;
+import management.member.demo.enums.TaskPriorityStatus;
+import management.member.demo.enums.TaskStatus;
 
 import java.time.LocalDate;
 
@@ -17,9 +16,7 @@ public class TaskRequest {
     Long employeeId;
     String title;
     String description;
-    @Enumerated(EnumType.STRING)
     TaskPriorityStatus taskPriorityStatus;
-    @Enumerated(EnumType.STRING)
     TaskStatus taskStatus;
     LocalDate createdAt;
     LocalDate endedAt;

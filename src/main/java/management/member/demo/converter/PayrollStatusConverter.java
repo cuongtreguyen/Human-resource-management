@@ -1,6 +1,6 @@
 package management.member.demo.converter;
 
-import management.member.demo.Enum.PayrollStatus;
+import management.member.demo.enums.PayrollStatus;
 import management.member.demo.exception.model.ErrorCode;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;

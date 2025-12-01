@@ -3,8 +3,8 @@ package management.member.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import management.member.demo.Enum.TaskPriorityStatus;
-import management.member.demo.Enum.TaskStatus;
+import management.member.demo.enums.TaskPriorityStatus;
+import management.member.demo.enums.TaskStatus;
 
 import java.time.LocalDate;
 

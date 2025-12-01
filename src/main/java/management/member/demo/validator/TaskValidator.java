@@ -1,7 +1,7 @@
 package management.member.demo.validator;
 
-import management.member.demo.Enum.TaskPriorityStatus;
-import management.member.demo.Enum.TaskStatus;
+import management.member.demo.enums.TaskPriorityStatus;
+import management.member.demo.enums.TaskStatus;
 import management.member.demo.dto.CreateTaskRequestDTO;
 import management.member.demo.dto.UpdateTaskRequestDTO;
 import management.member.demo.dto.UpdateTaskProgressRequestDTO;

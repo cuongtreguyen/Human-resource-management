@@ -10,14 +10,22 @@ import java.util.List;
 @Getter
 @Setter
 public class TaskProgressDTO {
-    private String taskId;
-    private Integer currentProgress;
-    private List<MilestoneDTO> milestones;
-    private Integer timeSpent; // hours
-    private Integer estimatedTime; // hours
-    
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
-    private LocalDateTime lastUpdate;
+    private TaskProgressData data;
+    private boolean success;
+
+    @Getter
+    @Setter
+    public static class TaskProgressData {
+        private Long taskId;
+        private Integer currentProgress;
+        private Integer timeSpent;
+        private Integer estimatedTime;
+        
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
+        private LocalDateTime lastUpdate;
+        
+        private List<MilestoneDTO> milestones;
+    }
     
     @Getter
     @Setter
@@ -30,4 +38,3 @@ public class TaskProgressDTO {
         private LocalDateTime completedAt;
     }
 }
-

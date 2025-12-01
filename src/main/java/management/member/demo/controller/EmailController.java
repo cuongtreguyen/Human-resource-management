@@ -1,6 +1,6 @@
 package management.member.demo.controller;
 
-import management.member.demo.Service.EmailService;
+import management.member.demo.service.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

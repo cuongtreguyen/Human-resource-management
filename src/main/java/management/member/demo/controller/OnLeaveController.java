@@ -5,9 +5,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import management.member.demo.Enum.OnLeaveStatus;
-import management.member.demo.Service.OnLeaveService;
+import management.member.demo.enums.OnLeaveStatus;
+import management.member.demo.service.OnLeaveService;
 import management.member.demo.dto.*;
+import management.member.demo.normalizer.LeaveRequestNormalizer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ import java.util.Map;
 public class OnLeaveController {
 
     private final OnLeaveService service;
+    private final LeaveRequestNormalizer normalizer;
 
     // New endpoints according to API spec
     @GetMapping
@@ -45,6 +47,11 @@ public class OnLeaveController {
     })
     public ResponseEntity<CreateLeaveResponseDTO> createLeaveRequest(
             @Valid @RequestBody CreateLeaveRequestDTO request) {
+        // Normalize request từ FE format → BE format
+        // FE có thể gửi: tasks (objects) → normalizer sẽ extract task IDs
+        normalizer.normalize(request);
+        
+        // Service chỉ nhận input đã normalize
         CreateLeaveResponseDTO response = service.createLeaveRequest(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

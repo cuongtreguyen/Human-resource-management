@@ -6,8 +6,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import management.member.demo.Enum.TaskStatus;
-import management.member.demo.Service.TaskService;
+import management.member.demo.enums.TaskStatus;
+import management.member.demo.service.TaskService;
 import management.member.demo.dto.*;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -210,6 +210,17 @@ public class TaskController {
             @RequestParam(required = true) String startDate,
             @RequestParam(required = true) String endDate) {
         TaskMetricsForEvaluationDTO response = service.getTaskMetricsForEvaluation(employeeId, startDate, endDate);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/metrics")
+    @Operation(summary = "Calculate task metrics", description = "Calculate metrics for specified tasks")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success")
+    })
+    public ResponseEntity<CalculateTaskMetricsResponseDTO> calculateTaskMetrics(
+            @Valid @RequestBody CalculateTaskMetricsRequestDTO request) {
+        CalculateTaskMetricsResponseDTO response = service.calculateTaskMetrics(request);
         return ResponseEntity.ok(response);
     }
 }

@@ -75,7 +75,7 @@ public class SalaryValidator {
     /**
      * Validate status
      */
-    public void validateStatus(management.member.demo.Enum.SalaryStatus status) {
+    public void validateStatus(management.member.demo.enums.SalaryStatus status) {
         if (status == null) {
             throw ErrorCode.INVALID_SALARY_STATUS.toException();
         }

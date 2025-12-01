@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import management.member.demo.Enum.EmployeeStatus;
+import management.member.demo.enums.EmployeeStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

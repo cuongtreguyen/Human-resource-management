@@ -5,7 +5,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import management.member.demo.Service.ProfileService;
+import management.member.demo.service.ProfileService;
+import management.member.demo.service.DocumentService;
 import management.member.demo.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,9 @@ public class ProfileController {
 
     @Autowired
     private ProfileService profileService;
+    
+    @Autowired
+    private DocumentService documentService;
 
     @GetMapping("/employees/{employeeId}/performance")
     @Operation(summary = "Get employee performance", description = "Get performance information for an employee")
@@ -38,6 +42,17 @@ public class ProfileController {
     })
     public ResponseEntity<EmployeeTrainingResponseDTO> getEmployeeTraining(@PathVariable String employeeId) {
         EmployeeTrainingResponseDTO response = profileService.getEmployeeTraining(employeeId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/employee/documents/{employeeId}")
+    @Operation(summary = "Get employee documents", description = "Get documents for an employee")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
+    public ResponseEntity<EmployeeDocumentListResponseDTO> getEmployeeDocuments(@PathVariable String employeeId) {
+        EmployeeDocumentListResponseDTO response = documentService.getEmployeeDocuments(employeeId);
         return ResponseEntity.ok(response);
     }
 

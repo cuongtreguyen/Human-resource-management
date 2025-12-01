@@ -2,7 +2,7 @@ package management.member.demo.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import management.member.demo.Enum.PayrollStatus;
+import management.member.demo.enums.PayrollStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

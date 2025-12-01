@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 public class TaskListItemDTO {
-    private String id; // Task ID as string
+    private Long id; // Task ID as number (Frontend expects number)
     private String title;
     private String description;
     private String status; // "new", "in-progress", "pending", "complete"
@@ -32,7 +32,7 @@ public class TaskListItemDTO {
     @Getter
     @Setter
     public static class AssigneeInfo {
-        private String id;
+        private Long id; // Employee ID as number (Frontend expects number)
         private String name;
         private String avatar;
     }

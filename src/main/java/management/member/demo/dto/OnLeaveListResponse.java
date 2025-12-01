@@ -1,10 +1,9 @@
 package management.member.demo.dto;
 
-import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import management.member.demo.Enum.OnLeaveStatus;
-import management.member.demo.Enum.OnLeaveType;
+import management.member.demo.enums.OnLeaveStatus;
+import management.member.demo.enums.OnLeaveType;
 
 import java.time.LocalDate;
 
@@ -14,12 +13,8 @@ import java.time.LocalDate;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
 public class OnLeaveListResponse {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
-    @Enumerated(EnumType.STRING)
     OnLeaveType onLeaveType;
-    @Enumerated(EnumType.STRING)
     OnLeaveStatus onLeaveStatus;
     LocalDate startDate;
     LocalDate endDate;

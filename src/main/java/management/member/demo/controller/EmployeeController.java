@@ -1,17 +1,19 @@
 package management.member.demo.controller;
 
 import jakarta.validation.Valid;
-import management.member.demo.Service.EmployeeService;
+import management.member.demo.service.EmployeeService;
 import management.member.demo.dto.AddEmployeeRequest;
 import management.member.demo.dto.CreateEmployeeResponseDTO;
 import management.member.demo.dto.DeleteEmployeeResponseDTO;
 import management.member.demo.dto.EmployeeDetailDTO;
+import management.member.demo.dto.EmployeeDetailResponse;
 import management.member.demo.dto.EmployeeListResponse;
 import management.member.demo.dto.ProfileResponse;
 import management.member.demo.dto.ProfileUpdateRequest;
 import management.member.demo.dto.UpdateEmployeeRequest;
 import management.member.demo.dto.UpdateEmployeeResponseDTO;
 import management.member.demo.dto.ExportResponseDTO;
+import management.member.demo.normalizer.EmployeeRequestNormalizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,10 +30,12 @@ import java.util.Map;
 public class EmployeeController {
 
     private final EmployeeService service;
+    private final EmployeeRequestNormalizer normalizer;
 
     @Autowired
-    public EmployeeController(EmployeeService service) {
+    public EmployeeController(EmployeeService service, EmployeeRequestNormalizer normalizer) {
         this.service = service;
+        this.normalizer = normalizer;
     }
 
     // Thêm nhân viên mới
@@ -47,6 +51,12 @@ public class EmployeeController {
     })
     public ResponseEntity<CreateEmployeeResponseDTO> addEmployee(
             @Valid @RequestBody AddEmployeeRequest request) {
+        // Normalize request từ FE format → BE format
+        // FE có thể gửi: name, gender_vi, contract Vietnamese...
+        // Normalizer sẽ convert về: firstName/lastName, gender (male/female), contractType (English)
+        normalizer.normalize(request);
+        
+        // Service chỉ nhận input đã normalize
         CreateEmployeeResponseDTO response = service.createEmployee(request);
         return ResponseEntity.status(201).body(response);
     }
@@ -103,8 +113,12 @@ public class EmployeeController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Employee not found")
     })
-    public ResponseEntity<EmployeeDetailDTO> getEmployee(@PathVariable String id) {
-        return ResponseEntity.ok(service.getEmployeeDetailById(id));
+    public ResponseEntity<EmployeeDetailResponse> getEmployee(@PathVariable String id) {
+        EmployeeDetailDTO detail = service.getEmployeeDetailById(id);
+        EmployeeDetailResponse response = new EmployeeDetailResponse();
+        response.setData(detail);
+        response.setSuccess(true);
+        return ResponseEntity.ok(response);
     }
 
     // Cập nhật thông tin nhân viên theo ID (hỗ trợ Long id, employeeId, hoặc employeeCode)
@@ -119,6 +133,10 @@ public class EmployeeController {
     public ResponseEntity<UpdateEmployeeResponseDTO> updateEmployee(
             @PathVariable String id,
             @Valid @RequestBody UpdateEmployeeRequest request) {
+        // Normalize request từ FE format → BE format
+        normalizer.normalize(request);
+        
+        // Service chỉ nhận input đã normalize
         return ResponseEntity.ok(service.updateEmployeeById(id, request));
     }
 

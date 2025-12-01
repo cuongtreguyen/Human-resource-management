@@ -1,10 +1,8 @@
 package management.member.demo.dto;
 
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import management.member.demo.Enum.OnLeaveType;
+import management.member.demo.enums.OnLeaveType;
 
 import java.time.LocalDate;
 
@@ -15,7 +13,6 @@ import java.time.LocalDate;
 @Builder
 public class OnLeaveRequest {
     Long employeeId;
-    @Enumerated(EnumType.STRING)
     OnLeaveType onLeaveType;
     LocalDate startDate;
     LocalDate endDate;

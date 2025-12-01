@@ -1,7 +1,7 @@
 package management.member.demo.exception.handler;
 
 import management.member.demo.exception.model.ErrorCode;
-import management.member.demo.Mapper.HttpStatusMapper;
+import management.member.demo.mapper.HttpStatusMapper;
 import management.member.demo.exception.base.BusinessException;
 import management.member.demo.exception.model.ErrorResponse;
 import management.member.demo.exception.specifiic.FlaskApiException;

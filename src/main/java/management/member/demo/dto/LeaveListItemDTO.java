@@ -28,5 +28,6 @@ public class LeaveListItemDTO {
     private LocalDate submittedDate;
     
     private String approvedBy; // Can be null
+    private String department; // Department name
 }
 

@@ -8,9 +8,7 @@ import java.util.List;
 @Getter
 @Setter
 public class TaskTimelineResponseDTO {
-    private Integer year;
-    private Integer month;
-    private List<TaskTimelineEventDTO> events;
+    private List<TaskTimelineEventDTO> data;
     private boolean success;
 }
 

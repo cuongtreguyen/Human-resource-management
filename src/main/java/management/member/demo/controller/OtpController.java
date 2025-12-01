@@ -1,7 +1,7 @@
 package management.member.demo.controller;
 
-import management.member.demo.Service.OtpService;
-import management.member.demo.Service.EmailService;
+import management.member.demo.service.OtpService;
+import management.member.demo.service.EmailService;
 import management.member.demo.dto.ForgotPasswordRequest;
 import management.member.demo.dto.VerifyOtpRequest;
 import jakarta.validation.Valid;

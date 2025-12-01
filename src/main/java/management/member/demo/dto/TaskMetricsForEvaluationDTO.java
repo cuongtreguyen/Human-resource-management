@@ -6,12 +6,20 @@ import lombok.Setter;
 @Getter
 @Setter
 public class TaskMetricsForEvaluationDTO {
-    private StatsDTO stats;
-    private Double completionRate;
-    private Double onTimeRate;
-    private Double highPriorityRate;
-    private Integer productivityScore;
+    private MetricsData data;
     private boolean success;
+
+    @Getter
+    @Setter
+    public static class MetricsData {
+        private String employeeId;
+        private StatsDTO stats;
+        private Double completionRate;
+        private Double onTimeCompletionRate; // Renamed from onTimeRate to match service mock
+        private Double averageCompletionTime; // Added to match service mock
+        private Double highPriorityRate;
+        private Integer productivityScore;
+    }
     
     @Getter
     @Setter

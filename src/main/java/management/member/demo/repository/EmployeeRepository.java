@@ -1,6 +1,6 @@
 package management.member.demo.repository;
 
-import management.member.demo.Enum.EmployeeStatus;
+import management.member.demo.enums.EmployeeStatus;
 import management.member.demo.entity.Employee;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

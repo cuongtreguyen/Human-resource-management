@@ -8,6 +8,7 @@ import lombok.Setter;
 public class UpdateDocumentRequestDTO {
     private String name;
     private String description;
+    private String category;
     private String accessLevel;
 }
 

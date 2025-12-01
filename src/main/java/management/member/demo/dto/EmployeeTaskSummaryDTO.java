@@ -6,14 +6,20 @@ import lombok.Setter;
 @Getter
 @Setter
 public class EmployeeTaskSummaryDTO {
-    private String employeeId;
-    private Integer totalTasks;
-    private Integer completedTasks;
-    private Integer inProgressTasks;
-    private Integer overdueTasks;
-    private Double averageCompletionTime;
-    private Integer productivityScore;
-    private Integer thisWeekTasks;
-    private Integer nextWeekTasks;
-}
+    private SummaryData data;
+    private boolean success;
 
+    @Getter
+    @Setter
+    public static class SummaryData {
+        private String employeeId;
+        private Long totalTasks;
+        private Long completedTasks;
+        private Long inProgressTasks;
+        private Long pendingTasks;
+        private Double averageCompletionTime;
+        private Integer productivityScore;
+        private Integer thisWeekTasks;
+        private Integer nextWeekTasks;
+    }
+}

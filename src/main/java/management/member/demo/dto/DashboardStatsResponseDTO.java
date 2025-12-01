@@ -8,15 +8,22 @@ import java.util.List;
 @Getter
 @Setter
 public class DashboardStatsResponseDTO {
-    private Integer totalEmployees;
-    private Integer activeEmployees;
-    private Integer newHiresThisMonth;
-    private Integer employeesOnLeave;
-    private Integer pendingPayroll;
-    private Integer completedPayroll;
-    private Double averageAttendance;
-    private List<DepartmentCount> departments;
-    private List<RecentActivity> recentActivities;
+    private DashboardData data;
+    private boolean success = true;
+
+    @Getter
+    @Setter
+    public static class DashboardData {
+        private Integer totalEmployees;
+        private Integer activeEmployees;
+        private Integer newHiresThisMonth;
+        private Integer employeesOnLeave;
+        private Integer pendingPayroll;
+        private Integer completedPayroll;
+        private Double averageAttendance;
+        private List<DepartmentCount> departments;
+        private List<RecentActivity> recentActivities;
+    }
     
     @Getter
     @Setter

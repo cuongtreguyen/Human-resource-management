@@ -6,8 +6,14 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DeleteTaskResponseDTO {
-    private String id;
+    private TaskData data;
     private String message;
     private boolean success;
+
+    @Getter
+    @Setter
+    public static class TaskData {
+        private Long id;
+    }
 }
 

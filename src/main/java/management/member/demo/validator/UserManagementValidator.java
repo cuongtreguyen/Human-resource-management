@@ -1,6 +1,6 @@
 package management.member.demo.validator;
 
-import management.member.demo.Enum.Role;
+import management.member.demo.enums.Role;
 import management.member.demo.dto.CreateUserRequestDTO;
 import management.member.demo.exception.model.ErrorCode;
 import org.springframework.stereotype.Component;

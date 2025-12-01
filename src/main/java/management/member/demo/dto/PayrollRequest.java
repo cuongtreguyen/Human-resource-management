@@ -3,7 +3,7 @@ package management.member.demo.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-import management.member.demo.Enum.PayrollStatus;
+import management.member.demo.enums.PayrollStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

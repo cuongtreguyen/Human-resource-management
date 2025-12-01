@@ -1,7 +1,7 @@
 package management.member.demo.controller;
 
 import jakarta.validation.Valid;
-import management.member.demo.Service.FlaskApiService;
+import management.member.demo.service.FlaskApiService;
 import management.member.demo.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

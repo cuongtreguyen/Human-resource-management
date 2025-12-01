@@ -1,7 +1,7 @@
 package management.member.demo.controller;
 
-import management.member.demo.Service.AuthService;
-import management.member.demo.Service.EmailService;
+import management.member.demo.service.AuthService;
+import management.member.demo.service.EmailService;
 import management.member.demo.dto.LoginRequest;
 import management.member.demo.dto.LoginResponse;
 import management.member.demo.dto.ForgotPasswordRequest;
@@ -49,13 +49,13 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
         AuthService.Tokens tokens = authService.authenticate(loginRequest.getEmail(), loginRequest.getPassword());
         LoginResponse response = new LoginResponse();
-        
+
         // Lấy thông tin user
         User currentUser = authService.getUserByEmail(loginRequest.getEmail());
-        
+
         // Set token (main field for API spec)
         response.setToken(tokens.getAccessToken());
-        
+
         // Set user info object
         management.member.demo.dto.UserInfoDTO userInfo = new management.member.demo.dto.UserInfoDTO();
         if (currentUser != null) {
@@ -70,14 +70,14 @@ public class AuthController {
             userInfo.setEmployeeId(null);
         }
         response.setUser(userInfo);
-        
+
         // Keep backward compatibility fields
         response.setUsername(currentUser != null ? currentUser.getUsername() : loginRequest.getEmail());
         response.setAccessToken(tokens.getAccessToken());
         response.setRefreshToken(tokens.getRefreshToken());
         response.setAccessTokenExpiresAt(LocalDateTime.now().plusSeconds(3600));
         response.setRole(currentUser != null && currentUser.getRole() != null ? currentUser.getRole().name() : "EMPLOYEE");
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -113,21 +113,21 @@ public class AuthController {
     public ResponseEntity<Map<String, Object>> changePassword(@RequestBody Map<String, String> request) {
         String oldPassword = request.get("oldPassword");
         String newPassword = request.get("newPassword");
-        
+
         if (oldPassword == null || newPassword == null) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "Validation failed",
                     "message", "oldPassword and newPassword are required"
             ));
         }
-        
+
         if (newPassword.length() < 8) {
             return ResponseEntity.badRequest().body(Map.of(
                     "error", "Validation failed",
                     "message", "New password must be at least 8 characters"
             ));
         }
-        
+
         try {
             authService.changePassword(oldPassword, newPassword);
             return ResponseEntity.ok(Map.of("message", "Password changed successfully", "success", true));
@@ -171,11 +171,11 @@ public class AuthController {
     })
     public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         String otp = authService.sendForgotPasswordOtp(request.getEmail());
-        
+
         // Lấy tên đầy đủ từ database để gửi email
         String fullName = "User"; // Có thể lấy từ database nếu cần
         emailService.sendForgotPasswordOtp(request.getEmail(), fullName, otp);
-        
+
         return ResponseEntity.ok(Map.of("message", "OTP sent to your email"));
     }
 

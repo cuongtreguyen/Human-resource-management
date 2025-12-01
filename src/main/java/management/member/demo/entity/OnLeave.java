@@ -3,8 +3,8 @@ package management.member.demo.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import management.member.demo.Enum.OnLeaveStatus;
-import management.member.demo.Enum.OnLeaveType;
+import management.member.demo.enums.OnLeaveStatus;
+import management.member.demo.enums.OnLeaveType;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;

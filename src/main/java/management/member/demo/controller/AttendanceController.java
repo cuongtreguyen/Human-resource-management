@@ -1,8 +1,8 @@
 package management.member.demo.controller;
 
 import jakarta.validation.Valid;
-import management.member.demo.Service.AttendanceService;
-import management.member.demo.Service.FlaskApiService;
+import management.member.demo.service.AttendanceService;
+import management.member.demo.service.FlaskApiService;
 import management.member.demo.dto.AttendanceDTO;
 import management.member.demo.dto.AttendanceFlaskResponseDTO;
 import management.member.demo.dto.AttendanceRequest;

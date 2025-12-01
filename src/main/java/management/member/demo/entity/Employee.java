@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import management.member.demo.Enum.EmployeeStatus;
+import management.member.demo.enums.EmployeeStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

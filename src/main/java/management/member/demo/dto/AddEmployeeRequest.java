@@ -14,9 +14,15 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class AddEmployeeRequest {
 
-    @NotBlank(message = "Name is required")
+    // FE có thể gửi name hoặc firstName/lastName
     @Size(max = 200, message = "Name must not exceed 200 characters")
-    private String name; // firstName + lastName
+    private String name; // firstName + lastName (FE có thể gửi)
+    
+    @Size(max = 100, message = "First name must not exceed 100 characters")
+    private String firstName; // FE có thể gửi trực tiếp
+    
+    @Size(max = 100, message = "Last name must not exceed 100 characters")
+    private String lastName; // FE có thể gửi trực tiếp
 
     @NotBlank(message = "Email is required")
     @Email(message = "Email must be valid")
@@ -54,8 +60,10 @@ public class AddEmployeeRequest {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfBirth;
 
-    @Pattern(regexp = "male|female", message = "Gender must be male or female")
-    private String gender;
+    // FE có thể gửi gender_vi (Nam/Nữ) hoặc gender (male/female)
+    // Normalizer sẽ convert về male/female
+    @Size(max = 20, message = "Gender must not exceed 20 characters")
+    private String gender; // FE có thể gửi "Nam"/"Nữ" hoặc "male"/"female"
 
     @Size(max = 20, message = "ID number must not exceed 20 characters")
     private String idNumber; // CMND/CCCD
@@ -72,8 +80,10 @@ public class AddEmployeeRequest {
     @Size(max = 50, message = "Contract code must not exceed 50 characters")
     private String contractCode;
 
+    // FE có thể gửi contract hoặc contractType
+    // Normalizer sẽ convert Vietnamese → English
     @Size(max = 50, message = "Contract type must not exceed 50 characters")
-    private String contractType;
+    private String contractType; // FE có thể gửi Vietnamese hoặc English
 
     @Size(max = 255, message = "Permanent address must not exceed 255 characters")
     private String permanentAddress;

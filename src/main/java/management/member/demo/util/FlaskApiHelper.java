@@ -2,7 +2,7 @@ package management.member.demo.util;
 
 import management.member.demo.dto.AttendanceDTO;
 import management.member.demo.dto.AttendanceFlaskResponseDTO;
-import management.member.demo.Enum.SystemStatusType;
+import management.member.demo.enums.SystemStatusType;
 import management.member.demo.dto.SystemStatusResponseDTO;
 import management.member.demo.dto.SystemStatusDTO;
 import management.member.demo.exception.specifiic.FlaskApiException;
@@ -19,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
 
 /**

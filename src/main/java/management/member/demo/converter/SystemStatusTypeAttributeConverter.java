@@ -2,7 +2,7 @@ package management.member.demo.converter;
 
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
-import management.member.demo.Enum.SystemStatusType;
+import management.member.demo.enums.SystemStatusType;
 
 /**
  * JPA AttributeConverter để convert giữa SystemStatusType enum và String trong database

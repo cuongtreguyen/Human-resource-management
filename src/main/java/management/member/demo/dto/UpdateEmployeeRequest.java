@@ -14,6 +14,8 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class UpdateEmployeeRequest {
+    private String name; // Added for FE compatibility
+
     private String firstName;
     
     private String lastName;

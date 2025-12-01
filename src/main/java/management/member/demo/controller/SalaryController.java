@@ -1,7 +1,7 @@
 package management.member.demo.controller;
 
 import jakarta.validation.Valid;
-import management.member.demo.Service.SalaryService;
+import management.member.demo.service.SalaryService;
 import management.member.demo.dto.SalaryRequest;
 import management.member.demo.dto.SalaryResponse;
 import management.member.demo.dto.SalarySummaryResponse;

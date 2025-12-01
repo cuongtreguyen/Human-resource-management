@@ -107,7 +107,7 @@ public class PayrollValidator {
     /**
      * Validate status
      */
-    public void validateStatus(management.member.demo.Enum.PayrollStatus status) {
+    public void validateStatus(management.member.demo.enums.PayrollStatus status) {
         if (status == null) {
             throw ErrorCode.INVALID_PAYROLL_STATUS.toException();
         }
@@ -120,7 +120,7 @@ public class PayrollValidator {
         if (payroll == null) {
             throw ErrorCode.INVALID_PAYROLL.toException();
         }
-        if (payroll.getStatus() != management.member.demo.Enum.PayrollStatus.PENDING) {
+        if (payroll.getStatus() != management.member.demo.enums.PayrollStatus.PENDING) {
             throw ErrorCode.INVALID_PAYROLL_OPERATION.toException("Chỉ có thể duyệt Payroll có status PENDING");
         }
     }
@@ -132,7 +132,7 @@ public class PayrollValidator {
         if (payroll == null) {
             throw ErrorCode.INVALID_PAYROLL.toException();
         }
-        if (payroll.getStatus() == management.member.demo.Enum.PayrollStatus.PAID) {
+        if (payroll.getStatus() == management.member.demo.enums.PayrollStatus.PAID) {
             throw ErrorCode.INVALID_PAYROLL_OPERATION.toException("Không thể hủy Payroll đã thanh toán");
         }
     }
@@ -143,8 +143,8 @@ public class PayrollValidator {
      * @param currentStatus Trạng thái hiện tại
      * @param newStatus Trạng thái mới
      */
-    public void validateStatusTransition(management.member.demo.Enum.PayrollStatus currentStatus, 
-                                        management.member.demo.Enum.PayrollStatus newStatus) {
+    public void validateStatusTransition(management.member.demo.enums.PayrollStatus currentStatus,
+                                        management.member.demo.enums.PayrollStatus newStatus) {
         if (currentStatus == null || newStatus == null) {
             throw ErrorCode.INVALID_PAYROLL_STATUS.toException();
         }
@@ -156,13 +156,13 @@ public class PayrollValidator {
         }
         
         // Không cho phép hủy Payroll đã thanh toán
-        if (currentStatus == management.member.demo.Enum.PayrollStatus.PAID 
-                && newStatus == management.member.demo.Enum.PayrollStatus.CANCELLED) {
+        if (currentStatus == management.member.demo.enums.PayrollStatus.PAID
+                && newStatus == management.member.demo.enums.PayrollStatus.CANCELLED) {
             throw ErrorCode.INVALID_PAYROLL_OPERATION.toException("Không thể hủy Payroll đã thanh toán");
         }
         
         // Không cho phép chuyển từ CANCELLED sang trạng thái khác (trừ khi cần reset)
-        if (currentStatus == management.member.demo.Enum.PayrollStatus.CANCELLED) {
+        if (currentStatus == management.member.demo.enums.PayrollStatus.CANCELLED) {
             throw ErrorCode.INVALID_PAYROLL_OPERATION.toException("Không thể thay đổi trạng thái của Payroll đã bị hủy");
         }
     }

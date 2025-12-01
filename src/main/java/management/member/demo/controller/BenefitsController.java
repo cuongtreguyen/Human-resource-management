@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import management.member.demo.Service.BenefitsService;
+import management.member.demo.service.BenefitsService;
 import management.member.demo.dto.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -104,6 +104,40 @@ public class BenefitsController {
     public ResponseEntity<EmployeeInsuranceDetailResponseDTO> getEmployeeInsuranceDetail(@PathVariable String employeeId) {
         EmployeeInsuranceDetailResponseDTO response = benefitsService.getEmployeeInsuranceDetail(employeeId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/requests")
+    @Operation(summary = "Get benefit requests", description = "Get list of all benefit requests")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success")
+    })
+    public ResponseEntity<BenefitRequestListResponseDTO> getBenefitRequests() {
+        BenefitRequestListResponseDTO response = benefitsService.getBenefitRequests();
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/requests/{id}/reject")
+    @Operation(summary = "Reject benefit request", description = "Reject a benefit request")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Request rejected successfully"),
+            @ApiResponse(responseCode = "404", description = "Request not found")
+    })
+    public ResponseEntity<RejectBenefitRequestResponseDTO> rejectBenefitRequest(
+            @PathVariable String id,
+            @Valid @RequestBody RejectBenefitRequestRequestDTO request) {
+        RejectBenefitRequestResponseDTO response = benefitsService.rejectBenefitRequest(id, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/voluntary-insurance/enroll")
+    @Operation(summary = "Enroll voluntary insurance", description = "Enroll an employee in voluntary insurance")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Enrollment successful")
+    })
+    public ResponseEntity<EnrollVoluntaryInsuranceResponseDTO> enrollVoluntaryInsurance(
+            @Valid @RequestBody EnrollVoluntaryInsuranceRequestDTO request) {
+        EnrollVoluntaryInsuranceResponseDTO response = benefitsService.enrollVoluntaryInsurance(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 }
 

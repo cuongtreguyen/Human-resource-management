@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import management.member.demo.Enum.SystemStatusType;
+import management.member.demo.enums.SystemStatusType;
 
 import java.time.LocalDateTime;
 

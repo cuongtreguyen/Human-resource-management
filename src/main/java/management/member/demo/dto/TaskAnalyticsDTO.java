@@ -6,9 +6,22 @@ import lombok.Setter;
 @Getter
 @Setter
 public class TaskAnalyticsDTO {
-    private OverviewDTO overview;
-    private ProductivityDTO productivity;
+    private AnalyticsData data;
     private boolean success;
+
+    @Getter
+    @Setter
+    public static class AnalyticsData {
+        private OverviewDTO overview;
+        private ProductivityDTO productivity;
+        
+        // Flattened fields for compatibility with service mock
+        private Integer totalTasks;
+        private Integer completedTasks;
+        private Integer inProgressTasks;
+        private Integer pendingTasks;
+        private Double completionRate;
+    }
     
     @Getter
     @Setter

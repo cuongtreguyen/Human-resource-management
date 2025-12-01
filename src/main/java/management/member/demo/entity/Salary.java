@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
-import management.member.demo.Enum.SalaryStatus;
+import management.member.demo.enums.SalaryStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

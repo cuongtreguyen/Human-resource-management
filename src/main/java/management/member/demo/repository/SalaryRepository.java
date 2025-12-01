@@ -1,6 +1,6 @@
 package management.member.demo.repository;
 
-import management.member.demo.Enum.SalaryStatus;
+import management.member.demo.enums.SalaryStatus;
 import management.member.demo.entity.Salary;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
