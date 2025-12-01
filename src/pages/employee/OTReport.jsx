@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, FileText, Clock, CheckCircle, Send, AlertCircle, Star, DollarSign } from 'lucide-react';
 import { useOTContext } from '../../context/OTContext';
 import OTStatusBadge from '../../components/overtime/OTStatusBadge';
+import { getUserInfo } from '../../utils/auth';
 
 // OT Rate: 100,000 VND per hour
 const OT_HOURLY_RATE = 100000;
@@ -13,9 +14,9 @@ const OTReport = () => {
     submitReport
   } = useOTContext();
 
-  // Get current user from localStorage (demo)
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const employeeId = currentUser.id || 'emp001';
+  // Get current user from auth
+  const currentUser = getUserInfo() || {};
+  const employeeId = currentUser.employeeId || '';
 
   // State
   const [selectedOT, setSelectedOT] = useState(null);

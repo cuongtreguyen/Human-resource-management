@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useOTContext } from '../../context/OTContext';
 import OTStatusBadge from '../../components/overtime/OTStatusBadge';
+import { getUserInfo } from '../../utils/auth';
 
 const OTManagement = () => {
   const {
@@ -30,9 +31,9 @@ const OTManagement = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
-  // Get current manager (demo)
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const managerName = currentUser.name || 'Manager';
+  // Get current manager from auth
+  const currentUser = getUserInfo() || {};
+  const managerName = currentUser.name || 'Quản lý';
 
   // Stats
   const stats = getOTStatistics();

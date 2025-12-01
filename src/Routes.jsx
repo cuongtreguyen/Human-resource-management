@@ -29,7 +29,6 @@ import AdminBenefits from './pages/admin/AdminBenefits';
 import AdminSupportTickets from './pages/admin/AdminSupportTickets';
 
 // Other Pages
-import Chat from './pages/Chat';
 import Reports from './pages/Reports';
 import Documents from './pages/Documents';
 import Settings from './pages/Settings';
@@ -42,7 +41,6 @@ import EmployeePayroll from './pages/employee/Payroll';
 import EmployeeTaskBoard from './pages/employee/EmployeeTaskBoard';
 import EmployeeDocuments from './pages/employee/Documents';
 import EmployeeProfile from './pages/employee/Profile';
-import EmployeeChat from './pages/employee/Chat';
 import EmployeeAttendanceSummary from './pages/employee/AttendanceSummary';
 import EmployeeBenefitsInsurance from './pages/employee/BenefitsInsurance';
 import EmployeeSupportHelp from './pages/employee/SupportHelp';
@@ -138,7 +136,6 @@ const AppRoutes = () => {
 
         {/* System */}
         <Route path="notifications" element={<NotificationCenter />} />
-        <Route path="chat" element={<Chat />} />
       </Route>
 
       {/* ============================================
@@ -154,7 +151,6 @@ const AppRoutes = () => {
         <Route path="payroll" element={<EmployeePayroll />} />
         <Route path="tasks" element={<EmployeeTaskBoard />} />
         <Route path="documents" element={<EmployeeDocuments />} />
-        <Route path="chat" element={<EmployeeChat />} />
         <Route path="benefits" element={<EmployeeBenefitsInsurance />} />
         <Route path="support" element={<EmployeeSupportHelp />} />
         <Route path="evaluation" element={<EmployeeMyEvaluation />} />
