@@ -458,24 +458,45 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                 timeout=8
             )
             print(f"[ATTENDANCE] Java API status={resp.status_code} body={resp.text[:200]}")
-            api_success = (resp.status_code == 200)
             
-            # Parse response nếu thành công
-            if api_success:
-                try:
-                    response_data = resp.json()
-                    attendance_id = response_data.get('attendanceId')
-                    check_in_time = response_data.get('checkInTime')
-                    check_out_time = response_data.get('checkOutTime')
-                    status = response_data.get('status')
+            # Parse response theo FaceRecognitionResponseDTO
+            try:
+                response_data = resp.json()
+                
+                # Parse tất cả fields theo spec
+                success = response_data.get('success', False)
+                message = response_data.get('message', '')
+                attendance_id = response_data.get('attendanceId')
+                check_in_time = response_data.get('checkInTime')
+                check_out_time = response_data.get('checkOutTime')
+                status = response_data.get('status')
+                confidence_response = response_data.get('confidence')  # Optional, for error response
+                
+                # Check success từ response (không chỉ dựa vào status_code)
+                api_success = (resp.status_code == 200) and success
+                
+                if api_success:
+                    print(f"[ATTENDANCE] ✅ Success: {message}")
                     if attendance_id:
-                        print(f"[ATTENDANCE] ✅ Attendance recorded: ID={attendance_id}, Status={status}")
-                        if check_in_time:
-                            print(f"[ATTENDANCE] Check-in time: {check_in_time}")
-                        if check_out_time:
-                            print(f"[ATTENDANCE] Check-out time: {check_out_time}")
-                except Exception as e:
-                    print(f"[ATTENDANCE] Could not parse response: {e}")
+                        print(f"[ATTENDANCE] Attendance ID: {attendance_id}")
+                    if check_in_time:
+                        print(f"[ATTENDANCE] Check-in time: {check_in_time}")
+                    if check_out_time:
+                        print(f"[ATTENDANCE] Check-out time: {check_out_time}")
+                    if status:
+                        print(f"[ATTENDANCE] Status: {status}")
+                else:
+                    # Handle error response
+                    print(f"[ATTENDANCE] ⚠️ Error: {message}")
+                    if confidence_response is not None:
+                        print(f"[ATTENDANCE] Confidence in response: {confidence_response}")
+                    if resp.status_code != 200:
+                        print(f"[ATTENDANCE] HTTP Status: {resp.status_code}")
+                        
+            except Exception as e:
+                print(f"[ATTENDANCE] Could not parse response: {e}")
+                print(f"[ATTENDANCE] Raw response: {resp.text[:300]}")
+                api_success = (resp.status_code == 200)
         except Exception as e:
             print(f"[ATTENDANCE] ERROR calling Java API: {e}")
 
