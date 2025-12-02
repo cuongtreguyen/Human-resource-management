@@ -173,12 +173,12 @@ def take_photos(user_id, user_name=None):
     else:
         print(f"[INFO] Starting auto photo capture for User ID: {user_id}")
 
-    max_photos = 50
+    max_photos = 2
     min_face_size = 100
     delay = 0.2
     count = 0
 
-    print(f"[INFO] Will automatically capture {max_photos} photos.")
+    print(f"[INFO] Will automatically capture {max_photos} photos (minimum required).")
     print("[INFO] Move your face slowly left/right for better angles.")
     print("[INFO] Starting in 3 seconds...")
     for i in range(3, 0, -1):
