@@ -189,51 +189,68 @@ def check_files(paths):
 
 def load_user_names(dataset_path):
     """
-    Loads the names of all users from their info files (local dataset).
-    Nếu không có local dataset, return empty dict (sẽ dùng "User {id}" làm fallback).
+    Load user names từ S3 metadata (thay vì local dataset).
+    Đọc các file metadata JSON trên S3 để lấy employeeName mới nhất của mỗi user.
     
     Args:
-        dataset_path (str): Path to the datasets folder
-
+        dataset_path (str): Không dùng nữa, giữ lại để tương thích
+    
     Returns:
-        dict: Dictionary mapping user IDs to their names
+        dict: {user_id: name} hoặc {} nếu không tìm thấy
     """
     user_names = {}
     
-    # Kiểm tra xem có local dataset không
-    if not os.path.exists(dataset_path):
-        print(f"[INFO] No local dataset found at {dataset_path}. Using default names (User {{id}}).")
-        return user_names
-    
     try:
-        for user_id_str in os.listdir(dataset_path):
-            user_path = os.path.join(dataset_path, user_id_str)
-            if os.path.isdir(user_path):
-                # Chỉ xử lý nếu user_id là số
-                try:
-                    user_id = int(user_id_str)
-                except ValueError:
-                    # Bỏ qua folder không phải số (như "Hoang Van E")
-                    continue
-                
-                info_path = os.path.join(user_path, "info.txt")
-                if os.path.exists(info_path):
-                    try:
-                        with open(info_path, 'r', encoding='utf-8') as info_file:
-                            for line in info_file:
-                                if line.startswith("Name:"):
-                                    user_names[user_id] = line.replace("Name:", "").strip()
-                                    break
-                    except Exception as e:
-                        print(f"[WARN] Error reading info.txt for user {user_id}: {e}")
-                        continue
-    except Exception as e:
-        print(f"[WARN] Error loading user names from local dataset: {e}")
+        # List tất cả file metadata trong S3
+        all_metadata_files = list_files_in_s3(S3_METADATA_PREFIX)
+        
+        if len(all_metadata_files) == 0:
+            print(f"[INFO] No metadata found in S3. Will use default names (User {{id}}).")
+            return user_names
+        
+        # Parse metadata files để lấy tên mới nhất của mỗi user
+        # Format: metadata/{user_id}/{date}/metadata_{timestamp}.json
+        user_metadata = {}  # {user_id: (timestamp, name)}
+        
+        for s3_key in all_metadata_files:
+            try:
+                # Parse path: metadata/{user_id}/{date}/metadata_{timestamp}.json
+                parts = s3_key.split('/')
+                if len(parts) >= 3 and parts[1].isdigit():
+                    user_id = int(parts[1])
+                    
+                    # Download và parse JSON
+                    metadata_bytes = download_bytes_from_s3(s3_key)
+                    if metadata_bytes:
+                        metadata_json = json.loads(metadata_bytes.decode('utf-8'))
+                        employee_name = metadata_json.get('employeeName')
+                        timestamp_str = metadata_json.get('timestamp', '')
+                        
+                        if employee_name:
+                            # Lưu tên mới nhất (so sánh timestamp)
+                            if user_id not in user_metadata:
+                                user_metadata[user_id] = (timestamp_str, employee_name)
+                            else:
+                                # So sánh timestamp để lấy tên mới nhất
+                                old_timestamp, _ = user_metadata[user_id]
+                                if timestamp_str > old_timestamp:
+                                    user_metadata[user_id] = (timestamp_str, employee_name)
+            except Exception as e:
+                # Bỏ qua file lỗi, tiếp tục với file khác
+                continue
+        
+        # Chuyển sang dict {user_id: name}
+        for user_id, (_, name) in user_metadata.items():
+            user_names[user_id] = name
+        
+        if len(user_names) > 0:
+            print(f"[INFO] Loaded {len(user_names)} user names from S3 metadata")
+        else:
+            print(f"[INFO] No user names found in S3 metadata. Will use 'User {{id}}' as default.")
     
-    if len(user_names) > 0:
-        print(f"[INFO] Loaded {len(user_names)} user names from local dataset")
-    else:
-        print(f"[INFO] No user names found in local dataset. Will use 'User {{id}}' as default.")
+    except Exception as e:
+        print(f"[WARN] Error loading user names from S3 metadata: {e}")
+        print(f"[INFO] Will use default names (User {{id}}).")
     
     return user_names
 
