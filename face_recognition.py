@@ -452,11 +452,34 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
             }
             print(f"[ATTENDANCE] Sending to Java API (confidence: {confidence_value}% >= {CONFIDENCE_THRESHOLD}%): {recognition_data}")
 
-            resp = requests.post(
-                f"{JAVA_API_URL}/api/attendance/face-recognition/recognition-success",
-                json=recognition_data,
-                timeout=8
-            )
+            # Gửi request với retry và timeout dài hơn
+            max_retries = 3
+            retry_delay = 1  # seconds
+            resp = None
+            
+            for attempt in range(max_retries):
+                try:
+                    resp = requests.post(
+                        f"{JAVA_API_URL}/api/attendance/face-recognition/recognition-success",
+                        json=recognition_data,
+                        timeout=15,  # Tăng timeout lên 15s
+                        headers={'Content-Type': 'application/json'}
+                    )
+                    break  # Thành công, thoát khỏi retry loop
+                except (requests.exceptions.ConnectionError, requests.exceptions.Timeout, 
+                        requests.exceptions.RequestException) as e:
+                    if attempt < max_retries - 1:
+                        print(f"[ATTENDANCE] ⚠️ Connection error (attempt {attempt + 1}/{max_retries}): {e}")
+                        print(f"[ATTENDANCE] Retrying in {retry_delay} seconds...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2  # Exponential backoff
+                    else:
+                        print(f"[ATTENDANCE] ❌ Failed after {max_retries} attempts: {e}")
+                        raise
+            
+            if resp is None:
+                print(f"[ATTENDANCE] ❌ No response received after {max_retries} attempts")
+                return recognized_users, False, recognized_name
             print(f"[ATTENDANCE] Java API status={resp.status_code} body={resp.text[:200]}")
             
             # Parse response theo FaceRecognitionResponseDTO
@@ -497,8 +520,18 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                 print(f"[ATTENDANCE] Could not parse response: {e}")
                 print(f"[ATTENDANCE] Raw response: {resp.text[:300]}")
                 api_success = (resp.status_code == 200)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+            print(f"[ATTENDANCE] ❌ Connection error: {e}")
+            print(f"[ATTENDANCE] 💡 Có thể Java API server đang bận hoặc bị restart")
+            print(f"[ATTENDANCE] 💡 Kiểm tra Java API có đang chạy không: {JAVA_API_URL}")
+            api_success = False
+        except requests.exceptions.RequestException as e:
+            print(f"[ATTENDANCE] ❌ Request error: {e}")
+            api_success = False
         except Exception as e:
-            print(f"[ATTENDANCE] ERROR calling Java API: {e}")
+            print(f"[ATTENDANCE] ❌ ERROR calling Java API: {e}")
+            print(f"[ATTENDANCE] 💡 Error type: {type(e).__name__}")
+            api_success = False
 
     return recognized_users, api_success, recognized_name
 
