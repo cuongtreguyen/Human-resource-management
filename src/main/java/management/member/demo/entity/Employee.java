@@ -134,5 +134,55 @@ public class Employee {
 	@Column(name = "base_salary", precision = 19, scale = 2)
 	private BigDecimal baseSalary;
 
-	private int remainingLeaveDays = 12;
+    /** Ngày cấp CMND/CCCD */
+    @Column(name = "id_issue_date")
+    private LocalDate idIssueDate;
+
+    /** Nơi cấp CMND/CCCD */
+    @Size(max = 100)
+    @Column(name = "id_issue_place")
+    private String idIssuePlace;
+
+    /** Số ngày nghỉ phép còn lại trong năm */
+    private int remainingLeaveDays = 12;
+
+    /** Địa chỉ văn phòng */
+    @Size(max = 255)
+    @Column(name = "office_address")
+    private String officeAddress;
+
+    /** Quản lý trực tiếp */
+    @Size(max = 255)
+    @Column(name = "direct_manager")
+    private String directManager;
+
+    /** Tình trạng hôn nhân */
+    @Column(name = "marital_status")
+    private boolean maritalStatus;
+
+    /** Loại nhân viên */
+    @Size(max = 100)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "employee_type")
+    private EmployeeStatus employeeType;
+
+    /** Tên người liên hệ khẩn cấp */
+    @Size(max = 100)
+    @Column(name = "emergency_contact_name")
+    private String emergencyContactName;
+
+    /** Số điện thoại người liên hệ khẩn cấp */
+    @Size(max = 30)
+    @Column(name = "emergency_contact_phone")
+    private String emergencyContactPhone;
+
+    /** Mối quan hệ ng liên hệ khẩn cấp */
+    @Size(max = 50)
+    @Column(name = "emergency_contact_relationship")
+    private String emergencyContactRelationship;
+
+    /** Số giờ OT còn lại trong tháng */
+    @Column(name = "remaining_ot_hours")
+    private Integer remainingOtHours = 40;
+
 }
