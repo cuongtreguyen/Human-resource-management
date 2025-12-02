@@ -39,6 +39,9 @@ public class AttendanceController {
     @Autowired
     private FlaskApiService flaskApiService;
     
+    @Value("${face.recognition.confidence.threshold:25.0}")
+    private double confidenceThreshold;
+    
     private static final Logger logger = LoggerFactory.getLogger(AttendanceController.class);
 
     // Get daily attendance from local database - Trả về format API spec
@@ -323,8 +326,8 @@ public class AttendanceController {
             
             if (!response.isSuccess()) {
                 // Check if it's a low confidence error
-                if (response.getConfidence() != null && response.getConfidence() < 70.0) {
-                    logger.warn("Low confidence score: {} (threshold: 70.0)", response.getConfidence());
+                if (response.getConfidence() != null && response.getConfidence() < confidenceThreshold) {
+                    logger.warn("Low confidence score: {} (threshold: {})", response.getConfidence(), confidenceThreshold);
                     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
                 }
                 // Other errors (e.g., employee not found)

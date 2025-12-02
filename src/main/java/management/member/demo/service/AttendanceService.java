@@ -299,8 +299,9 @@ public class AttendanceService {
     public FaceRecognitionResponseDTO handleFaceRecognitionSuccess(
             String employeeId, String employeeName, Double confidence, String timestamp) {
 
-        // Validate confidence score (threshold: 70.0)
-        if (confidence < 70.0) {
+        // Validate confidence score (configurable via application.properties)
+        // Note: Python should ideally validate confidence before sending, but we validate here as well
+        if (confidence < confidenceThreshold) {
             return attendanceMapperHelper.toLowConfidenceErrorResponse(confidence);
         }
 
