@@ -666,7 +666,7 @@ def recognize_faces():
                 face_key = f"{x}_{y}_{w}_{h}"
                 id, confidence, confidence_text = recognize_face_multi_models(recognizers_dict, face_roi, recent_predictions, face_key, prediction_window)
 
-                min_confidence_percent = 20  # 20% là thành công
+                min_confidence_percent = 30  # 30% là thành công
 
                 if id is not None and confidence is not None:
                     confidence_value = max(0, min(100, 100 - confidence))
