@@ -220,6 +220,12 @@
             <artifactId>mapstruct-processor</artifactId>
             <version>1.6.2</version>
         </dependency>
+
+        <!-- Apache HttpClient 5 for RestTemplate timeout configuration -->
+        <dependency>
+            <groupId>org.apache.httpcomponents.client5</groupId>
+            <artifactId>httpclient5</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

@@ -14,6 +14,7 @@ import management.member.demo.repository.AttendanceRepository;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.validator.AttendanceValidator;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
@@ -39,6 +40,9 @@ public class AttendanceService {
 
     @Autowired
     private AttendanceValidator attendanceValidator;
+
+    @Value("${face.recognition.confidence.threshold:25.0}")
+    private double confidenceThreshold;
 
     /**
      * Tạo attendance mới từ AttendanceRequest (theo Employee)
