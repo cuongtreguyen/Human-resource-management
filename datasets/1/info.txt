@@ -1,4 +1,0 @@
-Name: employee1
-ID: 1
-Date: 2025-11-27 23:43:15
-Photos: 30
