@@ -3,6 +3,7 @@ import os
 import sys
 import time
 from s3_helper import upload_face_image_to_s3, S3_TRAIN_IMAGES_PREFIX
+from train_model import train_model
 
 
 def setup_paths():
@@ -231,6 +232,27 @@ def take_photos(user_id, user_name=None):
         if count > 0:
             print(f"[INFO] All images saved to: {S3_TRAIN_IMAGES_PREFIX}{user_id}/")
             print(f"[INFO] View in AWS S3: {S3_TRAIN_IMAGES_PREFIX}{user_id}/")
+            
+            # Tự động train model sau khi chụp ảnh thành công
+            print("")
+            print("=" * 50)
+            print(f"[INFO] Starting automatic model training for user {user_id}...")
+            print("=" * 50)
+            try:
+                train_success = train_model(user_id=int(user_id))
+                if train_success:
+                    print("")
+                    print("=" * 50)
+                    print(f"[INFO] ✅ Model training completed successfully for user {user_id}!")
+                    print("=" * 50)
+                else:
+                    print("")
+                    print("=" * 50)
+                    print(f"[WARN] ⚠️ Model training failed for user {user_id}")
+                    print("=" * 50)
+            except Exception as e:
+                print(f"[ERROR] Exception during model training: {str(e)}")
+                print(f"[WARN] Model training failed, but photos were uploaded successfully")
         return count > 0
 
 

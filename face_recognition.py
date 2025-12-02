@@ -11,9 +11,11 @@ import io
 from s3_helper import (
     download_bytes_from_s3,
     upload_image_to_s3,
+    upload_bytes_to_s3,
     list_files_in_s3,
     S3_MODELS_PREFIX,
-    S3_RECOGNITION_IMAGES_PREFIX
+    S3_RECOGNITION_IMAGES_PREFIX,
+    S3_METADATA_PREFIX
 )
 from dotenv import load_dotenv
 
@@ -372,7 +374,7 @@ def recognize_face_multi_models(recognizers_dict, face_roi, recent_predictions, 
         return None, None, "Error"
 
 def update_attendance(id, name, attendance_data, attendance_file, recognized_users,
-                      confidence_text, recognition_type, confidence_value=None):
+                      confidence_text, recognition_type, confidence_value=None, s3_recognition_key=None):
     """
     Cập nhật vào JSON và bắn về Spring Boot khi nhận diện thành công lần đầu trong phiên.
     Trả về: (recognized_users, api_success, recognized_name)
@@ -508,6 +510,39 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                         print(f"[ATTENDANCE] Check-out time: {check_out_time}")
                     if status:
                         print(f"[ATTENDANCE] Status: {status}")
+                    
+                    # Upload metadata JSON lên S3
+                    try:
+                        metadata = {
+                            "employeeId": str(id),
+                            "employeeName": name,
+                            "timestamp": iso_timestamp,
+                            "confidence": float(confidence_value),
+                            "attendanceId": attendance_id,
+                            "checkInTime": check_in_time,
+                            "checkOutTime": check_out_time,
+                            "status": status,
+                            "recognitionImageS3Key": s3_recognition_key,
+                            "apiSuccess": True,
+                            "message": message
+                        }
+                        
+                        # Tạo S3 key cho metadata: metadata/{user_id}/{date}/metadata_{timestamp}.json
+                        date_folder = datetime.now().strftime("%Y-%m-%d")
+                        timestamp_meta = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        s3_metadata_key = f"{S3_METADATA_PREFIX}{id}/{date_folder}/metadata_{timestamp_meta}.json"
+                        
+                        # Convert metadata thành JSON bytes
+                        metadata_json = json.dumps(metadata, indent=2, ensure_ascii=False)
+                        metadata_bytes = metadata_json.encode('utf-8')
+                        
+                        # Upload metadata lên S3
+                        if upload_bytes_to_s3(metadata_bytes, s3_metadata_key, 'application/json'):
+                            print(f"[INFO] ✅ Metadata uploaded to S3: {s3_metadata_key}")
+                        else:
+                            print(f"[WARN] Failed to upload metadata to S3")
+                    except Exception as e:
+                        print(f"[WARN] Error uploading metadata: {e}")
                 else:
                     # Handle error response
                     print(f"[ATTENDANCE] ⚠️ Error: {message}")
@@ -515,6 +550,36 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                         print(f"[ATTENDANCE] Confidence in response: {confidence_response}")
                     if resp.status_code != 200:
                         print(f"[ATTENDANCE] HTTP Status: {resp.status_code}")
+                    
+                    # Vẫn upload metadata ngay cả khi API error (để log)
+                    try:
+                        metadata = {
+                            "employeeId": str(id),
+                            "employeeName": name,
+                            "timestamp": iso_timestamp,
+                            "confidence": float(confidence_value),
+                            "attendanceId": attendance_id,
+                            "checkInTime": check_in_time,
+                            "checkOutTime": check_out_time,
+                            "status": status,
+                            "recognitionImageS3Key": s3_recognition_key,
+                            "apiSuccess": False,
+                            "message": message,
+                            "httpStatus": resp.status_code,
+                            "confidenceInResponse": confidence_response
+                        }
+                        
+                        date_folder = datetime.now().strftime("%Y-%m-%d")
+                        timestamp_meta = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        s3_metadata_key = f"{S3_METADATA_PREFIX}{id}/{date_folder}/metadata_{timestamp_meta}.json"
+                        
+                        metadata_json = json.dumps(metadata, indent=2, ensure_ascii=False)
+                        metadata_bytes = metadata_json.encode('utf-8')
+                        
+                        if upload_bytes_to_s3(metadata_bytes, s3_metadata_key, 'application/json'):
+                            print(f"[INFO] ✅ Metadata (error) uploaded to S3: {s3_metadata_key}")
+                    except Exception as e:
+                        print(f"[WARN] Error uploading error metadata: {e}")
                         
             except Exception as e:
                 print(f"[ATTENDANCE] Could not parse response: {e}")
@@ -697,6 +762,7 @@ def recognize_faces():
                 # Chỉ ghi nhận khi đủ số frame liên tiếp
                 if stable_count >= stable_required and last_id is not None:
                     # Upload ảnh nhận diện lên S3 (chia folder theo user_id)
+                    s3_recognition_key = None
                     try:
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         date_folder = datetime.now().strftime("%Y-%m-%d")
@@ -712,9 +778,10 @@ def recognize_faces():
                     except Exception as e:
                         print(f"[WARN] Error uploading recognition image: {e}")
                     
+                    # Truyền s3_recognition_key vào update_attendance để lưu vào metadata
                     recognized_users, current_api_success, current_name = update_attendance(
                         last_id, name, attendance_data, attendance_file,
-                        recognized_users, confidence_text, recognition_type, current_confidence_value
+                        recognized_users, confidence_text, recognition_type, current_confidence_value, s3_recognition_key
                     )
                     api_success = True
                     recognized_name = current_name
