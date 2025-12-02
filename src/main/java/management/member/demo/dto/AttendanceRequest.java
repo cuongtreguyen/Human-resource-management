@@ -14,7 +14,7 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class AttendanceRequest {
     @NotNull(message = "Employee ID is required")
-    private Long employeeId;
+    private String employeeId;
 
     @NotNull(message = "Attendance date is required")
     @JsonFormat(pattern = "yyyy-MM-dd")

@@ -15,6 +15,17 @@ public class AttendanceValidator {
         }
     }
 
+    public void validateEmployeeIdString(String employeeId) {
+        if (employeeId == null || employeeId.trim().isEmpty()) {
+            throw ErrorCode.INVALID_EMPLOYEE_ID.toException("ID nhân viên không được để trống");
+        }
+        try {
+            Long.parseLong(employeeId.trim());
+        } catch (NumberFormatException e) {
+            throw ErrorCode.INVALID_EMPLOYEE_ID.toException("ID nhân viên không hợp lệ: " + employeeId);
+        }
+    }
+
     public void validateAttendanceIdString(String id) {
         if (id == null || id.trim().isEmpty()) {
             throw ErrorCode.INVALID_ATTENDANCE_ID.toException("ID chấm công không được để trống");
@@ -49,7 +60,7 @@ public class AttendanceValidator {
         if (request == null) {
             throw ErrorCode.INVALID_REQUEST.toException();
         }
-        validateEmployeeId(request.getEmployeeId());
+        validateEmployeeIdString(request.getEmployeeId());
         if (request.getAttendanceDate() == null) {
             throw ErrorCode.INVALID_REQUEST.toException("Ngày chấm công không được để trống");
         }

@@ -13,10 +13,10 @@ import java.time.LocalTime;
 @AllArgsConstructor
 public class AttendanceDTO {
     private Long id;
-    private Long employeeId; // ID của Employee
+    private String employeeId; // ID của Employee
     private String employeeName; // Tên Employee
     private String userId; // Giữ lại để tương thích
-    private String userName; // Giữ lại để tương thích
+    private Long confidence;
     private LocalDate attendanceDate;
     private LocalTime checkIn;
     private LocalTime checkOut;

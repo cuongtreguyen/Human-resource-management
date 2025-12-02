@@ -45,14 +45,22 @@ public class AttendanceService {
      */
     public AttendanceDTO createAttendance(AttendanceRequest request) {
         attendanceValidator.validateAttendanceRequest(request); // Validate request
+        // Parse String employeeId to Long
+        Long employeeId;
+        try {
+            employeeId = Long.parseLong(request.getEmployeeId().trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid employee ID format: " + request.getEmployeeId());
+        }
+        
         // Tìm Employee
-        Employee employee = employeeRepository.findById(request.getEmployeeId())
+        Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + request.getEmployeeId()));
 
         // Kiểm tra xem đã có attendance cho ngày này chưa
         Optional<Attendance> existing = attendanceRepository.findByEmployeeIdAndDate(
-                request.getEmployeeId(), request.getAttendanceDate());
+                employeeId, request.getAttendanceDate());
 
         if (existing.isPresent()) {
             // Nếu đã có, cập nhật check-in/check-out
@@ -87,8 +95,14 @@ public class AttendanceService {
         Attendance attendance = new Attendance();
 
         // Tìm Employee nếu có employeeId
-        if (attendanceDTO.getEmployeeId() != null) {
-            Employee employee = employeeRepository.findById(attendanceDTO.getEmployeeId())
+        if (attendanceDTO.getEmployeeId() != null && !attendanceDTO.getEmployeeId().trim().isEmpty()) {
+            Long employeeId;
+            try {
+                employeeId = Long.parseLong(attendanceDTO.getEmployeeId().trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("Invalid employee ID format: " + attendanceDTO.getEmployeeId());
+            }
+            Employee employee = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new ResourceNotFoundException(
                             ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + attendanceDTO.getEmployeeId()));
             attendance.setEmployee(employee);
@@ -97,7 +111,6 @@ public class AttendanceService {
         } else if (attendanceDTO.getUserId() != null) {
             // Fallback: dùng userId nếu không có employeeId
             attendance.setUserId(attendanceDTO.getUserId());
-            attendance.setFullName(attendanceDTO.getUserName());
         } else {
             throw new IllegalArgumentException("Cần có employeeId hoặc userId để tạo attendance");
         }

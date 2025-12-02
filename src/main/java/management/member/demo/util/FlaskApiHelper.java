@@ -160,10 +160,11 @@ public class FlaskApiHelper {
         
         AttendanceDTO dto = new AttendanceDTO();
         
-        // Validate và convert employee ID
+        // Validate và convert employee ID (String)
         if (flaskResponse.getId() != null && !flaskResponse.getId().isEmpty()) {
             try {
-                dto.setEmployeeId(flaskApiValidator.validateEmployeeId(flaskResponse.getId()));
+                Long employeeIdLong = flaskApiValidator.validateEmployeeId(flaskResponse.getId());
+                dto.setEmployeeId(employeeIdLong.toString());
             } catch (FlaskApiException e) {
                 logger.warn("Cannot parse employee ID from Flask API: {}", flaskResponse.getId());
                 // Không throw exception, chỉ log warning và giữ null
