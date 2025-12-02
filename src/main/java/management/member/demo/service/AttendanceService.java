@@ -13,6 +13,8 @@ import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.AttendanceRepository;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.validator.AttendanceValidator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,6 +27,8 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class AttendanceService {
+
+    private static final Logger logger = LoggerFactory.getLogger(AttendanceService.class);
 
     @Autowired
     private AttendanceRepository attendanceRepository;
@@ -41,7 +45,7 @@ public class AttendanceService {
     @Autowired
     private AttendanceValidator attendanceValidator;
 
-    @Value("${face.recognition.confidence.threshold:25.0}")
+    @Value("${face.recognition.confidence.threshold:20.0}")
     private double confidenceThreshold;
 
     /**
@@ -305,9 +309,12 @@ public class AttendanceService {
 
         // Validate confidence score (configurable via application.properties)
         // Note: Python should ideally validate confidence before sending, but we validate here as well
-        if (confidence < confidenceThreshold) {
+        if (confidence == null || confidence < confidenceThreshold) {
+            logger.warn("Low confidence score: {} (threshold: {})", confidence, confidenceThreshold);
             return attendanceMapperHelper.toLowConfidenceErrorResponse(confidence);
         }
+        
+        logger.debug("Confidence validation passed: {} >= {}", confidence, confidenceThreshold);
 
         try {
             Long empId = Long.parseLong(employeeId);

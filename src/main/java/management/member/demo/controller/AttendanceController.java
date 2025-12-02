@@ -40,7 +40,7 @@ public class AttendanceController {
     @Autowired
     private FlaskApiService flaskApiService;
     
-    @Value("${face.recognition.confidence.threshold:25.0}")
+    @Value("${face.recognition.confidence.threshold:20.0}")
     private double confidenceThreshold;
     
     private static final Logger logger = LoggerFactory.getLogger(AttendanceController.class);
