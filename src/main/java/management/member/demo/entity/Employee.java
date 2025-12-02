@@ -149,7 +149,7 @@ public class Employee {
 
     /** Tình trạng hôn nhân */
     @Column(name = "marital_status")
-    private boolean maritalStatus;
+    private Boolean maritalStatus;
 
     /** Loại nhân viên */
     @Size(max = 100)
