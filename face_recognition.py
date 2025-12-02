@@ -5,7 +5,7 @@ import sys
 import time
 import json
 import requests
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from collections import Counter
 import io
 from s3_helper import (
@@ -450,15 +450,21 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                 except (ValueError, AttributeError):
                     confidence_value = 0.0
             
-            # Java yêu cầu confidence >= 20.0 (threshold)
-            CONFIDENCE_THRESHOLD = 20.0
+            # Java yêu cầu confidence >= 50.0 (threshold)
+            CONFIDENCE_THRESHOLD = 50.0
             if confidence_value < CONFIDENCE_THRESHOLD:
                 print(f"[ATTENDANCE] ⚠️ Confidence too low: {confidence_value}% < {CONFIDENCE_THRESHOLD}% (Java threshold). Skipping API call.")
                 return recognized_users, False, recognized_name
             
-            # Convert timestamp sang ISO 8601 format
-            # Format: "YYYY-MM-DDTHH:MM:SSZ" (UTC)
-            iso_timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            # Convert timestamp sang ISO 8601 format với timezone Vietnam (UTC+7)
+            # Format: "YYYY-MM-DDTHH:MM:SS+07:00" (Vietnam time)
+            vietnam_tz = timezone(timedelta(hours=7))  # UTC+7 (Vietnam timezone)
+            vietnam_time = datetime.now(vietnam_tz)
+            # Format với timezone offset: +07:00
+            iso_timestamp = vietnam_time.strftime("%Y-%m-%dT%H:%M:%S%z")
+            # Chuyển từ "+0700" thành "+07:00" (thêm dấu : vào giữa)
+            if len(iso_timestamp) > 19:
+                iso_timestamp = iso_timestamp[:-2] + ':' + iso_timestamp[-2:]
             
             # Format theo Java FaceRecognitionRequestDTO
             recognition_data = {
@@ -748,7 +754,7 @@ def recognize_faces():
                 face_key = f"{x}_{y}_{w}_{h}"
                 id, confidence, confidence_text = recognize_face_multi_models(recognizers_dict, face_roi, recent_predictions, face_key, prediction_window)
 
-                min_confidence_percent = 30  # 30% là thành công
+                min_confidence_percent = 50  # 50% là thành công (bằng Java threshold)
 
                 if id is not None and confidence is not None:
                     confidence_value = max(0, min(100, 100 - confidence))

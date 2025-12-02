@@ -173,7 +173,7 @@ def take_photos(user_id, user_name=None):
     else:
         print(f"[INFO] Starting auto photo capture for User ID: {user_id}")
 
-    max_photos = 2
+    max_photos = 8
     min_face_size = 100
     delay = 0.2
     count = 0
