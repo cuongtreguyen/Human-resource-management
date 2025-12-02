@@ -14,12 +14,163 @@ import { CSS } from '@dnd-kit/utilities';
 import { useNavigate } from 'react-router-dom';
 import {
   Kanban, Building2, Users, TrendingUp, Briefcase, Search,
-  ArrowLeft, CheckSquare, Clock, AlertCircle, Filter, Calendar, MessageSquare, Paperclip
+  ArrowLeft, CheckSquare, Clock, AlertCircle, Filter, Calendar, MessageSquare, Paperclip,
+  X, Flag, User
 } from 'lucide-react';
 import { useTaskContext } from '../../context/TaskContext';
 
+// Task View Modal (read-only)
+const TaskViewModal = ({ isOpen, onClose, task }) => {
+  if (!isOpen || !task) return null;
+
+  const priorityColors = {
+    high: 'bg-red-100 text-red-700',
+    medium: 'bg-yellow-100 text-yellow-700',
+    low: 'bg-green-100 text-green-700',
+  };
+
+  const priorityLabels = {
+    high: 'Cao',
+    medium: 'Trung bình',
+    low: 'Thấp',
+  };
+
+  const columnLabels = {
+    todo: 'Cần làm',
+    inProgress: 'Đang làm',
+    review: 'Đang review',
+    done: 'Hoàn thành',
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Chưa đặt';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
+
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.columnId !== 'done';
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white">
+          <h3 className="text-xl font-bold text-gray-900">Chi tiết công việc</h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-5">
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-500 mb-1">Tiêu đề</label>
+            <p className="text-lg font-semibold text-gray-900">{task.title}</p>
+          </div>
+
+          {/* Description */}
+          {task.description && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-1">Mô tả</label>
+              <p className="text-gray-700 whitespace-pre-wrap">{task.description}</p>
+            </div>
+          )}
+
+          {/* Status & Priority */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-2">
+                <CheckSquare className="w-4 h-4 inline mr-1" />
+                Trạng thái
+              </label>
+              <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                {columnLabels[task.columnId] || task.columnId}
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-2">
+                <Flag className="w-4 h-4 inline mr-1" />
+                Độ ưu tiên
+              </label>
+              <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${priorityColors[task.priority]}`}>
+                {priorityLabels[task.priority]}
+              </span>
+            </div>
+          </div>
+
+          {/* Due Date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-500 mb-2">
+              <Calendar className="w-4 h-4 inline mr-1" />
+              Hạn hoàn thành
+            </label>
+            <p className={`text-gray-700 ${isOverdue ? 'text-red-600 font-medium' : ''}`}>
+              {formatDate(task.dueDate)}
+              {isOverdue && <span className="ml-2 text-sm">(Quá hạn)</span>}
+            </p>
+          </div>
+
+          {/* Assignees */}
+          {task.assignees && task.assignees.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-500 mb-2">
+                <User className="w-4 h-4 inline mr-1" />
+                Người thực hiện
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {task.assignees.map((assignee, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-3 py-1.5 bg-green-100 text-green-700 rounded-full text-sm"
+                  >
+                    <div className="w-5 h-5 rounded-full bg-green-600 flex items-center justify-center text-white text-xs font-medium mr-2">
+                      {assignee.charAt(0)}
+                    </div>
+                    {assignee}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Meta info */}
+          <div className="flex items-center gap-4 pt-4 border-t text-sm text-gray-500">
+            {task.comments > 0 && (
+              <div className="flex items-center gap-1">
+                <MessageSquare className="w-4 h-4" />
+                {task.comments} bình luận
+              </div>
+            )}
+            {task.attachments > 0 && (
+              <div className="flex items-center gap-1">
+                <Paperclip className="w-4 h-4" />
+                {task.attachments} tệp đính kèm
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end p-6 border-t">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Đóng
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Read-only Task Card (no edit/delete menu)
-const ReadOnlyTaskCard = ({ task }) => {
+const ReadOnlyTaskCard = ({ task, onViewTask }) => {
   const {
     attributes,
     listeners,
@@ -55,14 +206,22 @@ const ReadOnlyTaskCard = ({ task }) => {
 
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date();
 
+  const handleClick = (e) => {
+    // Only trigger view if not dragging
+    if (!isDragging && onViewTask) {
+      onViewTask(task);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       style={style}
       {...attributes}
       {...listeners}
-      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 cursor-grab active:cursor-grabbing hover:shadow-md transition-shadow ${
-        isDragging ? 'shadow-lg ring-2 ring-blue-400' : ''
+      onClick={handleClick}
+      className={`bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-3 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all ${
+        isDragging ? 'shadow-lg ring-2 ring-blue-400 cursor-grabbing' : ''
       }`}
     >
       {/* Header with priority - NO menu */}
@@ -162,7 +321,7 @@ const ReadOnlyTaskCard = ({ task }) => {
 };
 
 // Read-only Column (no add button)
-const ReadOnlyTaskColumn = ({ column, tasks }) => {
+const ReadOnlyTaskColumn = ({ column, tasks, onViewTask }) => {
   const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
   const columnColors = {
@@ -197,7 +356,7 @@ const ReadOnlyTaskColumn = ({ column, tasks }) => {
       >
         <SortableContext items={tasks.map(task => task.id)} strategy={verticalListSortingStrategy}>
           {tasks.map((task) => (
-            <ReadOnlyTaskCard key={task.id} task={task} />
+            <ReadOnlyTaskCard key={task.id} task={task} onViewTask={onViewTask} />
           ))}
         </SortableContext>
 
@@ -217,6 +376,7 @@ const EmployeeTaskBoard = () => {
   const [activeId, setActiveId] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewTask, setViewTask] = useState(null);
 
   // Columns
   const columns = [
@@ -605,6 +765,7 @@ const EmployeeTaskBoard = () => {
                   key={column.id}
                   column={column}
                   tasks={columnTasks}
+                  onViewTask={setViewTask}
                 />
               );
             })}
@@ -619,6 +780,13 @@ const EmployeeTaskBoard = () => {
           </DragOverlay>
         </DndContext>
       </div>
+
+      {/* Task View Modal */}
+      <TaskViewModal
+        isOpen={!!viewTask}
+        onClose={() => setViewTask(null)}
+        task={viewTask}
+      />
     </div>
   );
 };

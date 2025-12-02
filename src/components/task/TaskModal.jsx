@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, Tag, User, Flag, TrendingUp } from 'lucide-react';
+import { X, Calendar, User, Flag } from 'lucide-react';
 
 const TaskModal = ({ isOpen, onClose, onSave, task, columnId }) => {
   const [formData, setFormData] = useState({
@@ -7,23 +7,18 @@ const TaskModal = ({ isOpen, onClose, onSave, task, columnId }) => {
     description: '',
     priority: 'medium',
     dueDate: '',
-    tags: [],
     assignees: [],
     comments: 0,
     attachments: 0,
-    progress: 0,
   });
 
-  const [tagInput, setTagInput] = useState('');
   const [assigneeInput, setAssigneeInput] = useState('');
 
   useEffect(() => {
     if (task) {
       setFormData({
         ...task,
-        tags: task.tags || [],
         assignees: task.assignees || [],
-        progress: task.progress || 0,
       });
     } else {
       setFormData({
@@ -31,11 +26,9 @@ const TaskModal = ({ isOpen, onClose, onSave, task, columnId }) => {
         description: '',
         priority: 'medium',
         dueDate: '',
-        tags: [],
         assignees: [],
         comments: 0,
         attachments: 0,
-        progress: 0,
       });
     }
   }, [task, isOpen]);
@@ -52,23 +45,6 @@ const TaskModal = ({ isOpen, onClose, onSave, task, columnId }) => {
 
     onSave(taskData);
     onClose();
-  };
-
-  const addTag = () => {
-    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, tagInput.trim()]
-      }));
-      setTagInput('');
-    }
-  };
-
-  const removeTag = (tagToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }));
   };
 
   const addAssignee = () => {
@@ -167,96 +143,6 @@ const TaskModal = ({ isOpen, onClose, onSave, task, columnId }) => {
                 className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-          </div>
-
-          {/* Difficulty/Complexity */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <TrendingUp className="w-4 h-4 inline mr-1" />
-              Độ phức tạp: <span className={`font-bold ${
-                formData.progress >= 80 ? 'text-red-600' :
-                formData.progress >= 60 ? 'text-orange-600' :
-                formData.progress >= 40 ? 'text-yellow-600' :
-                formData.progress >= 20 ? 'text-blue-600' : 'text-green-600'
-              }`}>
-                {formData.progress >= 80 ? 'Rất khó' :
-                 formData.progress >= 60 ? 'Khó' :
-                 formData.progress >= 40 ? 'Trung bình' :
-                 formData.progress >= 20 ? 'Dễ' : 'Rất dễ'}
-              </span>
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              step="20"
-              value={formData.progress}
-              onChange={(e) => setFormData({ ...formData, progress: parseInt(e.target.value) })}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-            />
-            <div className="flex justify-between text-xs text-gray-500 mt-1">
-              <span>Rất dễ</span>
-              <span>Dễ</span>
-              <span>TB</span>
-              <span>Khó</span>
-              <span>Rất khó</span>
-            </div>
-            {/* Difficulty bar preview */}
-            <div className="mt-2 w-full bg-gray-200 rounded-full h-3">
-              <div
-                className={`h-3 rounded-full transition-all duration-300 ${
-                  formData.progress >= 80 ? 'bg-red-500' :
-                  formData.progress >= 60 ? 'bg-orange-500' :
-                  formData.progress >= 40 ? 'bg-yellow-500' :
-                  formData.progress >= 20 ? 'bg-blue-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${formData.progress}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              <Tag className="w-4 h-4 inline mr-1" />
-              Tags
-            </label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Nhập tag và nhấn Enter"
-              />
-              <button
-                type="button"
-                onClick={addTag}
-                className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
-              >
-                Thêm
-              </button>
-            </div>
-            {formData.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {formData.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm flex items-center gap-1"
-                  >
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="hover:text-blue-900"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Assignees */}

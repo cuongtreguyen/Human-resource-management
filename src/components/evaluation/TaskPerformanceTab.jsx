@@ -17,14 +17,14 @@ const TaskPerformanceTab = ({ formData, setFormData, selectedEmployee, onLoadTas
 
   // Mock data for demonstration - in real app, this would come from API
   const mockEmployeeTasks = [
-    { id: 't1', columnId: 'done', title: 'Thiết kế giao diện dashboard', priority: 'high', dueDate: '2024-12-10', completedDate: '2024-12-09' },
-    { id: 't2', columnId: 'done', title: 'Viết API documentation', priority: 'medium', dueDate: '2024-12-12', completedDate: '2024-12-11' },
-    { id: 't3', columnId: 'done', title: 'Fix responsive issues', priority: 'low', dueDate: '2024-12-08', completedDate: '2024-12-10' },
-    { id: 't4', columnId: 'inProgress', title: 'Implement authentication', priority: 'high', dueDate: '2024-12-20' },
-    { id: 't5', columnId: 'review', title: 'Database optimization', priority: 'medium', dueDate: '2024-12-18' },
-    { id: 't6', columnId: 'todo', title: 'Setup CI/CD pipeline', priority: 'high', dueDate: '2024-12-25' },
-    { id: 't7', columnId: 'done', title: 'Code review PR #123', priority: 'medium', dueDate: '2024-12-05', completedDate: '2024-12-05' },
-    { id: 't8', columnId: 'done', title: 'Unit tests for auth module', priority: 'high', dueDate: '2024-12-07', completedDate: '2024-12-06' },
+    { id: 't1', columnId: 'done', title: 'Thiết kế giao diện dashboard', dueDate: '2024-12-10', completedDate: '2024-12-09' },
+    { id: 't2', columnId: 'done', title: 'Viết API documentation', dueDate: '2024-12-12', completedDate: '2024-12-11' },
+    { id: 't3', columnId: 'done', title: 'Fix responsive issues', dueDate: '2024-12-08', completedDate: '2024-12-10' },
+    { id: 't4', columnId: 'inProgress', title: 'Implement authentication', dueDate: '2024-12-20' },
+    { id: 't5', columnId: 'review', title: 'Database optimization', dueDate: '2024-12-18' },
+    { id: 't6', columnId: 'todo', title: 'Setup CI/CD pipeline', dueDate: '2024-12-25' },
+    { id: 't7', columnId: 'done', title: 'Code review PR #123', dueDate: '2024-12-05', completedDate: '2024-12-05' },
+    { id: 't8', columnId: 'done', title: 'Unit tests for auth module', dueDate: '2024-12-07', completedDate: '2024-12-06' },
   ];
 
   useEffect(() => {

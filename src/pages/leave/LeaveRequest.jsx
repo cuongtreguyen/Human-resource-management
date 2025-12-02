@@ -519,9 +519,6 @@ const LeaveRequest = () => {
     startDate: '',
     endDate: '',
     reason: '',
-    emergencyContact: '',
-    tasks: [],
-    delegateTo: '',
     priority: 'medium'
   });
 
@@ -578,17 +575,7 @@ const LeaveRequest = () => {
     }
     
     if (!formData.reason.trim()) newErrors.reason = 'Vui lòng nhập lý do nghỉ phép';
-    if (!formData.emergencyContact.trim()) {
-      newErrors.emergencyContact = 'Vui lòng nhập số điện thoại liên hệ khẩn cấp';
-    } else if (!/^[0-9+\-\s()]+$/.test(formData.emergencyContact)) {
-      newErrors.emergencyContact = 'Số điện thoại không hợp lệ';
-    }
-    
-    // Manager và Accountant bắt buộc phải chọn người bàn giao
-    if (!shouldShowTaskSelection && !formData.delegateTo) {
-      newErrors.delegateTo = 'Vui lòng chọn người nhận bàn giao công việc';
-    }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -664,10 +651,7 @@ const LeaveRequest = () => {
         leaveTypeInfo,
         delegationStrategy,
         status: 'pending',
-        submittedAt: new Date().toISOString(),
-        tasksToDelegate: formData.tasks.map(taskId => 
-          currentTasks.find(task => task.id === taskId)
-        )
+        submittedAt: new Date().toISOString()
       };
 
       const response = await fakeApi.createLeaveRequest(leaveRequest);
@@ -706,7 +690,7 @@ const LeaveRequest = () => {
               </button>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">Tạo đơn nghỉ phép</h1>
-                <p className="text-sm text-gray-500">Điền thông tin và bàn giao công việc</p>
+                <p className="text-sm text-gray-500">Điền thông tin nghỉ phép</p>
               </div>
             </div>
             <div className="flex gap-3">
@@ -739,7 +723,7 @@ const LeaveRequest = () => {
                 </div>
                 
                 <div className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
                     <Select
                       label="Loại nghỉ phép"
                       options={[
@@ -753,18 +737,6 @@ const LeaveRequest = () => {
                       error={errors.leaveType}
                       required
                     />
-                    
-                    <div className="relative">
-                       <Input
-                        label="Liên hệ khẩn cấp"
-                        value={formData.emergencyContact || ''}
-                        onChange={(value) => handleInputChange('emergencyContact', value)}
-                        placeholder="0912 xxx xxx"
-                        error={errors.emergencyContact}
-                        required
-                        icon={<Phone className="w-4 h-4 text-gray-400" />}
-                      />
-                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -809,111 +781,6 @@ const LeaveRequest = () => {
                 </div>
               </div>
 
-              {/* Section 2: Bàn giao công việc */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
-                  <div className="p-2 bg-purple-100 rounded-lg text-purple-600">
-                    <Briefcase className="w-4 h-4" />
-                  </div>
-                  <h2 className="font-semibold text-gray-900">Bàn giao công việc</h2>
-                </div>
-
-                <div className="p-6 space-y-6">
-                  {shouldShowTaskSelection ? (
-                    <>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">
-                          Chọn công việc cần bàn giao ({formData.tasks.length})
-                        </label>
-                        
-                        <div className="grid grid-cols-1 gap-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                          {currentTasks.map((task) => {
-                            const isSelected = formData.tasks.includes(task.id);
-                            return (
-                              <div 
-                                key={task.id} 
-                                onClick={() => handleTaskSelect(task.id)}
-                                className={`relative flex items-start gap-4 p-4 border rounded-xl cursor-pointer transition-all duration-200 group ${
-                                  isSelected 
-                                    ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500' 
-                                    : 'border-gray-200 hover:border-blue-300 hover:shadow-sm'
-                                }`}
-                              >
-                                <div className={`mt-1 flex-shrink-0 w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                                  isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-300 group-hover:border-blue-400'
-                                }`}>
-                                  {isSelected && <CheckCircle className="w-3.5 h-3.5 text-white" />}
-                                </div>
-                                
-                                <div className="flex-1">
-                                  <div className="flex justify-between items-start">
-                                    <span className={`font-medium ${isSelected ? 'text-blue-900' : 'text-gray-900'}`}>
-                                      {task.title}
-                                    </span>
-                                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                      task.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                      task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                      'bg-green-100 text-green-700'
-                                    }`}>
-                                      {task.priority}
-                                    </span>
-                                  </div>
-                                  <p className="text-sm text-gray-500 mt-1 line-clamp-1">{task.description}</p>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-
-                      {formData.tasks.length > 0 && (
-                        <div className="animate-fade-in-up">
-                          <Select
-                            label="Người nhận bàn giao"
-                            options={employees.map(emp => ({ 
-                              value: emp.id, 
-                              label: `${emp.name} - ${emp.position}` 
-                            }))}
-                            value={formData.delegateTo}
-                            onChange={(value) => handleInputChange('delegateTo', value)}
-                            placeholder="Chọn đồng nghiệp..."
-                            className="bg-blue-50/50"
-                          />
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div>
-                      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-start gap-3">
-                          <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-blue-900 mb-1">
-                              Bàn giao công việc
-                            </p>
-                            <p className="text-xs text-blue-700">
-                              Vui lòng chọn người sẽ tiếp nhận và xử lý công việc trong thời gian bạn nghỉ phép.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <Select
-                        label="Người nhận bàn giao"
-                        options={employees.map(emp => ({ 
-                          value: emp.id, 
-                          label: `${emp.name} - ${emp.position}` 
-                        }))}
-                        value={formData.delegateTo}
-                        onChange={(value) => handleInputChange('delegateTo', value)}
-                        placeholder="Chọn đồng nghiệp..."
-                        error={errors.delegateTo}
-                        required
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
 
             {/* Right Column: Sticky Summary (4 cols) */}

@@ -320,50 +320,7 @@ const AdminBenefits = () => {
                 </div>
               ))}
             </div>
-          </Card>
-
-          {/* Yêu cầu chờ duyệt */}
-          <Card
-            title="Yêu cầu đang chờ duyệt"
-            subtitle={canApprove ? "Xử lý nhanh các yêu cầu của nhân viên" : "Chỉ Kế toán được duyệt"}
-            icon={<TrendingUp className="w-6 h-6 text-amber-600" />}
-          >
-            <div className="space-y-4">
-              {requests.length === 0 ? (
-                <div className="text-center py-16 text-gray-500">
-                  <CheckCircle className="w-20 h-20 mx-auto mb-4 text-green-400 opacity-50" />
-                  <p className="text-xl font-bold">Không có yêu cầu nào đang chờ duyệt</p>
-                  <p className="text-sm mt-2">Tất cả đã được xử lý!</p>
-                </div>
-              ) : (
-                requests.map(req => (
-                  <div key={req.id} className="p-6 border border-gray-200 rounded-xl flex items-center justify-between hover:bg-gray-50 transition-all">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-bold text-lg text-gray-900">{req.employee}</p>
-                        {getPriorityBadge(req.priority)}
-                      </div>
-                      <p className="text-sm text-gray-600">{req.department} - {req.typeLabel}</p>
-                      <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                        <Clock className="w-4 h-4" /> Gửi ngày: {req.submitted}
-                      </p>
-                    </div>
-                    <div className="flex gap-3">
-                      <Button variant="secondary" size="sm" onClick={() => openDetail(req)}>
-                        <Eye className="w-4 h-4 mr-1" />
-                        Chi tiết
-                      </Button>
-                      {canApprove && (
-                        <Button size="sm" icon={<CheckCircle className="w-5 h-5" />} onClick={() => approveRequest(req.id)}>
-                          Duyệt
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </Card>
+          </Card> 
         </div>
       </div>
 

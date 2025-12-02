@@ -197,13 +197,7 @@ const EmployeeBenefitsInsurance = () => {
             <ArrowLeft size={20} />
             <span className="font-medium">Quay lại</span>
           </a>
-          <button
-            onClick={() => setIsRequestModalOpen(true)}
-            className="flex items-center gap-3 px-6 py-4 bg-white text-gray-700 rounded-2xl font-bold hover:shadow-lg transform hover:scale-105 transition-all"
-          >
-            <Plus size={24} />
-            Yêu cầu thay đổi
-          </button>
+         
         </div>
         <h1 className="text-4xl font-bold mt-6">Phúc lợi & Bảo hiểm</h1>
         <p className={`${getSubtitleColor()} text-lg mt-2`}>Xem chi tiết chế độ phúc lợi và bảo hiểm của bạn</p>

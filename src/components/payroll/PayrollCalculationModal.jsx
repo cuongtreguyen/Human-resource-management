@@ -124,7 +124,8 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Working Days</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Day-off
+</label>
                 <input
                   type="text"
                   value={formData.workingDays}

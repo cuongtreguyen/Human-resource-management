@@ -68,6 +68,9 @@ const PayrollList = () => {
   const [selectedDepartment, setSelectedDepartment] = useState('all');
   const [, setLoading] = useState(true);
   const [, setError] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generateSuccess, setGenerateSuccess] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     loadEmployees();
@@ -163,7 +166,7 @@ const PayrollList = () => {
     };
   }, [selectedMonth, getEmployeeOTData]);
 
-  // Generate all payroll records
+  // Generate all payroll records (auto - no alert)
   const generateAllPayrolls = useCallback(() => {
     if (employees.length === 0) {
       return;
@@ -171,6 +174,29 @@ const PayrollList = () => {
     const payrolls = employees.map(employee => generatePayrollRecord(employee));
     setPayrollRecords(payrolls);
   }, [employees, generatePayrollRecord]);
+
+  // Generate payroll with feedback (button click)
+  const handleGeneratePayroll = async () => {
+    if (employees.length === 0) {
+      alert('Chưa có dữ liệu nhân viên để tạo bảng lương');
+      return;
+    }
+
+    setIsGenerating(true);
+    setGenerateSuccess(false);
+
+    // Simulate processing time for better UX
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const payrolls = employees.map(employee => generatePayrollRecord(employee));
+    setPayrollRecords(payrolls);
+
+    setIsGenerating(false);
+    setGenerateSuccess(true);
+
+    // Reset success state after 3 seconds
+    setTimeout(() => setGenerateSuccess(false), 3000);
+  };
 
   // Handle payroll calculation for specific employee
   const handleCalculatePayroll = (payrollData) => {
@@ -345,22 +371,38 @@ const PayrollList = () => {
                   className="w-full"
                 />
               </div>
-              <div className="flex items-end">
-                {/* Chỉ Accountant mới có quyền tạo bảng lương */}
-                {userRole === 'accountant' ? (
+              {/* Chỉ Accountant mới có quyền tạo bảng lương */}
+              {userRole === 'accountant' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Thao tác</label>
                   <Button
-                    onClick={() => generateAllPayrolls()}
+                    onClick={() => setShowConfirmModal(true)}
+                    disabled={isGenerating}
                     variant="primary"
-                    className="w-full"
+                    className={`w-full transition-all duration-300 ${
+                      generateSuccess
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : ''
+                    }`}
                   >
-                    🧮 Tạo bảng lương
+                    {isGenerating ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                        </svg>
+                        Đang tạo...
+                      </span>
+                    ) : generateSuccess ? (
+                      <span className="flex items-center justify-center gap-2">
+                        ✅ Tạo thành công!
+                      </span>
+                    ) : (
+                      '🧮 Tạo bảng lương'
+                    )}
                   </Button>
-                ) : (
-                  <div>
-
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </Card>
 
@@ -563,6 +605,88 @@ const PayrollList = () => {
           isOpen={showPoliciesModal}
           onClose={() => setShowPoliciesModal(false)}
         />
+
+        {/* Modal Xác nhận Tạo Bảng lương */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  🧮 Tạo bảng lương
+                </h3>
+                <p className="text-emerald-100 text-sm mt-1">Xác nhận thông tin trước khi tạo</p>
+              </div>
+
+              {/* Content */}
+              <div className="p-6 space-y-4">
+                {/* Thông tin tháng */}
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-gray-600 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Tháng lương
+                    </span>
+                    <span className="font-bold text-gray-900">{selectedMonth}</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-gray-600 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Số nhân viên
+                    </span>
+                    <span className="font-bold text-blue-600">{employees.length} người</span>
+                  </div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-gray-600 flex items-center gap-2">
+                      <Building className="w-4 h-4" />
+                      Phòng ban
+                    </span>
+                    <span className="font-bold text-gray-900">
+                      {selectedDepartment === 'all' ? 'Tất cả' : selectedDepartment}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <span className="text-gray-600 flex items-center gap-2">
+                      <DollarSign className="w-4 h-4" />
+                      Tổng lương ước tính
+                    </span>
+                    <span className="font-bold text-green-600">
+                      {(employees.reduce((sum, emp) => sum + (emp.salary || emp.basicSalary || 0), 0) / 1000000).toFixed(1)}M VND
+                    </span>
+                  </div>
+                </div>
+
+                {/* Lưu ý */}
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Lưu ý:</strong> Hệ thống sẽ tự động tính lương dựa trên lương cơ bản, OT đã duyệt và các khoản bảo hiểm theo quy định.
+                  </p>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="flex gap-3 px-6 py-4 bg-gray-50 border-t">
+                <Button
+                  onClick={() => setShowConfirmModal(false)}
+                  variant="secondary"
+                  className="flex-1"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowConfirmModal(false);
+                    handleGeneratePayroll();
+                  }}
+                  variant="primary"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+                >
+                  ✅ Xác nhận tạo
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

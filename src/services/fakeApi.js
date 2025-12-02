@@ -2760,11 +2760,9 @@ class FakeApiService {
         title: 'Thiết kế giao diện dashboard mới',
         description: 'Tạo wireframe và mockup cho dashboard phiên bản 2.0',
         columnId: 'done',
-        priority: 'high',
         dueDate: '2024-12-10',
         completedDate: '2024-12-09',
         department: 'IT',
-        tags: ['UI/UX', 'Design'],
         assignees: ['Nguyễn Văn An']
       },
       {
@@ -2772,11 +2770,9 @@ class FakeApiService {
         title: 'Viết API documentation',
         description: 'Cập nhật tài liệu API cho các endpoints mới',
         columnId: 'done',
-        priority: 'medium',
         dueDate: '2024-12-12',
         completedDate: '2024-12-11',
         department: 'IT',
-        tags: ['Documentation'],
         assignees: ['Nguyễn Văn An']
       },
       {
@@ -2784,11 +2780,9 @@ class FakeApiService {
         title: 'Implement authentication system',
         description: 'Xây dựng hệ thống đăng nhập với JWT và OAuth',
         columnId: 'inProgress',
-        priority: 'high',
         dueDate: '2024-12-20',
         completedDate: null,
         department: 'IT',
-        tags: ['Backend', 'Security'],
         assignees: ['Nguyễn Văn An', 'Trần Thị Bình']
       },
       {
@@ -2796,11 +2790,9 @@ class FakeApiService {
         title: 'Fix responsive issues',
         description: 'Sửa các vấn đề hiển thị trên mobile',
         columnId: 'done',
-        priority: 'low',
         dueDate: '2024-12-08',
         completedDate: '2024-12-10', // Late
         department: 'IT',
-        tags: ['Frontend', 'Bug'],
         assignees: ['Nguyễn Văn An']
       },
       {
@@ -2808,11 +2800,9 @@ class FakeApiService {
         title: 'Database optimization',
         description: 'Tối ưu hóa queries và indexes',
         columnId: 'review',
-        priority: 'medium',
         dueDate: '2024-12-18',
         completedDate: null,
         department: 'IT',
-        tags: ['Database', 'Performance'],
         assignees: ['Nguyễn Văn An']
       },
       {
@@ -2820,11 +2810,9 @@ class FakeApiService {
         title: 'Setup CI/CD pipeline',
         description: 'Cấu hình GitHub Actions cho auto deployment',
         columnId: 'done',
-        priority: 'high',
         dueDate: '2024-12-15',
         completedDate: '2024-12-14',
         department: 'IT',
-        tags: ['DevOps'],
         assignees: ['Nguyễn Văn An']
       },
       {
@@ -2832,11 +2820,9 @@ class FakeApiService {
         title: 'Code review các PR của team',
         description: 'Review code cho 5 pull requests',
         columnId: 'done',
-        priority: 'medium',
         dueDate: '2024-12-05',
         completedDate: '2024-12-05',
         department: 'IT',
-        tags: ['Code Review'],
         assignees: ['Nguyễn Văn An']
       },
       {
@@ -2844,11 +2830,9 @@ class FakeApiService {
         title: 'Viết unit tests cho auth module',
         description: 'Coverage tối thiểu 80%',
         columnId: 'done',
-        priority: 'high',
         dueDate: '2024-12-07',
         completedDate: '2024-12-06',
         department: 'IT',
-        tags: ['Testing'],
         assignees: ['Nguyễn Văn An']
       },
       {
@@ -2856,11 +2840,9 @@ class FakeApiService {
         title: 'Training junior developer',
         description: 'Hướng dẫn nhân viên mới về codebase',
         columnId: 'todo',
-        priority: 'low',
         dueDate: '2024-12-25',
         completedDate: null,
         department: 'IT',
-        tags: ['Training'],
         assignees: ['Nguyễn Văn An']
       },
       {
@@ -2868,11 +2850,9 @@ class FakeApiService {
         title: 'Refactor legacy code',
         description: 'Cải thiện chất lượng code module cũ',
         columnId: 'inProgress',
-        priority: 'medium',
         dueDate: '2024-12-22',
         completedDate: null,
         department: 'IT',
-        tags: ['Refactoring'],
         assignees: ['Nguyễn Văn An']
       }
     ];
