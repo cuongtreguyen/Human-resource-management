@@ -182,4 +182,9 @@ public class Employee {
     @Column(name = "role")
     private Role role;
 
+    @Column(name = "employee_code")
+    private String employeeCode;
+
+    @Column(name = "address")
+    private String address;
 }
