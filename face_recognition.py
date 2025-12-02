@@ -450,8 +450,8 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
                 except (ValueError, AttributeError):
                     confidence_value = 0.0
             
-            # Java yêu cầu confidence >= 50.0 (threshold)
-            CONFIDENCE_THRESHOLD = 50.0
+            # Confidence threshold: 40% là thành công
+            CONFIDENCE_THRESHOLD = 40.0
             if confidence_value < CONFIDENCE_THRESHOLD:
                 print(f"[ATTENDANCE] ⚠️ Confidence too low: {confidence_value}% < {CONFIDENCE_THRESHOLD}% (Java threshold). Skipping API call.")
                 return recognized_users, False, recognized_name
@@ -754,7 +754,7 @@ def recognize_faces():
                 face_key = f"{x}_{y}_{w}_{h}"
                 id, confidence, confidence_text = recognize_face_multi_models(recognizers_dict, face_roi, recent_predictions, face_key, prediction_window)
 
-                min_confidence_percent = 50  # 50% là thành công (bằng Java threshold)
+                min_confidence_percent = 40  # 40% là thành công
 
                 if id is not None and confidence is not None:
                     confidence_value = max(0, min(100, 100 - confidence))
