@@ -67,9 +67,67 @@ def preprocess_face(face_roi):
     """
     return cv2.GaussianBlur(face_roi, (5, 5), 0)
 
+def get_user_images_from_s3(user_id, detector):
+    """
+    Load ảnh của 1 user cụ thể từ S3 vào RAM
+    
+    Args:
+        user_id: ID của user cần train
+        detector: Face detector
+    
+    Returns:
+        tuple: Lists of face samples and their IDs (IDs sẽ là 0 cho tất cả vì chỉ có 1 user)
+    """
+    face_samples = []
+    ids = []
+    
+    # List files của user cụ thể
+    user_prefix = f"{S3_TRAIN_IMAGES_PREFIX}{user_id}/"
+    user_files = list_files_in_s3(user_prefix)
+    
+    if len(user_files) == 0:
+        print(f"[WARNING] No images found for user {user_id} in S3")
+        return face_samples, ids
+    
+    print(f"[INFO] Processing user {user_id}: {len(user_files)} images")
+    
+    # Download và process từng ảnh (vào RAM)
+    for s3_key in user_files:
+        try:
+            # Download từ S3 về bytes (vào RAM)
+            img = download_image_from_s3(s3_key)
+            if img is None:
+                continue
+            
+            # Convert to grayscale
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+            # Preprocess
+            gray = preprocess_image(gray)
+            
+            # Detect face
+            faces = detector.detectMultiScale(
+                gray,
+                scaleFactor=1.1,
+                minNeighbors=4,
+                minSize=(30, 30)
+            )
+            
+            for (x, y, w, h) in faces:
+                face_roi = gray[y:y+h, x:x+w]
+                face_roi = preprocess_face(face_roi)
+                
+                face_samples.append(face_roi)
+                ids.append(0)  # Tất cả faces của user này có ID=0 trong model riêng
+                
+        except Exception as e:
+            print(f"[ERROR] Error processing {s3_key}: {e}")
+    
+    return face_samples, ids
+
 def get_images_and_labels_from_s3(detector):
     """
-    Load ảnh từ S3 vào RAM, không lưu local
+    Load ảnh từ S3 vào RAM, không lưu local (DEPRECATED - dùng cho train chung)
     
     Args:
         detector: Face detector
@@ -216,15 +274,87 @@ def save_user_details(trainer_path, dataset_path, users, face_count):
             else:
                 f.write(f"User {user_id}: No additional information\n")
 
-def train_model():
+def train_user_model(user_id, paths, detector):
     """
-    Trains the face recognition model with improved parameters.
+    Train model riêng cho 1 user cụ thể
+    
+    Args:
+        user_id: ID của user cần train
+        paths: Dictionary chứa các paths
+        detector: Face detector
+    
+    Returns:
+        bool: True nếu train thành công
+    """
+    try:
+        recognizer = cv2.face.LBPHFaceRecognizer_create(
+            radius=2,
+            neighbors=8,
+            grid_x=8,
+            grid_y=8,
+            threshold=100
+        )
+
+        # Load ảnh của user này từ S3
+        faces, ids = get_user_images_from_s3(user_id, detector)
+
+        if len(faces) == 0 or len(ids) == 0:
+            print(f"[ERROR] No face samples found for user {user_id}")
+            return False
+
+        print(f"[INFO] Training user {user_id} with {len(faces)} face samples")
+
+        # Train trong RAM (tất cả faces có ID=0 vì chỉ có 1 user)
+        recognizer.train(faces, np.array(ids))
+
+        # Save model tạm thời vào local để convert thành bytes
+        # (OpenCV LBPHFaceRecognizer.write() cần file path, không thể save trực tiếp thành bytes)
+        model_filename = f'user_{user_id}.yml'
+        model_path = os.path.join(paths["trainer_path"], model_filename)
+        recognizer.write(model_path)
+
+        # Đọc model thành bytes
+        with open(model_path, 'rb') as f:
+            model_bytes = f.read()
+
+        # Upload model lên S3
+        s3_model_key = f"{S3_MODELS_PREFIX}user_{user_id}.yml"
+        print(f"[INFO] Uploading model to AWS S3: {s3_model_key}")
+        upload_success = upload_bytes_to_s3(model_bytes, s3_model_key, 'application/x-yaml')
+        
+        # Xóa file tạm local ngay sau khi upload
+        try:
+            if os.path.exists(model_path):
+                os.remove(model_path)
+                print(f"[INFO] Cleaned up temporary model file: {model_path}")
+        except Exception as e:
+            print(f"[WARN] Error cleaning up temporary model file: {e}")
+        
+        if upload_success:
+            print(f"[INFO] ✅ Model uploaded successfully: {s3_model_key}")
+            return True
+        else:
+            print(f"[ERROR] Failed to upload model to S3")
+            return False
+
+    except Exception as e:
+        print(f"[ERROR] Error training user {user_id}: {str(e)}")
+        return False
+
+def train_model(user_id=None):
+    """
+    Trains face recognition models - CHIA RIÊNG TỪNG USER
+    
+    Nếu user_id=None: Train tất cả users (mỗi user 1 model riêng)
+    Nếu user_id được chỉ định: Chỉ train user đó
 
     This function:
-    1. Finds all the face photos you've taken
-    2. Processes each photo to make it easier to recognize
-    3. Teaches the computer to recognize each person
-    4. Saves the trained model so it can be used later
+    1. Finds all users or specific user
+    2. Trains a separate model for each user
+    3. Saves each model as models/user_{id}.yml
+
+    Args:
+        user_id: Optional. Nếu None thì train tất cả, nếu có thì chỉ train user đó
 
     Returns:
         bool: True if training was successful, False otherwise
@@ -235,62 +365,80 @@ def train_model():
         return False
 
     try:
-        recognizer = cv2.face.LBPHFaceRecognizer_create(
-            radius=2,
-            neighbors=8,
-            grid_x=8,
-            grid_y=8,
-            threshold=100
-        )
-
         detector = cv2.CascadeClassifier(paths["cascade_path"])
 
-        print("Training face recognition model with improved parameters...")
-        print("Loading images from AWS S3...")
-        print("This may take a few minutes...")
-
-        # Load ảnh từ S3 vào RAM
-        faces, ids = get_images_and_labels_from_s3(detector)
-
-        if len(faces) == 0 or len(ids) == 0:
-            print("Error: No face samples found in S3. Please capture photos first.")
-            return False
-
-        print(f"Training with {len(faces)} face samples from S3")
-
-        # Train trong RAM
-        recognizer.train(faces, np.array(ids))
-
-        # Save model tạm thời vào local để convert thành bytes
-        model_path = os.path.join(paths["trainer_path"], 'trainer.yml')
-        recognizer.write(model_path)
-
-        # Đọc model thành bytes
-        with open(model_path, 'rb') as f:
-            model_bytes = f.read()
-
-        # Upload model lên S3
-        s3_model_key = f"{S3_MODELS_PREFIX}trainer.yml"
-        print(f"[INFO] Uploading model to AWS S3: {s3_model_key}")
-        if upload_bytes_to_s3(model_bytes, s3_model_key, 'application/x-yaml'):
-            print(f"[INFO] Model uploaded successfully to S3: {s3_model_key}")
+        if user_id is not None:
+            # Train 1 user cụ thể
+            print(f"[INFO] Training model for user {user_id}...")
+            return train_user_model(user_id, paths, detector)
         else:
-            print(f"[ERROR] Failed to upload model to S3")
+            # Train tất cả users
+            print("=" * 70)
+            print("Training face recognition models (CHIA RIÊNG TỪNG USER)...")
+            print("Loading images from AWS S3...")
+            print("=" * 70)
 
-        print(f"Model trained successfully with {len(faces)} face samples")
-        print(f"Model saved locally to {model_path}")
-        print(f"Model uploaded to S3: {s3_model_key}")
+            # List tất cả users có ảnh trong S3
+            all_files = list_files_in_s3(S3_TRAIN_IMAGES_PREFIX)
+            
+            if len(all_files) == 0:
+                print("[ERROR] No images found in S3. Please capture photos first.")
+                return False
 
-        users = set(ids)
-        # Note: save_user_details vẫn dùng dataset_path (có thể cần sửa sau)
-        # Nhưng vì không còn dataset local, có thể skip hoặc lưu metadata lên S3
-        print(f"[INFO] Trained {len(users)} users: {sorted(users)}")
+            # Group theo user_id
+            user_files = {}
+            for s3_key in all_files:
+                parts = s3_key.split('/')
+                if len(parts) >= 3 and parts[1].isdigit():
+                    uid = int(parts[1])
+                    if uid not in user_files:
+                        user_files[uid] = []
+                    user_files[uid].append(s3_key)
 
-        return True
+            if len(user_files) == 0:
+                print("[ERROR] No users found in S3")
+                return False
+
+            print(f"[INFO] Found {len(user_files)} users: {sorted(user_files.keys())}")
+            print("")
+
+            # Train từng user riêng
+            success_count = 0
+            failed_users = []
+
+            for uid in sorted(user_files.keys()):
+                print(f"[INFO] Training user {uid}...")
+                if train_user_model(uid, paths, detector):
+                    success_count += 1
+                    print(f"[INFO] ✅ User {uid} trained successfully\n")
+                else:
+                    failed_users.append(uid)
+                    print(f"[INFO] ❌ User {uid} training failed\n")
+
+            print("=" * 70)
+            print(f"[INFO] Training completed:")
+            print(f"  ✅ Success: {success_count}/{len(user_files)} users")
+            if failed_users:
+                print(f"  ❌ Failed: {failed_users}")
+            print("=" * 70)
+
+            return success_count > 0
 
     except Exception as e:
-        print(f"Error during training: {str(e)}")
+        print(f"[ERROR] Error during training: {str(e)}")
         return False
 
 if __name__ == "__main__":
-    train_model()
+    import sys
+    # Cho phép train 1 user cụ thể: python train_model.py <user_id>
+    # Hoặc train tất cả: python train_model.py
+    user_id = None
+    if len(sys.argv) > 1:
+        try:
+            user_id = int(sys.argv[1])
+            print(f"[INFO] Training only user {user_id}")
+        except ValueError:
+            print(f"[ERROR] Invalid user_id: {sys.argv[1]}. Must be a number.")
+            sys.exit(1)
+    
+    train_model(user_id)

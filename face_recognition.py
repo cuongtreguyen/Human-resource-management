@@ -11,6 +11,7 @@ import io
 from s3_helper import (
     download_bytes_from_s3,
     upload_image_to_s3,
+    list_files_in_s3,
     S3_MODELS_PREFIX,
     S3_RECOGNITION_IMAGES_PREFIX
 )
@@ -21,6 +22,53 @@ load_dotenv()
 
 # Java API URL
 JAVA_API_URL = os.getenv('JAVA_API_URL', 'http://localhost:8085')
+
+def set_camera_resolution(cam, preferred_resolutions=None):
+    """
+    Tự động set độ phân giải cao nhất mà camera hỗ trợ.
+    
+    Args:
+        cam: cv2.VideoCapture object
+        preferred_resolutions: List of (width, height) tuples, mặc định thử các độ phân giải phổ biến
+    
+    Returns:
+        tuple: (width, height) của độ phân giải đã set thành công
+    """
+    if preferred_resolutions is None:
+        # Thử các độ phân giải từ cao xuống thấp
+        preferred_resolutions = [
+            (1920, 1080),  # Full HD
+            (1280, 720),   # HD
+            (1024, 768),   # XGA
+            (800, 600),    # SVGA
+            (640, 480),    # VGA (fallback)
+        ]
+    
+    for width, height in preferred_resolutions:
+        try:
+            # Set độ phân giải
+            cam.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            cam.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            
+            # Đọc lại để kiểm tra
+            ret, frame = cam.read()
+            if ret and frame is not None:
+                actual_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+                actual_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                
+                # Kiểm tra xem camera có chấp nhận độ phân giải không
+                if actual_width >= width * 0.9 and actual_height >= height * 0.9:
+                    print(f"[CAMERA] Set resolution: {actual_width}x{actual_height}")
+                    return (actual_width, actual_height)
+        except Exception as e:
+            continue
+    
+    # Fallback: lấy độ phân giải mặc định
+    actual_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+    actual_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(f"[CAMERA] Using default resolution: {actual_width}x{actual_height}")
+    return (actual_width, actual_height)
+
 
 def setup_paths():
     """
@@ -42,59 +90,91 @@ def setup_paths():
 
     return paths
 
-# Global model cache (RAM cache)
-_model_cache = None
+# Global model cache (RAM cache) - dict: {user_id: model_bytes}
+_model_cache = {}
 
-def load_model_from_s3():
+def load_all_models_from_s3():
     """
-    Load model từ S3 vào RAM cache (chỉ load 1 lần)
+    Load TẤT CẢ models từ S3 vào RAM cache (mỗi user 1 model riêng)
     
     Returns:
-        bytes: Model bytes, or None if error
+        dict: {user_id: model_bytes} hoặc {} nếu không có model nào
     """
     global _model_cache
     
     # Nếu đã cache trong RAM, return luôn
-    if _model_cache is not None:
-        print("[INFO] Using cached model from RAM")
+    if len(_model_cache) > 0:
+        print(f"[INFO] Using cached models from RAM ({len(_model_cache)} models)")
         return _model_cache
     
-    # Load từ S3
-    s3_model_key = f"{S3_MODELS_PREFIX}trainer.yml"
-    print(f"[INFO] Loading model from AWS S3: {s3_model_key}")
+    # List tất cả models trong S3
+    print(f"[INFO] Loading all models from AWS S3: {S3_MODELS_PREFIX}")
+    all_files = list_files_in_s3(S3_MODELS_PREFIX)
     
-    model_bytes = download_bytes_from_s3(s3_model_key)
-    if model_bytes:
-        _model_cache = model_bytes
-        print(f"[INFO] Model loaded from S3 and cached in RAM ({len(model_bytes)} bytes)")
-        return model_bytes
-    else:
-        print(f"[ERROR] Failed to load model from S3")
-        return None
+    # Filter chỉ lấy file user_*.yml
+    model_files = [f for f in all_files if f.startswith(f"{S3_MODELS_PREFIX}user_") and f.endswith('.yml')]
+    
+    if len(model_files) == 0:
+        print(f"[ERROR] No user models found in S3. Please train models first.")
+        return {}
+    
+    print(f"[INFO] Found {len(model_files)} user models in S3")
+    
+    # Download từng model
+    for s3_key in model_files:
+        try:
+            # Extract user_id: models/user_1.yml
+            parts = s3_key.split('/')
+            filename = parts[-1]  # user_1.yml
+            if filename.startswith('user_') and filename.endswith('.yml'):
+                user_id_str = filename.replace('user_', '').replace('.yml', '')
+                try:
+                    user_id = int(user_id_str)
+                    model_bytes = download_bytes_from_s3(s3_key)
+                    if model_bytes:
+                        _model_cache[user_id] = model_bytes
+                        print(f"[INFO] ✅ Loaded model for user {user_id} ({len(model_bytes)} bytes)")
+                    else:
+                        print(f"[WARNING] Failed to load model: {s3_key}")
+                except ValueError:
+                    print(f"[WARNING] Invalid user_id in filename: {filename}")
+        except Exception as e:
+            print(f"[ERROR] Error loading {s3_key}: {e}")
+    
+    print(f"[INFO] Loaded {len(_model_cache)} models from S3 and cached in RAM")
+    return _model_cache
 
 def check_files(paths):
     """
     Checks if necessary files exist and downloads them if needed.
+    Load TẤT CẢ models (mỗi user 1 model riêng) và save tạm local.
+    Lưu ý: File tạm sẽ được xóa sau khi sử dụng (không lưu vĩnh viễn).
 
     Args:
         paths (dict): Dictionary of file paths
 
     Returns:
-        bool: True if all files are ready, False if there's a problem
+        dict: {user_id: model_path} hoặc {} nếu không có model nào
     """
-    # Check model từ S3
-    model_bytes = load_model_from_s3()
-    if model_bytes is None:
-        print("Error: Model file not found in S3. Please train the model first.")
-        return False
+    # Load tất cả models từ S3
+    models_cache = load_all_models_from_s3()
+    if len(models_cache) == 0:
+        print("Error: No user models found in S3. Please train models first.")
+        return {}
     
-    # Save model tạm thời vào local để recognizer.read() có thể đọc
+    # Save từng model tạm thời vào local để recognizer.read() có thể đọc
     # (OpenCV LBPHFaceRecognizer cần file path, không thể load từ bytes trực tiếp)
+    # Lưu ý: File tạm sẽ được xóa sau khi sử dụng (không lưu vĩnh viễn)
     os.makedirs(paths["trainer_path"], exist_ok=True)
-    temp_model_path = paths["model_path"]
-    with open(temp_model_path, 'wb') as f:
-        f.write(model_bytes)
-    print(f"[INFO] Model saved temporarily to: {temp_model_path}")
+    model_paths = {}
+    
+    for user_id, model_bytes in models_cache.items():
+        temp_model_path = os.path.join(paths["trainer_path"], f'user_{user_id}.yml')
+        with open(temp_model_path, 'wb') as f:
+            f.write(model_bytes)
+        model_paths[user_id] = temp_model_path
+    
+    print(f"[INFO] Saved {len(model_paths)} models temporarily to: {paths['trainer_path']} (will be cleaned up after use)")
 
     if not os.path.exists(paths["cascade_path"]):
         print(f"Error: Face detection file not found. Downloading it now...")
@@ -103,7 +183,7 @@ def check_files(paths):
         urllib.request.urlretrieve(url, paths["cascade_path"])
         print(f"Downloaded face detection file successfully!")
 
-    return True
+    return model_paths
 
 def load_user_names(dataset_path):
     """
@@ -221,12 +301,13 @@ def preprocess_face(gray_image, x, y, w, h):
     face_roi = cv2.GaussianBlur(face_roi, (5, 5), 0)
     return face_roi
 
-def recognize_face(recognizer, face_roi, recent_predictions, face_key, prediction_window):
+def recognize_face_multi_models(recognizers_dict, face_roi, recent_predictions, face_key, prediction_window):
     """
-    Recognizes a face using the trained model.
+    Recognizes a face using TẤT CẢ models (mỗi user 1 model riêng).
+    Thử tất cả models và chọn model có confidence tốt nhất.
 
     Args:
-        recognizer: Face recognizer model
+        recognizers_dict: Dictionary {user_id: recognizer}
         face_roi (numpy.ndarray): Face image
         recent_predictions (dict): Dictionary of recent predictions
         face_key (str): Key for this face
@@ -236,13 +317,33 @@ def recognize_face(recognizer, face_roi, recent_predictions, face_key, predictio
         tuple: User ID, confidence, and confidence text
     """
     try:
-        id, confidence = recognizer.predict(face_roi)
-
+        if len(recognizers_dict) == 0:
+            return None, None, "0%"
+        
+        # Thử tất cả models và tìm model có confidence tốt nhất (confidence thấp = tốt hơn)
+        best_user_id = None
+        best_confidence = float('inf')
+        
+        for user_id, recognizer in recognizers_dict.items():
+            try:
+                id, confidence = recognizer.predict(face_roi)
+                
+                # LBPH: confidence thấp = tốt hơn
+                if np.isfinite(confidence) and confidence < best_confidence:
+                    best_confidence = confidence
+                    best_user_id = user_id
+            except Exception as e:
+                continue
+        
+        if best_user_id is None:
+            return None, None, "0%"
+        
+        # Lưu vào recent_predictions
         if face_key not in recent_predictions:
             recent_predictions[face_key] = []
 
-        if np.isfinite(confidence):
-            recent_predictions[face_key].append((id, confidence))
+        if np.isfinite(best_confidence):
+            recent_predictions[face_key].append((best_user_id, best_confidence))
             if len(recent_predictions[face_key]) > prediction_window:
                 recent_predictions[face_key].pop(0)
 
@@ -271,10 +372,20 @@ def recognize_face(recognizer, face_roi, recent_predictions, face_key, predictio
         return None, None, "Error"
 
 def update_attendance(id, name, attendance_data, attendance_file, recognized_users,
-                      confidence_text, recognition_type):
+                      confidence_text, recognition_type, confidence_value=None):
     """
     Cập nhật vào JSON và bắn về Spring Boot khi nhận diện thành công lần đầu trong phiên.
     Trả về: (recognized_users, api_success, recognized_name)
+    
+    Args:
+        id: User ID
+        name: User name
+        attendance_data: Dictionary chứa dữ liệu attendance
+        attendance_file: Đường dẫn file JSON attendance
+        recognized_users: Set các user đã nhận diện trong phiên
+        confidence_text: Confidence dạng string (ví dụ: "85%")
+        recognition_type: Loại nhận diện ("check_in" hoặc "check_out")
+        confidence_value: Confidence dạng float (0-100), nếu None sẽ tính từ confidence_text
     """
     api_success = False
     recognized_name = None
@@ -310,16 +421,36 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
         recognized_users.add(id)
         recognized_name = name
 
-        # BẮN SANG SPRING BOOT
+        # BẮN SANG SPRING BOOT - Format theo Java DTO
         try:
+            # Tính confidence_value nếu chưa có
+            if confidence_value is None:
+                # Extract số từ confidence_text (ví dụ: "85%" -> 85.0)
+                try:
+                    confidence_value = float(confidence_text.replace('%', '').strip())
+                except (ValueError, AttributeError):
+                    confidence_value = 0.0
+            
+            # Java yêu cầu confidence >= 20.0 (threshold)
+            CONFIDENCE_THRESHOLD = 20.0
+            if confidence_value < CONFIDENCE_THRESHOLD:
+                print(f"[ATTENDANCE] ⚠️ Confidence too low: {confidence_value}% < {CONFIDENCE_THRESHOLD}% (Java threshold). Skipping API call.")
+                return recognized_users, False, recognized_name
+            
+            # Convert timestamp sang ISO 8601 format
+            # Format: "YYYY-MM-DDTHH:MM:SSZ" (UTC)
+            iso_timestamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+            
+            # Format theo Java FaceRecognitionRequestDTO
             recognition_data = {
-                "id": str(id),
-                "name": name,
-                "timestamp": f"{date_str} {timestamp}",
-                "confidence": confidence_text,
-                "type": recognition_type
+                "employeeId": str(id),           # Java cần "employeeId" không phải "id"
+                "employeeName": name,           # Java cần "employeeName" không phải "name"
+                "timestamp": iso_timestamp,      # ISO 8601 format
+                "confidence": float(confidence_value)  # Double (0-100), threshold >= 20.0
+                # Note: Java không cần field "type", Java tự động xác định check-in/check-out
+                # Note: Field "image" (Base64) là optional, có thể thêm sau nếu cần
             }
-            print(f"[ATTENDANCE] Sending to Java API: {recognition_data}")
+            print(f"[ATTENDANCE] Sending to Java API (confidence: {confidence_value}% >= {CONFIDENCE_THRESHOLD}%): {recognition_data}")
 
             resp = requests.post(
                 f"{JAVA_API_URL}/api/attendance/face-recognition/recognition-success",
@@ -328,6 +459,23 @@ def update_attendance(id, name, attendance_data, attendance_file, recognized_use
             )
             print(f"[ATTENDANCE] Java API status={resp.status_code} body={resp.text[:200]}")
             api_success = (resp.status_code == 200)
+            
+            # Parse response nếu thành công
+            if api_success:
+                try:
+                    response_data = resp.json()
+                    attendance_id = response_data.get('attendanceId')
+                    check_in_time = response_data.get('checkInTime')
+                    check_out_time = response_data.get('checkOutTime')
+                    status = response_data.get('status')
+                    if attendance_id:
+                        print(f"[ATTENDANCE] ✅ Attendance recorded: ID={attendance_id}, Status={status}")
+                        if check_in_time:
+                            print(f"[ATTENDANCE] Check-in time: {check_in_time}")
+                        if check_out_time:
+                            print(f"[ATTENDANCE] Check-out time: {check_out_time}")
+                except Exception as e:
+                    print(f"[ATTENDANCE] Could not parse response: {e}")
         except Exception as e:
             print(f"[ATTENDANCE] ERROR calling Java API: {e}")
 
@@ -353,16 +501,36 @@ def recognize_faces():
         recognition_type = sys.argv[1]
     paths = setup_paths()
 
-    # Load model từ S3 (vào RAM cache, sau đó save tạm local để recognizer đọc)
-    if not check_files(paths):
+    # Load TẤT CẢ models từ S3 (vào RAM cache, sau đó save tạm local để recognizer đọc)
+    model_paths = check_files(paths)
+    if len(model_paths) == 0:
         return False
     
-    recognizer = cv2.face.LBPHFaceRecognizer_create()
-    recognizer.read(paths["model_path"])  # Đọc từ file tạm (đã load từ S3)
+    # Load tất cả recognizers
+    recognizers_dict = {}
+    for user_id, model_path in model_paths.items():
+        try:
+            recognizer = cv2.face.LBPHFaceRecognizer_create()
+            recognizer.read(model_path)
+            recognizers_dict[user_id] = recognizer
+            print(f"[INFO] Loaded recognizer for user {user_id}")
+        except Exception as e:
+            print(f"[ERROR] Failed to load model for user {user_id}: {e}")
+    
+    if len(recognizers_dict) == 0:
+        print("[ERROR] No recognizers loaded")
+        return False
+    
+    print(f"[INFO] Loaded {len(recognizers_dict)} recognizers: {sorted(recognizers_dict.keys())}")
 
     cam = cv2.VideoCapture(0)
-    cam.set(3, 640)
-    cam.set(4, 480)
+    if not cam.isOpened():
+        print("Error: Cannot open camera")
+        return
+    
+    # Tự động set độ phân giải cao nhất
+    resolution = set_camera_resolution(cam)
+    print(f"[CAMERA] Resolution: {resolution[0]}x{resolution[1]}")
 
     min_confidence = 60
 
@@ -391,7 +559,7 @@ def recognize_faces():
 
     last_id = None
     stable_count = 0
-    stable_required = 10  # Số frame liên tiếp cần nhận diện đúng
+    stable_required = 1  # Số frame liên tiếp cần nhận diện đúng (giảm từ 10 xuống 3 để nhanh hơn)
 
     while True:
         ret, img = cam.read()
@@ -442,7 +610,7 @@ def recognize_faces():
                 face_roi = preprocess_face(gray, x, y, w, h)
 
                 face_key = f"{x}_{y}_{w}_{h}"
-                id, confidence, confidence_text = recognize_face(recognizer, face_roi, recent_predictions, face_key, prediction_window)
+                id, confidence, confidence_text = recognize_face_multi_models(recognizers_dict, face_roi, recent_predictions, face_key, prediction_window)
 
                 min_confidence_percent = 20  # 20% là thành công
 
@@ -457,25 +625,28 @@ def recognize_faces():
                             last_id = id
                             stable_count = 1
                         name = user_names.get(id, f"User {id}")
+                        current_confidence_value = confidence_value  # Lưu để truyền vào update_attendance
                     else:
                         last_id = None
                         stable_count = 0
                         name = "Unknown"
+                        current_confidence_value = None
                 else:
                     last_id = None
                     stable_count = 0
                     name = "Unknown"
+                    current_confidence_value = None
 
                 cv2.putText(display_img, name, (x+5, y-5), font, 1, (255, 255, 255), 2)
                 cv2.putText(display_img, confidence_text, (x+5, y+h-5), font, 1, (255, 255, 0), 1)
 
                 # Chỉ ghi nhận khi đủ số frame liên tiếp
                 if stable_count >= stable_required and last_id is not None:
-                    # Upload ảnh nhận diện lên S3
+                    # Upload ảnh nhận diện lên S3 (chia folder theo user_id)
                     try:
                         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                         date_folder = datetime.now().strftime("%Y-%m-%d")
-                        s3_recognition_key = f"{S3_RECOGNITION_IMAGES_PREFIX}{date_folder}/recognition_{last_id}_{timestamp}.jpg"
+                        s3_recognition_key = f"{S3_RECOGNITION_IMAGES_PREFIX}{last_id}/{date_folder}/recognition_{timestamp}.jpg"
                         
                         # Crop ảnh khuôn mặt
                         face_img = img[y:y+h, x:x+w]
@@ -489,7 +660,7 @@ def recognize_faces():
                     
                     recognized_users, current_api_success, current_name = update_attendance(
                         last_id, name, attendance_data, attendance_file,
-                        recognized_users, confidence_text, recognition_type
+                        recognized_users, confidence_text, recognition_type, current_confidence_value
                     )
                     api_success = True
                     recognized_name = current_name
@@ -505,6 +676,16 @@ def recognize_faces():
 
     cam.release()
     cv2.destroyAllWindows()
+    
+    # Xóa các file model tạm local sau khi sử dụng
+    try:
+        if 'model_paths' in locals():
+            for user_id, temp_model_path in model_paths.items():
+                if os.path.exists(temp_model_path):
+                    os.remove(temp_model_path)
+                    print(f"[INFO] Cleaned up temporary model file: {temp_model_path}")
+    except Exception as e:
+        print(f"[WARN] Error cleaning up temporary model files: {e}")
 
     return True
 

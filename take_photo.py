@@ -27,6 +27,53 @@ def setup_paths():
     return paths
 
 
+def set_camera_resolution(cam, preferred_resolutions=None):
+    """
+    Tự động set độ phân giải cao nhất mà camera hỗ trợ.
+    
+    Args:
+        cam: cv2.VideoCapture object
+        preferred_resolutions: List of (width, height) tuples, mặc định thử các độ phân giải phổ biến
+    
+    Returns:
+        tuple: (width, height) của độ phân giải đã set thành công
+    """
+    if preferred_resolutions is None:
+        # Thử các độ phân giải từ cao xuống thấp
+        preferred_resolutions = [
+            (1920, 1080),  # Full HD
+            (1280, 720),   # HD
+            (1024, 768),   # XGA
+            (800, 600),    # SVGA
+            (640, 480),    # VGA (fallback)
+        ]
+    
+    for width, height in preferred_resolutions:
+        try:
+            # Set độ phân giải
+            cam.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+            cam.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+            
+            # Đọc lại để kiểm tra
+            ret, frame = cam.read()
+            if ret and frame is not None:
+                actual_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+                actual_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                
+                # Kiểm tra xem camera có chấp nhận độ phân giải không
+                if actual_width >= width * 0.9 and actual_height >= height * 0.9:
+                    print(f"[CAMERA] Set resolution: {actual_width}x{actual_height}")
+                    return (actual_width, actual_height)
+        except Exception as e:
+            continue
+    
+    # Fallback: lấy độ phân giải mặc định
+    actual_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
+    actual_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print(f"[CAMERA] Using default resolution: {actual_width}x{actual_height}")
+    return (actual_width, actual_height)
+
+
 def initialize_camera():
     """
     Initialize webcam
@@ -52,8 +99,9 @@ def initialize_camera():
                     # Test đọc frame
                     ret, frame = cam.read()
                     if ret and frame is not None and frame.size > 0:
-                        cam.set(3, 640)  # Width
-                        cam.set(4, 480)  # Height
+                        # Tự động set độ phân giải cao nhất
+                        resolution = set_camera_resolution(cam)
+                        print(f"[CAMERA] Resolution: {resolution[0]}x{resolution[1]}")
                         return cam
                     cam.release()
             except Exception:
