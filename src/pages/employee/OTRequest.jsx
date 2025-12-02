@@ -5,6 +5,7 @@ import { useTaskContext } from '../../context/TaskContext';
 import TaskSelector from '../../components/overtime/TaskSelector';
 import QuotaIndicator from '../../components/overtime/QuotaIndicator';
 import OTStatusBadge from '../../components/overtime/OTStatusBadge';
+import { getUserInfo } from '../../utils/auth';
 
 // OT Rate: 100,000 VND per hour
 const OT_HOURLY_RATE = 100000;
@@ -21,11 +22,11 @@ const OTRequest = () => {
 
   const { getOTEligibleTasks } = useTaskContext();
 
-  // Get current user from localStorage (demo)
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const employeeName = currentUser.name || 'Nguyễn Văn An';
-  const employeeId = currentUser.id || 'emp001';
-  const department = currentUser.department || 'IT';
+  // Get current user from auth
+  const currentUser = getUserInfo() || {};
+  const employeeName = currentUser.name || 'Nhân viên';
+  const employeeId = currentUser.employeeId || '';
+  const department = currentUser.department || '';
 
   // Form state
   const [form, setForm] = useState({

@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   X, Users, Calendar, Clock, DollarSign, FileText, Settings, Home,
-  BarChart3, MessageCircle, CheckSquare, User, Bell, Activity, Heart, Award,
+  BarChart3, CheckSquare, User, Bell, Activity, Heart, Award,
   HelpCircle, LogOut, ChevronLeft, Menu, BookOpen, Shield
 } from 'lucide-react';
 import { getRole, clearRole } from '../../utils/auth';
@@ -102,7 +102,6 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
         { name: 'Đánh giá của tôi', href: '/employee/evaluation', icon: Award },
         { name: 'Tài liệu', href: '/employee/documents', icon: BookOpen },
         { name: 'Hồ sơ', href: '/employee/profile', icon: User },
-        { name: 'Chat', href: '/employee/chat', icon: MessageCircle },
         { name: 'Phúc lợi', href: '/employee/benefits', icon: Shield },
       ];
     }
@@ -110,7 +109,6 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
     // Admin, Manager, Accountant navigation
     const allItems = [
       { name: 'Trang chủ', href: '/dashboard', icon: Home, allowedRoles: ['admin', 'manager', 'accountant'] },
-      { name: 'Chat nội bộ', href: '/chat', icon: MessageCircle, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Hồ sơ cá nhân', href: '/profile', icon: User, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Nhận diện khuôn mặt', href: '/face-recognition', icon: User, allowedRoles: ['admin'] },
       { name: 'Chấm công khuôn mặt', href: '/face-recognition-manager', icon: User, allowedRoles: ['manager'] },
@@ -140,9 +138,7 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
   const navigationItems = getNavigationItems();
 
   const handleLogout = () => {
-    clearRole();
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    clearRole(); // clearRole now clears all auth data
     navigate('/login');
   };
 

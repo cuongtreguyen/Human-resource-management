@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { getRole, isAuthenticated } from '../../utils/auth';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  // Đọc trực tiếp từ localStorage mỗi lần render
   const userRole = getRole();
   const isAuth = isAuthenticated();
 

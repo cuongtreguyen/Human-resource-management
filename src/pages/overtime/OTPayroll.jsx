@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useOTContext } from '../../context/OTContext';
 import OTStatusBadge from '../../components/overtime/OTStatusBadge';
+import { getUserInfo } from '../../utils/auth';
 
 const OTPayroll = () => {
   const {
@@ -21,8 +22,8 @@ const OTPayroll = () => {
   // State
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
 
-  // Get current accountant
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  // Get current accountant from auth
+  const currentUser = getUserInfo() || {};
   const accountantName = currentUser.name || 'Kế toán';
 
   // Get OT for payroll (status: completed - after employee submitted report)

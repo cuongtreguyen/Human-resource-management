@@ -606,3 +606,16 @@ const LogsMonitor = () => {
 };
 
 export default LogsMonitor;
+
+
+// Trang "Nhật ký hệ thống" (Admin > Nhật ký hệ thống) hiện:
+// Lưu lại tất cả các hành động quan trọng
+// Hiển thị logs từ localStorage
+// Có thể filter, search và quản lý logs
+// Tự động refresh để cập nhật real-time
+// Các hành động được log bao gồm:
+// Tạo/Sửa/Xóa nhân viên
+// Duyệt/Từ chối đơn nghỉ phép
+// Tạo đơn nghỉ phép mới
+// Xem chi tiết nhân viên
+
