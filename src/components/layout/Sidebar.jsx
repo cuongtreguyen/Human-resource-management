@@ -114,7 +114,7 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
       { name: 'Chấm công khuôn mặt', href: '/face-recognition-manager', icon: User, allowedRoles: ['manager'] },
       { name: 'Chấm công khuôn mặt', href: '/face-recognition-accountant', icon: User, allowedRoles: ['accountant'] },
       { name: 'Danh sách nhân viên', href: '/employees', icon: Users, allowedRoles: ['admin', 'manager', 'accountant'] },
-      { name: 'Danh sách chấm công', href: '/attendance', icon: Clock, allowedRoles: ['admin', 'accountant'] },
+      { name: 'Danh sách chấm công', href: '/attendance', icon: Clock, allowedRoles: ['admin'] },
       { name: 'Danh sách lương', href: '/payroll', icon: DollarSign, allowedRoles: ['admin', 'accountant'] },
       { name: 'Chính sách tài chính', href: '/payroll/policies', icon: FileText, allowedRoles: ['accountant'] },
       { name: 'Duyệt đơn nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['admin', 'manager'] },
@@ -127,7 +127,7 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
       { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['manager', 'accountant'] },
       { name: 'Thông báo', href: '/notifications', icon: Bell, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Quản lý yêu cầu hỗ trợ', href: '/admin/support-tickets', icon: HelpCircle, allowedRoles: ['admin', 'manager'] },
-      { name: 'Phúc lợi & Bảo hiểm', href: '/admin/benefits', icon: Heart, allowedRoles: ['accountant'] },
+      { name: 'Phúc lợi & Bảo hiểm', href: '/benefits', icon: Heart, allowedRoles: ['accountant'] },
       { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity, allowedRoles: ['admin'] },
       { name: 'Cài đặt', href: '/settings', icon: Settings, allowedRoles: ['admin'] },
     ];

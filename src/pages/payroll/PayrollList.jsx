@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -31,6 +32,7 @@ import {
 const PayrollList = () => {
   const userRole = getRole(); // Lấy role của user hiện tại
   const { otRequests } = useOTContext(); // Get OT data
+  const navigate = useNavigate();
 
   // Màu sắc theo role
   const getBannerColor = () => {
@@ -188,17 +190,17 @@ const PayrollList = () => {
   const handleCalculatePayroll = async (payrollData) => {
     const updatedPayrolls = [...payrollRecords];
     const employeeIndex = updatedPayrolls.findIndex(p => p.employeeId === payrollData.employeeId);
-    
+
     // Kiểm tra xem payroll này có phải đang được restore từ CANCELED không
     const isRestored = restoredFromCanceled.has(payrollData.employeeId);
-    
+
     // Nếu đang restore từ CANCELED, cần xác nhận trước khi đổi thành PAID
     if (isRestored) {
       const confirmed = window.confirm(
         `Bạn có chắc chắn muốn lưu và xác nhận thanh toán bảng lương đã hủy cho nhân viên ${employees.find(e => e.id === payrollData.employeeId)?.name}?\n\n` +
         `Sau khi xác nhận, trạng thái sẽ chuyển thành "Đã thanh toán" và không thể chỉnh sửa.`
       );
-      
+
       if (!confirmed) {
         return; // Không làm gì nếu user không xác nhận
       }
@@ -224,7 +226,7 @@ const PayrollList = () => {
     }
 
     setPayrollRecords(updatedPayrolls);
-    
+
     // Xóa flag restored sau khi đã save thành công
     if (isRestored) {
       setRestoredFromCanceled(prev => {
@@ -238,17 +240,16 @@ const PayrollList = () => {
     alert(`Đã tính và lưu bảng lương thành công cho nhân viên ${employees.find(e => e.id === payrollData.employeeId)?.name}`);
   };
 
-  // Open payroll calculation modal
+  // Navigate to payroll calculation page
   const openPayrollModal = (employee) => {
-    setSelectedEmployee(employee);
-    setShowPayrollModal(true);
+    navigate(`/payroll/calculate/${employee.id}`);
   };
 
   // Rollback payroll record (đổi status thành Canceled, giữ data để chỉnh sửa)
   const handleRollbackPayroll = (payrollId) => {
     if (window.confirm('Bạn có chắc chắn muốn hủy bảng lương này? Dữ liệu sẽ được giữ lại để chỉnh sửa.')) {
-      setPayrollRecords(payrollRecords.map(p => 
-        p.id === payrollId 
+      setPayrollRecords(payrollRecords.map(p =>
+        p.id === payrollId
           ? { ...p, status: 'Canceled', paidDate: null }
           : p
       ));
@@ -406,17 +407,16 @@ const PayrollList = () => {
                     onClick={() => setShowConfirmModal(true)}
                     disabled={isGenerating}
                     variant="primary"
-                    className={`w-full transition-all duration-300 ${
-                      generateSuccess
+                    className={`w-full transition-all duration-300 ${generateSuccess
                         ? 'bg-green-600 hover:bg-green-700'
                         : ''
-                    }`}
+                      }`}
                   >
                     {isGenerating ? (
                       <span className="flex items-center justify-center gap-2">
                         <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                         </svg>
                         Đang tạo...
                       </span>
@@ -562,19 +562,18 @@ const PayrollList = () => {
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              payroll.status === 'Paid'
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${payroll.status === 'Paid'
                                 ? 'bg-green-100 text-green-800'
                                 : payroll.status === 'PENDING'
-                                ? 'bg-yellow-100 text-yellow-800'
-                                : payroll.status === 'Canceled'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-gray-100 text-gray-800'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : payroll.status === 'Canceled'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-gray-100 text-gray-800'
                               }`}>
-                              {payroll.status === 'PENDING' ? 'Chờ xử lý' : 
-                               payroll.status === 'Paid' ? 'Đã thanh toán' :
-                               payroll.status === 'Canceled' ? 'Đã hủy' :
-                               payroll.status}
+                              {payroll.status === 'PENDING' ? 'Chờ xử lý' :
+                                payroll.status === 'Paid' ? 'Đã thanh toán' :
+                                  payroll.status === 'Canceled' ? 'Đã hủy' :
+                                    payroll.status}
                             </span>
                           </td>
                           <td className="py-3 px-4">
@@ -638,8 +637,8 @@ const PayrollList = () => {
                                         // Đánh dấu payroll này đang được restore từ CANCELED
                                         setRestoredFromCanceled(prev => new Set(prev).add(payroll.employeeId));
                                         // Mở modal chỉnh sửa và đổi status về PENDING để có thể save lại
-                                        setPayrollRecords(payrollRecords.map(p => 
-                                          p.id === payroll.id 
+                                        setPayrollRecords(payrollRecords.map(p =>
+                                          p.id === payroll.id
                                             ? { ...p, status: 'PENDING' }
                                             : p
                                         ));

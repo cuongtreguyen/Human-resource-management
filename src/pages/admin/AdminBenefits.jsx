@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import {
@@ -31,6 +32,8 @@ import { getRole } from '../../utils/auth';
 const AdminBenefits = () => {
   const userRole = getRole();
   const canApprove = userRole === 'accountant'; // Chỉ accountant được duyệt
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Màu sắc theo role
   const getBannerColor = () => {
@@ -167,6 +170,88 @@ const AdminBenefits = () => {
     loadData();
   }, []);
 
+  // Sync URL params with modal state
+  useEffect(() => {
+    const editType = searchParams.get('edit');
+    const editId = searchParams.get('id');
+
+    if (editType === 'insurance' && editId && insurancePolicies.length > 0) {
+      const insurance = insurancePolicies.find(p => p.id === editId || p.id === Number(editId));
+      if (insurance) {
+        setEditingInsurance(insurance);
+        setEditInsuranceFormData({
+          name: insurance.name || '',
+          provider: insurance.provider || '',
+          type: insurance.type || 'mandatory',
+          employerRate: insurance.employerRate || '',
+          employeeRate: insurance.employeeRate || '',
+          effective: insurance.effective || '',
+          expiry: insurance.expiry || '',
+          status: insurance.status || 'active'
+        });
+        setIsEditInsuranceModalOpen(true);
+      }
+    } else if (editType === 'welfare' && editId && welfarePrograms.length > 0) {
+      const welfare = welfarePrograms.find(p => p.id === editId || p.id === Number(editId));
+      if (welfare) {
+        setEditingWelfare(welfare);
+        setEditFormData({
+          name: welfare.name || '',
+          monthlyValue: welfare.monthlyValue || 0,
+          owner: welfare.owner || '',
+          budget: welfare.budget || 0,
+          status: welfare.status || 'active',
+          description: welfare.description || '',
+          nextReview: welfare.nextReview || ''
+        });
+        setIsEditModalOpen(true);
+      }
+    } else if (editType === 'welfareHistory' && editId && welfareHistory.length > 0) {
+      const history = welfareHistory.find(h => h.id === editId || h.id === Number(editId));
+      if (history) {
+        setEditingWelfareHistory(history);
+        setEditWelfareHistoryFormData({
+          employeeId: history.employeeId || '',
+          employeeName: history.employeeName || '',
+          department: history.department || '',
+          allowance: history.allowance || '',
+          welfareName: history.welfareName || '',
+          grantDate: history.grantDate || '',
+          status: history.status || 'active'
+        });
+        setIsEditWelfareHistoryModalOpen(true);
+      }
+    } else if (editType === 'insuranceHistory' && editId && insuranceHistory.length > 0) {
+      const history = insuranceHistory.find(h => h.id === editId || h.id === Number(editId));
+      if (history) {
+        setEditingInsuranceHistory(history);
+        setEditInsuranceHistoryFormData({
+          employeeId: history.employeeId || '',
+          employeeName: history.employeeName || '',
+          department: history.department || '',
+          insuranceName: history.insuranceName || '',
+          employerRate: history.employerRate || '',
+          employeeRate: history.employeeRate || '',
+          grantDate: history.grantDate || '',
+          status: history.status || 'active'
+        });
+        setIsEditInsuranceHistoryModalOpen(true);
+      }
+    }
+
+    // Handle add/grant actions from URL
+    const actionType = searchParams.get('action');
+    if (actionType === 'addWelfare') {
+      setIsAddWelfareModalOpen(true);
+    } else if (actionType === 'addInsurance') {
+      setIsAddInsuranceModalOpen(true);
+    } else if (actionType === 'grantWelfare') {
+      setIsGrantWelfareModalOpen(true);
+    } else if (actionType === 'grantInsurance') {
+      setIsGrantInsuranceModalOpen(true);
+    }
+  }, [searchParams, insurancePolicies, welfarePrograms, welfareHistory, insuranceHistory]);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -254,20 +339,8 @@ const AdminBenefits = () => {
   };
 
   const handleEditWelfare = (id) => {
-    const welfare = welfarePrograms.find(p => p.id === id);
-    if (welfare) {
-      setEditingWelfare(welfare);
-      setEditFormData({
-        name: welfare.name || '',
-        monthlyValue: welfare.monthlyValue || 0,
-        owner: welfare.owner || '',
-        budget: welfare.budget || 0,
-        status: welfare.status || 'active',
-        description: welfare.description || '',
-        nextReview: welfare.nextReview || ''
-      });
-      setIsEditModalOpen(true);
-    }
+    // Navigate with search params to update URL
+    setSearchParams({ edit: 'welfare', id: String(id) });
   };
 
   const handleSaveEdit = async () => {
@@ -282,17 +355,18 @@ const AdminBenefits = () => {
     try {
       // TODO: Gọi API cập nhật phúc lợi
       // const result = await fakeApi.updateWelfareProgram(editingWelfare.id, editFormData);
-      
+
       // Cập nhật state
-      setWelfarePrograms(prev => prev.map(p => 
-        p.id === editingWelfare.id 
+      setWelfarePrograms(prev => prev.map(p =>
+        p.id === editingWelfare.id
           ? { ...p, ...editFormData }
           : p
       ));
-      
+
       toast.success(`Đã cập nhật phúc lợi "${editFormData.name}"`);
       setIsEditModalOpen(false);
       setEditingWelfare(null);
+      setSearchParams({});
     } catch (error) {
       toast.error('Không thể cập nhật phúc lợi');
     }
@@ -310,6 +384,7 @@ const AdminBenefits = () => {
       description: '',
       nextReview: ''
     });
+    setSearchParams({});
   };
 
   const handleDeleteWelfare = (id) => {
@@ -324,20 +399,8 @@ const AdminBenefits = () => {
   };
 
   const handleEditWelfareHistory = (id) => {
-    const history = welfareHistory.find(h => h.id === id);
-    if (history) {
-      setEditingWelfareHistory(history);
-      setEditWelfareHistoryFormData({
-        employeeId: history.employeeId || '',
-        employeeName: history.employeeName || '',
-        department: history.department || '',
-        allowance: history.allowance || '',
-        welfareName: history.welfareName || '',
-        grantDate: history.grantDate || '',
-        status: history.status || 'active'
-      });
-      setIsEditWelfareHistoryModalOpen(true);
-    }
+    // Navigate with search params to update URL
+    setSearchParams({ edit: 'welfareHistory', id: String(id) });
   };
 
   const handleSaveEditWelfareHistory = async () => {
@@ -364,17 +427,18 @@ const AdminBenefits = () => {
     try {
       // TODO: Gọi API cập nhật lịch sử phúc lợi
       // const result = await fakeApi.updateWelfareHistory(editingWelfareHistory.id, editWelfareHistoryFormData);
-      
+
       // Cập nhật state
-      setWelfareHistory(prev => prev.map(h => 
-        h.id === editingWelfareHistory.id 
+      setWelfareHistory(prev => prev.map(h =>
+        h.id === editingWelfareHistory.id
           ? { ...h, ...editWelfareHistoryFormData }
           : h
       ));
-      
+
       toast.success('Đã cập nhật phúc lợi nhân viên thành công');
       setIsEditWelfareHistoryModalOpen(false);
       setEditingWelfareHistory(null);
+      setSearchParams({});
     } catch (error) {
       toast.error('Không thể cập nhật phúc lợi nhân viên');
     }
@@ -392,6 +456,7 @@ const AdminBenefits = () => {
       grantDate: '',
       status: 'active'
     });
+    setSearchParams({});
   };
 
   const handleDeleteWelfareHistory = (id) => {
@@ -407,21 +472,8 @@ const AdminBenefits = () => {
   };
 
   const handleEditInsuranceHistory = (id) => {
-    const history = insuranceHistory.find(h => h.id === id);
-    if (history) {
-      setEditingInsuranceHistory(history);
-      setEditInsuranceHistoryFormData({
-        employeeId: history.employeeId || '',
-        employeeName: history.employeeName || '',
-        department: history.department || '',
-        insuranceName: history.insuranceName || '',
-        employerRate: history.employerRate || '',
-        employeeRate: history.employeeRate || '',
-        grantDate: history.grantDate || '',
-        status: history.status || 'active'
-      });
-      setIsEditInsuranceHistoryModalOpen(true);
-    }
+    // Navigate with search params to update URL
+    setSearchParams({ edit: 'insuranceHistory', id: String(id) });
   };
 
   const handleSaveEditInsuranceHistory = async () => {
@@ -448,17 +500,18 @@ const AdminBenefits = () => {
     try {
       // TODO: Gọi API cập nhật bảo hiểm nhân viên
       // const result = await fakeApi.updateInsuranceHistory(editingInsuranceHistory.id, editInsuranceHistoryFormData);
-      
+
       // Cập nhật state
-      setInsuranceHistory(prev => prev.map(h => 
-        h.id === editingInsuranceHistory.id 
+      setInsuranceHistory(prev => prev.map(h =>
+        h.id === editingInsuranceHistory.id
           ? { ...h, ...editInsuranceHistoryFormData }
           : h
       ));
-      
+
       toast.success('Đã cập nhật bảo hiểm nhân viên thành công');
       setIsEditInsuranceHistoryModalOpen(false);
       setEditingInsuranceHistory(null);
+      setSearchParams({});
     } catch (error) {
       toast.error('Không thể cập nhật bảo hiểm nhân viên');
     }
@@ -477,6 +530,7 @@ const AdminBenefits = () => {
       grantDate: '',
       status: 'active'
     });
+    setSearchParams({});
   };
 
   const handleDeleteInsuranceHistory = (id) => {
@@ -509,7 +563,7 @@ const AdminBenefits = () => {
     try {
       // TODO: Gọi API thêm phúc lợi
       // const result = await fakeApi.createWelfareProgram(addWelfareFormData);
-      
+
       // Tạo ID tạm thời
       const newId = `welfare-${Date.now()}`;
       const newWelfare = {
@@ -517,10 +571,10 @@ const AdminBenefits = () => {
         ...addWelfareFormData,
         participants: 0
       };
-      
+
       // Thêm vào state
       setWelfarePrograms(prev => [...prev, newWelfare]);
-      
+
       toast.success(`Đã thêm phúc lợi "${addWelfareFormData.name}"`);
       setIsAddWelfareModalOpen(false);
       setAddWelfareFormData({
@@ -532,6 +586,7 @@ const AdminBenefits = () => {
         description: '',
         nextReview: ''
       });
+      setSearchParams({});
     } catch (error) {
       toast.error('Không thể thêm phúc lợi');
     }
@@ -548,6 +603,7 @@ const AdminBenefits = () => {
       description: '',
       nextReview: ''
     });
+    setSearchParams({});
   };
 
   const handleSaveAddInsurance = async () => {
@@ -564,17 +620,17 @@ const AdminBenefits = () => {
     try {
       // TODO: Gọi API thêm bảo hiểm
       // const result = await fakeApi.createInsurancePolicy(addInsuranceFormData);
-      
+
       // Tạo ID tạm thời
       const newId = `insurance-${Date.now()}`;
       const newInsurance = {
         id: newId,
         ...addInsuranceFormData
       };
-      
+
       // Thêm vào state
       setInsurancePolicies(prev => [...prev, newInsurance]);
-      
+
       toast.success(`Đã thêm chính sách bảo hiểm "${addInsuranceFormData.name}"`);
       setIsAddInsuranceModalOpen(false);
       setAddInsuranceFormData({
@@ -587,6 +643,7 @@ const AdminBenefits = () => {
         expiry: '',
         status: 'active'
       });
+      setSearchParams({});
     } catch (error) {
       toast.error('Không thể thêm chính sách bảo hiểm');
     }
@@ -604,6 +661,7 @@ const AdminBenefits = () => {
       expiry: '',
       status: 'active'
     });
+    setSearchParams({});
   };
 
   const handleAddGrantWelfareRow = () => {
@@ -627,7 +685,7 @@ const AdminBenefits = () => {
   const handleUpdateGrantWelfare = async (index, field, value) => {
     const updated = [...grantedWelfares];
     updated[index][field] = value;
-    
+
     // Nếu nhập mã nhân viên, tự động lấy thông tin nhân viên
     if (field === 'employeeId' && value && value.trim()) {
       try {
@@ -640,8 +698,8 @@ const AdminBenefits = () => {
           // Nếu không tìm thấy, thử tìm trong danh sách employees
           const allEmpRes = await fakeApi.getEmployees();
           if (allEmpRes.success) {
-            const foundEmp = allEmpRes.data.find(e => 
-              e.id === value.trim() || 
+            const foundEmp = allEmpRes.data.find(e =>
+              e.id === value.trim() ||
               e.employeeCode === value.trim() ||
               e.employeeId === value.trim()
             );
@@ -655,7 +713,7 @@ const AdminBenefits = () => {
         console.error('Error loading employee:', error);
       }
     }
-    
+
     // Nếu chọn tên phúc lợi, tự động điền mức trợ cấp từ phúc lợi đó
     if (field === 'welfareName' && value) {
       const selectedWelfare = welfarePrograms.find(w => w.name === value);
@@ -663,7 +721,7 @@ const AdminBenefits = () => {
         updated[index]['allowance'] = selectedWelfare.monthlyValue;
       }
     }
-    
+
     setGrantedWelfares(updated);
   };
 
@@ -692,7 +750,7 @@ const AdminBenefits = () => {
     try {
       // TODO: Gọi API cấp phúc lợi
       // const result = await fakeApi.grantWelfares(grantedWelfares);
-      
+
       // Thêm vào lịch sử phúc lợi
       const newHistoryItems = grantedWelfares.map((w, index) => ({
         id: Date.now() + index,
@@ -705,7 +763,7 @@ const AdminBenefits = () => {
         status: w.status
       }));
       setWelfareHistory(prev => [...newHistoryItems, ...prev]);
-      
+
       toast.success(`Đã cấp ${grantedWelfares.length} phúc lợi thành công`);
       setIsGrantWelfareModalOpen(false);
       setGrantedWelfares([{
@@ -717,6 +775,7 @@ const AdminBenefits = () => {
         grantDate: '',
         status: 'active'
       }]);
+      setSearchParams({});
     } catch (error) {
       toast.error('Không thể cấp phúc lợi');
     }
@@ -733,6 +792,7 @@ const AdminBenefits = () => {
       grantDate: '',
       status: 'active'
     }]);
+    setSearchParams({});
   };
 
   const handleAddGrantInsuranceRow = () => {
@@ -757,7 +817,7 @@ const AdminBenefits = () => {
   const handleUpdateGrantInsurance = async (index, field, value) => {
     const updated = [...grantedInsurances];
     updated[index][field] = value;
-    
+
     // Nếu nhập mã nhân viên, tự động lấy thông tin nhân viên
     if (field === 'employeeId' && value && value.trim()) {
       try {
@@ -770,8 +830,8 @@ const AdminBenefits = () => {
           // Nếu không tìm thấy, thử tìm trong danh sách employees
           const allEmpRes = await fakeApi.getEmployees();
           if (allEmpRes.success) {
-            const foundEmp = allEmpRes.data.find(e => 
-              e.id === value.trim() || 
+            const foundEmp = allEmpRes.data.find(e =>
+              e.id === value.trim() ||
               e.employeeCode === value.trim() ||
               e.employeeId === value.trim()
             );
@@ -785,7 +845,7 @@ const AdminBenefits = () => {
         console.error('Error loading employee:', error);
       }
     }
-    
+
     // Nếu chọn tên bảo hiểm, tự động điền công ty đóng và nhân viên đóng
     if (field === 'insuranceName' && value) {
       const selectedInsurance = insurancePolicies.find(ins => ins.name === value);
@@ -798,7 +858,7 @@ const AdminBenefits = () => {
         }
       }
     }
-    
+
     setGrantedInsurances(updated);
   };
 
@@ -827,7 +887,7 @@ const AdminBenefits = () => {
     try {
       // TODO: Gọi API cấp bảo hiểm
       // const result = await fakeApi.grantInsurances(grantedInsurances);
-      
+
       // Thêm vào lịch sử bảo hiểm
       const newHistoryItems = grantedInsurances.map((ins, index) => ({
         id: Date.now() + index,
@@ -841,7 +901,7 @@ const AdminBenefits = () => {
         status: ins.status
       }));
       setInsuranceHistory(prev => [...newHistoryItems, ...prev]);
-      
+
       toast.success(`Đã cấp ${grantedInsurances.length} bảo hiểm thành công`);
       setIsGrantInsuranceModalOpen(false);
       setGrantedInsurances([{
@@ -854,7 +914,8 @@ const AdminBenefits = () => {
         grantDate: '',
         status: 'active'
       }]);
-      
+      setSearchParams({});
+
       // TODO: Gọi API lưu vào backend
       // await fakeApi.grantInsurances(grantedInsurances);
     } catch (error) {
@@ -874,24 +935,12 @@ const AdminBenefits = () => {
       grantDate: '',
       status: 'active'
     }]);
+    setSearchParams({});
   };
 
   const handleEditInsurance = (id) => {
-    const insurance = insurancePolicies.find(p => p.id === id);
-    if (insurance) {
-      setEditingInsurance(insurance);
-      setEditInsuranceFormData({
-        name: insurance.name || '',
-        provider: insurance.provider || '',
-        type: insurance.type || 'mandatory',
-        employerRate: insurance.employerRate || '',
-        employeeRate: insurance.employeeRate || '',
-        effective: insurance.effective || '',
-        expiry: insurance.expiry || '',
-        status: insurance.status || 'active'
-      });
-      setIsEditInsuranceModalOpen(true);
-    }
+    // Navigate with search params to update URL
+    setSearchParams({ edit: 'insurance', id: String(id) });
   };
 
   const handleSaveInsuranceEdit = async () => {
@@ -905,17 +954,30 @@ const AdminBenefits = () => {
 
     try {
       // Cập nhật state
-      setInsurancePolicies(prev => prev.map(p => 
-        p.id === editingInsurance.id 
+      setInsurancePolicies(prev => prev.map(p =>
+        p.id === editingInsurance.id
           ? { ...p, ...editInsuranceFormData }
           : p
       ));
-      
+
       toast.success(`Đã cập nhật chính sách bảo hiểm "${editInsuranceFormData.name}"`);
       setIsEditInsuranceModalOpen(false);
       setEditingInsurance(null);
+      // Clear URL params
+      setSearchParams({});
     } catch (error) {
       toast.error('Không thể cập nhật chính sách bảo hiểm');
+    }
+  };
+
+  const handleDeleteInsurancePolicy = (id) => {
+    const policy = insurancePolicies.find(p => p.id === id);
+    if (policy) {
+      if (window.confirm(`Bạn có chắc chắn muốn xóa chính sách bảo hiểm "${policy.name}"?\n\nLưu ý: Hành động này không thể hoàn tác.`)) {
+        // TODO: Gọi API xóa chính sách bảo hiểm
+        setInsurancePolicies(prev => prev.filter(p => p.id !== id));
+        toast.success('Đã xóa chính sách bảo hiểm');
+      }
     }
   };
 
@@ -932,6 +994,8 @@ const AdminBenefits = () => {
       expiry: '',
       status: 'active'
     });
+    // Clear URL params
+    setSearchParams({});
   };
 
   if (loading) {
@@ -976,12 +1040,12 @@ const AdminBenefits = () => {
               </p>
             </div>
             {canApprove && (
-              <div className="flex gap-3 items-center flex-nowrap">
+              <div className="flex gap-3 items-center flex-wrap lg:justify-end">
                 <Button variant="secondary" size="md" className="rounded-full whitespace-nowrap">Xuất báo cáo</Button>
-                <Button size="md" icon={<Plus className="w-5 h-5" />} className="rounded-full whitespace-nowrap" onClick={() => setIsAddWelfareModalOpen(true)}>Thêm phúc lợi mới</Button>
-                <Button size="md" icon={<Plus className="w-5 h-5" />} className="rounded-full bg-blue-600 hover:bg-blue-700 whitespace-nowrap" onClick={() => setIsAddInsuranceModalOpen(true)}>Thêm bảo hiểm</Button>
-                <Button size="md" icon={<Plus className="w-5 h-5" />} className="rounded-full bg-green-600 hover:bg-green-700 whitespace-nowrap" onClick={() => setIsGrantWelfareModalOpen(true)}>Cấp phúc lợi</Button>
-                <Button size="md" icon={<Plus className="w-5 h-5" />} className="rounded-full bg-indigo-600 hover:bg-indigo-700 whitespace-nowrap" onClick={() => setIsGrantInsuranceModalOpen(true)}>Cấp bảo hiểm</Button>
+                <Button size="md" icon={<Plus className="w-5 h-5" />} className="rounded-full whitespace-nowrap" onClick={() => setSearchParams({ action: 'addWelfare' })}>Thêm phúc lợi mới</Button>
+                <Button size="md" icon={<Plus className="w-5 h-5" />} className="rounded-full bg-blue-600 hover:bg-blue-700 whitespace-nowrap" onClick={() => setSearchParams({ action: 'addInsurance' })}>Thêm bảo hiểm</Button>
+                <Button size="md" icon={<Plus className="w-5 h-5" />} className="rounded-full bg-green-600 hover:bg-green-700 whitespace-nowrap" onClick={() => setSearchParams({ action: 'grantWelfare' })}>Cấp phúc lợi</Button>
+                <Button size="md" icon={<Plus className="w-5 h-5" />} className="rounded-full bg-indigo-600 hover:bg-indigo-700 whitespace-nowrap" onClick={() => setSearchParams({ action: 'grantInsurance' })}>Cấp bảo hiểm</Button>
               </div>
             )}
           </div>
@@ -1045,21 +1109,19 @@ const AdminBenefits = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => setWelfareTabActive('programs')}
-                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
-                  welfareTabActive === 'programs'
-                    ? 'text-purple-600 border-purple-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${welfareTabActive === 'programs'
+                  ? 'text-purple-600 border-purple-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+                  }`}
               >
                 Các khoản phúc lợi đơn vị
               </button>
               <button
                 onClick={() => setWelfareTabActive('history')}
-                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
-                  welfareTabActive === 'history'
-                    ? 'text-purple-600 border-purple-600'
-                    : 'text-gray-500 border-transparent hover:text-gray-700'
-                }`}
+                className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${welfareTabActive === 'history'
+                  ? 'text-purple-600 border-purple-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+                  }`}
               >
                 Phúc lợi nhân viên
               </button>
@@ -1092,18 +1154,17 @@ const AdminBenefits = () => {
                       <td className="py-4 text-gray-900 font-medium text-center">{p.participants}</td>
                       <td className="py-4 text-gray-900 text-center">{(p.budget / 1_000_000).toFixed(0)} triệu</td>
                       <td className="py-4 text-center">
-                        <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                          p.status === 'active' 
-                            ? 'bg-green-100 text-green-700' 
-                            : p.status === 'suspended'
+                        <span className={`px-3 py-1 text-xs rounded-full font-medium ${p.status === 'active'
+                          ? 'bg-green-100 text-green-700'
+                          : p.status === 'suspended'
                             ? 'bg-yellow-100 text-yellow-700'
                             : 'bg-red-100 text-red-700'
-                        }`}>
-                          {p.status === 'active' 
-                            ? 'Đang áp dụng' 
+                          }`}>
+                          {p.status === 'active'
+                            ? 'Đang áp dụng'
                             : p.status === 'suspended'
-                            ? 'Tạm ngưng'
-                            : 'Đã hủy'}
+                              ? 'Tạm ngưng'
+                              : 'Đã hủy'}
                         </span>
                       </td>
                       <td className="py-4">
@@ -1134,14 +1195,14 @@ const AdminBenefits = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
-                    <th className="pb-3">Mã nhân viên</th>
-                    <th className="pb-3">Tên nhân viên</th>
-                    <th className="pb-3">Phòng ban</th>
-                    <th className="pb-3 text-center">Mức trợ cấp</th>
-                    <th className="pb-3">Tên phúc lợi</th>
-                    <th className="pb-3 text-center">Ngày cấp</th>
-                    <th className="pb-3 text-center">Trạng thái</th>
-                    <th className="pb-3">Sửa/Xóa</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Mã nhân viên</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Tên nhân viên</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Phòng ban</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap">Mức trợ cấp</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Tên phúc lợi</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap">Ngày cấp</th>
+                    <th className="px-4 py-3 text-center whitespace-nowrap">Trạng thái</th>
+                    <th className="px-4 py-3 whitespace-nowrap">Sửa/Xóa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1161,7 +1222,7 @@ const AdminBenefits = () => {
                       const welfares = groupedByEmployee[empId];
                       const hasMultiple = welfares.length > 1;
                       const firstWelfare = welfares[0];
-                      
+
                       firstRows.push({
                         ...firstWelfare,
                         hasMultiple,
@@ -1220,18 +1281,17 @@ const AdminBenefits = () => {
                               {h.grantDate ? new Date(h.grantDate).toLocaleDateString('vi-VN') : '-'}
                             </td>
                             <td className="py-4 text-center">
-                              <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                                h.status === 'active' 
-                                  ? 'bg-green-100 text-green-700' 
-                                  : h.status === 'suspended'
+                              <span className={`px-3 py-1 text-xs rounded-full font-medium ${h.status === 'active'
+                                ? 'bg-green-100 text-green-700'
+                                : h.status === 'suspended'
                                   ? 'bg-yellow-100 text-yellow-700'
                                   : 'bg-red-100 text-red-700'
-                              }`}>
-                                {h.status === 'active' 
-                                  ? 'Đang áp dụng' 
+                                }`}>
+                                {h.status === 'active'
+                                  ? 'Đang áp dụng'
                                   : h.status === 'suspended'
-                                  ? 'Tạm ngưng'
-                                  : 'Đã hủy'}
+                                    ? 'Tạm ngưng'
+                                    : 'Đã hủy'}
                               </span>
                             </td>
                             <td className="py-4">
@@ -1269,18 +1329,17 @@ const AdminBenefits = () => {
                                 {otherWelfare.grantDate ? new Date(otherWelfare.grantDate).toLocaleDateString('vi-VN') : '-'}
                               </td>
                               <td className="py-4 text-center">
-                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                                  otherWelfare.status === 'active' 
-                                    ? 'bg-green-100 text-green-700' 
-                                    : otherWelfare.status === 'suspended'
+                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${otherWelfare.status === 'active'
+                                  ? 'bg-green-100 text-green-700'
+                                  : otherWelfare.status === 'suspended'
                                     ? 'bg-yellow-100 text-yellow-700'
                                     : 'bg-red-100 text-red-700'
-                                }`}>
-                                  {otherWelfare.status === 'active' 
-                                    ? 'Đang áp dụng' 
+                                  }`}>
+                                  {otherWelfare.status === 'active'
+                                    ? 'Đang áp dụng'
                                     : otherWelfare.status === 'suspended'
-                                    ? 'Tạm ngưng'
-                                    : 'Đã hủy'}
+                                      ? 'Tạm ngưng'
+                                      : 'Đã hủy'}
                                 </span>
                               </td>
                               <td className="py-4">
@@ -1323,21 +1382,19 @@ const AdminBenefits = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => setInsuranceTabActive('policies')}
-                  className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
-                    insuranceTabActive === 'policies'
-                      ? 'text-blue-600 border-blue-600'
-                      : 'text-gray-500 border-transparent hover:text-gray-700'
-                  }`}
+                  className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${insuranceTabActive === 'policies'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                    }`}
                 >
                   Chính sách bảo hiểm
                 </button>
                 <button
                   onClick={() => setInsuranceTabActive('history')}
-                  className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${
-                    insuranceTabActive === 'history'
-                      ? 'text-blue-600 border-blue-600'
-                      : 'text-gray-500 border-transparent hover:text-gray-700'
-                  }`}
+                  className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 ${insuranceTabActive === 'history'
+                    ? 'text-blue-600 border-blue-600'
+                    : 'text-gray-500 border-transparent hover:text-gray-700'
+                    }`}
                 >
                   Bảo hiểm nhân viên
                 </button>
@@ -1348,63 +1405,71 @@ const AdminBenefits = () => {
             {insuranceTabActive === 'policies' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {insurancePolicies.map(policy => (
-                <div key={policy.id} className="p-6 border-2 border-gray-300 rounded-xl hover:shadow-xl hover:border-green-600 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 h-full flex flex-col bg-white shadow-sm">
-                  <div className="flex items-center justify-between mb-4 flex-shrink-0">
-                    <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <Shield className="w-6 h-6 text-blue-600" />
+                  <div key={policy.id} className="p-6 border-2 border-gray-300 rounded-xl hover:shadow-xl hover:border-green-600 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 h-full flex flex-col bg-white shadow-sm">
+                    <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                          <Shield className="w-6 h-6 text-blue-600" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-lg text-gray-900 truncate">{policy.name}</h4>
+                          <p className="text-sm text-gray-500 truncate">{policy.provider}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h4 className="font-bold text-lg text-gray-900 truncate">{policy.name}</h4>
-                        <p className="text-sm text-gray-500 truncate">{policy.provider}</p>
+                      <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                        <button
+                          onClick={() => handleEditInsurance(policy.id)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Sửa chính sách bảo hiểm"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInsurancePolicy(policy.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Xóa chính sách bảo hiểm"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleEditInsurance(policy.id)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex-shrink-0 ml-2"
-                      title="Sửa chính sách bảo hiểm"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm flex-grow">
-                    <div><p className="text-gray-500">Công ty đóng</p><p className="font-bold text-green-600">{policy.employerRate}</p></div>
-                    <div><p className="text-gray-500">Nhân viên đóng</p><p className="font-bold text-orange-600">{policy.employeeRate}</p></div>
-                    <div><p className="text-gray-500">Hiệu lực</p><p className="font-medium">{policy.effective}</p></div>
-                    <div><p className="text-gray-500">Hết hạn</p><p className="font-medium">{policy.expiry}</p></div>
-                  </div>
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                      policy.status === 'active' 
-                        ? 'bg-green-100 text-green-700' 
+                    <div className="grid grid-cols-2 gap-4 text-sm flex-grow">
+                      <div><p className="text-gray-500">Công ty đóng</p><p className="font-bold text-green-600">{policy.employerRate}</p></div>
+                      <div><p className="text-gray-500">Nhân viên đóng</p><p className="font-bold text-orange-600">{policy.employeeRate}</p></div>
+                      <div><p className="text-gray-500">Hiệu lực</p><p className="font-medium">{policy.effective}</p></div>
+                      <div><p className="text-gray-500">Hết hạn</p><p className="font-medium">{policy.expiry}</p></div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                      <span className={`px-3 py-1 text-xs rounded-full font-medium ${policy.status === 'active'
+                        ? 'bg-green-100 text-green-700'
                         : policy.status === 'suspended'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {policy.status === 'active' 
-                        ? 'Đang áp dụng' 
-                        : policy.status === 'suspended'
-                        ? 'Tạm ngưng'
-                        : 'Đã hủy'}
-                    </span>
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-red-100 text-red-700'
+                        }`}>
+                        {policy.status === 'active'
+                          ? 'Đang áp dụng'
+                          : policy.status === 'suspended'
+                            ? 'Tạm ngưng'
+                            : 'Đã hủy'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
-                      <th className="pb-3">Mã nhân viên</th>
-                      <th className="pb-3">Tên nhân viên</th>
-                      <th className="pb-3">Phòng ban</th>
-                      <th className="pb-3">Tên bảo hiểm</th>
-                      <th className="pb-3 text-center">Công ty đóng</th>
-                      <th className="pb-3 text-center">Nhân viên đóng</th>
-                      <th className="pb-3 text-center">Ngày cấp</th>
-                      <th className="pb-3 text-center">Trạng thái</th>
-                      <th className="pb-3">Sửa/Xóa</th>
+                      <th className="px-4 py-3 whitespace-nowrap">Mã nhân viên</th>
+                      <th className="px-4 py-3 whitespace-nowrap">Tên nhân viên</th>
+                      <th className="px-4 py-3 whitespace-nowrap">Phòng ban</th>
+                      <th className="px-4 py-3 whitespace-nowrap">Tên bảo hiểm</th>
+                      <th className="px-4 py-3 text-center whitespace-nowrap">Công ty đóng</th>
+                      <th className="px-4 py-3 text-center whitespace-nowrap">Nhân viên đóng</th>
+                      <th className="px-4 py-3 text-center whitespace-nowrap">Ngày cấp</th>
+                      <th className="px-4 py-3 text-center whitespace-nowrap">Trạng thái</th>
+                      <th className="px-4 py-3 whitespace-nowrap">Sửa/Xóa</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
@@ -1424,7 +1489,7 @@ const AdminBenefits = () => {
                         const insurances = groupedByEmployee[empId];
                         const hasMultiple = insurances.length > 1;
                         const firstInsurance = insurances[0];
-                        
+
                         firstRows.push({
                           ...firstInsurance,
                           hasMultiple,
@@ -1482,18 +1547,17 @@ const AdminBenefits = () => {
                                 {h.grantDate ? new Date(h.grantDate).toLocaleDateString('vi-VN') : '-'}
                               </td>
                               <td className="py-4 text-center">
-                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                                  h.status === 'active' 
-                                    ? 'bg-green-100 text-green-700' 
-                                    : h.status === 'suspended'
+                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${h.status === 'active'
+                                  ? 'bg-green-100 text-green-700'
+                                  : h.status === 'suspended'
                                     ? 'bg-yellow-100 text-yellow-700'
                                     : 'bg-red-100 text-red-700'
-                                }`}>
-                                  {h.status === 'active' 
-                                    ? 'Đang áp dụng' 
+                                  }`}>
+                                  {h.status === 'active'
+                                    ? 'Đang áp dụng'
                                     : h.status === 'suspended'
-                                    ? 'Tạm ngưng'
-                                    : 'Đã hủy'}
+                                      ? 'Tạm ngưng'
+                                      : 'Đã hủy'}
                                 </span>
                               </td>
                               <td className="py-4">
@@ -1530,18 +1594,17 @@ const AdminBenefits = () => {
                                   {otherInsurance.grantDate ? new Date(otherInsurance.grantDate).toLocaleDateString('vi-VN') : '-'}
                                 </td>
                                 <td className="py-4 text-center">
-                                  <span className={`px-3 py-1 text-xs rounded-full font-medium ${
-                                    otherInsurance.status === 'active' 
-                                      ? 'bg-green-100 text-green-700' 
-                                      : otherInsurance.status === 'suspended'
+                                  <span className={`px-3 py-1 text-xs rounded-full font-medium ${otherInsurance.status === 'active'
+                                    ? 'bg-green-100 text-green-700'
+                                    : otherInsurance.status === 'suspended'
                                       ? 'bg-yellow-100 text-yellow-700'
                                       : 'bg-red-100 text-red-700'
-                                  }`}>
-                                    {otherInsurance.status === 'active' 
-                                      ? 'Đang áp dụng' 
+                                    }`}>
+                                    {otherInsurance.status === 'active'
+                                      ? 'Đang áp dụng'
                                       : otherInsurance.status === 'suspended'
-                                      ? 'Tạm ngưng'
-                                      : 'Đã hủy'}
+                                        ? 'Tạm ngưng'
+                                        : 'Đã hủy'}
                                   </span>
                                 </td>
                                 <td className="py-4">
@@ -1572,7 +1635,7 @@ const AdminBenefits = () => {
                 </table>
               </div>
             )}
-          </Card> 
+          </Card>
         </div>
       </div>
 
@@ -1735,7 +1798,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={editFormData.name}
-                  onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Nhập tên phúc lợi"
                 />
@@ -1751,7 +1814,7 @@ const AdminBenefits = () => {
                   value={editFormData.monthlyValue === 0 ? '' : editFormData.monthlyValue.toLocaleString('vi-VN')}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^\d]/g, '');
-                    setEditFormData({...editFormData, monthlyValue: value ? Number(value) : 0});
+                    setEditFormData({ ...editFormData, monthlyValue: value ? Number(value) : 0 });
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Nhập số tiền (VD: 770000 hoặc 770.000)"
@@ -1771,7 +1834,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={editFormData.owner}
-                  onChange={(e) => setEditFormData({...editFormData, owner: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, owner: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="VD: Phòng Hành chính"
                 />
@@ -1785,7 +1848,7 @@ const AdminBenefits = () => {
                 <input
                   type="number"
                   value={editFormData.budget}
-                  onChange={(e) => setEditFormData({...editFormData, budget: Number(e.target.value) || 0})}
+                  onChange={(e) => setEditFormData({ ...editFormData, budget: Number(e.target.value) || 0 })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Nhập ngân sách năm"
                 />
@@ -1798,7 +1861,7 @@ const AdminBenefits = () => {
                 </label>
                 <select
                   value={editFormData.status}
-                  onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="active">Đang áp dụng</option>
@@ -1814,7 +1877,7 @@ const AdminBenefits = () => {
                 </label>
                 <textarea
                   value={editFormData.description}
-                  onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Nhập mô tả phúc lợi"
@@ -1829,7 +1892,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={editFormData.nextReview}
-                  onChange={(e) => setEditFormData({...editFormData, nextReview: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, nextReview: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="VD: 01/12/2024"
                 />
@@ -1872,7 +1935,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={editInsuranceFormData.name}
-                  onChange={(e) => setEditInsuranceFormData({...editInsuranceFormData, name: e.target.value})}
+                  onChange={(e) => setEditInsuranceFormData({ ...editInsuranceFormData, name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nhập tên bảo hiểm"
                 />
@@ -1886,7 +1949,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={editInsuranceFormData.provider}
-                  onChange={(e) => setEditInsuranceFormData({...editInsuranceFormData, provider: e.target.value})}
+                  onChange={(e) => setEditInsuranceFormData({ ...editInsuranceFormData, provider: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nhập tên nhà cung cấp"
                 />
@@ -1901,7 +1964,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceFormData.employerRate}
-                    onChange={(e) => setEditInsuranceFormData({...editInsuranceFormData, employerRate: e.target.value})}
+                    onChange={(e) => setEditInsuranceFormData({ ...editInsuranceFormData, employerRate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 17.5%"
                   />
@@ -1913,7 +1976,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceFormData.employeeRate}
-                    onChange={(e) => setEditInsuranceFormData({...editInsuranceFormData, employeeRate: e.target.value})}
+                    onChange={(e) => setEditInsuranceFormData({ ...editInsuranceFormData, employeeRate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 8%"
                   />
@@ -1929,7 +1992,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceFormData.effective}
-                    onChange={(e) => setEditInsuranceFormData({...editInsuranceFormData, effective: e.target.value})}
+                    onChange={(e) => setEditInsuranceFormData({ ...editInsuranceFormData, effective: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 01/01/2024"
                   />
@@ -1941,7 +2004,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceFormData.expiry}
-                    onChange={(e) => setEditInsuranceFormData({...editInsuranceFormData, expiry: e.target.value})}
+                    onChange={(e) => setEditInsuranceFormData({ ...editInsuranceFormData, expiry: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 31/12/2024"
                   />
@@ -1955,7 +2018,7 @@ const AdminBenefits = () => {
                 </label>
                 <select
                   value={editInsuranceFormData.status}
-                  onChange={(e) => setEditInsuranceFormData({...editInsuranceFormData, status: e.target.value})}
+                  onChange={(e) => setEditInsuranceFormData({ ...editInsuranceFormData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="active">Đang áp dụng</option>
@@ -2001,7 +2064,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={addWelfareFormData.name}
-                  onChange={(e) => setAddWelfareFormData({...addWelfareFormData, name: e.target.value})}
+                  onChange={(e) => setAddWelfareFormData({ ...addWelfareFormData, name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Nhập tên phúc lợi"
                 />
@@ -2017,7 +2080,7 @@ const AdminBenefits = () => {
                   value={addWelfareFormData.monthlyValue === 0 ? '' : addWelfareFormData.monthlyValue.toLocaleString('vi-VN')}
                   onChange={(e) => {
                     const value = e.target.value.replace(/[^\d]/g, '');
-                    setAddWelfareFormData({...addWelfareFormData, monthlyValue: value ? Number(value) : 0});
+                    setAddWelfareFormData({ ...addWelfareFormData, monthlyValue: value ? Number(value) : 0 });
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Nhập số tiền (VD: 770000 hoặc 770.000)"
@@ -2037,7 +2100,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={addWelfareFormData.owner}
-                  onChange={(e) => setAddWelfareFormData({...addWelfareFormData, owner: e.target.value})}
+                  onChange={(e) => setAddWelfareFormData({ ...addWelfareFormData, owner: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="VD: Phòng Hành chính"
                 />
@@ -2050,7 +2113,7 @@ const AdminBenefits = () => {
                 </label>
                 <select
                   value={addWelfareFormData.status}
-                  onChange={(e) => setAddWelfareFormData({...addWelfareFormData, status: e.target.value})}
+                  onChange={(e) => setAddWelfareFormData({ ...addWelfareFormData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="active">Đang áp dụng</option>
@@ -2066,7 +2129,7 @@ const AdminBenefits = () => {
                 </label>
                 <textarea
                   value={addWelfareFormData.description}
-                  onChange={(e) => setAddWelfareFormData({...addWelfareFormData, description: e.target.value})}
+                  onChange={(e) => setAddWelfareFormData({ ...addWelfareFormData, description: e.target.value })}
                   rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                   placeholder="Nhập mô tả phúc lợi"
@@ -2110,7 +2173,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={addInsuranceFormData.name}
-                  onChange={(e) => setAddInsuranceFormData({...addInsuranceFormData, name: e.target.value})}
+                  onChange={(e) => setAddInsuranceFormData({ ...addInsuranceFormData, name: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nhập tên bảo hiểm"
                 />
@@ -2124,7 +2187,7 @@ const AdminBenefits = () => {
                 <input
                   type="text"
                   value={addInsuranceFormData.provider}
-                  onChange={(e) => setAddInsuranceFormData({...addInsuranceFormData, provider: e.target.value})}
+                  onChange={(e) => setAddInsuranceFormData({ ...addInsuranceFormData, provider: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Nhập tên nhà cung cấp"
                 />
@@ -2139,7 +2202,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={addInsuranceFormData.employerRate}
-                    onChange={(e) => setAddInsuranceFormData({...addInsuranceFormData, employerRate: e.target.value})}
+                    onChange={(e) => setAddInsuranceFormData({ ...addInsuranceFormData, employerRate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 17.5%"
                   />
@@ -2151,7 +2214,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={addInsuranceFormData.employeeRate}
-                    onChange={(e) => setAddInsuranceFormData({...addInsuranceFormData, employeeRate: e.target.value})}
+                    onChange={(e) => setAddInsuranceFormData({ ...addInsuranceFormData, employeeRate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 8%"
                   />
@@ -2167,7 +2230,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={addInsuranceFormData.effective}
-                    onChange={(e) => setAddInsuranceFormData({...addInsuranceFormData, effective: e.target.value})}
+                    onChange={(e) => setAddInsuranceFormData({ ...addInsuranceFormData, effective: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 01/01/2024"
                   />
@@ -2179,7 +2242,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={addInsuranceFormData.expiry}
-                    onChange={(e) => setAddInsuranceFormData({...addInsuranceFormData, expiry: e.target.value})}
+                    onChange={(e) => setAddInsuranceFormData({ ...addInsuranceFormData, expiry: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: 31/12/2024"
                   />
@@ -2193,7 +2256,7 @@ const AdminBenefits = () => {
                 </label>
                 <select
                   value={addInsuranceFormData.status}
-                  onChange={(e) => setAddInsuranceFormData({...addInsuranceFormData, status: e.target.value})}
+                  onChange={(e) => setAddInsuranceFormData({ ...addInsuranceFormData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="active">Đang áp dụng</option>
@@ -2588,7 +2651,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editWelfareHistoryFormData.employeeId}
-                    onChange={(e) => setEditWelfareHistoryFormData({...editWelfareHistoryFormData, employeeId: e.target.value})}
+                    onChange={(e) => setEditWelfareHistoryFormData({ ...editWelfareHistoryFormData, employeeId: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="VD: emp001"
                   />
@@ -2602,7 +2665,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editWelfareHistoryFormData.employeeName}
-                    onChange={(e) => setEditWelfareHistoryFormData({...editWelfareHistoryFormData, employeeName: e.target.value})}
+                    onChange={(e) => setEditWelfareHistoryFormData({ ...editWelfareHistoryFormData, employeeName: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="Nhập tên nhân viên"
                   />
@@ -2616,7 +2679,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editWelfareHistoryFormData.department}
-                    onChange={(e) => setEditWelfareHistoryFormData({...editWelfareHistoryFormData, department: e.target.value})}
+                    onChange={(e) => setEditWelfareHistoryFormData({ ...editWelfareHistoryFormData, department: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="VD: Phòng Hành chính"
                   />
@@ -2632,7 +2695,7 @@ const AdminBenefits = () => {
                     onChange={(e) => {
                       const selectedWelfare = welfarePrograms.find(w => w.name === e.target.value);
                       setEditWelfareHistoryFormData(prev => {
-                        const updated = {...prev, welfareName: e.target.value};
+                        const updated = { ...prev, welfareName: e.target.value };
                         if (selectedWelfare && selectedWelfare.monthlyValue) {
                           updated.allowance = selectedWelfare.monthlyValue;
                         }
@@ -2658,7 +2721,7 @@ const AdminBenefits = () => {
                     value={editWelfareHistoryFormData.allowance === '' || editWelfareHistoryFormData.allowance === 0 ? '' : Number(editWelfareHistoryFormData.allowance).toLocaleString('vi-VN')}
                     onChange={(e) => {
                       const value = e.target.value.replace(/[^\d]/g, '');
-                      setEditWelfareHistoryFormData({...editWelfareHistoryFormData, allowance: value ? Number(value) : ''});
+                      setEditWelfareHistoryFormData({ ...editWelfareHistoryFormData, allowance: value ? Number(value) : '' });
                     }}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                     placeholder="Tự động điền khi chọn phúc lợi"
@@ -2678,7 +2741,7 @@ const AdminBenefits = () => {
                   <input
                     type="date"
                     value={editWelfareHistoryFormData.grantDate}
-                    onChange={(e) => setEditWelfareHistoryFormData({...editWelfareHistoryFormData, grantDate: e.target.value})}
+                    onChange={(e) => setEditWelfareHistoryFormData({ ...editWelfareHistoryFormData, grantDate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                   />
                 </div>
@@ -2690,7 +2753,7 @@ const AdminBenefits = () => {
                   </label>
                   <select
                     value={editWelfareHistoryFormData.status}
-                    onChange={(e) => setEditWelfareHistoryFormData({...editWelfareHistoryFormData, status: e.target.value})}
+                    onChange={(e) => setEditWelfareHistoryFormData({ ...editWelfareHistoryFormData, status: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
                     <option value="active">Đang áp dụng</option>
@@ -2738,7 +2801,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceHistoryFormData.employeeId}
-                    onChange={(e) => setEditInsuranceHistoryFormData({...editInsuranceHistoryFormData, employeeId: e.target.value})}
+                    onChange={(e) => setEditInsuranceHistoryFormData({ ...editInsuranceHistoryFormData, employeeId: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: emp001"
                   />
@@ -2752,7 +2815,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceHistoryFormData.employeeName}
-                    onChange={(e) => setEditInsuranceHistoryFormData({...editInsuranceHistoryFormData, employeeName: e.target.value})}
+                    onChange={(e) => setEditInsuranceHistoryFormData({ ...editInsuranceHistoryFormData, employeeName: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Nhập tên nhân viên"
                   />
@@ -2766,7 +2829,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceHistoryFormData.department}
-                    onChange={(e) => setEditInsuranceHistoryFormData({...editInsuranceHistoryFormData, department: e.target.value})}
+                    onChange={(e) => setEditInsuranceHistoryFormData({ ...editInsuranceHistoryFormData, department: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="VD: Phòng Hành chính"
                   />
@@ -2782,7 +2845,7 @@ const AdminBenefits = () => {
                     onChange={(e) => {
                       const selectedInsurance = insurancePolicies.find(ins => ins.name === e.target.value);
                       setEditInsuranceHistoryFormData(prev => {
-                        const updated = {...prev, insuranceName: e.target.value};
+                        const updated = { ...prev, insuranceName: e.target.value };
                         if (selectedInsurance) {
                           updated.employerRate = selectedInsurance.employerRate;
                           updated.employeeRate = selectedInsurance.employeeRate;
@@ -2807,7 +2870,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceHistoryFormData.employerRate}
-                    onChange={(e) => setEditInsuranceHistoryFormData({...editInsuranceHistoryFormData, employerRate: e.target.value})}
+                    onChange={(e) => setEditInsuranceHistoryFormData({ ...editInsuranceHistoryFormData, employerRate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Tự động điền khi chọn bảo hiểm"
                   />
@@ -2821,7 +2884,7 @@ const AdminBenefits = () => {
                   <input
                     type="text"
                     value={editInsuranceHistoryFormData.employeeRate}
-                    onChange={(e) => setEditInsuranceHistoryFormData({...editInsuranceHistoryFormData, employeeRate: e.target.value})}
+                    onChange={(e) => setEditInsuranceHistoryFormData({ ...editInsuranceHistoryFormData, employeeRate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Tự động điền khi chọn bảo hiểm"
                   />
@@ -2835,7 +2898,7 @@ const AdminBenefits = () => {
                   <input
                     type="date"
                     value={editInsuranceHistoryFormData.grantDate}
-                    onChange={(e) => setEditInsuranceHistoryFormData({...editInsuranceHistoryFormData, grantDate: e.target.value})}
+                    onChange={(e) => setEditInsuranceHistoryFormData({ ...editInsuranceHistoryFormData, grantDate: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
@@ -2847,7 +2910,7 @@ const AdminBenefits = () => {
                   </label>
                   <select
                     value={editInsuranceHistoryFormData.status}
-                    onChange={(e) => setEditInsuranceHistoryFormData({...editInsuranceHistoryFormData, status: e.target.value})}
+                    onChange={(e) => setEditInsuranceHistoryFormData({ ...editInsuranceHistoryFormData, status: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="active">Đang áp dụng</option>
