@@ -149,6 +149,89 @@ let supportTicketsStore = [
   }
 ];
 
+// Attendance Store - Shared store for attendance records
+let attendanceStore = [];
+
+// Initialize attendance store with sample data
+const initializeAttendanceStore = () => {
+  const today = new Date();
+  const employees = [
+    { id: 'emp001', name: 'Trần Ngọc Hải', department: 'Công nghệ thông tin' },
+    { id: 'emp002', name: 'Trần Thị Bình', department: 'Nhân sự' },
+    { id: 'emp003', name: 'Lê Văn Cường', department: 'Tài chính' },
+    { id: 'emp004', name: 'Nguyễn Thị Dung', department: 'Marketing' },
+    { id: 'emp005', name: 'Phạm Văn Em', department: 'Kinh doanh' }
+  ];
+
+  // Generate attendance data for the last 30 days
+  for (let i = 0; i < 30; i++) {
+    const date = new Date(today);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    const dayOfWeek = date.getDay();
+
+    employees.forEach(emp => {
+      // Skip weekends for some employees
+      if (dayOfWeek === 0 || dayOfWeek === 6) {
+        // Some employees work on weekends
+        if (Math.random() > 0.7) {
+          const checkIn = `0${8 + Math.floor(Math.random() * 2)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
+          const checkOut = `${17 + Math.floor(Math.random() * 2)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
+          attendanceStore.push({
+            id: `att_${emp.id}_${dateStr}`,
+            employee_id: emp.id,
+            name: emp.name,
+            department: emp.department,
+            date: dateStr,
+            check_in: checkIn,
+            check_out: checkOut
+          });
+        }
+      } else {
+        // Weekday attendance
+        const isAbsent = Math.random() < 0.1; // 10% absent rate
+        if (!isAbsent) {
+          const isLate = Math.random() < 0.2; // 20% late rate
+          const checkIn = isLate 
+            ? `0${9 + Math.floor(Math.random() * 2)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`
+            : `0${8 + Math.floor(Math.random() * 2)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
+          
+          const hasOvertime = Math.random() < 0.3; // 30% overtime rate
+          const checkOut = hasOvertime
+            ? `${18 + Math.floor(Math.random() * 2)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`
+            : `${17 + Math.floor(Math.random() * 2)}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
+          
+          attendanceStore.push({
+            id: `att_${emp.id}_${dateStr}`,
+            employee_id: emp.id,
+            name: emp.name,
+            department: emp.department,
+            date: dateStr,
+            check_in: checkIn,
+            check_out: checkOut
+          });
+        } else {
+          // Absent
+          attendanceStore.push({
+            id: `att_${emp.id}_${dateStr}`,
+            employee_id: emp.id,
+            name: emp.name,
+            department: emp.department,
+            date: dateStr,
+            check_in: null,
+            check_out: null
+          });
+        }
+      }
+    });
+  }
+};
+
+// Initialize on first load
+if (attendanceStore.length === 0) {
+  initializeAttendanceStore();
+}
+
 class FakeApiService {
   constructor() {
     this.baseUrl = '/api/v1';
@@ -186,9 +269,14 @@ class FakeApiService {
         gender: 'Nam',
         nationality: 'Việt Nam',
         idCard: '001095012345',
+        idNumber: '001095012345',
         idCardIssueDate: '2015-06-01',
         idCardIssuePlace: 'Công an TP. Hà Nội',
         address: '123 Đường Láng, Đống Đa, Hà Nội',
+        permanentAddress: '123 Đường Láng, Đống Đa, Hà Nội',
+        temporaryAddress: '',
+        personalEmail: 'tranngochai.personal@gmail.com',
+        taxCode: '0123456789',
         maritalStatus: 'Độc thân',
         // Employment Details
         employeeType: 'Toàn thời gian',
@@ -199,15 +287,17 @@ class FakeApiService {
         education: 'Đại học',
         educationDetails: 'Cử nhân Công nghệ Thông tin - ĐH Bách Khoa Hà Nội',
         // Emergency Contact
-        emergencyContact: {
-          name: 'Nguyễn Văn Bình',
-          relationship: 'Cha',
-          phone: '0912345678'
-        },
+        emergencyContactName: 'Nguyễn Văn Bình',
+        emergencyContactRelationship: 'Cha',
+        emergencyContactPhone: '0912345678',
         // Bank Information
         bankAccount: '1234567890',
         bankName: 'Vietcombank',
-        bankBranch: 'Chi nhánh Hà Nội'
+        bankBranch: 'Chi nhánh Hà Nội',
+        // Work Schedule
+        timeIn: '08:00',
+        timeOut: '17:00',
+        shift: 'Ca sáng'
       },
       {
         id: 'emp002',
@@ -225,9 +315,14 @@ class FakeApiService {
         gender: 'Nữ',
         nationality: 'Việt Nam',
         idCard: '001090067890',
+        idNumber: '001090067890',
         idCardIssueDate: '2010-09-01',
         idCardIssuePlace: 'Công an TP. Hồ Chí Minh',
         address: '456 Nguyễn Trãi, Thanh Xuân, Hà Nội',
+        permanentAddress: '456 Nguyễn Trãi, Thanh Xuân, Hà Nội',
+        temporaryAddress: '',
+        personalEmail: 'tranthibinh.personal@gmail.com',
+        taxCode: '0123456790',
         maritalStatus: 'Đã kết hôn',
         // Employment Details
         employeeType: 'Toàn thời gian',
@@ -238,15 +333,17 @@ class FakeApiService {
         education: 'Thạc sĩ',
         educationDetails: 'Thạc sĩ Quản trị Nhân sự - ĐH Ngoại Thương',
         // Emergency Contact
-        emergencyContact: {
-          name: 'Trần Văn Cường',
-          relationship: 'Chồng',
-          phone: '0987654321'
-        },
+        emergencyContactName: 'Trần Văn Cường',
+        emergencyContactRelationship: 'Chồng',
+        emergencyContactPhone: '0987654321',
         // Bank Information
         bankAccount: '0987654321',
         bankName: 'Techcombank',
-        bankBranch: 'Chi nhánh Cầu Giấy'
+        bankBranch: 'Chi nhánh Cầu Giấy',
+        // Work Schedule
+        timeIn: '08:00',
+        timeOut: '17:00',
+        shift: 'Ca sáng'
       },
       {
         id: 'emp003',
@@ -264,9 +361,14 @@ class FakeApiService {
         gender: 'Nam',
         nationality: 'Việt Nam',
         idCard: '001097034567',
+        idNumber: '001097034567',
         idCardIssueDate: '2017-04-01',
         idCardIssuePlace: 'Công an tỉnh Hải Phòng',
         address: '789 Lê Lợi, Hải Châu, Đà Nẵng',
+        permanentAddress: '789 Lê Lợi, Hải Châu, Đà Nẵng',
+        temporaryAddress: '',
+        personalEmail: 'leminhchinh.personal@gmail.com',
+        taxCode: '0123456791',
         maritalStatus: 'Độc thân',
         // Employment Details
         employeeType: 'Toàn thời gian',
@@ -277,15 +379,17 @@ class FakeApiService {
         education: 'Đại học',
         educationDetails: 'Cử nhân Marketing - ĐH Kinh Tế Quốc Dân',
         // Emergency Contact
-        emergencyContact: {
-          name: 'Lê Thị Hoa',
-          relationship: 'Mẹ',
-          phone: '0901122334'
-        },
+        emergencyContactName: 'Lê Thị Hoa',
+        emergencyContactRelationship: 'Mẹ',
+        emergencyContactPhone: '0901122334',
         // Bank Information
         bankAccount: '5566778899',
         bankName: 'VPBank',
-        bankBranch: 'Chi nhánh Đà Nẵng'
+        bankBranch: 'Chi nhánh Đà Nẵng',
+        // Work Schedule
+        timeIn: '13:00',
+        timeOut: '22:00',
+        shift: 'Ca chiều'
       },
       {
         id: 'emp004',
@@ -303,9 +407,14 @@ class FakeApiService {
         gender: 'Nữ',
         nationality: 'Việt Nam',
         idCard: '001093056789',
+        idNumber: '001093056789',
         idCardIssueDate: '2013-12-01',
         idCardIssuePlace: 'Công an TP. Hà Nội',
         address: '321 Trần Duy Hưng, Cầu Giấy, Hà Nội',
+        permanentAddress: '321 Trần Duy Hưng, Cầu Giấy, Hà Nội',
+        temporaryAddress: '',
+        personalEmail: 'phamthucuc.personal@gmail.com',
+        taxCode: '0123456792',
         maritalStatus: 'Đã kết hôn',
         // Employment Details
         employeeType: 'Toàn thời gian',
@@ -316,15 +425,17 @@ class FakeApiService {
         education: 'Đại học',
         educationDetails: 'Cử nhân Kế toán - ĐH Kinh Tế Quốc Dân',
         // Emergency Contact
-        emergencyContact: {
-          name: 'Phạm Văn Tuấn',
-          relationship: 'Chồng',
-          phone: '0976543210'
-        },
+        emergencyContactName: 'Phạm Văn Tuấn',
+        emergencyContactRelationship: 'Chồng',
+        emergencyContactPhone: '0976543210',
         // Bank Information
         bankAccount: '1122334455',
         bankName: 'BIDV',
-        bankBranch: 'Chi nhánh Thăng Long'
+        bankBranch: 'Chi nhánh Thăng Long',
+        // Work Schedule
+        timeIn: '08:00',
+        timeOut: '17:00',
+        shift: 'Ca sáng'
       },
       {
         id: 'emp005',
@@ -342,9 +453,14 @@ class FakeApiService {
         gender: 'Nam',
         nationality: 'Việt Nam',
         idCard: '001096023456',
+        idNumber: '001096023456',
         idCardIssueDate: '2016-03-01',
         idCardIssuePlace: 'Công an TP. Hồ Chí Minh',
         address: '555 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
+        permanentAddress: '555 Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh',
+        temporaryAddress: '',
+        personalEmail: 'hoangducdung.personal@gmail.com',
+        taxCode: '0123456793',
         maritalStatus: 'Độc thân',
         // Employment Details
         employeeType: 'Toàn thời gian',
@@ -355,15 +471,17 @@ class FakeApiService {
         education: 'Đại học',
         educationDetails: 'Cử nhân Quản trị Kinh doanh - ĐH Ngoại Thương',
         // Emergency Contact
-        emergencyContact: {
-          name: 'Hoàng Thị Lan',
-          relationship: 'Mẹ',
-          phone: '0988776655'
-        },
+        emergencyContactName: 'Hoàng Thị Lan',
+        emergencyContactRelationship: 'Mẹ',
+        emergencyContactPhone: '0988776655',
         // Bank Information
         bankAccount: '9988776655',
         bankName: 'ACB',
-        bankBranch: 'Chi nhánh Sài Gòn'
+        bankBranch: 'Chi nhánh Sài Gòn',
+        // Work Schedule
+        timeIn: '08:00',
+        timeOut: '17:00',
+        shift: 'Ca sáng'
       },
       {
         id: 'mgr001',
@@ -381,9 +499,14 @@ class FakeApiService {
         gender: 'Nam',
         nationality: 'Việt Nam',
         idCard: '001088056789',
+        idNumber: '001088056789',
         idCardIssueDate: '2008-08-01',
         idCardIssuePlace: 'Công an TP. Hà Nội',
         address: '456 Lê Lợi, Quận 1, TP.HCM',
+        permanentAddress: '456 Lê Lợi, Quận 1, TP.HCM',
+        temporaryAddress: '',
+        personalEmail: 'nguyenvanquanly.personal@gmail.com',
+        taxCode: '0123456794',
         maritalStatus: 'Đã kết hôn',
         // Employment Details
         employeeType: 'Toàn thời gian',
@@ -394,11 +517,9 @@ class FakeApiService {
         education: 'Thạc sĩ',
         educationDetails: 'Thạc sĩ Công nghệ Thông tin - ĐH Bách Khoa',
         // Emergency Contact
-        emergencyContact: {
-          name: 'Nguyễn Thị Lan',
-          relationship: 'Vợ',
-          phone: '0987654399'
-        },
+        emergencyContactName: 'Nguyễn Thị Lan',
+        emergencyContactRelationship: 'Vợ',
+        emergencyContactPhone: '0987654399',
         // Bank Information
         bankAccount: '8877665544',
         bankName: 'Vietcombank',
@@ -420,9 +541,14 @@ class FakeApiService {
         gender: 'Nữ',
         nationality: 'Việt Nam',
         idCard: '001090087654',
+        idNumber: '001090087654',
         idCardIssueDate: '2010-12-01',
         idCardIssuePlace: 'Công an TP. Hà Nội',
         address: '789 Nguyễn Trãi, Quận 5, TP.HCM',
+        permanentAddress: '789 Nguyễn Trãi, Quận 5, TP.HCM',
+        temporaryAddress: '',
+        personalEmail: 'tranthiketoan.personal@gmail.com',
+        taxCode: '0123456795',
         maritalStatus: 'Đã kết hôn',
         // Employment Details
         employeeType: 'Toàn thời gian',
@@ -433,15 +559,17 @@ class FakeApiService {
         education: 'Cử nhân',
         educationDetails: 'Cử nhân Kế toán - ĐH Kinh Tế Quốc Dân',
         // Emergency Contact
-        emergencyContact: {
-          name: 'Trần Văn Nam',
-          relationship: 'Chồng',
-          phone: '0987654398'
-        },
+        emergencyContactName: 'Trần Văn Nam',
+        emergencyContactRelationship: 'Chồng',
+        emergencyContactPhone: '0987654398',
         // Bank Information
         bankAccount: '7766554433',
         bankName: 'Techcombank',
-        bankBranch: 'Chi nhánh TP.HCM'
+        bankBranch: 'Chi nhánh TP.HCM',
+        // Work Schedule
+        timeIn: '08:00',
+        timeOut: '17:00',
+        shift: 'Ca sáng'
       }
     ];
     return this.delayResponse({ data: employees, success: true });
@@ -486,77 +614,109 @@ class FakeApiService {
 
   // Attendance APIs
   async getAttendanceRecords() {
-    const attendanceRecords = [
-      {
-        id: 'att001',
-        employeeId: 'emp001',
-        employeeName: 'Nguyễn Văn An',
-        date: '2024-01-15',
-        checkIn: '08:30',
-        checkOut: '17:30',
-        status: 'present',
-        hoursWorked: 9,
-        overtime: 0
-      },
-      {
-        id: 'att002',
-        employeeId: 'emp002',
-        employeeName: 'Trần Thị Bình',
-        date: '2024-01-15',
-        checkIn: '09:00',
-        checkOut: '18:00',
-        status: 'present',
-        hoursWorked: 9,
-        overtime: 0
-      },
-      {
-        id: 'att003',
-        employeeId: 'emp001',
-        employeeName: 'Nguyễn Văn An',
-        date: '2024-01-16',
-        checkIn: '08:45',
-        checkOut: '17:15',
-        status: 'late',
-        hoursWorked: 8.5,
-        overtime: 0
-      },
-      {
-        id: 'att004',
-        employeeId: 'emp003',
-        employeeName: 'Lê Minh Chính',
-        date: '2024-01-16',
-        checkIn: null,
-        checkOut: null,
-        status: 'absent',
-        hoursWorked: 0,
-        overtime: 0
-      },
-      {
-        id: 'att005',
-        employeeId: 'emp004',
-        employeeName: 'Phạm Thu Cúc',
-        date: '2024-01-16',
-        checkIn: '08:00',
-        checkOut: '20:00',
-        status: 'overtime',
-        hoursWorked: 12,
-        overtime: 3
-      }
-    ];
-    return this.delayResponse({ data: attendanceRecords, success: true });
+    return this.delayResponse({ data: attendanceStore, success: true });
+  }
+
+  // Get daily attendance for a specific date
+  async getDailyAttendance(date) {
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    const records = attendanceStore.filter(record => record.date === targetDate);
+    return this.delayResponse({ data: records, success: true });
+  }
+
+  // Get attendance records in a date range
+  async getAttendanceRange(startDate, endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const records = attendanceStore.filter(record => {
+      const recordDate = new Date(record.date);
+      return recordDate >= start && recordDate <= end;
+    });
+    return this.delayResponse({ data: records, success: true });
+  }
+
+  // Get attendance for a specific employee
+  async getEmployeeAttendanceRecords(employeeId, startDate = null, endDate = null) {
+    let records = attendanceStore.filter(record => 
+      record.employee_id === employeeId || record.id === employeeId
+    );
+    
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      records = records.filter(record => {
+        const recordDate = new Date(record.date);
+        return recordDate >= start && recordDate <= end;
+      });
+    }
+    
+    return this.delayResponse({ data: records, success: true });
   }
 
   async createAttendanceRecord(attendanceData) {
+    const date = attendanceData.date || new Date().toISOString().split('T')[0];
+    const employeeId = attendanceData.employeeId;
+    
+    // Check if record already exists for this employee and date
+    const existingIndex = attendanceStore.findIndex(
+      record => (record.employee_id === employeeId || record.id === employeeId) && record.date === date
+    );
+
     const newRecord = {
-      id: this.generateId(),
-      ...attendanceData,
-      hoursWorked: attendanceData.checkIn && attendanceData.checkOut ? 
-        this.calculateHoursWorked(attendanceData.checkIn, attendanceData.checkOut) : 0
+      id: existingIndex >= 0 ? attendanceStore[existingIndex].id : `att_${employeeId}_${date}`,
+      employee_id: employeeId,
+      name: attendanceData.employeeName || 'Unknown',
+      department: attendanceData.department || 'Unknown',
+      date: date,
+      check_in: attendanceData.checkIn || attendanceData.check_in || null,
+      check_out: attendanceData.checkOut || attendanceData.check_out || null
     };
-    return this.delayResponse({ data: newRecord, success: true, message: 'Attendance record created successfully' });
+
+    if (existingIndex >= 0) {
+      // Update existing record
+      attendanceStore[existingIndex] = { ...attendanceStore[existingIndex], ...newRecord };
+      return this.delayResponse({ 
+        data: attendanceStore[existingIndex], 
+        success: true, 
+        message: 'Attendance record updated successfully' 
+      });
+    } else {
+      // Create new record
+      attendanceStore.push(newRecord);
+      return this.delayResponse({ 
+        data: newRecord, 
+        success: true, 
+        message: 'Attendance record created successfully' 
+      });
+    }
+  }
+
+  // Update attendance record
+  async updateAttendanceRecord(recordId, updateData) {
+    const index = attendanceStore.findIndex(record => record.id === recordId);
+    if (index === -1) {
+      return this.delayResponse({
+        success: false,
+        message: 'Attendance record not found'
+      });
+    }
+
+    attendanceStore[index] = {
+      ...attendanceStore[index],
+      ...updateData,
+      check_in: updateData.check_in || updateData.checkIn || attendanceStore[index].check_in,
+      check_out: updateData.check_out || updateData.checkOut || attendanceStore[index].check_out
+    };
+
+    return this.delayResponse({
+      success: true,
+      data: attendanceStore[index],
+      message: 'Attendance record updated successfully'
+    });
   }
 
   calculateHoursWorked(checkIn, checkOut) {
+    if (!checkIn || !checkOut) return 0;
     const start = new Date(`2000-01-01 ${checkIn}`);
     const end = new Date(`2000-01-01 ${checkOut}`);
     return (end - start) / (1000 * 60 * 60);
@@ -960,6 +1120,14 @@ class FakeApiService {
       data: { id }, 
       success: true, 
       message: 'Notification marked as read' 
+    });
+  }
+
+  async deleteNotification(id) {
+    return this.delayResponse({ 
+      data: { id }, 
+      success: true, 
+      message: 'Notification deleted successfully' 
     });
   }
 
@@ -2176,6 +2344,494 @@ class FakeApiService {
   }
 
   // ============================================
+  // WELFARE HISTORY APIs (Phúc lợi nhân viên)
+  // ============================================
+
+  // Lấy lịch sử phúc lợi của tất cả nhân viên
+  async getWelfareHistory() {
+    const welfareHistory = [
+      {
+        id: 1,
+        employeeId: 'EMP001',
+        employeeName: 'Nguyễn Văn A',
+        department: 'Phòng Hành chính',
+        allowance: 500000,
+        welfareName: 'Phụ cấp ăn trưa',
+        grantDate: '2024-01-15',
+        status: 'active'
+      },
+      {
+        id: 2,
+        employeeId: 'EMP001',
+        employeeName: 'Nguyễn Văn A',
+        department: 'Phòng Hành chính',
+        allowance: 700000,
+        welfareName: 'Phụ cấp xăng xe / đi lại',
+        grantDate: '2024-01-15',
+        status: 'active'
+      },
+      {
+        id: 3,
+        employeeId: 'EMP001',
+        employeeName: 'Nguyễn Văn A',
+        department: 'Phòng Hành chính',
+        allowance: 500000,
+        welfareName: 'Thẻ tập gym & wellness',
+        grantDate: '2024-02-01',
+        status: 'active'
+      },
+      {
+        id: 4,
+        employeeId: 'EMP002',
+        employeeName: 'Trần Thị B',
+        department: 'Phòng Kế toán',
+        allowance: 1000000,
+        welfareName: 'Phụ cấp xăng xe / đi lại',
+        grantDate: '2024-02-01',
+        status: 'active'
+      },
+      {
+        id: 5,
+        employeeId: 'EMP002',
+        employeeName: 'Trần Thị B',
+        department: 'Phòng Kế toán',
+        allowance: 770000,
+        welfareName: 'Phụ cấp ăn trưa',
+        grantDate: '2024-02-01',
+        status: 'active'
+      },
+      {
+        id: 6,
+        employeeId: 'EMP003',
+        employeeName: 'Lê Văn C',
+        department: 'Phòng Nhân sự',
+        allowance: 300000,
+        welfareName: 'Phụ cấp điện thoại',
+        grantDate: '2024-01-20',
+        status: 'suspended'
+      },
+      {
+        id: 7,
+        employeeId: 'EMP003',
+        employeeName: 'Lê Văn C',
+        department: 'Phòng Nhân sự',
+        allowance: 770000,
+        welfareName: 'Phụ cấp ăn trưa',
+        grantDate: '2024-01-20',
+        status: 'active'
+      },
+      {
+        id: 8,
+        employeeId: 'EMP003',
+        employeeName: 'Lê Văn C',
+        department: 'Phòng Nhân sự',
+        allowance: 500000,
+        welfareName: 'Thẻ tập gym & wellness',
+        grantDate: '2024-01-20',
+        status: 'active'
+      },
+      {
+        id: 9,
+        employeeId: 'EMP004',
+        employeeName: 'Phạm Thị D',
+        department: 'Phòng Kinh doanh',
+        allowance: 800000,
+        welfareName: 'Phụ cấp đi lại',
+        grantDate: '2023-12-10',
+        status: 'cancelled'
+      },
+      {
+        id: 10,
+        employeeId: 'EMP005',
+        employeeName: 'Hoàng Văn E',
+        department: 'Phòng IT',
+        allowance: 770000,
+        welfareName: 'Phụ cấp ăn trưa',
+        grantDate: '2024-03-01',
+        status: 'active'
+      },
+      {
+        id: 11,
+        employeeId: 'EMP005',
+        employeeName: 'Hoàng Văn E',
+        department: 'Phòng IT',
+        allowance: 700000,
+        welfareName: 'Phụ cấp xăng xe / đi lại',
+        grantDate: '2024-03-01',
+        status: 'active'
+      },
+      {
+        id: 12,
+        employeeId: 'EMP005',
+        employeeName: 'Hoàng Văn E',
+        department: 'Phòng IT',
+        allowance: 300000,
+        welfareName: 'Phụ cấp điện thoại',
+        grantDate: '2024-03-01',
+        status: 'active'
+      },
+      {
+        id: 13,
+        employeeId: 'EMP005',
+        employeeName: 'Hoàng Văn E',
+        department: 'Phòng IT',
+        allowance: 500000,
+        welfareName: 'Thẻ tập gym & wellness',
+        grantDate: '2024-03-15',
+        status: 'active'
+      },
+      {
+        id: 14,
+        employeeId: 'emp001',
+        employeeName: 'Trần Ngọc Hải',
+        department: 'Công nghệ thông tin',
+        allowance: 770000,
+        welfareName: 'Phụ cấp ăn trưa',
+        grantDate: '2024-01-01',
+        status: 'active'
+      },
+      {
+        id: 15,
+        employeeId: 'emp001',
+        employeeName: 'Trần Ngọc Hải',
+        department: 'Công nghệ thông tin',
+        allowance: 700000,
+        welfareName: 'Phụ cấp xăng xe / đi lại',
+        grantDate: '2024-01-01',
+        status: 'active'
+      },
+      {
+        id: 16,
+        employeeId: 'emp001',
+        employeeName: 'Trần Ngọc Hải',
+        department: 'Công nghệ thông tin',
+        allowance: 300000,
+        welfareName: 'Phụ cấp điện thoại',
+        grantDate: '2024-01-01',
+        status: 'active'
+      },
+      {
+        id: 17,
+        employeeId: 'emp002',
+        employeeName: 'Trần Thị Bình',
+        department: 'Nhân sự',
+        allowance: 770000,
+        welfareName: 'Phụ cấp ăn trưa',
+        grantDate: '2024-01-01',
+        status: 'active'
+      },
+      {
+        id: 18,
+        employeeId: 'emp002',
+        employeeName: 'Trần Thị Bình',
+        department: 'Nhân sự',
+        allowance: 500000,
+        welfareName: 'Thẻ tập gym & wellness',
+        grantDate: '2024-01-01',
+        status: 'active'
+      }
+    ];
+    return this.delayResponse({ data: welfareHistory, success: true });
+  }
+
+  // Lấy lịch sử phúc lợi của một nhân viên cụ thể
+  async getEmployeeWelfareHistory(employeeId) {
+    const allHistory = await this.getWelfareHistory();
+    const employeeHistory = allHistory.data.filter(h => 
+      h.employeeId === employeeId || h.employeeId?.toLowerCase() === employeeId?.toLowerCase()
+    );
+    return this.delayResponse({ data: employeeHistory, success: true });
+  }
+
+  // Tạo/cập nhật phúc lợi nhân viên
+  async createWelfareHistory(welfareData) {
+    const newWelfare = {
+      id: Date.now(),
+      ...welfareData,
+      status: welfareData.status || 'active'
+    };
+    return this.delayResponse({ 
+      data: newWelfare, 
+      success: true, 
+      message: 'Đã thêm phúc lợi nhân viên thành công' 
+    });
+  }
+
+  // Cập nhật phúc lợi nhân viên
+  async updateWelfareHistory(id, welfareData) {
+    return this.delayResponse({
+      data: { id, ...welfareData },
+      success: true,
+      message: 'Đã cập nhật phúc lợi nhân viên thành công'
+    });
+  }
+
+  // Xóa phúc lợi nhân viên
+  async deleteWelfareHistory(id) {
+    return this.delayResponse({
+      data: { id },
+      success: true,
+      message: 'Đã xóa phúc lợi nhân viên thành công'
+    });
+  }
+
+  // Cấp nhiều phúc lợi cùng lúc
+  async grantWelfares(welfaresArray) {
+    const grantedWelfares = welfaresArray.map((welfare, index) => ({
+      id: Date.now() + index,
+      ...welfare,
+      status: welfare.status || 'active'
+    }));
+    return this.delayResponse({
+      data: grantedWelfares,
+      success: true,
+      message: `Đã cấp ${grantedWelfares.length} phúc lợi thành công`
+    });
+  }
+
+  // ============================================
+  // INSURANCE HISTORY APIs (Bảo hiểm nhân viên)
+  // ============================================
+
+  // Lấy lịch sử bảo hiểm của tất cả nhân viên
+  async getInsuranceHistory() {
+    const insuranceHistory = [
+      {
+        id: 1,
+        employeeId: 'EMP001',
+        employeeName: 'Nguyễn Văn A',
+        department: 'Phòng Hành chính',
+        insuranceName: 'Bảo hiểm xã hội (BHXH)',
+        employerRate: '17.5%',
+        employeeRate: '8%',
+        grantDate: '2024-01-15',
+        status: 'active'
+      },
+      {
+        id: 2,
+        employeeId: 'EMP001',
+        employeeName: 'Nguyễn Văn A',
+        department: 'Phòng Hành chính',
+        insuranceName: 'Bảo hiểm y tế (BHYT)',
+        employerRate: '3%',
+        employeeRate: '1.5%',
+        grantDate: '2024-01-15',
+        status: 'active'
+      },
+      {
+        id: 3,
+        employeeId: 'EMP001',
+        employeeName: 'Nguyễn Văn A',
+        department: 'Phòng Hành chính',
+        insuranceName: 'Bảo hiểm thất nghiệp (BHTN)',
+        employerRate: '1%',
+        employeeRate: '1%',
+        grantDate: '2024-01-15',
+        status: 'active'
+      },
+      {
+        id: 4,
+        employeeId: 'EMP002',
+        employeeName: 'Trần Thị B',
+        department: 'Phòng Kế toán',
+        insuranceName: 'Bảo hiểm xã hội (BHXH)',
+        employerRate: '17.5%',
+        employeeRate: '8%',
+        grantDate: '2024-02-01',
+        status: 'active'
+      },
+      {
+        id: 5,
+        employeeId: 'EMP002',
+        employeeName: 'Trần Thị B',
+        department: 'Phòng Kế toán',
+        insuranceName: 'Bảo hiểm y tế (BHYT)',
+        employerRate: '3%',
+        employeeRate: '1.5%',
+        grantDate: '2024-02-01',
+        status: 'active'
+      },
+      {
+        id: 6,
+        employeeId: 'EMP003',
+        employeeName: 'Lê Văn C',
+        department: 'Phòng Nhân sự',
+        insuranceName: 'Bảo hiểm xã hội (BHXH)',
+        employerRate: '17.5%',
+        employeeRate: '8%',
+        grantDate: '2024-01-20',
+        status: 'suspended'
+      },
+      {
+        id: 7,
+        employeeId: 'EMP003',
+        employeeName: 'Lê Văn C',
+        department: 'Phòng Nhân sự',
+        insuranceName: 'Bảo hiểm tai nạn 24/24',
+        employerRate: '100%',
+        employeeRate: '0%',
+        grantDate: '2024-01-20',
+        status: 'active'
+      },
+      {
+        id: 8,
+        employeeId: 'EMP005',
+        employeeName: 'Hoàng Văn E',
+        department: 'Phòng IT',
+        insuranceName: 'Bảo hiểm xã hội (BHXH)',
+        employerRate: '17.5%',
+        employeeRate: '8%',
+        grantDate: '2024-03-01',
+        status: 'active'
+      },
+      {
+        id: 9,
+        employeeId: 'EMP005',
+        employeeName: 'Hoàng Văn E',
+        department: 'Phòng IT',
+        insuranceName: 'Bảo hiểm y tế (BHYT)',
+        employerRate: '3%',
+        employeeRate: '1.5%',
+        grantDate: '2024-03-01',
+        status: 'active'
+      },
+      {
+        id: 10,
+        employeeId: 'EMP005',
+        employeeName: 'Hoàng Văn E',
+        department: 'Phòng IT',
+        insuranceName: 'Bảo hiểm thất nghiệp (BHTN)',
+        employerRate: '1%',
+        employeeRate: '1%',
+        grantDate: '2024-03-01',
+        status: 'active'
+      },
+      {
+        id: 11,
+        employeeId: 'EMP005',
+        employeeName: 'Hoàng Văn E',
+        department: 'Phòng IT',
+        insuranceName: 'Bảo hiểm tai nạn 24/24',
+        employerRate: '100%',
+        employeeRate: '0%',
+        grantDate: '2024-03-15',
+        status: 'active'
+      },
+      {
+        id: 12,
+        employeeId: 'emp001',
+        employeeName: 'Trần Ngọc Hải',
+        department: 'Công nghệ thông tin',
+        insuranceName: 'Bảo hiểm xã hội (BHXH)',
+        employerRate: '17.5%',
+        employeeRate: '8%',
+        grantDate: '2024-01-01',
+        status: 'active'
+      },
+      {
+        id: 13,
+        employeeId: 'emp001',
+        employeeName: 'Trần Ngọc Hải',
+        department: 'Công nghệ thông tin',
+        insuranceName: 'Bảo hiểm y tế (BHYT)',
+        employerRate: '3%',
+        employeeRate: '1.5%',
+        grantDate: '2024-01-01',
+        status: 'active'
+      },
+      {
+        id: 14,
+        employeeId: 'emp001',
+        employeeName: 'Trần Ngọc Hải',
+        department: 'Công nghệ thông tin',
+        insuranceName: 'Bảo hiểm thất nghiệp (BHTN)',
+        employerRate: '1%',
+        employeeRate: '1%',
+        grantDate: '2024-01-01',
+        status: 'active'
+      },
+      {
+        id: 15,
+        employeeId: 'emp002',
+        employeeName: 'Trần Thị Bình',
+        department: 'Nhân sự',
+        insuranceName: 'Bảo hiểm xã hội (BHXH)',
+        employerRate: '17.5%',
+        employeeRate: '8%',
+        grantDate: '2024-01-01',
+        status: 'active'
+      },
+      {
+        id: 16,
+        employeeId: 'emp002',
+        employeeName: 'Trần Thị Bình',
+        department: 'Nhân sự',
+        insuranceName: 'Bảo hiểm y tế (BHYT)',
+        employerRate: '3%',
+        employeeRate: '1.5%',
+        grantDate: '2024-01-01',
+        status: 'active'
+      }
+    ];
+    return this.delayResponse({ data: insuranceHistory, success: true });
+  }
+
+  // Lấy lịch sử bảo hiểm của một nhân viên cụ thể
+  async getEmployeeInsuranceHistory(employeeId) {
+    const allHistory = await this.getInsuranceHistory();
+    const employeeHistory = allHistory.data.filter(h => 
+      h.employeeId === employeeId || h.employeeId?.toLowerCase() === employeeId?.toLowerCase()
+    );
+    return this.delayResponse({ data: employeeHistory, success: true });
+  }
+
+  // Tạo/cập nhật bảo hiểm nhân viên
+  async createInsuranceHistory(insuranceData) {
+    const newInsurance = {
+      id: Date.now(),
+      ...insuranceData,
+      status: insuranceData.status || 'active'
+    };
+    return this.delayResponse({ 
+      data: newInsurance, 
+      success: true, 
+      message: 'Đã thêm bảo hiểm nhân viên thành công' 
+    });
+  }
+
+  // Cập nhật bảo hiểm nhân viên
+  async updateInsuranceHistory(id, insuranceData) {
+    return this.delayResponse({
+      data: { id, ...insuranceData },
+      success: true,
+      message: 'Đã cập nhật bảo hiểm nhân viên thành công'
+    });
+  }
+
+  // Xóa bảo hiểm nhân viên
+  async deleteInsuranceHistory(id) {
+    return this.delayResponse({
+      data: { id },
+      success: true,
+      message: 'Đã xóa bảo hiểm nhân viên thành công'
+    });
+  }
+
+  // Cấp nhiều bảo hiểm cùng lúc
+  async grantInsurances(insurancesArray) {
+    const grantedInsurances = insurancesArray.map((insurance, index) => ({
+      id: Date.now() + index,
+      ...insurance,
+      status: insurance.status || 'active'
+    }));
+    return this.delayResponse({
+      data: grantedInsurances,
+      success: true,
+      message: `Đã cấp ${grantedInsurances.length} bảo hiểm thành công`
+    });
+  }
+
+  // ============================================
   // EMPLOYEE PORTAL APIs
   // ============================================
 
@@ -2191,11 +2847,9 @@ class FakeApiService {
       hireDate: '2023-01-15',
       birthday: '1995-05-20',
       address: '123 Nguyễn Huệ, Quận 1, TP.HCM',
-      emergencyContact: {
-        name: 'Nguyễn Thị B',
-        relationship: 'Vợ',
-        phone: '0987654321'
-      },
+      emergencyContactName: 'Nguyễn Thị B',
+      emergencyContactRelationship: 'Vợ',
+      emergencyContactPhone: '0987654321',
       education: 'Đại học Bách Khoa',
       skills: ['React', 'Node.js', 'MongoDB', 'Docker'],
       languages: ['Vietnamese (Native)', 'English (Fluent)']

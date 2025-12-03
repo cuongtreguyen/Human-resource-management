@@ -11,7 +11,7 @@ const Card = ({
   ...props
 }) => {
   return (
-    <div className={`bg-white rounded-lg shadow-sm border border-gray-200 ${className}`} {...props}>
+    <div className={`bg-white rounded-lg shadow-md border-2 border-gray-300 ${className}`} {...props}>
       {(title || icon || actions) && (
         <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">

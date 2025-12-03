@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PY_API } from '../../services/config';
+import fakeApi from '../../services/fakeApi';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Calendar, Edit, Save, X, Download } from 'lucide-react';
@@ -22,38 +23,36 @@ const AttendanceDetailsModal = ({ isOpen, onClose, selectedRecord }) => {
 
     setLoading(true);
     try {
-      // Lấy employee_id từ selectedRecord
-      const employeeId = selectedRecord.employee_id || selectedRecord.id;
-
-      if (employeeId) {
-        // Thử gọi API lấy attendance của employee
-        const response = await fetch(`${PY_API}/api/attendance/employee/${employeeId}`);
-
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      // Try Flask API first
+      try {
+        const response = await fetch(`${PY_API}/attendance/range?startDate=${startDateStr}&endDate=${endDateStr}`);
         if (response.ok) {
-          const data = await response.json();
-          // Nếu API trả về array thì dùng, nếu không thì tạo từ selectedRecord
-          if (Array.isArray(data) && data.length > 0) {
-            setAttendanceHistory(data);
-          } else {
-            // Fallback: tạo record từ data hiện tại
-            setAttendanceHistory([{
-              ...selectedRecord,
-              date: new Date().toISOString().split('T')[0]
-            }]);
-          }
-        } else {
-          // Fallback: dùng selectedRecord nếu API fail
-          setAttendanceHistory([{
-            ...selectedRecord,
-            date: new Date().toISOString().split('T')[0]
-          }]);
+          const allRecords = await response.json();
+          const employeeRecords = allRecords.filter(record => 
+            record.id === selectedRecord.id || record.employee_id === selectedRecord.id
+          );
+          setAttendanceHistory(employeeRecords);
+          return;
         }
-      } else {
-        // Không có ID, dùng selectedRecord
-        setAttendanceHistory([{
-          ...selectedRecord,
-          date: new Date().toISOString().split('T')[0]
-        }]);
+      } catch (flaskErr) {
+        console.log('Flask API not available, using fake API:', flaskErr);
+      }
+      
+      // Fallback to fake API
+      const response = await fakeApi.getAttendanceRange(startDateStr, endDateStr);
+      if (response.success) {
+        const allRecords = response.data || [];
+        const employeeRecords = allRecords.filter(record => 
+          record.id === selectedRecord.id || record.employee_id === selectedRecord.id
+        );
+        setAttendanceHistory(employeeRecords);
       }
     } catch (error) {
       console.error('Failed to load attendance history:', error);
@@ -86,19 +85,30 @@ const AttendanceDetailsModal = ({ isOpen, onClose, selectedRecord }) => {
     setSaving(true);
     try {
       console.log('Saving attendance record:', editingRecord, editForm);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setAttendanceHistory(prev => 
-        prev.map(record => 
-          record.date === editingRecord.date && record.id === editingRecord.id
-            ? { ...record, check_in: editForm.check_in, check_out: editForm.check_out }
-            : record
-        )
-      );
+      // Try to update via fake API
+      const recordId = editingRecord.id || `att_${editingRecord.employee_id || selectedRecord.id}_${editingRecord.date}`;
+      const updateResult = await fakeApi.updateAttendanceRecord(recordId, {
+        check_in: editForm.check_in,
+        check_out: editForm.check_out
+      });
       
-      setEditingRecord(null);
-      setEditForm({ check_in: '', check_out: '' });
-      alert('Cập nhật chấm công thành công!');
+      if (updateResult.success) {
+        // Update local state
+        setAttendanceHistory(prev => 
+          prev.map(record => 
+            record.date === editingRecord.date && (record.id === editingRecord.id || record.employee_id === editingRecord.employee_id)
+              ? { ...record, check_in: editForm.check_in, check_out: editForm.check_out }
+              : record
+          )
+        );
+        
+        setEditingRecord(null);
+        setEditForm({ check_in: '', check_out: '' });
+        alert('Cập nhật chấm công thành công!');
+      } else {
+        throw new Error('Update failed');
+      }
     } catch (error) {
       console.error('Failed to save attendance record:', error);
       alert('Cập nhật chấm công thất bại. Vui lòng thử lại.');
