@@ -19,22 +19,49 @@ const AttendanceDetailsModal = ({ isOpen, onClose, selectedRecord }) => {
 
   const loadAttendanceHistory = async () => {
     if (!selectedRecord) return;
-    
+
     setLoading(true);
     try {
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 30);
-      
-      const response = await fetch(`${PY_API}/attendance/range?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
-      
-      if (response.ok) {
-        const allRecords = await response.json();
-        const employeeRecords = allRecords.filter(record => record.id === selectedRecord.id);
-        setAttendanceHistory(employeeRecords);
+      // Lấy employee_id từ selectedRecord
+      const employeeId = selectedRecord.employee_id || selectedRecord.id;
+
+      if (employeeId) {
+        // Thử gọi API lấy attendance của employee
+        const response = await fetch(`${PY_API}/api/attendance/employee/${employeeId}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          // Nếu API trả về array thì dùng, nếu không thì tạo từ selectedRecord
+          if (Array.isArray(data) && data.length > 0) {
+            setAttendanceHistory(data);
+          } else {
+            // Fallback: tạo record từ data hiện tại
+            setAttendanceHistory([{
+              ...selectedRecord,
+              date: new Date().toISOString().split('T')[0]
+            }]);
+          }
+        } else {
+          // Fallback: dùng selectedRecord nếu API fail
+          setAttendanceHistory([{
+            ...selectedRecord,
+            date: new Date().toISOString().split('T')[0]
+          }]);
+        }
+      } else {
+        // Không có ID, dùng selectedRecord
+        setAttendanceHistory([{
+          ...selectedRecord,
+          date: new Date().toISOString().split('T')[0]
+        }]);
       }
     } catch (error) {
       console.error('Failed to load attendance history:', error);
+      // Fallback: hiển thị record hiện tại
+      setAttendanceHistory([{
+        ...selectedRecord,
+        date: new Date().toISOString().split('T')[0]
+      }]);
     } finally {
       setLoading(false);
     }

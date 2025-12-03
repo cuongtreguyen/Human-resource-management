@@ -134,14 +134,34 @@ class FaceRecognitionPortalApi {
     ];
   }
 
-  // Register employee (mock implementation)
+  // Register employee - save photos and register
   async registerEmployee(employeeData) {
-    // This would typically send data to Python backend
-    // For now, return success
-    return {
-      success: true,
-      message: 'Employee registered successfully'
-    };
+    try {
+      const response = await fetch(`${API_BASE_URL}api/save-photo`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employee_code: employeeData.employeeCode,
+          full_name: employeeData.fullName,
+          department: employeeData.department,
+          position: employeeData.position
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error registering employee:', error);
+      return {
+        success: false,
+        message: 'Failed to register employee. Please try again.'
+      };
+    }
   }
 
   // Recognize face (mock implementation)

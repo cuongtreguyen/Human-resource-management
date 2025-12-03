@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Camera, X, Clock, CheckCircle, AlertCircle, Brain, Database, RefreshCw } from 'lucide-react';
+
+import { Camera, X, Clock, CheckCircle, AlertCircle, Database, RefreshCw } from 'lucide-react';
 import { Button } from '../ui';
 import { Input } from '../ui';
+import { getUserId } from '../../utils/auth';
 
 const FaceRecognitionWidget = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState('register');
@@ -14,6 +16,16 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [recognitionResult, setRecognitionResult] = useState(null);
+
+  // User attendance status for button disable logic
+  const [userAttendanceStatus, setUserAttendanceStatus] = useState({
+    hasCheckedIn: false,
+    hasCheckedOut: false,
+    checkInTime: null,
+    checkOutTime: null,
+  });
+
+  const currentUserId = getUserId();
   
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -46,8 +58,47 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
     if (isOpen) {
       loadEmployees();
       loadTodayAttendance();
+      loadUserAttendanceStatus();
     }
   }, [isOpen]);
+
+  // Fetch current user's attendance status for button disable logic
+  const loadUserAttendanceStatus = async () => {
+    if (!currentUserId) return;
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/attendance/today');
+      if (response.ok) {
+        const data = await response.json();
+        const attendance = data.attendance || [];
+
+        // Find the current user's attendance record
+        const userRecord = attendance.find(
+          record => String(record.employee_code) === String(currentUserId) ||
+                   String(record.employee_id) === String(currentUserId)
+        );
+
+        if (userRecord) {
+          setUserAttendanceStatus({
+            hasCheckedIn: !!userRecord.check_in,
+            hasCheckedOut: !!userRecord.check_out,
+            checkInTime: userRecord.check_in || null,
+            checkOutTime: userRecord.check_out || null,
+          });
+        } else {
+          // Reset status for new day
+          setUserAttendanceStatus({
+            hasCheckedIn: false,
+            hasCheckedOut: false,
+            checkInTime: null,
+            checkOutTime: null,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user attendance status:', error);
+    }
+  };
 
   const loadEmployees = async () => {
     try {
@@ -153,7 +204,8 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/register', {
+      // Step 1: Save photos
+      const saveResponse = await fetch('http://127.0.0.1:5000/api/save-photo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -165,17 +217,38 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
         })
       });
 
-      const result = await response.json();
+      const saveResult = await saveResponse.json();
 
-      if (result.success) {
-        alert(`Employee ${fullName} registered successfully!`);
+      if (!saveResult.success) {
+        alert(`Save photo failed: ${saveResult.error}`);
+        return;
+      }
+
+      // Step 2: Auto train model after saving photos
+      const trainResponse = await fetch('http://127.0.0.1:5000/api/train', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const trainResult = await trainResponse.json();
+
+      if (trainResult.success) {
+        alert(`Employee ${fullName} registered and model trained successfully!`);
         setEmployeeCode('');
         setFullName('');
         setCapturedPhotos([]);
         stopCamera();
         loadEmployees();
       } else {
-        alert(`Registration failed: ${result.error}`);
+        alert(`Registration successful but training failed: ${trainResult.error}`);
+        // Still reset form since photos were saved
+        setEmployeeCode('');
+        setFullName('');
+        setCapturedPhotos([]);
+        stopCamera();
+        loadEmployees();
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -185,30 +258,6 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
     }
   };
 
-  const trainModel = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('http://127.0.0.1:5000/api/train', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert('Model training completed successfully!');
-      } else {
-        alert(`Training failed: ${result.error}`);
-      }
-    } catch (error) {
-      console.error('Training error:', error);
-      alert('Training failed. Please check if the API is running.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const recognizeFace = async (checkType = 'check_in') => {
     if (!isCameraActive) {
@@ -250,8 +299,24 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
             check_type: result.check_type,
             timestamp: result.timestamp
           });
-          
+
+          // Update user attendance status after successful recognition
+          if (checkType === 'check_in') {
+            setUserAttendanceStatus(prev => ({
+              ...prev,
+              hasCheckedIn: true,
+              checkInTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            }));
+          } else if (checkType === 'check_out') {
+            setUserAttendanceStatus(prev => ({
+              ...prev,
+              hasCheckedOut: true,
+              checkOutTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+            }));
+          }
+
           loadTodayAttendance();
+          loadUserAttendanceStatus(); // Refresh from server
           setTimeout(() => setRecognitionResult(null), 3000);
         } else {
           alert(result.message || 'Face not recognized');
@@ -339,7 +404,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                     {[
                       "Register with your ID and name",
                       "Take photos by pressing 's' key",
-                      "Train the model with photos",
+                      "Click Register - auto trains model",
                       "Start recognition to check in/out"
                     ].map((instruction, index) => (
                       <div key={index} className="flex items-start">
@@ -367,16 +432,6 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                   }`}
                 >
                   Register User
-                </button>
-                <button
-                  onClick={() => setActiveTab('train')}
-                  className={`px-4 py-2 font-medium text-sm ${
-                    activeTab === 'train'
-                      ? 'text-blue-600 border-b-2 border-blue-600'
-                      : 'text-gray-500 hover:text-gray-700'
-                  }`}
-                >
-                  Train Model
                 </button>
                 <button
                   onClick={() => setActiveTab('recognize')}
@@ -431,7 +486,7 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                             <span className="text-white text-xs font-bold">i</span>
                           </div>
                           <p className="text-xs text-blue-800">
-                            When the camera starts, press the 's' key to capture a photo. Take multiple photos from different angles for better recognition.
+                            Press 's' key to capture photos. Take multiple photos from different angles. The model will be trained automatically after registration.
                           </p>
                         </div>
                       </div>
@@ -495,48 +550,14 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                       )}
 
                       {/* Register Button */}
-                      <Button 
+                      <Button
                         onClick={registerEmployee}
                         disabled={isLoading || !employeeCode || !fullName || capturedPhotos.length === 0}
                         className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-sm"
                       >
                         <Database className="h-4 w-4" />
-                        {isLoading ? 'Registering...' : 'Register Employee'}
+                        {isLoading ? 'Registering & Training...' : 'Register & Train Model'}
                       </Button>
-                    </div>
-                  )}
-
-                  {activeTab === 'train' && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-bold text-gray-900">Train Recognition Model</h3>
-                      
-                      {/* Warning Box */}
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                        <div className="flex items-start">
-                          <AlertCircle className="h-4 w-4 text-yellow-600 mr-2 mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-yellow-800 mb-1 text-sm">Important</h4>
-                            <p className="text-xs text-yellow-700">
-                              Training the model may take some time depending on the number of photos. The system will be unavailable during training.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <p className="text-gray-700 text-sm">
-                        After taking photos, you need to train the model to recognize your face. This process analyzes all the photos and creates a recognition profile for each registered user.
-                      </p>
-
-                      <div className="flex justify-end">
-                        <Button 
-                          onClick={trainModel}
-                          disabled={isLoading}
-                          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-sm"
-                        >
-                          <Brain className="h-4 w-4" />
-                          {isLoading ? 'Training...' : 'Start Training'}
-                        </Button>
-                      </div>
                     </div>
                   )}
 
@@ -556,30 +577,69 @@ const FaceRecognitionWidget = ({ isOpen, onClose }) => {
                           The system will record attendance with timestamp when a registered face is recognized.
                         </p>
 
+                        {/* User attendance status banner */}
+                        {(userAttendanceStatus.hasCheckedIn || userAttendanceStatus.hasCheckedOut) && (
+                          <div className={`mb-4 p-3 rounded-lg text-sm ${
+                            userAttendanceStatus.hasCheckedOut
+                              ? 'bg-gray-100 border border-gray-300'
+                              : 'bg-yellow-50 border border-yellow-200'
+                          }`}>
+                            <div className="flex items-center gap-2">
+                              {userAttendanceStatus.hasCheckedOut ? (
+                                <CheckCircle className="h-4 w-4 text-gray-500" />
+                              ) : (
+                                <Clock className="h-4 w-4 text-yellow-500" />
+                              )}
+                              <span className={userAttendanceStatus.hasCheckedOut ? 'text-gray-700' : 'text-yellow-700'}>
+                                {userAttendanceStatus.hasCheckedOut
+                                  ? 'Đã hoàn thành chấm công hôm nay'
+                                  : 'Đang làm việc - Chưa chấm công ra'}
+                              </span>
+                            </div>
+                            {(userAttendanceStatus.checkInTime || userAttendanceStatus.checkOutTime) && (
+                              <div className="text-xs text-gray-600 mt-1 ml-6">
+                                {userAttendanceStatus.checkInTime && `Vào: ${userAttendanceStatus.checkInTime}`}
+                                {userAttendanceStatus.checkInTime && userAttendanceStatus.checkOutTime && ' | '}
+                                {userAttendanceStatus.checkOutTime && `Ra: ${userAttendanceStatus.checkOutTime}`}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         <div className="flex gap-2 justify-center">
-                          <Button 
+                          <Button
                             onClick={stopCamera}
                             disabled={!isCameraActive}
                             className="flex items-center gap-1 bg-gray-500 hover:bg-gray-600 text-xs px-3 py-2"
                           >
                             <X className="h-3 w-3" />
-                            Stop Recognition
+                            Stop
                           </Button>
-                          <Button 
+                          <Button
                             onClick={() => recognizeFace('check_in')}
-                            disabled={isLoading || !isCameraActive}
-                            className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-xs px-3 py-2"
+                            disabled={isLoading || !isCameraActive || userAttendanceStatus.hasCheckedIn}
+                            className={`flex items-center gap-1 text-xs px-3 py-2 ${
+                              userAttendanceStatus.hasCheckedIn
+                                ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                                : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
                           >
                             <Clock className="h-3 w-3" />
                             Clock In
+                            {userAttendanceStatus.hasCheckedIn && <span className="text-[10px]">(Đã chấm)</span>}
                           </Button>
-                          <Button 
+                          <Button
                             onClick={() => recognizeFace('check_out')}
-                            disabled={isLoading || !isCameraActive}
-                            className="flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-xs px-3 py-2"
+                            disabled={isLoading || !isCameraActive || userAttendanceStatus.hasCheckedOut || !userAttendanceStatus.hasCheckedIn}
+                            className={`flex items-center gap-1 text-xs px-3 py-2 ${
+                              userAttendanceStatus.hasCheckedOut || !userAttendanceStatus.hasCheckedIn
+                                ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                                : 'bg-green-600 hover:bg-green-700'
+                            }`}
                           >
                             <Clock className="h-3 w-3" />
                             Clock Out
+                            {userAttendanceStatus.hasCheckedOut && <span className="text-[10px]">(Đã chấm)</span>}
                           </Button>
                         </div>
                       </div>
