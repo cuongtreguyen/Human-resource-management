@@ -31,6 +31,9 @@ public class OnLeave {
     @Enumerated(EnumType.STRING)
     OnLeaveStatus onLeaveStatus;
 
+    @Column(name = "submitted_date")
+    LocalDate submittedDate;
+
     LocalDate startDate;
     LocalDate endDate;
     String reason;

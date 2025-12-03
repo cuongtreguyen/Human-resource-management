@@ -14,6 +14,7 @@ public interface OnLeaveMapper {
     @Mapping(target = "employee", ignore = true) // vì set trong service
     OnLeave toOnLeave(OnLeaveRequest request);
 
+    @Mapping(source = "employee.employeeId", target = "employeeId")
     @Mapping(source = "employee.remainingLeaveDays", target = "remainingLeaveDays")
     OnLeaveResponse toOnLeaveResponse(OnLeave onLeave);
 

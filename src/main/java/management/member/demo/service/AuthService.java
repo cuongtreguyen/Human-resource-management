@@ -6,10 +6,12 @@ import management.member.demo.dto.TokenRequest;
 import management.member.demo.entity.User;
 import management.member.demo.exception.base.BusinessException;
 import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.UserRepository;
 import management.member.demo.security.JwtService;
 import management.member.demo.security.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -177,5 +179,11 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+    }
+
+    public User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage()));
     }
 }

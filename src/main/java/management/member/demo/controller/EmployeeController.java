@@ -193,5 +193,17 @@ public class EmployeeController {
         ExportResponseDTO response = service.exportEmployees(format, search, department, status);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/seniority/{employeeID}")
+    @Operation(summary = "Get seniority", description = "Tính thâm niêm của nhân viên")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Employee not found"),
+            @ApiResponse(responseCode = "400", description = "Invalid employee ID")
+    })
+    public ResponseEntity<Map<String, String>> getSeniority(@PathVariable String employeeID) {
+        Map<String, String> result = service.seniority(employeeID);
+        return ResponseEntity.ok(result);
+    }
 }
 
