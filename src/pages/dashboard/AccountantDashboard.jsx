@@ -116,9 +116,9 @@ const AccountantDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-6 rounded-2xl mb-6 shadow-lg">
-        <h1 className="text-3xl font-bold mb-2">Bảng điều khiển Kế toán</h1>
-        <p className="text-emerald-100">Tổng quan tài chính và lương</p>
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-8 rounded-2xl shadow-xl mb-6">
+        <h1 className="text-3xl sm:text-4xl font-bold mb-2">Bảng điều khiển Kế toán</h1>
+        <p className="text-emerald-100 text-base sm:text-lg">Tổng quan tài chính và lương</p>
       </div>
 
       {/* Main Stats Cards */}
@@ -379,7 +379,7 @@ const AccountantDashboard = () => {
             ))}
           </div>
           <button
-            onClick={() => navigate('/admin/benefits')}
+            onClick={() => navigate('/benefits')}
             className="w-full mt-4 py-2 text-sm text-purple-600 hover:text-purple-700 font-medium bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
           >
             Xem tất cả & Duyệt
@@ -408,7 +408,7 @@ const AccountantDashboard = () => {
           </button>
 
           <button
-            onClick={() => navigate('/admin/benefits')}
+            onClick={() => navigate('/benefits')}
             className="flex flex-col items-center gap-2 p-4 rounded-xl bg-purple-50 hover:bg-purple-100 transition-colors"
           >
             <Receipt className="w-6 h-6 text-purple-600" />
@@ -423,13 +423,6 @@ const AccountantDashboard = () => {
             <span className="text-xs font-medium text-indigo-700">Báo cáo</span>
           </button>
 
-          <button
-            onClick={() => navigate('/attendance')}
-            className="flex flex-col items-center gap-2 p-4 rounded-xl bg-orange-50 hover:bg-orange-100 transition-colors"
-          >
-            <Clock className="w-6 h-6 text-orange-600" />
-            <span className="text-xs font-medium text-orange-700">Chấm công</span>
-          </button>
         </div>
       </div>
     </div>

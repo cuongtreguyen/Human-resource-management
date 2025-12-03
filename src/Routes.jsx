@@ -17,8 +17,11 @@ import FaceRecognitionManager from './pages/face-recognition/FaceRecognitionMana
 import FaceRecognitionAccountant from './pages/face-recognition/FaceRecognitionAccountant';
 import AttendanceList from './pages/attendance/AttendanceList';
 import PayrollList from './pages/payroll/PayrollList';
+import PayrollCalculation from './pages/payroll/PayrollCalculation';
+import PayrollDetails from './pages/payroll/PayrollDetails';
 import PayrollPolicies from './pages/payroll/PayrollPolicies';
 import LeaveManagement from './pages/leave/LeaveManagement';
+import LeaveDetail from './pages/leave/LeaveDetail';
 import LeaveRequest from './pages/leave/LeaveRequest';
 import TaskManagement from './pages/task/TaskManagement';
 import TaskDelegation from './pages/task/TaskDelegation';
@@ -94,10 +97,13 @@ const AppRoutes = () => {
 
         {/* Payroll */}
         <Route path="payroll" element={<PayrollList />} />
+        <Route path="payroll/calculate/:employeeId" element={<AdminAccountantRoute><PayrollCalculation /></AdminAccountantRoute>} />
+        <Route path="payroll/details/:employeeId" element={<AdminAccountantRoute><PayrollDetails /></AdminAccountantRoute>} />
         <Route path="payroll/policies" element={<AccountantRoute><PayrollPolicies /></AccountantRoute>} />
 
         {/* Leaves - Admin có thể duyệt tất cả, Manager và Accountant có thể xem */}
         <Route path="leaves" element={<AdminManagerAccountantRoute><LeaveManagement /></AdminManagerAccountantRoute>} />
+        <Route path="leaves/:id" element={<AdminManagerAccountantRoute><LeaveDetail /></AdminManagerAccountantRoute>} />
         <Route path="leaves/create" element={<ManagerAccountantRoute><LeaveRequest /></ManagerAccountantRoute>} />
         <Route path="leaves/workflow" element={<ManagerRoute><WorkflowManager /></ManagerRoute>} />
 
@@ -131,6 +137,7 @@ const AppRoutes = () => {
         {/* Admin Functions */}
         <Route path="admin/logs" element={<AdminRoute><LogsMonitor /></AdminRoute>} />
         <Route path="admin/benefits" element={<AdminAccountantRoute><AdminBenefits /></AdminAccountantRoute>} />
+        <Route path="benefits" element={<AdminAccountantRoute><AdminBenefits /></AdminAccountantRoute>} />
         <Route path="admin/support-tickets" element={<AdminManagerRoute><AdminSupportTickets /></AdminManagerRoute>} />
         <Route path="settings" element={<AdminRoute><Settings /></AdminRoute>} />
 
