@@ -4,6 +4,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { PY_API } from '../../services/config';
+import fakeApi from '../../services/fakeApi';
 import { Calendar, Clock, Eye, Search, Save, Edit2 } from 'lucide-react';
 import AttendanceDetailsModal from '../../components/attendance/AttendanceDetailsModal';
 import { getRole } from '../../utils/auth';
@@ -107,15 +108,26 @@ const AttendanceList = () => {
 
       console.log('Loading attendance for date:', selectedDate);
 
-      const flaskResponse = await fetch(`${PY_API}/api/attendance/daily?date=${selectedDate}`);
+      // Try Flask API first
+      try {
+        const flaskResponse = await fetch(`${PY_API}/api/attendance/daily?date=${selectedDate}`);
+        if (flaskResponse.ok) {
+          const flaskData = await flaskResponse.json();
+          console.log('Flask API data:', flaskData);
+          setAttendanceData(flaskData || []);
+          return;
+        }
+      } catch (flaskErr) {
+        console.log('Flask API not available, using fake API:', flaskErr);
+      }
 
-      if (flaskResponse.ok) {
-        const flaskData = await flaskResponse.json();
-        console.log('Flask API data:', flaskData);
-        setAttendanceData(flaskData || []);
+      // Fallback to fake API
+      const response = await fakeApi.getDailyAttendance(selectedDate);
+      if (response.success) {
+        console.log('Fake API data:', response.data);
+        setAttendanceData(response.data || []);
       } else {
-        console.error('Flask API error:', flaskResponse.status, flaskResponse.statusText);
-        setError('Không thể kết nối đến hệ thống face recognition');
+        setError('Không thể tải dữ liệu chấm công');
         setAttendanceData([]);
       }
     } catch (err) {

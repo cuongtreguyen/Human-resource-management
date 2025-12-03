@@ -38,7 +38,6 @@ const EmployeeLayout = ({ children, sidebar = true }) => {
         <Header
           onLogout={handleLogout}
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          onNotificationClick={() => navigate('/employee/notifications')}
         />
 
         {/* Page content */}

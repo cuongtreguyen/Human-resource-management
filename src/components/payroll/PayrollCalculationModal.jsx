@@ -44,19 +44,9 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
     const hourlyRate = dailySalary / 8;
     const overtimePay = overtimeHours * hourlyRate * 1.5;
 
-    const grossIncome = adjustedBasicSalary + overtimePay + allowances + bonuses;
-
-    const socialInsurance = basicSalary * 0.08;
-    const healthInsurance = basicSalary * 0.015;
-    const unemploymentInsurance = basicSalary * 0.01;
-    const totalInsurance = socialInsurance + healthInsurance + unemploymentInsurance;
-
-    const taxableIncome = Math.max(0, grossIncome - 11000000);
-    const personalIncomeTax = taxableIncome * 0.05;
-
     const generalDeductions = deductions;
 
-    const netSalary = grossIncome - totalInsurance - personalIncomeTax - generalDeductions;
+    // Không tính BHXH, thuế TNCN, tổng lương - để BE xử lý
 
     const calculation = {
       basicSalary: basicSalary,
@@ -68,14 +58,8 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
       deductions: deductions,
       adjustedBasicSalary: Math.round(adjustedBasicSalary),
       overtimePay: Math.round(overtimePay),
-      grossIncome: Math.round(grossIncome),
-      socialInsurance: Math.round(socialInsurance),
-      healthInsurance: Math.round(healthInsurance),
-      unemploymentInsurance: Math.round(unemploymentInsurance),
-      totalInsurance: Math.round(totalInsurance),
-      personalIncomeTax: Math.round(personalIncomeTax),
-      generalDeductions: Math.round(generalDeductions),
-      netSalary: Math.round(netSalary)
+      generalDeductions: Math.round(generalDeductions)
+      // BHXH, thuế TNCN, tổng lương sẽ được BE tính toán
     };
 
     setCalculatedPayroll(calculation);
@@ -124,8 +108,7 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Day-off
-</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">dayOff</label>
                 <input
                   type="text"
                   value={formData.workingDays}
@@ -241,11 +224,6 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
                       <span>🎁 Thưởng:</span>
                       <span>{calculatedPayroll.bonuses.toLocaleString()} VND</span>
                     </div>
-                    <hr />
-                    <div className="flex justify-between font-medium text-green-600">
-                      <span>Tổng thu nhập:</span>
-                      <span>{calculatedPayroll.grossIncome.toLocaleString()} VND</span>
-                    </div>
                   </div>
                 </div>
 
@@ -256,47 +234,17 @@ const PayrollCalculationModal = ({ isOpen, onClose, onCalculate, employee }) => 
                       <span>⚠️ Khấu trừ chung:</span>
                       <span>{calculatedPayroll.generalDeductions.toLocaleString()} VND</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>🧾 Bảo hiểm (10.5%):</span>
-                      <span>{calculatedPayroll.totalInsurance.toLocaleString()} VND</span>
+                    <div className="text-sm text-gray-600 mt-2 italic">
+                      * BHXH, BHYT, BHTN và Thuế TNCN sẽ được BE tính toán
                     </div>
-                    <div className="flex justify-between">
-                      <span>💼 Thuế TNCN:</span>
-                      <span>{calculatedPayroll.personalIncomeTax.toLocaleString()} VND</span>
-                    </div>
-                    <hr />
-                    <div className="flex justify-between font-medium text-red-600">
-                      <span>Tổng khấu trừ:</span>
-                      <span>{(calculatedPayroll.totalInsurance + calculatedPayroll.personalIncomeTax + calculatedPayroll.generalDeductions).toLocaleString()} VND</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-blue-800 mb-3">✅ Lương thực nhận</h3>
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {calculatedPayroll.netSalary.toLocaleString()} VND
-                    </div>
-                    <div className="text-sm text-gray-600 mt-2">Sau khi trừ tất cả các khoản khấu trừ</div>
                   </div>
                 </div>
 
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                  <h3 className="font-semibold text-gray-800 mb-3">📋 Công thức tính toán</h3>
-                  <div className="space-y-2 text-sm text-gray-600">
-                    <div className="bg-white p-3 rounded border">
-                      <div className="font-medium text-gray-800 mb-2">Công thức:</div>
-                      <div className="text-sm">
-                        Lương thực nhận = Lương cơ bản + Phụ cấp + Thưởng - (BHXH + BHYT + BHTN + Khấu trừ chung)
-                      </div>
-                    </div>
-                    <div className="bg-white p-3 rounded border">
-                      <div className="font-medium text-gray-800 mb-2">Tính toán cụ thể:</div>
-                      <div className="text-sm">
-                        {calculatedPayroll.basicSalary.toLocaleString()} + {calculatedPayroll.allowances.toLocaleString()} + {calculatedPayroll.bonuses.toLocaleString()} - ({calculatedPayroll.socialInsurance.toLocaleString()} + {calculatedPayroll.healthInsurance.toLocaleString()} + {calculatedPayroll.unemploymentInsurance.toLocaleString()} + {calculatedPayroll.generalDeductions.toLocaleString()}) = {calculatedPayroll.netSalary.toLocaleString()} VND
-                      </div>
-                    </div>
+                  <h3 className="font-semibold text-gray-800 mb-3">ℹ️ Lưu ý</h3>
+                  <div className="text-sm text-gray-600">
+                    <p>• BHXH, BHYT, BHTN và Thuế TNCN sẽ được BE tính toán và trả về</p>
+                    <p>• Tổng lương và lương thực nhận sẽ được BE tính toán dựa trên dữ liệu đã nhập</p>
                   </div>
                 </div>
 

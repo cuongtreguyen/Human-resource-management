@@ -122,12 +122,16 @@ const PayrollDetailsModal = ({ isOpen, onClose, payrollData }) => {
                   </div>
                   <div className="flex justify-between">
                     <span>Khấu trừ chung:</span>
-                    <span>{payroll.deductions?.toLocaleString() || '0'} VND</span>
+                    <span>{payroll.deductions?.toLocaleString() || payroll.generalDeductions?.toLocaleString() || '0'} VND</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>💼 Thuế TNCN:</span>
+                    <span>{payroll.personalIncomeTax?.toLocaleString() || '0'} VND</span>
                   </div>
                   <hr />
                   <div className="flex justify-between font-medium text-red-600">
                     <span>Tổng khấu trừ:</span>
-                    <span>{((payroll.socialInsurance || 0) + (payroll.healthInsurance || 0) + (payroll.unemploymentInsurance || 0) + (payroll.deductions || 0)).toLocaleString()} VND</span>
+                    <span>{payroll.totalDeductions?.toLocaleString() || '0'} VND</span>
                   </div>
                 </div>
               </div>

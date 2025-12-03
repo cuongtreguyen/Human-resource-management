@@ -3,11 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import fakeApi from '../../services/fakeApi';
 import { isAdmin, getRole } from '../../utils/auth';
-import { canViewPersonalInfo, canViewEmergencyContact, maskSensitiveData } from '../../utils/fieldPermissions';
 import {
   User, Mail, Phone, Briefcase, Calendar,
   DollarSign, Edit, Trash2, ArrowLeft, CheckCircle,
-  XCircle, Building2, CreditCard, Heart
+  XCircle, Building2, CreditCard, Heart, Clock
 } from 'lucide-react';
 
 const EmployeeDetails = () => {
@@ -190,65 +189,40 @@ const EmployeeDetails = () => {
               Thông tin liên hệ
             </h3>
             <div className="space-y-1">
-              <InfoRow label="Email" value={employee.email} />
+              <InfoRow label="Email công ty" value={employee.email || employee.companyEmail} />
+              <InfoRow label="Email cá nhân" value={employee.personalEmail} />
               <InfoRow label="Số điện thoại" value={employee.phone} />
-              {/* Địa chỉ chỉ hiển thị cho Admin/Manager */}
-              {canViewPersonalInfo(userRole) && (
-                <InfoRow label="Địa chỉ" value={employee.address} />
-              )}
+              <InfoRow label="Địa chỉ thường trú" value={employee.permanentAddress || employee.address} />
+              <InfoRow label="Địa chỉ tạm trú" value={employee.temporaryAddress} />
             </div>
           </div>
 
-          {/* Thông tin cá nhân - Chỉ Admin/Manager */}
-          {canViewPersonalInfo(userRole) && (
-  <>
-    <div className="bg-white rounded-xl border p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <User className="w-5 h-5 text-purple-600" />
-        Thông tin cá nhân
-      </h3>
-      <div className="space-y-1">
-        <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth)} />
-        <InfoRow label="Giới tính" value={employee.gender} />
-        <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus} />
-      </div>
-    </div>
+          {/* Thông tin cá nhân */}
+          <div className="bg-white rounded-xl border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-purple-600" />
+              Thông tin cá nhân
+            </h3>
+            <div className="space-y-1">
+              <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth)} />
+              <InfoRow label="Giới tính" value={employee.gender} />
+              <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus} />
+            </div>
+          </div>
 
-    {/* Giấy tờ tùy thân - Admin xem đầy đủ, Manager xem mask */}
-    <div className="bg-white rounded-xl border p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-        <CreditCard className="w-5 h-5 text-green-600" />
-        Giấy tờ tùy thân
-      </h3>
-      <div className="space-y-1">
-        <InfoRow 
-          label="Số CCCD/CMND" 
-          value={
-            isAdmin() 
-              ? employee.idCard 
-              : maskSensitiveData(employee.idCard, 4)
-          } 
-        />
-        <InfoRow 
-          label="Ngày cấp" 
-          value={
-            isAdmin() 
-              ? formatDate(employee.idCardIssueDate) 
-              : '***'
-          } 
-        />
-        <InfoRow 
-          label="Nơi cấp" 
-          value={
-            isAdmin() 
-              ? employee.idCardIssuePlace 
-              : '***'
-          } 
-        />
-      </div>
-    </div>
-  </>
-)}
+          {/* Giấy tờ tùy thân */}
+          <div className="bg-white rounded-xl border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-green-600" />
+              Giấy tờ tùy thân
+            </h3>
+            <div className="space-y-1">
+              <InfoRow label="Số CCCD/CMND" value={employee.idCard || employee.idNumber} />
+              <InfoRow label="Ngày cấp" value={formatDate(employee.idCardIssueDate)} />
+              <InfoRow label="Nơi cấp" value={employee.idCardIssuePlace} />
+              <InfoRow label="Mã số thuế" value={employee.taxCode} />
+            </div>
+          </div>
 
           {/* Thông tin công việc */}
           <div className="bg-white rounded-xl border p-6">
@@ -257,56 +231,82 @@ const EmployeeDetails = () => {
               Thông tin công việc
             </h3>
             <div className="space-y-1">
-              <InfoRow label="Mã nhân viên" value={employee.id} />
+              <InfoRow label="Mã nhân viên" value={employee.employeeCode || employee.id} />
               <InfoRow label="Phòng ban" value={employee.department} />
               <InfoRow label="Chức vụ" value={employee.position} />
               <InfoRow label="Quản lý trực tiếp" value={employee.manager} />
               <InfoRow label="Địa điểm làm việc" value={employee.workLocation} />
               <InfoRow label="Loại nhân viên" value={employee.employeeType} />
               <InfoRow label="Loại hợp đồng" value={employee.contractType} />
+              {employee.contractCode && (
+                <InfoRow label="Mã hợp đồng" value={employee.contractCode} />
+              )}
+              {employee.signDate && (
+                <InfoRow label="Ngày ký hợp đồng" value={formatDate(employee.signDate)} />
+              )}
+              {employee.hireDate && (
+                <InfoRow label="Ngày vào làm" value={formatDate(employee.hireDate)} />
+              )}
             </div>
           </div>
 
-          {/* Thông tin lương (Admin only) */}
-          {isAdmin() && (
+          {/* Lịch làm việc */}
+          {(employee.shift || employee.timeIn || employee.timeOut) && (
             <div className="bg-white rounded-xl border p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
-                Thông tin lương
+                <Clock className="w-5 h-5 text-purple-600" />
+                Lịch làm việc
               </h3>
               <div className="space-y-1">
-                <InfoRow label="Lương cơ bản" value={formatCurrency(employee.salary)} />
+                {employee.shift && (
+                  <InfoRow label="Ca làm việc" value={employee.shift} />
+                )}
+                {employee.timeIn && (
+                  <InfoRow label="Thời gian vào" value={employee.timeIn} />
+                )}
+                {employee.timeOut && (
+                  <InfoRow label="Thời gian ra" value={employee.timeOut} />
+                )}
               </div>
             </div>
           )}
 
-          {/* Liên hệ khẩn cấp - Chỉ Admin/Manager */}
-          {canViewEmergencyContact(userRole) && (
-            <div className="bg-white rounded-xl border p-6 md:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Heart className="w-5 h-5 text-red-600" />
-                Liên hệ khẩn cấp
-              </h3>
-              {employee.emergencyContact ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <span className="text-gray-500 text-sm">Họ và tên</span>
-                    <p className="text-gray-900 font-medium">{employee.emergencyContact.name || 'Chưa cập nhật'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-sm">Mối quan hệ</span>
-                    <p className="text-gray-900 font-medium">{employee.emergencyContact.relationship || 'Chưa cập nhật'}</p>
-                  </div>
-                  <div>
-                    <span className="text-gray-500 text-sm">Số điện thoại</span>
-                    <p className="text-gray-900 font-medium">{employee.emergencyContact.phone || 'Chưa cập nhật'}</p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-gray-500">Chưa cập nhật thông tin liên hệ khẩn cấp</p>
-              )}
+          {/* Thông tin lương */}
+          <div className="bg-white rounded-xl border p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-600" />
+              Thông tin lương
+            </h3>
+            <div className="space-y-1">
+              <InfoRow label="Lương cơ bản" value={formatCurrency(employee.salary || employee.baseSalary)} />
             </div>
-          )}
+          </div>
+
+          {/* Liên hệ khẩn cấp */}
+          <div className="bg-white rounded-xl border p-6 md:col-span-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <Heart className="w-5 h-5 text-red-600" />
+              Liên hệ khẩn cấp
+            </h3>
+            {(employee.emergencyContactName || employee.emergencyContactRelationship || employee.emergencyContactPhone) ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <span className="text-gray-500 text-sm">Họ và tên</span>
+                  <p className="text-gray-900 font-medium">{employee.emergencyContactName || 'Chưa cập nhật'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500 text-sm">Mối quan hệ</span>
+                  <p className="text-gray-900 font-medium">{employee.emergencyContactRelationship || 'Chưa cập nhật'}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500 text-sm">Số điện thoại</span>
+                  <p className="text-gray-900 font-medium">{employee.emergencyContactPhone || 'Chưa cập nhật'}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-gray-500">Chưa cập nhật thông tin liên hệ khẩn cấp</p>
+            )}
+          </div>
         </div>
 
         {/* Delete Confirmation Modal */}

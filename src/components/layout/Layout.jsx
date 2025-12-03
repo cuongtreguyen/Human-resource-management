@@ -37,7 +37,6 @@ const Layout = ({ children }) => {
           <Header
             onLogout={handleLogout}
             onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-            onNotificationClick={() => navigate('/notifications')}
           />
 
           {/* Page content */}

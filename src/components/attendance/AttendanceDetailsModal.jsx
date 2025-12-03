@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { PY_API } from '../../services/config';
+import fakeApi from '../../services/fakeApi';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import { Calendar, Edit, Save, X, Download } from 'lucide-react';
@@ -26,11 +27,31 @@ const AttendanceDetailsModal = ({ isOpen, onClose, selectedRecord }) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
       
-      const response = await fetch(`${PY_API}/attendance/range?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
       
-      if (response.ok) {
-        const allRecords = await response.json();
-        const employeeRecords = allRecords.filter(record => record.id === selectedRecord.id);
+      // Try Flask API first
+      try {
+        const response = await fetch(`${PY_API}/attendance/range?startDate=${startDateStr}&endDate=${endDateStr}`);
+        if (response.ok) {
+          const allRecords = await response.json();
+          const employeeRecords = allRecords.filter(record => 
+            record.id === selectedRecord.id || record.employee_id === selectedRecord.id
+          );
+          setAttendanceHistory(employeeRecords);
+          return;
+        }
+      } catch (flaskErr) {
+        console.log('Flask API not available, using fake API:', flaskErr);
+      }
+      
+      // Fallback to fake API
+      const response = await fakeApi.getAttendanceRange(startDateStr, endDateStr);
+      if (response.success) {
+        const allRecords = response.data || [];
+        const employeeRecords = allRecords.filter(record => 
+          record.id === selectedRecord.id || record.employee_id === selectedRecord.id
+        );
         setAttendanceHistory(employeeRecords);
       }
     } catch (error) {
@@ -59,19 +80,30 @@ const AttendanceDetailsModal = ({ isOpen, onClose, selectedRecord }) => {
     setSaving(true);
     try {
       console.log('Saving attendance record:', editingRecord, editForm);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setAttendanceHistory(prev => 
-        prev.map(record => 
-          record.date === editingRecord.date && record.id === editingRecord.id
-            ? { ...record, check_in: editForm.check_in, check_out: editForm.check_out }
-            : record
-        )
-      );
+      // Try to update via fake API
+      const recordId = editingRecord.id || `att_${editingRecord.employee_id || selectedRecord.id}_${editingRecord.date}`;
+      const updateResult = await fakeApi.updateAttendanceRecord(recordId, {
+        check_in: editForm.check_in,
+        check_out: editForm.check_out
+      });
       
-      setEditingRecord(null);
-      setEditForm({ check_in: '', check_out: '' });
-      alert('Cập nhật chấm công thành công!');
+      if (updateResult.success) {
+        // Update local state
+        setAttendanceHistory(prev => 
+          prev.map(record => 
+            record.date === editingRecord.date && (record.id === editingRecord.id || record.employee_id === editingRecord.employee_id)
+              ? { ...record, check_in: editForm.check_in, check_out: editForm.check_out }
+              : record
+          )
+        );
+        
+        setEditingRecord(null);
+        setEditForm({ check_in: '', check_out: '' });
+        alert('Cập nhật chấm công thành công!');
+      } else {
+        throw new Error('Update failed');
+      }
     } catch (error) {
       console.error('Failed to save attendance record:', error);
       alert('Cập nhật chấm công thất bại. Vui lòng thử lại.');

@@ -29,15 +29,36 @@ const Profile = () => {
         if (userInfo.email) {
           foundEmployee = res.data.find(emp => emp.email === userInfo.email);
         }
-        // Nếu không tìm thấy theo email, tìm theo name
+        // Nếu không tìm thấy theo email, tìm theo fullName hoặc name
         if (!foundEmployee && userInfo.name) {
-          foundEmployee = res.data.find(emp => emp.name === userInfo.name);
+          foundEmployee = res.data.find(emp => 
+            emp.fullName === userInfo.name || 
+            emp.name === userInfo.name ||
+            (emp.name && emp.name.toLowerCase().includes(userInfo.name.toLowerCase()))
+          );
+        }
+        // Nếu vẫn không tìm thấy, thử tìm theo employeeId
+        if (!foundEmployee && userInfo.employeeId) {
+          foundEmployee = res.data.find(emp => emp.id === userInfo.employeeId);
         }
       }
 
       // Nếu không tìm thấy, lấy employee đầu tiên làm fallback (cho demo)
       if (!foundEmployee && res.data.length > 0) {
         foundEmployee = res.data[0];
+      }
+
+      // Debug: Log để kiểm tra
+      if (foundEmployee) {
+        console.log('Found employee:', foundEmployee);
+        console.log('Emergency contact:', {
+          name: foundEmployee.emergencyContactName,
+          relationship: foundEmployee.emergencyContactRelationship,
+          phone: foundEmployee.emergencyContactPhone
+        });
+      } else {
+        console.log('No employee found. userInfo:', userInfo);
+        console.log('Available employees:', res.data.map(emp => ({ id: emp.id, name: emp.name, email: emp.email })));
       }
 
       setEmployee(foundEmployee);
@@ -67,19 +88,6 @@ const Profile = () => {
     );
   };
 
-  const getRoleBadge = () => {
-    const roleLabels = {
-      admin: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Quản trị viên' },
-      manager: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Quản lý' },
-      accountant: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Kế toán' }
-    };
-    const config = roleLabels[userRole] || roleLabels.admin;
-    return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
-        {config.label}
-      </span>
-    );
-  };
 
   const InfoRow = ({ label, value, icon: Icon }) => (
     <div className="flex justify-between items-center py-3 border-b border-gray-100 last:border-0">
@@ -157,14 +165,13 @@ const Profile = () => {
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
             <div className="flex items-center gap-6">
               <div className={`w-24 h-24 bg-gradient-to-br ${currentTheme.gradient} rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg`}>
-                {employee.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                {(employee.fullName || employee.name)?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </div>
 
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
-                  <h2 className="text-2xl font-bold text-gray-900">{employee.name}</h2>
+                  <h2 className="text-2xl font-bold text-gray-900">{employee.fullName || employee.name}</h2>
                   {getStatusBadge(employee.status)}
-                  {getRoleBadge()}
                 </div>
                 <p className={`text-xl ${currentTheme.text} font-semibold mb-3`}>{employee.position}</p>
                 <div className="flex flex-wrap gap-4 text-sm text-gray-600">
@@ -236,6 +243,15 @@ const Profile = () => {
                 <InfoRow label="Địa điểm làm việc" value={employee.workLocation} />
                 <InfoRow label="Loại nhân viên" value={employee.employeeType} />
                 <InfoRow label="Loại hợp đồng" value={employee.contractType} />
+                {employee.shift && (
+                  <InfoRow label="Ca làm việc" value={employee.shift} />
+                )}
+                {employee.timeIn && (
+                  <InfoRow label="Thời gian vào" value={employee.timeIn} />
+                )}
+                {employee.timeOut && (
+                  <InfoRow label="Thời gian ra" value={employee.timeOut} />
+                )}
               </div>
             </div>
 
@@ -257,19 +273,19 @@ const Profile = () => {
                 <Heart className="w-5 h-5 text-red-600" />
                 Liên hệ khẩn cấp
               </h3>
-              {employee.emergencyContact ? (
+              {(employee.emergencyContactName || employee.emergencyContactRelationship || employee.emergencyContactPhone) ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1">Họ và tên</p>
-                    <p className="text-gray-900 font-medium">{employee.emergencyContact.name || 'Chưa cập nhật'}</p>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContactName || 'Chưa cập nhật'}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1">Mối quan hệ</p>
-                    <p className="text-gray-900 font-medium">{employee.emergencyContact.relationship || 'Chưa cập nhật'}</p>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContactRelationship || 'Chưa cập nhật'}</p>
                   </div>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-sm text-gray-500 mb-1">Số điện thoại</p>
-                    <p className="text-gray-900 font-medium">{employee.emergencyContact.phone || 'Chưa cập nhật'}</p>
+                    <p className="text-gray-900 font-medium">{employee.emergencyContactPhone || 'Chưa cập nhật'}</p>
                   </div>
                 </div>
               ) : (

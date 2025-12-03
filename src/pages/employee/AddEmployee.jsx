@@ -7,7 +7,7 @@ import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import fakeApi from '../../services/fakeApi';
 import adminLogService from '../../services/adminLogService';
-import { User, Phone, Check, X } from 'lucide-react';
+import { User, Phone, Check, X, Clock } from 'lucide-react';
 import { logCreateEmployee } from '../../utils/systemLogger';
 
 const AddEmployee = () => {
@@ -44,6 +44,9 @@ const AddEmployee = () => {
     manager: '',
     workLocation: '',
     employeeType: '',
+    timeIn: '',
+    timeOut: '',
+    shift: '',
     
     // Emergency Contact
     emergencyContactName: '',
@@ -52,10 +55,31 @@ const AddEmployee = () => {
   });
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    // Nếu chọn ca làm việc, tự động set thời gian vào và ra
+    if (field === 'shift') {
+      const shiftTimes = {
+        'Ca sáng': { timeIn: '08:00', timeOut: '17:00' },
+        'Ca chiều': { timeIn: '13:00', timeOut: '22:00' },
+        'Ca tối': { timeIn: '18:00', timeOut: '02:00' },
+        'Ca đêm': { timeIn: '22:00', timeOut: '06:00' },
+        'Tùy chỉnh': { timeIn: '', timeOut: '' }
+      };
+      
+      const times = shiftTimes[value] || { timeIn: '', timeOut: '' };
+      
+      setFormData(prev => ({
+        ...prev,
+        [field]: value,
+        timeIn: times.timeIn,
+        timeOut: times.timeOut
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
+    
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => {
@@ -183,6 +207,9 @@ const AddEmployee = () => {
         contractCode: formData.contractCode,
         hireDate: formData.signDate || new Date().toISOString().split('T')[0],
         salary: formData.baseSalary ? parseInt(formData.baseSalary) * 1000000 : 0,
+        timeIn: formData.timeIn,
+        timeOut: formData.timeOut,
+        shift: formData.shift,
         
         // Emergency Contact
         emergencyContact: formData.emergencyContactName || formData.emergencyContactRelationship || formData.emergencyContactPhone ? {
@@ -267,6 +294,7 @@ const AddEmployee = () => {
   const maritalStatuses = ['Độc thân', 'Đã kết hôn', 'Ly hôn', 'Góa'];
   const workLocations = ['Văn phòng Hà Nội', 'Văn phòng TP. Hồ Chí Minh', 'Văn phòng Đà Nẵng', 'Remote', 'Hybrid'];
   const employeeTypes = ['Toàn thời gian', 'Bán thời gian', 'Hợp đồng', 'Thực tập'];
+  const shifts = ['Ca sáng', 'Ca chiều', 'Ca tối', 'Ca đêm', 'Tùy chỉnh'];
   const relationships = ['Cha', 'Mẹ', 'Vợ', 'Chồng', 'Anh/Chị/Em', 'Người thân khác'];
   
   // Get managers list (for now, use employees as managers)
@@ -616,6 +644,53 @@ const AddEmployee = () => {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">Nhập số tiền theo triệu đồng (ví dụ: 10 cho 10 triệu)</p>
+                </div>
+
+                {/* Work Schedule */}
+                <div>
+                  <div className="flex items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">Lịch làm việc</h3>
+                    <Clock className="w-4 h-4 ml-2 text-purple-500" />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">Thời gian vào, thời gian ra và ca làm việc của nhân viên</p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Select
+                        label="Ca làm việc"
+                        value={formData.shift}
+                        onChange={(value) => handleInputChange('shift', value)}
+                        options={shifts.map(shift => ({ value: shift, label: shift }))}
+                        placeholder="-- Chọn ca làm việc --"
+                        helperText="Chọn ca làm việc, thời gian sẽ tự động được thiết lập"
+                        required
+                      />
+                    </div>
+                    <div></div>
+                    <Input
+                      label="Thời gian vào"
+                      type="time"
+                      value={formData.timeIn}
+                      onChange={(value) => handleInputChange('timeIn', value)}
+                      placeholder="Chọn thời gian vào"
+                      helperText={formData.shift === 'Tùy chỉnh' ? "Nhập thời gian vào tùy chỉnh" : formData.shift ? "Tự động thiết lập theo ca làm việc, có thể chỉnh sửa" : "Thời gian bắt đầu làm việc trong ngày"}
+                    />
+                    <Input
+                      label="Thời gian ra"
+                      type="time"
+                      value={formData.timeOut}
+                      onChange={(value) => handleInputChange('timeOut', value)}
+                      placeholder="Chọn thời gian ra"
+                      helperText={formData.shift === 'Tùy chỉnh' ? "Nhập thời gian ra tùy chỉnh" : formData.shift ? "Tự động thiết lập theo ca làm việc, có thể chỉnh sửa" : "Thời gian kết thúc làm việc trong ngày"}
+                    />
+                  </div>
+                  {formData.shift && formData.shift !== 'Tùy chỉnh' && (
+                    <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-700">
+                        <strong>{formData.shift}:</strong> Thời gian vào {formData.timeIn} - Thời gian ra {formData.timeOut}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Emergency Contact */}
