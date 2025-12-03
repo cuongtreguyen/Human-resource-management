@@ -20,7 +20,7 @@ const AttendanceDetailsModal = ({ isOpen, onClose, selectedRecord }) => {
 
   const loadAttendanceHistory = async () => {
     if (!selectedRecord) return;
-    
+
     setLoading(true);
     try {
       const endDate = new Date();
@@ -56,6 +56,11 @@ const AttendanceDetailsModal = ({ isOpen, onClose, selectedRecord }) => {
       }
     } catch (error) {
       console.error('Failed to load attendance history:', error);
+      // Fallback: hiển thị record hiện tại
+      setAttendanceHistory([{
+        ...selectedRecord,
+        date: new Date().toISOString().split('T')[0]
+      }]);
     } finally {
       setLoading(false);
     }
