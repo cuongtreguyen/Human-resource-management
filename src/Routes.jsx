@@ -26,6 +26,10 @@ import LeaveRequest from './pages/leave/LeaveRequest';
 import TaskManagement from './pages/task/TaskManagement';
 import TaskDelegation from './pages/task/TaskDelegation';
 
+// Kanban Pages
+import BoardList from './pages/kanban/BoardList';
+import KanbanBoard from './pages/kanban/KanbanBoard';
+
 // Admin Pages
 import LogsMonitor from './pages/admin/LogsMonitor';
 import AdminBenefits from './pages/admin/AdminBenefits';
@@ -42,6 +46,7 @@ import EmployeeAttendance from './pages/employee/Attendance';
 import EmployeeLeave from './pages/employee/Leave';
 import EmployeePayroll from './pages/employee/Payroll';
 import EmployeeTaskBoard from './pages/employee/EmployeeTaskBoard';
+import EmployeeKanbanView from './pages/employee/EmployeeKanbanView';
 import EmployeeDocuments from './pages/employee/Documents';
 import EmployeeProfile from './pages/employee/Profile';
 import EmployeeAttendanceSummary from './pages/employee/AttendanceSummary';
@@ -107,9 +112,13 @@ const AppRoutes = () => {
         <Route path="leaves/create" element={<ManagerAccountantRoute><LeaveRequest /></ManagerAccountantRoute>} />
         <Route path="leaves/workflow" element={<ManagerRoute><WorkflowManager /></ManagerRoute>} />
 
-        {/* Tasks */}
+        {/* Tasks - Legacy */}
         <Route path="tasks" element={<AdminManagerRoute><TaskManagement /></AdminManagerRoute>} />
         <Route path="task-delegation" element={<ManagerRoute><TaskDelegation /></ManagerRoute>} />
+
+        {/* Kanban Board System */}
+        <Route path="kanban" element={<AdminManagerRoute><BoardList /></AdminManagerRoute>} />
+        <Route path="kanban/:boardId" element={<AdminManagerRoute><KanbanBoard /></AdminManagerRoute>} />
 
         {/* OT Management */}
         <Route path="overtime" element={<ManagerRoute><OTManagement /></ManagerRoute>} />
@@ -157,6 +166,7 @@ const AppRoutes = () => {
         <Route path="leave" element={<EmployeeLeave />} />
         <Route path="payroll" element={<EmployeePayroll />} />
         <Route path="tasks" element={<EmployeeTaskBoard />} />
+        <Route path="kanban" element={<EmployeeKanbanView />} />
         <Route path="documents" element={<EmployeeDocuments />} />
         <Route path="benefits" element={<EmployeeBenefitsInsurance />} />
         <Route path="support" element={<EmployeeSupportHelp />} />

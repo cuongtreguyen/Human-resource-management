@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   X, Users, Calendar, Clock, DollarSign, FileText, Settings, Home,
   BarChart3, CheckSquare, User, Bell, Activity, Heart, Award,
-  HelpCircle, LogOut, ChevronLeft, Menu, BookOpen, Shield
+  HelpCircle, LogOut, ChevronLeft, Menu, BookOpen, Shield, Kanban
 } from 'lucide-react';
 import { getRole, clearRole } from '../../utils/auth';
 
@@ -98,7 +98,7 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
         { name: 'Đăng ký OT', href: '/employee/ot', icon: Clock },
         { name: 'Nghỉ phép', href: '/employee/leave', icon: FileText },
         { name: 'Bảng lương', href: '/employee/payroll', icon: DollarSign },
-        { name: 'Nhiệm vụ', href: '/employee/tasks', icon: CheckSquare },
+        { name: 'Công việc của tôi', href: '/employee/kanban', icon: Kanban },
         { name: 'Đánh giá của tôi', href: '/employee/evaluation', icon: Award },
         { name: 'Tài liệu', href: '/employee/documents', icon: BookOpen },
         { name: 'Hồ sơ', href: '/employee/profile', icon: User },
@@ -121,7 +121,7 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
       { name: 'Danh sách nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['accountant'] },
       { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: FileText, allowedRoles: ['manager', 'accountant'] },
       { name: 'Duyệt OT', href: '/overtime', icon: Clock, allowedRoles: ['manager'] },
-      { name: 'Quản lý công việc', href: '/tasks', icon: CheckSquare, allowedRoles: ['manager'] },
+      { name: 'Quản lý công việc', href: '/kanban', icon: Kanban, allowedRoles: ['admin', 'manager'] },
       { name: 'Đánh giá nhân viên', href: '/evaluations', icon: Award, allowedRoles: ['admin', 'manager'] },
       { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['manager', 'accountant'] },
       { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['manager', 'accountant'] },

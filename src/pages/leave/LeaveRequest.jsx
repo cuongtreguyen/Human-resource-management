@@ -492,17 +492,21 @@ import Layout from '../../components/layout/Layout';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { 
-  Calendar, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
-  FileText, 
-  ArrowLeft, 
-  Phone, 
+import {
+  Calendar,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  FileText,
+  ArrowLeft,
+  Phone,
   Briefcase,
   ChevronRight,
-  Info
+  Info,
+  History,
+  CheckCircle2,
+  XCircle,
+  Hourglass
 } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
 import { getRole, getUserInfo } from '../../utils/auth';
@@ -527,10 +531,13 @@ const LeaveRequest = () => {
   const [currentTasks, setCurrentTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [leaveHistory, setLeaveHistory] = useState([]);
+  const [leaveBalance, setLeaveBalance] = useState(null);
 
   useEffect(() => {
     loadEmployees();
     loadCurrentTasks();
+    loadLeaveHistory();
   }, []);
 
   const loadEmployees = async () => {
@@ -548,6 +555,28 @@ const LeaveRequest = () => {
       setCurrentTasks(response.data);
     } catch (err) {
       console.error('Error loading tasks:', err);
+    }
+  };
+
+  const loadLeaveHistory = async () => {
+    try {
+      const userInfo = getUserInfo();
+      const employeeId = userInfo?.employeeId || 'emp001';
+      const currentYear = new Date().getFullYear();
+
+      // Load leave balance
+      const balanceRes = await fakeApi.getLeaveBalance(employeeId);
+      if (balanceRes.success) {
+        setLeaveBalance(balanceRes.data);
+      }
+
+      // Load leave history
+      const historyRes = await fakeApi.getLeaveHistory(employeeId, currentYear);
+      if (historyRes.success) {
+        setLeaveHistory(historyRes.data);
+      }
+    } catch (err) {
+      console.error('Error loading leave history:', err);
     }
   };
 
@@ -832,7 +861,7 @@ const LeaveRequest = () => {
                       <div className="w-1.5 h-5 bg-blue-500 rounded-full"></div>
                       Chiến lược đề xuất
                     </h3>
-                    
+
                     <div className="mb-4">
                       <div className="text-sm font-bold text-blue-700 bg-blue-50 px-3 py-2 rounded-lg inline-block mb-2">
                         {delegationStrategy.strategy}
@@ -851,6 +880,63 @@ const LeaveRequest = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Leave History Card */}
+                {leaveHistory.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+                      <History className="w-4 h-4 text-gray-500" />
+                      <h3 className="font-semibold text-gray-900">Lịch sử nghỉ phép</h3>
+                    </div>
+                    <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                      {leaveHistory.slice(0, 5).map((leave) => (
+                        <div key={leave.id} className="p-3 hover:bg-gray-50 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {leave.type === 'annual' ? 'Nghỉ phép năm' :
+                                 leave.type === 'sick' ? 'Nghỉ ốm' :
+                                 leave.type === 'unpaid' ? 'Không lương' :
+                                 leave.type === 'maternity' ? 'Thai sản' : 'Khác'}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {new Date(leave.startDate).toLocaleDateString('vi-VN')} - {new Date(leave.endDate).toLocaleDateString('vi-VN')}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-600">{leave.days} ngày</span>
+                              {leave.status === 'approved' && (
+                                <span className="flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Duyệt
+                                </span>
+                              )}
+                              {leave.status === 'pending' && (
+                                <span className="flex items-center gap-1 text-xs text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full">
+                                  <Hourglass className="w-3 h-3" />
+                                  Chờ
+                                </span>
+                              )}
+                              {leave.status === 'rejected' && (
+                                <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                                  <XCircle className="w-3 h-3" />
+                                  Từ chối
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {leaveHistory.length > 5 && (
+                      <div className="p-3 bg-gray-50 border-t border-gray-100 text-center">
+                        <button className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+                          Xem tất cả ({leaveHistory.length})
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
