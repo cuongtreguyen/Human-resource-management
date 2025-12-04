@@ -3,6 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import AppRoutes from './Routes';
 import { TaskProvider } from './context/TaskContext';
 import { OTProvider } from './context/OTContext';
+import { KanbanProvider } from './context/KanbanContext';
 import './styles/index.css';
 
 function App() {
@@ -10,7 +11,9 @@ function App() {
     <BrowserRouter>
       <TaskProvider>
         <OTProvider>
-          <AppRoutes />
+          <KanbanProvider>
+            <AppRoutes />
+          </KanbanProvider>
         </OTProvider>
       </TaskProvider>
     </BrowserRouter>

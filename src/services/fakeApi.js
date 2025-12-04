@@ -3175,25 +3175,42 @@ class FakeApiService {
   // ============================================
 
   async getLeaveBalance(employeeId) {
+    // Dữ liệu riêng cho từng employee
+    const balanceData = {
+      'emp001': { // Employee
+        annual: { total: 12, used: 3, pending: 1, remaining: 8, carriedForward: 0 },
+        sick: { total: 5, used: 1, pending: 0, remaining: 4 },
+        unpaid: { used: 0 }
+      },
+      'mgr001': { // Manager
+        annual: { total: 15, used: 5, pending: 2, remaining: 8, carriedForward: 3 },
+        sick: { total: 5, used: 0, pending: 0, remaining: 5 },
+        unpaid: { used: 1 }
+      },
+      'acc001': { // Accountant
+        annual: { total: 12, used: 4, pending: 0, remaining: 8, carriedForward: 2 },
+        sick: { total: 5, used: 2, pending: 1, remaining: 2 },
+        unpaid: { used: 0 }
+      },
+      'adm001': { // Admin
+        annual: { total: 15, used: 2, pending: 0, remaining: 13, carriedForward: 5 },
+        sick: { total: 5, used: 0, pending: 0, remaining: 5 },
+        unpaid: { used: 0 }
+      }
+    };
+
+    const defaultBalance = {
+      annual: { total: 12, used: 0, pending: 0, remaining: 12, carriedForward: 0 },
+      sick: { total: 5, used: 0, pending: 0, remaining: 5 },
+      unpaid: { used: 0 }
+    };
+
+    const userData = balanceData[employeeId] || defaultBalance;
+
     const balance = {
       employeeId: employeeId,
-      year: 2024,
-      annual: {
-        total: 12,
-        used: 5,
-        pending: 3,
-        remaining: 4,
-        carriedForward: 2
-      },
-      sick: {
-        total: 5,
-        used: 2,
-        pending: 0,
-        remaining: 3
-      },
-      unpaid: {
-        used: 0
-      },
+      year: new Date().getFullYear(),
+      ...userData,
       special: {
         marriage: { available: true, days: 3 },
         maternity: { available: false },
@@ -3205,28 +3222,29 @@ class FakeApiService {
   }
 
   async getLeaveHistory(employeeId, year) {
-    const history = [
-      {
-        id: 'lh001',
-        type: 'annual',
-        startDate: '2024-01-15',
-        endDate: '2024-01-17',
-        days: 3,
-        status: 'approved',
-        approvedBy: 'Manager',
-        approvedDate: '2024-01-10'
-      },
-      {
-        id: 'lh002',
-        type: 'sick',
-        startDate: '2024-01-22',
-        endDate: '2024-01-24',
-        days: 3,
-        status: 'approved',
-        approvedBy: 'Manager',
-        approvedDate: '2024-01-21'
-      }
-    ];
+    // Lịch sử riêng cho từng employee
+    const historyData = {
+      'emp001': [ // Employee
+        { id: 'lh-emp-001', type: 'annual', startDate: '2024-03-10', endDate: '2024-03-12', days: 3, status: 'approved', approvedBy: 'Nguyễn Văn Quản Lý', approvedDate: '2024-03-05' },
+        { id: 'lh-emp-002', type: 'sick', startDate: '2024-02-15', endDate: '2024-02-15', days: 1, status: 'approved', approvedBy: 'Nguyễn Văn Quản Lý', approvedDate: '2024-02-15' },
+        { id: 'lh-emp-003', type: 'annual', startDate: '2024-12-20', endDate: '2024-12-21', days: 2, status: 'pending', approvedBy: null, approvedDate: null },
+      ],
+      'mgr001': [ // Manager
+        { id: 'lh-mgr-001', type: 'annual', startDate: '2024-01-15', endDate: '2024-01-19', days: 5, status: 'approved', approvedBy: 'Admin', approvedDate: '2024-01-10' },
+        { id: 'lh-mgr-002', type: 'annual', startDate: '2024-06-01', endDate: '2024-06-02', days: 2, status: 'pending', approvedBy: null, approvedDate: null },
+        { id: 'lh-mgr-003', type: 'unpaid', startDate: '2024-08-10', endDate: '2024-08-10', days: 1, status: 'approved', approvedBy: 'Admin', approvedDate: '2024-08-05' },
+      ],
+      'acc001': [ // Accountant
+        { id: 'lh-acc-001', type: 'annual', startDate: '2024-02-20', endDate: '2024-02-23', days: 4, status: 'approved', approvedBy: 'Admin', approvedDate: '2024-02-15' },
+        { id: 'lh-acc-002', type: 'sick', startDate: '2024-04-05', endDate: '2024-04-06', days: 2, status: 'approved', approvedBy: 'Admin', approvedDate: '2024-04-05' },
+        { id: 'lh-acc-003', type: 'sick', startDate: '2024-11-25', endDate: '2024-11-25', days: 1, status: 'pending', approvedBy: null, approvedDate: null },
+      ],
+      'adm001': [ // Admin
+        { id: 'lh-adm-001', type: 'annual', startDate: '2024-05-01', endDate: '2024-05-02', days: 2, status: 'approved', approvedBy: 'System', approvedDate: '2024-04-28' },
+      ]
+    };
+
+    const history = historyData[employeeId] || [];
     return this.delayResponse({ data: history, success: true });
   }
 
