@@ -276,32 +276,36 @@ const EmployeeProfile = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        if (!isAuthenticated()) {
-          window.location.href = '/login';
-          return;
-        }
-
-        const employeeId = getCurrentEmployeeId();
-        if (!employeeId) {
-          console.error('Không tìm thấy employeeId trong session');
-          return;
-        }
-
-        const response = await getEmployeeProfile(employeeId);
-        // API trả về { data: { ... }, success: true }
-        if (response.success && response.data) {
-          setEmployee(response.data);
-        }
-      } catch (error) {
-        console.error('Error loading employee:', error);
-      } finally {
-        setLoading(false);
+  const load = async () => {
+    try {
+      if (!isAuthenticated()) {
+        window.location.href = '/login';
+        return;
       }
-    };
-    load();
-  }, []);
+
+      let employeeId = getCurrentEmployeeId();
+
+      // BƯỚC QUAN TRỌNG: Nếu employeeId là dạng "EMP001" → đổi sang ID số thật
+      if (employeeId && !Number.isInteger(Number(employeeId))) {
+        // Đây là mã nhân viên (EMP001, NV2025,...)
+        console.log('Đang chuyển mã nhân viên sang ID số:', employeeId);
+        employeeId = await getEmployeeIdByCode(employeeId); // ← API bạn đã viết
+        if (!employeeId) throw new Error('Không tìm được ID nhân viên');
+      }
+
+      console.log('Gọi profile với ID số:', employeeId);
+      const data = await getEmployeeProfile(employeeId); // ← giờ mới đúng ID số
+      setEmployee(data);
+
+    } catch (error) {
+      console.error('Error loading employee profile:', error);
+      // Có thể thêm toast thông báo
+    } finally {
+      setLoading(false);
+    }
+  };
+  load();
+}, []);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa cập nhật';
