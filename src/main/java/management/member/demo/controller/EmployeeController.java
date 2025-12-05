@@ -154,7 +154,7 @@ public class EmployeeController {
         return ResponseEntity.ok(service.updateEmployeeById(id, request));
     }
 
-    // Lấy thông tin profile của nhân viên theo ID (bao gồm thông tin liên hệ và công việc)
+    // Lấy thông tin profile của nhân viên theo ID (bao gồm thông tin sliên hệ và công việc)
     @GetMapping("/{id}/profile")
     @Operation(summary = "Get employee profile", description = "Get employee profile information including contact and work details")
     @ApiResponses({

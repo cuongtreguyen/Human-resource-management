@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Data
 @NoArgsConstructor
@@ -90,5 +91,38 @@ public class AddEmployeeRequest {
 
     @Size(max = 255, message = "Temporary address must not exceed 255 characters")
     private String temporaryAddress;
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate idCardIssueDate;
+
+    @Size(max = 100, message = "ID card issue place must not exceed 100 characters")
+    private String idCardIssuePlace;
+
+    @Size(max = 50, message = "Marital status must not exceed 50 characters")
+    private String maritalStatus;
+
+    @Size(max = 50, message = "Employee type must not exceed 50 characters")
+    private String employeeType;
+
+    @Size(max = 100, message = "Emergency contact name must not exceed 100 characters")
+    private String emergencyContactName;
+
+    @Size(max = 30, message = "Emergency contact phone must not exceed 30 characters")
+    private String emergencyContactPhone;
+
+    @Size(max = 50, message = "Emergency contact relationship must not exceed 50 characters")
+    private String emergencyContactRelationship;
+
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime timeIn;
+
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime timeOut;
+
+    @Size(max = 50, message = "Shift must not exceed 50 characters")
+    private String shift;
+
+    @Size(max = 255, message = "Work location must not exceed 255 characters")
+    private String workLocation;
 }
 

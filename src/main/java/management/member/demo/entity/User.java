@@ -30,12 +30,6 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Tên đăng nhập của user (duy nhất) */
-    @NotBlank
-    @Size(max = 50)
-    @Column(unique = true)
-    private String username;
-
     /** Mật khẩu đã được mã hóa của user */
     @NotBlank
     @Size(max = 100)
@@ -47,13 +41,15 @@ public class User {
     @Column(unique = true)
     private String email;
 
-    /** Tên của user */
-    @Size(max = 100)
-    private String firstName;
+    /** Tên đầy đủ của user (lấy từ Employee.fullName khi có Employee) */
+    @Size(max = 200)
+    @Column(name = "full_name")
+    private String fullName;
 
-    /** Họ của user */
-    @Size(max = 100)
-    private String lastName;
+    /** Employee ID (String) - lưu từ Employee.employeeId */
+    @Size(max = 50)
+    @Column(name = "employee_id")
+    private String employeeId;
 
     /** Trạng thái hoạt động của user (true = hoạt động, false = bị vô hiệu hóa) */
     @Column(name = "is_active")
@@ -80,12 +76,15 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(name = "role")
     private Role role;
-    
-    /** ID của nhân viên liên kết (nullable - admin có thể không có employeeId) */
-    @Size(max = 50)
-    @Column(name = "employee_id")
-    private String employeeId;
-    
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "employees_id",
+            referencedColumnName = "id",
+            foreignKey = @ForeignKey(name = "fk_users_employee")
+    )
+    private Employee employee;
+
     /** Trạng thái hệ thống của user (IDLE, RUNNING, SUCCESS, ERROR) */
     @Convert(converter = management.member.demo.converter.SystemStatusTypeAttributeConverter.class)
     @Column(name = "system_status")

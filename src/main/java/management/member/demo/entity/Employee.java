@@ -30,7 +30,7 @@ public class Employee {
     @NotBlank
     @Size(max = 200)
     @Column(name = "full_name")
-        private String fullName;
+    private String fullName;
 
     /** Tên */
     @Size(max = 100)
@@ -185,6 +185,11 @@ public class Employee {
     @Column(name = "address")
     private String address;
 
+    /** Địa điểm làm việc */
+    @Size(max = 255)
+    @Column(name = "work_location")
+    private String workLocation;
+
     /** Giờ vào làm */
     @Column(name = "time_in")
     private LocalTime timeIn;
@@ -211,5 +216,9 @@ public class Employee {
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EmployeeInsuranceContract> insurances = new ArrayList<>();
+
+    /** Quan hệ One-to-One với User (inverse side) */
+    @OneToOne(mappedBy = "employee", fetch = FetchType.LAZY)
+    private User user;
 
 }

@@ -62,7 +62,8 @@ public class AuthController {
             userInfo.setId(String.valueOf(currentUser.getId()));
             userInfo.setEmail(currentUser.getEmail());
             userInfo.setRole(currentUser.getRole() != null ? currentUser.getRole().name().toLowerCase() : "employee");
-            userInfo.setEmployeeId(currentUser.getEmployeeId() != null ? currentUser.getEmployeeId() : null);
+            userInfo.setEmployeeId(currentUser.getEmployee() != null && currentUser.getEmployee().getEmployeeId() != null 
+                    ? currentUser.getEmployee().getEmployeeId() : null);
         } else {
             userInfo.setId(null);
             userInfo.setEmail(loginRequest.getEmail());
@@ -72,7 +73,7 @@ public class AuthController {
         response.setUser(userInfo);
 
         // Keep backward compatibility fields
-        response.setUsername(currentUser != null ? currentUser.getUsername() : loginRequest.getEmail());
+        response.setUsername(currentUser != null ? currentUser.getEmail() : loginRequest.getEmail());
         response.setAccessToken(tokens.getAccessToken());
         response.setRefreshToken(tokens.getRefreshToken());
         response.setAccessTokenExpiresAt(LocalDateTime.now().plusSeconds(3600));

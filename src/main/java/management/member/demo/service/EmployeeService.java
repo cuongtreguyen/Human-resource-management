@@ -2,19 +2,27 @@ package management.member.demo.service;
 
 import management.member.demo.dto.*;
 import management.member.demo.entity.Employee;
+import management.member.demo.entity.User;
 import management.member.demo.enums.EmployeeStatus;
+import management.member.demo.enums.Role;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.EmployeeMapper;
 import management.member.demo.repository.EmployeeRepository;
+import management.member.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,30 +35,87 @@ public class EmployeeService {
     @Autowired
     private EmployeeMapper employeeMapper;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     public CreateEmployeeResponseDTO createEmployee(AddEmployeeRequest request) {
+        // Generate email từ fullName: fullname (không dấu, lowercase, remove spaces) + @company.com
+        String generatedEmail = generateEmailFromFullName(request.getName());
+        
         // Check if email already exists
-        if (employeeRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email already exists: " + request.getEmail());
+        if (employeeRepository.existsByEmail(generatedEmail)) {
+            throw new IllegalArgumentException("Email already exists: " + generatedEmail);
         }
 
         Employee employee = new Employee();
+        // Set các field cơ bản
         employee.setFullName(request.getName());
-        employee.setFirstName(request.getName().split(" ")[0]);
-        employee.setLastName(request.getName().substring(request.getName().indexOf(" ") + 1));
-        employee.setEmail(request.getEmail());
+        employee.setFirstName(request.getName() != null && request.getName().contains(" ") 
+                ? request.getName().split(" ")[0] : request.getName());
+        employee.setLastName(request.getName() != null && request.getName().contains(" ") 
+                ? request.getName().substring(request.getName().indexOf(" ") + 1) : "");
+        employee.setEmail(generatedEmail); // Email generated từ fullName
+        employee.setPersonalEmail(request.getPersonalEmail()); // Email cá nhân
         employee.setPhone(request.getPhone());
-        employee.setPosition(request.getPosition());
+        employee.setGender(request.getGender());
+        employee.setStatus(EmployeeStatus.ACTIVE);
         employee.setDepartment(request.getDepartment());
+        employee.setPosition(request.getPosition());
+        employee.setEmployeeId(request.getEmployeeId());
+        
+        // Set các field bổ sung
+        employee.setIdCardIssueDate(request.getIdCardIssueDate());
+        employee.setIdCardIssuePlace(request.getIdCardIssuePlace());
+        employee.setMaritalStatus(request.getMaritalStatus());
+        employee.setTaxCode(request.getTaxCode());
+        employee.setContractCode(request.getContractCode());
+        if (request.getEmployeeType() != null) {
+            try {
+                employee.setEmployeeType(EmployeeStatus.valueOf(request.getEmployeeType().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                // Ignore if invalid
+            }
+        }
+        employee.setEmergencyContactName(request.getEmergencyContactName());
+        employee.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        employee.setEmergencyContactRelationship(request.getEmergencyContactRelationship());
+        employee.setTimeOut(request.getTimeOut());
+        employee.setTimeIn(request.getTimeIn());
+        employee.setShift(request.getShift());
+        employee.setPermanentAddress(request.getPermanentAddress());
+        employee.setTemporaryAddress(request.getTemporaryAddress());
+        employee.setWorkLocation(request.getWorkLocation());
+        
+        // Set các field khác
         employee.setHireDate(request.getHireDate());
         employee.setDateOfBirth(request.getDateOfBirth());
-        employee.setGender(request.getGender());
         employee.setBaseSalary(request.getSalary());
-        employee.setStatus(EmployeeStatus.ACTIVE);
-
-        // Employee entity không có employeeCode field nữa, sử dụng employeeId thay thế
-        // Nếu cần generate code, có thể dùng employeeId
+        if (request.getIdNumber() != null) {
+            employee.setIdCard(request.getIdNumber());
+        }
 
         Employee saved = employeeRepository.save(employee);
+
+        // Tự động tạo User cho Employee
+        // Email: fullname + @company.com (đã generate ở trên)
+        // Password: fullname + "123"
+        if (!userRepository.existsByEmail(saved.getEmail())) {
+            User user = new User();
+            user.setEmail(saved.getEmail()); // Email generated từ fullName
+            user.setFullName(saved.getFullName()); // Lưu fullName từ Employee
+            user.setEmployeeId(saved.getEmployeeId()); // Lưu employeeId từ Employee
+            user.setRole(Role.EMPLOYEE);
+            // Password: fullname + "123"
+            String defaultPassword = saved.getFullName() + "123";
+            user.setPassword(passwordEncoder.encode(defaultPassword));
+            user.setIsActive(true);
+            user.setIsLocked(false);
+            user.setEmployee(saved); // Link với Employee
+            userRepository.save(user);
+        }
 
         CreateEmployeeResponseDTO response = new CreateEmployeeResponseDTO();
         response.setData(new CreateEmployeeResponseDTO.EmployeeData());
@@ -61,6 +126,28 @@ public class EmployeeService {
         response.setMessage("Employee created successfully");
 
         return response;
+    }
+
+    /**
+     * Generate email từ fullName: fullname (không dấu, lowercase, remove spaces) + @company.com
+     * Ví dụ: "Nguyễn Văn A" -> "nguyenvana@company.com"
+     */
+    private String generateEmailFromFullName(String fullName) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Full name cannot be empty");
+        }
+        
+        // Remove Vietnamese accents
+        String normalized = Normalizer.normalize(fullName, Normalizer.Form.NFD);
+        Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        String withoutAccents = pattern.matcher(normalized).replaceAll("");
+        
+        // Convert to lowercase, remove spaces, keep only letters and numbers
+        String emailPart = withoutAccents.toLowerCase()
+                .replaceAll("[^a-z0-9]", "")
+                .trim();
+        
+        return emailPart + "@company.com";
     }
 
     public EmployeeListResponse getEmployeesWithFilters(String search, String department, String position, String status) {

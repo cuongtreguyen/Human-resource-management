@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import management.member.demo.enums.EmployeeStatus;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 /**
  * Profile Response DTO - Thông tin profile của employee
@@ -30,14 +31,37 @@ public class ProfileResponse {
         private String fullName;
         private String email;
         private String phone;
-        private String address; // Có thể null hoặc "Chưa cập nhật"
+        private String gender;
+        private EmployeeStatus status;
         
         // Thông tin công việc
-        private String employeeCode;
         private String department;
         private String position;
-        private LocalDate hireDate;
-        private EmployeeStatus status;
+        private String employeeId;
+        
+        // Thông tin CMND/CCCD
+        private LocalDate idCardIssueDate;
+        private String idCardIssuePlace;
+        
+        // Thông tin cá nhân
+        private String maritalStatus;
+        private String taxCode;
+        private String contractCode;
+        private EmployeeStatus employeeType;
+        
+        // Thông tin liên hệ khẩn cấp
+        private String emergencyContactName;
+        private String emergencyContactPhone;
+        private String emergencyContactRelationship;
+        
+        // Thông tin làm việc
+        private LocalTime timeIn;
+        private LocalTime timeOut;
+        private String shift;
+        
+        // Địa chỉ
+        private String permanentAddress;
+        private String temporaryAddress;
     }
 }
 

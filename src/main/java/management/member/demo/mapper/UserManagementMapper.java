@@ -15,7 +15,7 @@ public class UserManagementMapper {
     public UserListItemDTO toUserListItemDTO(User user) {
         UserListItemDTO dto = new UserListItemDTO();
         dto.setId(String.valueOf(user.getId()));
-        dto.setUsername(user.getUsername());
+        dto.setUsername(user.getEmail()); // Dùng email thay cho username
         dto.setEmail(user.getEmail());
         dto.setRole(user.getRole() != null ? user.getRole().name() : null);
         

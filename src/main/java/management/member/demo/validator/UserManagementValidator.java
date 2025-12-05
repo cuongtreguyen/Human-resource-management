@@ -26,12 +26,6 @@ public class UserManagementValidator {
             throw ErrorCode.INVALID_REQUEST.toException();
         }
 
-        // Validate username
-        if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
-            throw ErrorCode.INVALID_REQUEST.toException("Tên đăng nhập không được để trống");
-        }
-        validateUsername(request.getUsername());
-
         // Validate email
         if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
             throw ErrorCode.INVALID_EMAIL.toException();
@@ -51,21 +45,7 @@ public class UserManagementValidator {
         validateRole(request.getRole());
     }
 
-    /**
-     * Validate username
-     */
-    public void validateUsername(String username) {
-        if (username == null || username.trim().isEmpty()) {
-            throw ErrorCode.INVALID_REQUEST.toException("Tên đăng nhập không được để trống");
-        }
-        String trimmed = username.trim();
-        if (trimmed.length() < 3 || trimmed.length() > 50) {
-            throw ErrorCode.INVALID_REQUEST.toException("Tên đăng nhập phải từ 3 đến 50 ký tự");
-        }
-        if (!trimmed.matches("^[a-zA-Z0-9_]+$")) {
-            throw ErrorCode.INVALID_REQUEST.toException("Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới");
-        }
-    }
+
 
     /**
      * Validate email format

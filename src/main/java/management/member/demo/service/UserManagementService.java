@@ -41,16 +41,12 @@ public class UserManagementService {
     }
 
     public CreateUserResponseDTO createUser(CreateUserRequestDTO request) {
-        // Check if username or email already exists
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username already exists: " + request.getUsername());
-        }
+        // Check if email already exists
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Email already exists: " + request.getEmail());
         }
 
         User user = new User();
-        user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         try {
             user.setRole(management.member.demo.enums.Role.valueOf(request.getRole().toUpperCase()));
