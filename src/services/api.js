@@ -6,7 +6,7 @@ import { http, JAVA_API } from './config.js';
  * GET /api/employees/{id}/profile
  */
 export const getEmployeeProfile = async (employeeId) => {
-  const response = await http(`${JAVA_API}/employees/${employeeId}/profile`, {
+  const response = await http(`${JAVA_API}/employees/${employeeId}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
