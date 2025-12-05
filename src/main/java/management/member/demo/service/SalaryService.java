@@ -33,14 +33,14 @@ public class SalaryService {
     private SalaryMapper salaryMapper;
 
     public BigDecimal calculateLatestSalary(Long employeeId) {
-        Optional<Salary> latestSalary = salaryRepository.findFirstByEmployeeIdOrderByPaymentDateDesc(employeeId);
+        Optional<Salary> latestSalary = salaryRepository.findFirstByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
         return latestSalary.map(Salary::getNetSalary)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
     }
 
     public BigDecimal calculateAverageSalary(Long employeeId) {
-        List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPaymentDateDesc(employeeId);
+        List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
         if (salaries.isEmpty()) {
             throw new ResourceNotFoundException(
                     ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId);
@@ -58,7 +58,7 @@ public class SalaryService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
 
-        List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPaymentDateDesc(employeeId);
+        List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
 
         SalarySummaryResponse response = new SalarySummaryResponse();
         response.setLatestSalary(calculateLatestSalary(employeeId));
@@ -75,30 +75,229 @@ public class SalaryService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + request.getEmployeeId()));
 
-        Salary salary = new Salary();
-        salary.setEmployeeId(request.getEmployeeId());
-        salary.setBaseSalary(request.getBaseSalary());
-        salary.setAllowance(request.getAllowance());
-        salary.setOvertimePay(request.getOvertimePay());
-        salary.setBonus(request.getBonus());
-        salary.setDeduction(request.getDeduction());
+        Salary salary = salaryMapper.toEntity(request);
+        
+        // Tính toán các field mới
+        calculateSalaryFields(salary);
 
-        BigDecimal netSalary = request.getBaseSalary()
-                .add(request.getAllowance() != null ? request.getAllowance() : BigDecimal.ZERO)
-                .add(request.getOvertimePay() != null ? request.getOvertimePay() : BigDecimal.ZERO)
-                .add(request.getBonus() != null ? request.getBonus() : BigDecimal.ZERO)
-                .subtract(request.getDeduction() != null ? request.getDeduction() : BigDecimal.ZERO);
-
-        salary.setNetSalary(netSalary);
-        salary.setPaymentDate(request.getPaymentDate());
         salary.setStatus(management.member.demo.enums.SalaryStatus.AWAITING);
 
         Salary saved = salaryRepository.save(salary);
         return salaryMapper.toResponse(saved);
     }
     
+    /**
+     * Tính số giờ OT dựa trên remainingOtHours của Employee
+     * Công thức: otHours = 40 - remainingOtHours
+     * 
+     * @param employeeId ID của nhân viên
+     * @return Số giờ OT đã làm
+     */
+    public BigDecimal calculateOtHours(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
+        
+        Integer remainingOtHours = employee.getRemainingOtHours() != null ? employee.getRemainingOtHours() : 40;
+        BigDecimal otHours = BigDecimal.valueOf(40).subtract(BigDecimal.valueOf(remainingOtHours));
+        
+        // Đảm bảo otHours không âm
+        return otHours.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : otHours;
+    }
+    
+    /**
+     * Tính tiền OT dựa trên số giờ OT
+     * Công thức: otPay = otHours * 100,000 VND/giờ
+     * 
+     * @param otHours Số giờ OT
+     * @return Tiền OT (VND)
+     */
+    public BigDecimal calculateOtPay(BigDecimal otHours) {
+        if (otHours == null || otHours.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal otRatePerHour = new BigDecimal("100000"); // 100,000 VND/giờ
+        return otHours.multiply(otRatePerHour).setScale(2, RoundingMode.HALF_UP);
+    }
+    
+    /**
+     * Tính tiền OT từ employeeId (tự động tính otHours trước)
+     * 
+     * @param employeeId ID của nhân viên
+     * @return Tiền OT (VND)
+     */
+    public BigDecimal calculateOtPayFromEmployeeId(Long employeeId) {
+        BigDecimal otHours = calculateOtHours(employeeId);
+        return calculateOtPay(otHours);
+    }
+    
+    /**
+     * Tính thuế thu nhập cá nhân theo bậc thuế suất lũy tiến
+     * Bậc thuế:
+     * - 0 – 5 triệu: 5%
+     * - 5 – 10 triệu: 10%
+     * - 10 – 18 triệu: 15%
+     * - 18 – 32 triệu: 20%
+     * - 32 – 52 triệu: 25%
+     * - 52 – 80 triệu: 30%
+     * - Trên 80 triệu: 35%
+     * 
+     * @param taxableIncome Thu nhập tính thuế (grossIncome sau khi trừ các khoản miễn thuế)
+     * @return Thuế thu nhập cá nhân (VND)
+     */
+    public BigDecimal calculatePersonalIncomeTax(BigDecimal taxableIncome) {
+        if (taxableIncome == null || taxableIncome.compareTo(BigDecimal.ZERO) <= 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal tax = BigDecimal.ZERO;
+        BigDecimal remaining = taxableIncome;
+        
+        // Bậc 1: 0 – 5 triệu: 5%
+        if (remaining.compareTo(new BigDecimal("5000000")) > 0) {
+            BigDecimal amount = new BigDecimal("5000000");
+            tax = tax.add(amount.multiply(new BigDecimal("0.05")));
+            remaining = remaining.subtract(amount);
+        } else {
+            tax = tax.add(remaining.multiply(new BigDecimal("0.05")));
+            return tax.setScale(2, RoundingMode.HALF_UP);
+        }
+        
+        // Bậc 2: 5 – 10 triệu: 10%
+        if (remaining.compareTo(new BigDecimal("5000000")) > 0) {
+            BigDecimal amount = new BigDecimal("5000000");
+            tax = tax.add(amount.multiply(new BigDecimal("0.10")));
+            remaining = remaining.subtract(amount);
+        } else {
+            tax = tax.add(remaining.multiply(new BigDecimal("0.10")));
+            return tax.setScale(2, RoundingMode.HALF_UP);
+        }
+        
+        // Bậc 3: 10 – 18 triệu: 15%
+        if (remaining.compareTo(new BigDecimal("8000000")) > 0) {
+            BigDecimal amount = new BigDecimal("8000000");
+            tax = tax.add(amount.multiply(new BigDecimal("0.15")));
+            remaining = remaining.subtract(amount);
+        } else {
+            tax = tax.add(remaining.multiply(new BigDecimal("0.15")));
+            return tax.setScale(2, RoundingMode.HALF_UP);
+        }
+        
+        // Bậc 4: 18 – 32 triệu: 20%
+        if (remaining.compareTo(new BigDecimal("14000000")) > 0) {
+            BigDecimal amount = new BigDecimal("14000000");
+            tax = tax.add(amount.multiply(new BigDecimal("0.20")));
+            remaining = remaining.subtract(amount);
+        } else {
+            tax = tax.add(remaining.multiply(new BigDecimal("0.20")));
+            return tax.setScale(2, RoundingMode.HALF_UP);
+        }
+        
+        // Bậc 5: 32 – 52 triệu: 25%
+        if (remaining.compareTo(new BigDecimal("20000000")) > 0) {
+            BigDecimal amount = new BigDecimal("20000000");
+            tax = tax.add(amount.multiply(new BigDecimal("0.25")));
+            remaining = remaining.subtract(amount);
+        } else {
+            tax = tax.add(remaining.multiply(new BigDecimal("0.25")));
+            return tax.setScale(2, RoundingMode.HALF_UP);
+        }
+        
+        // Bậc 6: 52 – 80 triệu: 30%
+        if (remaining.compareTo(new BigDecimal("28000000")) > 0) {
+            BigDecimal amount = new BigDecimal("28000000");
+            tax = tax.add(amount.multiply(new BigDecimal("0.30")));
+            remaining = remaining.subtract(amount);
+        } else {
+            tax = tax.add(remaining.multiply(new BigDecimal("0.30")));
+            return tax.setScale(2, RoundingMode.HALF_UP);
+        }
+        
+        // Bậc 7: Trên 80 triệu: 35%
+        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+            tax = tax.add(remaining.multiply(new BigDecimal("0.35")));
+        }
+        
+        return tax.setScale(2, RoundingMode.HALF_UP);
+    }
+    
+    /**
+     * Tính toán các field phái sinh: grossIncome, totalInsurance, netSalary
+     * otHours không còn trong Salary entity, sẽ tính từ OverTime trong PayrollService
+     */
+    private void calculateSalaryFields(Salary salary) {
+        // otHours không còn trong Salary entity, sẽ tính từ OverTime
+        // Nếu chưa có otPay, giữ nguyên (sẽ được tính từ OverTime trong PayrollService)
+        
+        // Tính grossIncome = baseSalary + bonus + allowance + otPay
+        BigDecimal baseSalary = salary.getBaseSalary();
+        BigDecimal bonus = salary.getBonus() != null ? salary.getBonus() : BigDecimal.ZERO;
+        BigDecimal allowance = salary.getAllowance() != null ? salary.getAllowance() : BigDecimal.ZERO;
+        BigDecimal otPay = salary.getOtPay() != null ? salary.getOtPay() : BigDecimal.ZERO;
+        
+        BigDecimal grossIncome = baseSalary
+                .add(bonus)
+                .add(allowance)
+                .add(otPay);
+        salary.setGrossIncome(grossIncome);
+        
+        // Tính các khoản bảo hiểm tự động nếu chưa có (tính trên baseSalary)
+        // BHXH: 8% của baseSalary
+        if (salary.getSocialInsurance() == null) {
+            BigDecimal socialInsurance = salary.getBaseSalary()
+                    .multiply(new BigDecimal("0.08"))
+                    .setScale(2, RoundingMode.HALF_UP);
+            salary.setSocialInsurance(socialInsurance);
+        }
+        
+        // BHYT: 1.5% của baseSalary
+        if (salary.getHealthInsurance() == null) {
+            BigDecimal healthInsurance = salary.getBaseSalary()
+                    .multiply(new BigDecimal("0.015"))
+                    .setScale(2, RoundingMode.HALF_UP);
+            salary.setHealthInsurance(healthInsurance);
+        }
+        
+        // BHTN: 1% của baseSalary
+        if (salary.getUnemploymentInsurance() == null) {
+            BigDecimal unemploymentInsurance = salary.getBaseSalary()
+                    .multiply(new BigDecimal("0.01"))
+                    .setScale(2, RoundingMode.HALF_UP);
+            salary.setUnemploymentInsurance(unemploymentInsurance);
+        }
+        
+        // Tính totalInsurance = socialInsurance + healthInsurance + unemploymentInsurance
+        BigDecimal socialInsurance = salary.getSocialInsurance() != null ? salary.getSocialInsurance() : BigDecimal.ZERO;
+        BigDecimal healthInsurance = salary.getHealthInsurance() != null ? salary.getHealthInsurance() : BigDecimal.ZERO;
+        BigDecimal unemploymentInsurance = salary.getUnemploymentInsurance() != null ? salary.getUnemploymentInsurance() : BigDecimal.ZERO;
+        
+        BigDecimal totalInsurance = socialInsurance
+                .add(healthInsurance)
+                .add(unemploymentInsurance);
+        salary.setTotalInsurance(totalInsurance);
+        
+        // Tính thuế thu nhập cá nhân (tính trên grossIncome)
+        BigDecimal personalIncomeTax = calculatePersonalIncomeTax(grossIncome);
+        salary.setPersonalIncomeTax(personalIncomeTax);
+        
+        // Tính totalDeductions = socialInsurance + healthInsurance + unemploymentInsurance + personalIncomeTax + generalDeductions
+        BigDecimal generalDeductions = salary.getGeneralDeductions() != null ? salary.getGeneralDeductions() : BigDecimal.ZERO;
+        
+        BigDecimal totalDeductions = socialInsurance
+                .add(healthInsurance)
+                .add(unemploymentInsurance)
+                .add(personalIncomeTax)
+                .add(generalDeductions);
+        salary.setTotalDeductions(totalDeductions);
+        
+        // Tính netSalary = grossIncome - totalDeductions
+        BigDecimal netSalary = grossIncome.subtract(totalDeductions);
+        salary.setNetSalary(netSalary);
+    }
+    
     public BigDecimal calculateTotalIncome(Long employeeId) {
-        List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPaymentDateDesc(employeeId);
+        List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
         return salaries.stream()
                 .map(Salary::getNetSalary)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -115,33 +314,11 @@ public class SalaryService {
         Salary salary = salaryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Salary not found with id: " + id));
         
-        if (request.getBaseSalary() != null) {
-            salary.setBaseSalary(request.getBaseSalary());
-        }
-        if (request.getAllowance() != null) {
-            salary.setAllowance(request.getAllowance());
-        }
-        if (request.getOvertimePay() != null) {
-            salary.setOvertimePay(request.getOvertimePay());
-        }
-        if (request.getBonus() != null) {
-            salary.setBonus(request.getBonus());
-        }
-        if (request.getDeduction() != null) {
-            salary.setDeduction(request.getDeduction());
-        }
+        // Update từ request (mapper sẽ xử lý alias fields)
+        salaryMapper.updateSalaryFromRequest(salary, request);
         
-        // Recalculate net salary
-        BigDecimal netSalary = salary.getBaseSalary()
-                .add(salary.getAllowance() != null ? salary.getAllowance() : BigDecimal.ZERO)
-                .add(salary.getOvertimePay() != null ? salary.getOvertimePay() : BigDecimal.ZERO)
-                .add(salary.getBonus() != null ? salary.getBonus() : BigDecimal.ZERO)
-                .subtract(salary.getDeduction() != null ? salary.getDeduction() : BigDecimal.ZERO);
-        salary.setNetSalary(netSalary);
-        
-        if (request.getPaymentDate() != null) {
-            salary.setPaymentDate(request.getPaymentDate());
-        }
+        // Recalculate các field phái sinh
+        calculateSalaryFields(salary);
         
         Salary updated = salaryRepository.save(salary);
         return salaryMapper.toResponse(updated);

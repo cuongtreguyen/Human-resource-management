@@ -12,7 +12,6 @@ import management.member.demo.dto.ProfileResponse;
 import management.member.demo.dto.ProfileUpdateRequest;
 import management.member.demo.dto.UpdateEmployeeRequest;
 import management.member.demo.dto.UpdateEmployeeResponseDTO;
-import management.member.demo.dto.ExportResponseDTO;
 import management.member.demo.normalizer.EmployeeRequestNormalizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +21,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
@@ -106,9 +106,23 @@ public class EmployeeController {
         return ResponseEntity.ok(Map.of("activeEmployeesCount", activeCount));
     }
 
-    // Lấy thông tin nhân viên theo ID (hỗ trợ Long id, employeeId, hoặc employeeCode)
+    // Lấy thống kê tổng số nhân viên và số nhân viên đang hoạt động
+    @GetMapping("/stats")
+    @Operation(
+            summary = "Get employee statistics",
+            description = "Lấy thống kê tổng số nhân viên và số nhân viên đang hoạt động (ACTIVE)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success")
+    })
+    public ResponseEntity<Map<String, Long>> getEmployeeStats() {
+        Map<String, Long> stats = service.getEmployeeStats();
+        return ResponseEntity.ok(stats);
+    }
+
+    // Lấy thông tin nhân viên theo ID (hỗ trợ Long id hoặc employeeId)
     @GetMapping("/{id}")
-    @Operation(summary = "Get employee by id", description = "Get employee information by id. Supports Long id, employeeId (String), or employeeCode (String)")
+    @Operation(summary = "Get employee by id", description = "Get employee information by id. Supports Long id or employeeId (String)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Employee not found")
@@ -121,9 +135,9 @@ public class EmployeeController {
         return ResponseEntity.ok(response);
     }
 
-    // Cập nhật thông tin nhân viên theo ID (hỗ trợ Long id, employeeId, hoặc employeeCode)
+    // Cập nhật thông tin nhân viên theo ID (hỗ trợ Long id hoặc employeeId)
     @PutMapping("/{id}")
-    @Operation(summary = "Update employee", description = "Update employee information by id. Supports Long id, employeeId (String), or employeeCode (String)")
+    @Operation(summary = "Update employee", description = "Update employee information by id. Supports Long id or employeeId (String)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Updated successfully"),
             @ApiResponse(responseCode = "404", description = "Employee not found"),
@@ -165,11 +179,11 @@ public class EmployeeController {
         return ResponseEntity.ok(service.updateProfile(id, request));
     }
 
-    // Xóa nhân viên theo ID (hỗ trợ Long id, employeeId, hoặc employeeCode)
+    // Xóa nhân viên theo ID (hỗ trợ Long id hoặc employeeId)
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete employee",
-            description = "Xóa nhân viên theo ID. Supports Long id, employeeId (String), or employeeCode (String)"
+            description = "Xóa nhân viên theo ID. Supports Long id or employeeId (String)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Employee deleted successfully"),
@@ -180,17 +194,23 @@ public class EmployeeController {
         return ResponseEntity.ok(service.deleteEmployeeById(id));
     }
 
-    @GetMapping("/export")
-    @Operation(summary = "Export employees", description = "Export employees to file (csv|excel|pdf)")
+    // API cho Accountant: Tìm kiếm và lọc nhân viên với đầy đủ filter
+    @GetMapping("/accountant/search")
+    @Operation(
+            summary = "Search employees for Accountant",
+            description = "API dành cho Accountant để tìm kiếm và lọc nhân viên. Hỗ trợ: search (tên/email), department (phòng ban), position (chức vụ), minSalary (mức lương tối thiểu), maxSalary (mức lương tối đa)"
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Export completed successfully")
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid request parameters")
     })
-    public ResponseEntity<ExportResponseDTO> exportEmployees(
-            @RequestParam(required = false, defaultValue = "excel") String format,
+    public ResponseEntity<EmployeeListResponse> searchEmployeesForAccountant(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) String department,
-            @RequestParam(required = false) String status) {
-        ExportResponseDTO response = service.exportEmployees(format, search, department, status);
+            @RequestParam(required = false) String position,
+            @RequestParam(required = false) BigDecimal minSalary,
+            @RequestParam(required = false) BigDecimal maxSalary) {
+        EmployeeListResponse response = service.getEmployeesForAccountant(search, department, position, minSalary, maxSalary);
         return ResponseEntity.ok(response);
     }
 }

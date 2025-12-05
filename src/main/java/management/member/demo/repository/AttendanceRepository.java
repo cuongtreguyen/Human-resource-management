@@ -52,4 +52,13 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("employeeId") Long employeeId,
             @Param("date") LocalDate date
     );
+
+    /**
+     * Lấy tất cả Attendance records của employee có status = LATE
+     */
+    @Query("SELECT a FROM Attendance a WHERE a.employee.id = :employeeId AND a.status = :status")
+    List<Attendance> findByEmployeeIdAndStatus(
+            @Param("employeeId") Long employeeId,
+            @Param("status") management.member.demo.enums.AttendenceStatus status
+    );
 }

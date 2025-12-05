@@ -26,6 +26,8 @@ public class PayrollRequest {
 
     private LocalDate createdDate;
 
+    private LocalDate paymentDate;
+
     private BigDecimal totalAmount;
 
     @NotNull(message = "Trạng thái bảng lương không được để trống")

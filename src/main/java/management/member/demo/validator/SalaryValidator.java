@@ -48,7 +48,7 @@ public class SalaryValidator {
         validateEmployeeId(request.getEmployeeId());
         validateBaseSalary(request.getBaseSalary());
         validateStatus(request.getStatus());
-        validatePaymentDate(request.getPaymentDate());
+        // paymentDate không còn trong SalaryRequest, được quản lý bởi Payroll
     }
 
     /**
@@ -81,13 +81,5 @@ public class SalaryValidator {
         }
     }
 
-    /**
-     * Validate paymentDate
-     */
-    public void validatePaymentDate(java.time.LocalDate paymentDate) {
-        if (paymentDate == null) {
-            throw ErrorCode.INVALID_PAYMENT_DATE.toException();
-        }
-    }
 }
 

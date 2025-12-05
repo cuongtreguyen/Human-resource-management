@@ -61,7 +61,8 @@ public class EmployeeValidator {
         validateRequest(request);
         validateFullName(request.getFullName());
         validateEmail(request.getEmail());
-        validateEmployeeCode(request.getEmployeeCode());
+        // Employee entity không có employeeCode nữa, bỏ qua validation
+        // validateEmployeeCode(request.getEmployeeCode());
         validateDepartment(request.getDepartment());
         validatePosition(request.getPosition());
         validateHireDate(request.getHireDate());

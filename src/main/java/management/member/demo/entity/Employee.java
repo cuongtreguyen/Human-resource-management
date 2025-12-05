@@ -12,6 +12,9 @@ import management.member.demo.enums.Role;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -27,7 +30,7 @@ public class Employee {
     @NotBlank
     @Size(max = 200)
     @Column(name = "full_name")
-    private String fullName;
+        private String fullName;
 
     /** Tên */
     @Size(max = 100)
@@ -76,8 +79,8 @@ public class Employee {
 
     /** Số CMND/CCCD */
     @Size(max = 20)
-    @Column(name = "id_number")
-    private String idNumber;
+    @Column(name = "id_card")
+    private String idCard;
 
     /** Mã số thuế */
     @Size(max = 20)
@@ -126,30 +129,26 @@ public class Employee {
     private BigDecimal baseSalary;
 
     /** Ngày cấp CMND/CCCD */
-    @Column(name = "id_issue_date")
-    private LocalDate idIssueDate;
+    @Column(name = "id_card_issue_date")
+    private LocalDate idCardIssueDate;
 
     /** Nơi cấp CMND/CCCD */
     @Size(max = 100)
-    @Column(name = "id_issue_place")
-    private String idIssuePlace;
+    @Column(name = "id_card_issue_place")
+    private String idCardIssuePlace;
 
     /** Số ngày nghỉ phép còn lại trong năm */
     private int remainingLeaveDays = 12;
 
-    /** Địa chỉ văn phòng */
-    @Size(max = 255)
-    @Column(name = "office_address")
-    private String officeAddress;
 
     /** Quản lý trực tiếp */
     @Size(max = 255)
-    @Column(name = "direct_manager")
-    private String directManager;
+    @Column(name = "manager")
+    private String manager;
 
     /** Tình trạng hôn nhân */
     @Column(name = "marital_status")
-    private boolean maritalStatus;
+    private String  maritalStatus;
 
     /** Loại nhân viên */
     @Size(max = 100)
@@ -182,9 +181,35 @@ public class Employee {
     @Column(name = "role")
     private Role role;
 
-    @Column(name = "employee_code")
-    private String employeeCode;
 
     @Column(name = "address")
     private String address;
+
+    /** Giờ vào làm */
+    @Column(name = "time_in")
+    private LocalTime timeIn;
+
+    /** Giờ tan ca */
+    @Column(name = "time_out")
+    private LocalTime timeOut;
+
+    /** Ca làm việc */
+    @Size(max = 50)
+    @Column(name = "shift")
+    private String shift;
+
+    /** Số ngày nghỉ (tính từ checkIn so với timeIn, nếu chênh lệch > 120 phút) */
+    @Size(max = 255)
+    @Column(name = "day_off")
+    private String dayOff;
+
+    /** Số ngày đi muộn (đếm từ Attendance có status = LATE) */
+    @Size(max = 255)
+    @Column(name = "late_day")
+    private String lateDay;
+
+
+    @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<EmployeeInsuranceContract> insurances = new ArrayList<>();
+
 }

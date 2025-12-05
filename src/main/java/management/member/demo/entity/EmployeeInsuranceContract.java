@@ -1,11 +1,11 @@
 package management.member.demo.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Formula;
 
 import java.time.LocalDate;
 
@@ -19,35 +19,33 @@ public class EmployeeInsuranceContract {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** ID nhân viên */
-    @NotNull
-    @Column(name = "employee_id")
-    private Long employeeId;
+    /** Quan hệ Many-to-One với Employee: 1 nhân viên có thể có nhiều insurance contract */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", referencedColumnName = "employee_id", nullable = false)
+    private Employee employee;
 
-    /** Số hợp đồng */
-    @NotBlank
-    @Size(max = 100)
-    @Column(name = "contract_number", unique = true)
-    private String contractNumber;
+    /** Lấy employeeId dạng String từ employee entity (không lưu vào DB, read-only) */
+    @Formula("(SELECT e.employee_id FROM employees e WHERE e.employee_id = employee_id)")
+    @Getter
+    @Setter(AccessLevel.NONE) // Không tạo setter vì @Formula là read-only
+    @Transient // Đánh dấu không persist vào DB
+    private String employeeId;
+
+    /** Quan hệ Many-to-One với InsuranceContract: 1 contract template có thể được gán cho nhiều nhân viên */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "contract_id", nullable = false)
+    private InsuranceContract contract;
 
     /** Ngày bắt đầu */
     @NotNull
-    @Column(name = "start_date")
-    private LocalDate startDate;
+    @Column(name = "effective", nullable = false)
+    private LocalDate effective;
 
     /** Ngày kết thúc */
     @NotNull
-    @Column(name = "end_date")
-    private LocalDate endDate;
+    @Column(name = "expiry", nullable = false)
+    private LocalDate expiry;
 
-    /** Mức độ bao phủ */
-    @NotBlank
-    @Size(max = 50)
-    @Column(name = "coverage")
-    private String coverage;
-
-    /** Mô tả */
-    @Size(max = 1000)
-    @Column(name = "description")
-    private String description;
+    @Column(name = "grant_date")
+    private LocalDate grantDate;
 }

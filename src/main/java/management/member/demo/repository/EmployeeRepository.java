@@ -89,10 +89,13 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
     // Tìm theo employeeId (String)
     Optional<Employee> findByEmployeeId(String employeeId);
     
-    // Tìm theo employeeCode (String)
-    Optional<Employee> findByEmployeeCode(String employeeCode);
-    
     // Tìm theo email
     Optional<Employee> findByEmail(String email);
+
+    @Query("SELECT e FROM Employee e WHERE " +
+            "(:keyword IS NULL OR LOWER(e.fullName) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(e.email) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "AND (:department IS NULL OR :department = '' OR e.department = :department)")
+    List<Employee> searchEmployees(@Param("keyword") String keyword,
+                                   @Param("department") String department);
 }
 

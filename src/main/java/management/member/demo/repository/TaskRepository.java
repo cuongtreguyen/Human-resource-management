@@ -15,37 +15,41 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Task> findByTitleContainingIgnoreCase(String title);
     long countByTaskStatus(TaskStatus status);
 
-    // Lấy startDate, endedAt cho các task COMPLETED (dùng để tính average days)
-    @Query("SELECT t.createdAt, t.endedAt FROM Task t " +
+    // 1. Sửa 'endedAt' thành 'deadline' (theo Entity cũ của bạn)
+    @Query("SELECT t.createdAt, t.deadline FROM Task t " +
             "WHERE t.taskStatus = :taskStatus " +
             "AND (:start IS NULL OR t.createdAt >= :start) " +
-            "AND (:end IS NULL OR t.endedAt <= :end)")
+            "AND (:end IS NULL OR t.deadline <= :end)")
     List<Object[]> findStartEndByStatusBetweenDates(@Param("taskStatus") TaskStatus taskStatus,
                                                     @Param("start") LocalDate start,
                                                     @Param("end") LocalDate end);
 
-    // COUNT GROUP BY taskStatus với filter thời gian
+    // 2. Sửa 'endedAt' thành 'deadline'
     @Query("SELECT t.taskStatus, COUNT(t) FROM Task t " +
             "WHERE (:start IS NULL OR t.createdAt >= :start) " +
-            "AND (:end IS NULL OR t.endedAt <= :end) " +
+            "AND (:end IS NULL OR t.deadline <= :end) " +
             "GROUP BY t.taskStatus")
     List<Object[]> countTasksGroupedByStatusBetweenDates(@Param("start") LocalDate start,
                                                          @Param("end") LocalDate end);
 
-    // COUNT GROUP BY employee.id và employee.fullName
-    @Query("SELECT t.employee.id, t.employee.fullName, COUNT(t) FROM Task t " +
+    // 3. QUAN TRỌNG: Dùng JOIN t.employees e để lấy thông tin nhân viên
+    @Query("SELECT e.id, e.fullName, COUNT(t) " +
+            "FROM Task t " +
+            "JOIN t.employees e " + // Join sang danh sách employees
             "WHERE (:start IS NULL OR t.createdAt >= :start) " +
-            "AND (:end IS NULL OR t.endedAt <= :end) " +
-            "GROUP BY t.employee.id, t.employee.fullName")
+            "AND (:end IS NULL OR t.deadline <= :end) " +
+            "GROUP BY e.id, e.fullName")
     List<Object[]> countTasksGroupedByEmployeeBetweenDates(@Param("start") LocalDate start,
                                                            @Param("end") LocalDate end);
 
-    // COUNT GROUP BY employee.id, employee.fullName với trạng thái cụ thể
-    @Query("SELECT t.employee.id, t.employee.fullName, COUNT(t) FROM Task t " +
+    // 4. QUAN TRỌNG: Tương tự, dùng JOIN cho query có filter status
+    @Query("SELECT e.id, e.fullName, COUNT(t) " +
+            "FROM Task t " +
+            "JOIN t.employees e " + // Join sang danh sách employees
             "WHERE t.taskStatus = :taskStatus " +
             "AND (:start IS NULL OR t.createdAt >= :start) " +
-            "AND (:end IS NULL OR t.endedAt <= :end) " +
-            "GROUP BY t.employee.id, t.employee.fullName")
+            "AND (:end IS NULL OR t.deadline <= :end) " +
+            "GROUP BY e.id, e.fullName")
     List<Object[]> countTasksGroupedByEmployeeAndStatusBetweenDates(@Param("taskStatus") TaskStatus taskStatus,
                                                                     @Param("start") LocalDate start,
                                                                     @Param("end") LocalDate end);

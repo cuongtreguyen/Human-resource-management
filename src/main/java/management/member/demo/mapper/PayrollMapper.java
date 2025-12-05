@@ -25,6 +25,7 @@ public class PayrollMapper {
                 .code(payroll.getCode())
                 .period(payroll.getPeriod())
                 .createdDate(payroll.getCreatedDate())
+                .paymentDate(payroll.getPaymentDate())
                 .totalAmount(payroll.getTotalAmount())
                 .status(payroll.getStatus())
                 .note(payroll.getNote())
@@ -39,6 +40,7 @@ public class PayrollMapper {
         payroll.setCode(request.getCode());
         payroll.setPeriod(request.getPeriod());
         payroll.setCreatedDate(request.getCreatedDate());
+        payroll.setPaymentDate(request.getPaymentDate());
         payroll.setTotalAmount(request.getTotalAmount());
         payroll.setStatus(request.getStatus());
         payroll.setNote(request.getNote());
@@ -65,16 +67,16 @@ public class PayrollMapper {
             dto.setEmployeeName(employee.getFullName());
         }
         
-        // Format month from paymentDate
-        if (salary.getPaymentDate() != null) {
-            dto.setMonth(salary.getPaymentDate().format(DateTimeFormatter.ofPattern("yyyy-MM")));
+        // Format month from paymentDate của Payroll
+        if (salary.getPayroll() != null && salary.getPayroll().getPaymentDate() != null) {
+            dto.setMonth(salary.getPayroll().getPaymentDate().format(DateTimeFormatter.ofPattern("yyyy-MM")));
         }
         
         dto.setBasicSalary(salary.getBaseSalary());
         dto.setAllowance(salary.getAllowance() != null ? salary.getAllowance() : BigDecimal.ZERO);
-        dto.setOvertime(salary.getOvertimePay() != null ? salary.getOvertimePay() : BigDecimal.ZERO);
+        dto.setOvertime(salary.getOtPay() != null ? salary.getOtPay() : BigDecimal.ZERO);
         dto.setBonus(salary.getBonus() != null ? salary.getBonus() : BigDecimal.ZERO);
-        dto.setDeduction(salary.getDeduction() != null ? salary.getDeduction() : BigDecimal.ZERO);
+        dto.setDeduction(salary.getGeneralDeductions() != null ? salary.getGeneralDeductions() : BigDecimal.ZERO);
         dto.setNetSalary(salary.getNetSalary());
         
         // Map status

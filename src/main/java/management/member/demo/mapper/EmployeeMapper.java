@@ -39,7 +39,7 @@ public class EmployeeMapper {
                 .fullName(employee.getFullName())
                 .email(employee.getEmail())
                 .phone(employee.getPhone())
-                .employeeCode(employee.getEmployeeCode())
+                .employeeCode(null) // Employee entity không có employeeCode
                 .department(employee.getDepartment())
                 .position(employee.getPosition())
                 .hireDate(employee.getHireDate())
@@ -59,7 +59,7 @@ public class EmployeeMapper {
                 .email(employee.getEmail())
                 .phone(employee.getPhone())
                 .address(employee.getAddress())
-                .employeeCode(employee.getEmployeeCode())
+                .employeeCode(null) // Employee entity không có employeeCode
                 .department(employee.getDepartment())
                 .position(employee.getPosition())
                 .hireDate(employee.getHireDate())
@@ -87,7 +87,7 @@ public class EmployeeMapper {
         employee.setFullName(request.getFullName());
         employee.setEmail(request.getEmail());
         employee.setPhone(request.getPhone());
-        employee.setEmployeeCode(request.getEmployeeCode());
+        // Employee entity không có employeeCode field
         employee.setDepartment(request.getDepartment());
         employee.setPosition(request.getPosition());
         employee.setHireDate(request.getHireDate());
@@ -100,9 +100,8 @@ public class EmployeeMapper {
      */
     public EmployeeListItemDTO toListItemDTO(Employee employee) {
         EmployeeListItemDTO dto = new EmployeeListItemDTO();
-        // Use employeeId if available, otherwise use employeeCode, otherwise use id as string
-        dto.setId(employee.getEmployeeId() != null ? employee.getEmployeeId() : 
-                  (employee.getEmployeeCode() != null ? employee.getEmployeeCode() : String.valueOf(employee.getId())));
+        // Use employeeId if available, otherwise use id as string
+        dto.setId(employee.getEmployeeId() != null ? employee.getEmployeeId() : String.valueOf(employee.getId()));
         dto.setName(employee.getFullName());
         dto.setEmail(employee.getEmail());
         dto.setPosition(employee.getPosition());
@@ -122,9 +121,8 @@ public class EmployeeMapper {
      */
     public EmployeeDetailDTO toDetailDTO(Employee employee) {
         EmployeeDetailDTO dto = new EmployeeDetailDTO();
-        // Use employeeId if available, otherwise use employeeCode, otherwise use id as string
-        dto.setId(employee.getEmployeeId() != null ? employee.getEmployeeId() : 
-                  (employee.getEmployeeCode() != null ? employee.getEmployeeCode() : String.valueOf(employee.getId())));
+        // Use employeeId if available, otherwise use id as string
+        dto.setId(employee.getEmployeeId() != null ? employee.getEmployeeId() : String.valueOf(employee.getId()));
         dto.setFirstName(employee.getFirstName());
         dto.setLastName(employee.getLastName());
         
@@ -157,12 +155,29 @@ public class EmployeeMapper {
             }
         }
         
-        dto.setIdNumber(employee.getIdNumber());
+        // Map idCard (Employee.idCard → DTO.idNumber with @JsonProperty("idCard"))
+        dto.setIdNumber(employee.getIdCard());
         dto.setTaxCode(employee.getTaxCode());
         dto.setPermanentAddress(employee.getPermanentAddress());
         dto.setTemporaryAddress(employee.getTemporaryAddress());
-        dto.setEmployeeCode(employee.getEmployeeCode());
+        dto.setAddress(employee.getAddress());
         dto.setContractCode(employee.getContractCode());
+        
+        // Map thông tin CMND/CCCD
+        dto.setIdCardIssueDate(employee.getIdCardIssueDate());
+        dto.setIdCardIssuePlace(employee.getIdCardIssuePlace());
+        
+        // Map thông tin nghỉ phép và OT
+        dto.setRemainingLeaveDays(employee.getRemainingLeaveDays());
+        dto.setRemainingOtHours(employee.getRemainingOtHours());
+        
+        // Map vai trò
+        dto.setRole(employee.getRole() != null ? employee.getRole().name().toLowerCase() : null);
+        
+        // Map thông tin ca làm việc
+        dto.setTimeIn(employee.getTimeIn());
+        dto.setTimeOut(employee.getTimeOut());
+        dto.setShift(employee.getShift());
         
         // Map contractType: English → Vietnamese for response (reverse mapping)
         String contractType = employee.getContractType();
@@ -177,18 +192,35 @@ public class EmployeeMapper {
             dto.setContractType(mapped != null ? mapped : contractType);
         }
         
-        // Additional fields (set to null if not in entity - can be populated from other sources)
-        dto.setNationality(null); // TODO: Add to entity if needed
-        dto.setMaritalStatus(null); // TODO: Add to entity if needed
-        dto.setEmployeeType(null); // TODO: Add to entity if needed
-        dto.setManager(null); // TODO: Add to entity if needed
-        dto.setWorkLocation(null); // TODO: Add to entity if needed
-        dto.setEducation(null); // TODO: Add to entity if needed
-        dto.setEducationDetails(null); // TODO: Add to entity if needed
-        dto.setEmergencyContact(null); // TODO: Add to entity if needed
-        dto.setBankAccount(null); // TODO: Add to entity if needed
-        dto.setBankName(null); // TODO: Add to entity if needed
-        dto.setBankBranch(null); // TODO: Add to entity if needed
+        // Map các field từ Employee entity
+        dto.setMaritalStatus(employee.getMaritalStatus());
+        dto.setEmployeeType(employee.getEmployeeType() != null ? employee.getEmployeeType().name().toLowerCase() : null);
+        dto.setManager(employee.getManager());
+
+        
+        // Map Emergency Contact
+        if (employee.getEmergencyContactName() != null || 
+            employee.getEmergencyContactPhone() != null || 
+            employee.getEmergencyContactRelationship() != null) {
+            EmployeeDetailDTO.EmergencyContact emergencyContact = new EmployeeDetailDTO.EmergencyContact();
+            emergencyContact.setName(employee.getEmergencyContactName());
+            emergencyContact.setPhone(employee.getEmergencyContactPhone());
+            emergencyContact.setRelationship(employee.getEmergencyContactRelationship());
+            dto.setEmergencyContact(emergencyContact);
+        }
+        
+        // Map address (Employee.address → DTO.address via @JsonProperty)
+        // Note: DTO has @JsonProperty("address") on permanentAddress, but we also have address field
+        // We'll map Employee.address to a separate field if needed, or use permanentAddress
+        
+        // Fields not in Employee entity (set to null)
+        dto.setNationality(null); // Not in entity
+        dto.setEducation(null); // Not in entity
+        dto.setEducationDetails(null); // Not in entity
+        dto.setBankAccount(null); // Not in entity
+        dto.setBankName(null); // Not in entity
+        dto.setBankBranch(null); // Not in entity
+        dto.setEmployeeCode(null); // Not in entity (removed)
         
         return dto;
     }

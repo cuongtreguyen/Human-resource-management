@@ -4,10 +4,14 @@ import management.member.demo.dto.LoginRequest;
 import management.member.demo.dto.LoginResponse;
 import management.member.demo.dto.TokenRequest;
 import management.member.demo.entity.User;
+import management.member.demo.exception.base.BusinessException;
+import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.UserRepository;
 import management.member.demo.security.JwtService;
 import management.member.demo.security.CustomUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -68,18 +72,26 @@ public class AuthService {
 
     public Tokens authenticate(String email, String password) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.INVALID_CREDENTIALS.getCode(),
+                        ErrorCode.INVALID_CREDENTIALS.getMessage()));
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new BusinessException(
+                    ErrorCode.INVALID_CREDENTIALS.getCode(),
+                    ErrorCode.INVALID_CREDENTIALS.getMessage());
         }
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
-            throw new RuntimeException("Account is inactive");
+            throw new BusinessException(
+                    ErrorCode.ACCOUNT_LOCKED_OR_INACTIVE.getCode(),
+                    "Tài khoản không hoạt động");
         }
 
         if (Boolean.TRUE.equals(user.getIsLocked())) {
-            throw new RuntimeException("Account is locked");
+            throw new BusinessException(
+                    ErrorCode.ACCOUNT_LOCKED_OR_INACTIVE.getCode(),
+                    "Tài khoản đã bị khóa");
         }
 
         // Update last login
@@ -92,7 +104,7 @@ public class AuthService {
         Tokens tokens = new Tokens();
         tokens.accessToken = jwtService.generateToken(userDetails);
         tokens.refreshToken = jwtService.generateRefreshToken(userDetails);
-        tokens.role = user.getRole().name();
+        tokens.role = user.getRole() != null ? user.getRole().name() : "EMPLOYEE";
 
         return tokens;
     }
@@ -153,6 +165,12 @@ public class AuthService {
         // TODO: Generate and save OTP
         return "123456"; // Mock OTP
     }
+    public User getCurrentUser() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage()));
+    }
+
     
     public void resetPassword(String email, String otp, String newPassword) {
         // TODO: Validate OTP and reset password

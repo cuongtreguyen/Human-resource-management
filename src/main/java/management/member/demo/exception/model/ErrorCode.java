@@ -71,10 +71,16 @@ public enum ErrorCode {
     // Notification errors
     NOTIFICATION_NOT_FOUND("NOTIFICATION_NOT_FOUND", "Thông báo không tồn tại"),
     INVALID_NOTIFICATION_ID("INVALID_NOTIFICATION_ID", "ID thông báo không hợp lệ"),
-    
+
     // Task Delegation errors
+    TASK_NOT_PERMITTED("TASK_NOT_PERMITTED", "Bạn không có quyền tạo task"),
     DELEGATION_NOT_FOUND("DELEGATION_NOT_FOUND", "Ủy quyền không tồn tại"),
     INVALID_DELEGATION_ID("INVALID_DELEGATION_ID", "ID ủy quyền không hợp lệ"),
+    PERMISSION_DENIED("PERMISSION_DENIED", "Bạn không được giao task này"),
+    TASK_NOT_FOUND("TASK_NOT_FOUND", "Task không tồn tại"),
+
+    //Comment
+    COMMENT_NOT_FOUND("COMMENT_NOT_FOUND", "Chưa có bình luận nào"),
     
     // Employee Evaluation errors
     EVALUATION_NOT_FOUND("EVALUATION_NOT_FOUND", "Đánh giá không tồn tại"),
@@ -127,13 +133,27 @@ public enum ErrorCode {
     EMAIL_SEND_ERROR("EMAIL_SEND_ERROR", "Lỗi khi gửi email"),
     
     // Task errors
-    TASK_NOT_FOUND("TASK_NOT_FOUND", "Task không tồn tại"),
     NO_TASKS_FOUND("NO_TASKS_FOUND", "Không tìm thấy task nào"),
     INVALID_TASK_STATUS("INVALID_TASK_STATUS", "Trạng thái task không hợp lệ"),
     INVALID_TASK_PRIORITY("INVALID_TASK_PRIORITY", "Độ ưu tiên task không hợp lệ"),
     
     // OnLeave errors (old methods)
     NO_LEAVE_FOUND("NO_LEAVE_FOUND", "Không tìm thấy đơn nghỉ phép nào"),
+
+    //Overtime errors
+    OVERTIME_OUT_OF_TIME("OVERTIME_OUT_OF_TIME", "Chỉ được đăng ký OT trong khoảng 14:00 - 17:00 của ngày hôm nay"),
+    OVERTIME_PERMISSION("OVERTIME_PERMISSION", "Bạn không có quyền xem đơn OT của nhân viên khác"),
+    OVERTIME_STATUS_PERMISSION("OVERTIME_STATUS_PERMISSION", "Bạn không có quyền thay đổi trạng thái đơn OT này"),
+    OVERTIME_NOT_FOUND("OVERTIME_NOT_FOUND", "Đơn OT không tồn tại"),
+    OVERTIME_CANNOT_APPROVE("OVERTIME_CANNOT_APPROVE", "Chỉ được duyệt đơn OT đang chờ"),
+    OVERTIME_CANNOT_REJECT("OVERTIME_CANNOT_REJECT", "Chỉ được từ chối đơn OT đang chờ"),
+    OVERTIME_CANNOT_CANCEL("OVERTIME_CANNOT_CANCEL", "Chỉ được hủy đơn OT đang chờ"),
+    OVERTIME_CANNOT_COMPLETE("OVERTIME_CANNOT_COMPLETE", "Chỉ hoàn thành đơn OT đã được duyệt"),
+    OVERTIME_ONLY_MANAGER_APPROVE("OVERTIME_ONLY_MANAGER_APPROVE", "Chỉ quản lý mới có quyền duyệt đơn OT"),
+    OVERTIME_ONLY_MANAGER_REJECT("OVERTIME_ONLY_MANAGER_REJECT", "Chỉ quản lý mới có quyền từ chối đơn OT"),
+    OVERTIME_ONLY_MANAGER_COMPLETE("OVERTIME_ONLY_MANAGER_COMPLETE", "Chỉ quản lý mới có quyền hoàn thành đơn OT"),
+    OVERTIME_CANCEL_ILLEGAL("OVERTIME_CANCEL_ILLEGAL", "Bạn không có quyền hủy đơn OT này"),
+    OVERTIME_STATUS_INVALID("OVERTIME_STATUS_INVALID", "Trạng thái đơn OT không hợp lệ"),
     
     // Flask API errors
     FLASK_API_ERROR("FLASK_API_ERROR", "Lỗi khi gọi Flask API"),
@@ -144,6 +164,8 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "Lỗi hệ thống nội bộ"),
     METHOD_NOT_ALLOWED("METHOD_NOT_ALLOWED", "Phương thức không được phép"),
     BAD_REQUEST("BAD_REQUEST", "Yêu cầu không hợp lệ");
+
+
     
     private final String code;
     private final String message;

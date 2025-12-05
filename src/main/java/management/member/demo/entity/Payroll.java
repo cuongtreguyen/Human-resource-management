@@ -31,6 +31,10 @@ public class Payroll {
     /** Ngày phát hành bảng lương */
     private LocalDate createdDate;
 
+    /** Ngày chi trả lương */
+    @Column(name = "payment_date")
+    private LocalDate paymentDate;
+
     /** Tổng chi phí lương trong kỳ (tổng tất cả netSalary của nhân viên) */
     private BigDecimal totalAmount;
 

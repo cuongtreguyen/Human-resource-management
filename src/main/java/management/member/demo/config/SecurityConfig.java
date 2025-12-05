@@ -37,6 +37,17 @@ public class SecurityConfig {
         return http
                 // Tắt CSRF vì sử dụng JWT
                 .csrf(csrf -> csrf.disable())
+                // Cấu hình CORS
+                .cors(cors -> cors.configurationSource(request -> {
+                    org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
+                    configuration.setAllowedOrigins(java.util.Arrays.asList("http://localhost:5173", "http://localhost:3000", "http://localhost:5174"));
+                    configuration.setAllowedMethods(java.util.Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+                    configuration.setAllowedHeaders(java.util.Arrays.asList("*"));
+                    configuration.setExposedHeaders(java.util.Arrays.asList("X-Trace-Id"));
+                    configuration.setAllowCredentials(true);
+                    configuration.setMaxAge(3600L);
+                    return configuration;
+                }))
                 // Cấu hình session management thành stateless
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // Cấu hình authorization rules - phân quyền theo role
@@ -50,20 +61,21 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/api/face-recognition/**",
                                 "/api/attendance/**",
-                                "/api/resume/**"
+                                "/api/resume/**",
+                                "/api/benefits/**",
+                                "/api/insurance-contracts/**",
+                                "/api/employee-insurance-contracts/**",
+                                "/api/employee-benefits/**",
+                                "/api/payroll/**",
+                                "/api/payroll-statistics/**",
+                                "/api/employees/**",
+                                "/error",
+                                "/error/**"
                         ).permitAll()
                         // Admin endpoints - chỉ ADMIN mới truy cập được
+                        // (Các endpoints này đã được move lên public endpoints ở trên)
                         .requestMatchers(
-                                "/employees",
-                                "/employees/total",
-                                "/employees/active/count",
-                                "/employees/search",
-                                "/employees/{id}",
-                                "/employees/{id}/**",
-                                "/salary/**",
-                                "/payroll/**",
-                                "/employee-benefits/**",
-                                "/employee-insurance-contracts/**"
+                                "/salary/**"
                         ).hasRole("ADMIN")
                         // Employee endpoints - ADMIN và EMPLOYEE đều truy cập được
                         // Employee chỉ xem được profile của chính mình (kiểm tra trong service)

@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
-import management.member.demo.dto.ExportResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -150,16 +150,60 @@ public class PayrollController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/export")
-    @Operation(summary = "Export payroll", description = "Export payroll records to file")
+    /**
+     * Lấy bảng lương hàng tháng của nhân viên cho Accountant
+     */
+    @GetMapping("/accountant/monthly")
+    @Operation(
+            summary = "Get monthly payroll for Accountant",
+            description = "Get monthly payroll records with employee details for Accountant. Optional month parameter (format: YYYY-MM, default: current month)"
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Export completed successfully")
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid month format")
     })
-    public ResponseEntity<ExportResponseDTO> exportPayroll(
-            @RequestParam(required = false) String month,
-            @RequestParam(required = false) String year,
-            @RequestParam(required = false, defaultValue = "excel") String format) {
-        ExportResponseDTO response = service.exportPayroll(month, year, format);
+    public ResponseEntity<List<MonthlyPayrollForAccountantDTO>> getMonthlyPayrollForAccountant(
+            @RequestParam(required = false) String month) {
+        List<MonthlyPayrollForAccountantDTO> result = service.getMonthlyPayrollForAccountant(month);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Tính toán Payroll cho Accountant
+     * Lấy thông tin tự động từ Employee và cho phép Accountant nhập allowance, deduction, bonus
+     */
+    @PostMapping("/accountant/calculate")
+    @Operation(
+            summary = "Calculate payroll for Accountant",
+            description = "Calculate payroll with automatic data from Employee (baseSalary, otHours, dayOff, lateDay) and manual input (allowance, deduction, bonus)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Payroll calculated successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
+    public ResponseEntity<PayrollCalculationForAccountantResponseDTO> calculatePayrollForAccountant(
+            @Valid @RequestBody PayrollCalculationForAccountantRequestDTO request) {
+        PayrollCalculationForAccountantResponseDTO response = service.calculatePayrollForAccountant(request);
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy thông tin Payroll Calculation cho Accountant
+     * Lấy từ Salary entity và tính toán các giá trị: BHXH, BHYT, BHTN, Thuế TNCN, totalDeductions, netSalary
+     */
+    @GetMapping("/accountant/calculation/{employeeId}")
+    @Operation(
+            summary = "Get payroll calculation for Accountant",
+            description = "Get payroll calculation details for Accountant including all deductions (BHXH 8%, BHYT 1.5%, BHTN 1%), personal income tax, total deductions, and net salary"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Employee or Salary not found")
+    })
+    public ResponseEntity<GetPayrollCalculationForAccountantResponseDTO> getPayrollCalculationForAccountant(
+            @PathVariable Long employeeId) {
+        GetPayrollCalculationForAccountantResponseDTO response = service.getPayrollCalculationForAccountant(employeeId);
         return ResponseEntity.ok(response);
     }
 }

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,20 +21,23 @@ public class TaskDetailDTO {
         private String description;
         private String status;
         private String priority;
-        private AssigneeInfo assignee;
-        
+
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime createdAt;
-        
+
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime updatedAt;
+        private String tag;
+        private Long boardId;
+        private String boardName;
+        private List<CommentResponse> comments; // Cần tái sử dụng CommentResponse ở bài trước
+        private List<AssigneeInfo> assignees;
     }
-    
+
     @Getter
     @Setter
     public static class AssigneeInfo {
         private Long id;
         private String name;
-        private String avatar;
     }
 }

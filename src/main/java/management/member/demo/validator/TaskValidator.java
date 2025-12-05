@@ -5,94 +5,82 @@ import management.member.demo.enums.TaskStatus;
 import management.member.demo.dto.CreateTaskRequestDTO;
 import management.member.demo.dto.UpdateTaskRequestDTO;
 import management.member.demo.dto.UpdateTaskProgressRequestDTO;
+import management.member.demo.enums.TaskTag;
 import management.member.demo.exception.model.ErrorCode;
 import org.springframework.stereotype.Component;
-
 import java.time.LocalDate;
 
-/**
- * Validator class - Chỉ chịu trách nhiệm validate Task data
- * Không chứa business logic hay logic lưu trữ
- */
+
 @Component
 public class TaskValidator {
 
-    /**
-     * Validate CreateTaskRequestDTO
-     */
     public void validateCreateTaskRequest(CreateTaskRequestDTO request) {
         if (request == null) {
             throw ErrorCode.INVALID_REQUEST.toException();
         }
 
-        // Validate title
+        // 1. Validate Title
         if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
             throw ErrorCode.INVALID_REQUEST.toException("Tiêu đề công việc không được để trống");
         }
 
-        // Validate assigneeId
-        if (request.getAssigneeId() == null || request.getAssigneeId().trim().isEmpty()) {
-            throw ErrorCode.INVALID_EMPLOYEE_ID.toException();
-        }
-        validateAssigneeIdString(request.getAssigneeId());
-
-        // Validate priority (optional)
-        if (request.getPriority() != null && !request.getPriority().trim().isEmpty()) {
-            validateTaskPriorityStatus(request.getPriority());
-        }
-
-        // Validate date range if both provided
-        if (request.getStartDate() != null && request.getEndDate() != null) {
-            validateDateRange(request.getStartDate(), request.getEndDate());
+        // 5. Validate Board ID (Optional - nếu bắt buộc thì thêm check)
+        if (request.getBoardId() != null && request.getBoardId() <= 0) {
+            throw ErrorCode.INVALID_REQUEST.toException("Board ID không hợp lệ");
         }
     }
 
     /**
      * Validate UpdateTaskRequestDTO
+     * Logic Mới: Thêm check Tag, AssigneeIds
      */
     public void validateUpdateTaskRequest(UpdateTaskRequestDTO request) {
         if (request == null) {
             throw ErrorCode.INVALID_REQUEST.toException();
         }
 
-        // Validate title if provided
+        // 1. Validate Title (Nếu có update)
         if (request.getTitle() != null && request.getTitle().trim().isEmpty()) {
             throw ErrorCode.INVALID_REQUEST.toException("Tiêu đề công việc không được để trống");
         }
 
-        // AssigneeId is optional in update request, skip validation
-
-        // Validate status if provided
+        // 2. Validate Status
         if (request.getStatus() != null && !request.getStatus().trim().isEmpty()) {
             validateTaskStatus(request.getStatus());
         }
 
-        // Validate priority if provided
+        // 3. Validate Priority
         if (request.getPriority() != null && !request.getPriority().trim().isEmpty()) {
             validateTaskPriorityStatus(request.getPriority());
         }
 
-        // Validate date range if both provided
-        if (request.getStartDate() != null && request.getEndDate() != null) {
-            validateDateRange(request.getStartDate(), request.getEndDate());
+        // 4. Validate Tag (MỚI)
+        if (request.getTag() != null && !request.getTag().trim().isEmpty()) {
+            validateTaskTag(request.getTag());
         }
-    }
 
-    /**
-     * Validate UpdateTaskProgressRequestDTO
-     */
+        // 5. Validate Assignee IDs (MỚI - Trong update mới có thêm người)
+        if (request.getAssigneeIds() != null) {
+            for (Long id : request.getAssigneeIds()) {
+                if (id == null || id <= 0) {
+                    throw ErrorCode.INVALID_EMPLOYEE_ID.toException("Danh sách người thực hiện chứa ID không hợp lệ");
+                }
+            }
+        }
+
+        // Lưu ý: DTO Update chỉ có 'deadline', không có startDate/endDate nên không gọi validateDateRange ở đây nữa.
+        // Nếu muốn check deadline không được là ngày quá khứ thì thêm logic tại đây.
+    }
     public void validateUpdateTaskProgressRequest(UpdateTaskProgressRequestDTO request) {
         if (request == null) {
             throw ErrorCode.INVALID_REQUEST.toException();
         }
-
-        // Progress field may not exist in DTO, skip validation if not present
-        // If progress is provided, it should be validated in Service or DTO level
+        // Validate % progress (0-100)
+        if (request.getCurrentProgress() < 0 || request.getCurrentProgress() > 100) {
+            throw ErrorCode.INVALID_REQUEST.toException("Tiến độ phải từ 0 đến 100%");
+        }
     }
 
-    /**
-     * Validate task ID string
-     */
     public void validateTaskIdString(String id) {
         if (id == null || id.trim().isEmpty()) {
             throw ErrorCode.INVALID_REQUEST.toException("ID công việc không được để trống");
@@ -104,57 +92,45 @@ public class TaskValidator {
         }
     }
 
-    /**
-     * Validate assignee ID string
-     */
-    public void validateAssigneeIdString(String assigneeId) {
-        if (assigneeId == null || assigneeId.trim().isEmpty()) {
-            throw ErrorCode.INVALID_EMPLOYEE_ID.toException();
-        }
-        try {
-            Long.parseLong(assigneeId.trim());
-        } catch (NumberFormatException e) {
-            throw ErrorCode.INVALID_EMPLOYEE_ID.toException("ID người được giao không hợp lệ: " + assigneeId);
-        }
-    }
-
-    /**
-     * Validate date range - endDate phải sau startDate
-     */
     public void validateDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null && !endDate.isAfter(startDate) && !endDate.isEqual(startDate)) {
             throw ErrorCode.INVALID_DATE_RANGE.toException("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu");
         }
     }
 
-    /**
-     * Validate TaskStatus enum value
-     */
     public void validateTaskStatus(String status) {
         if (status == null || status.trim().isEmpty()) {
-            return; // Optional field
+            return;
         }
         try {
-            TaskStatus.valueOf(status.trim().toUpperCase());
+            // Replace "-" with "_" to match Enum (e.g. IN-PROGRESS -> IN_PROGRESS)
+            TaskStatus.valueOf(status.trim().toUpperCase().replace("-", "_"));
         } catch (IllegalArgumentException e) {
             throw ErrorCode.INVALID_STATUS_VALUE.toException(
-                "Trạng thái công việc không hợp lệ. Các giá trị hợp lệ: PENDING, IN_PROGRESS, COMPLETED, CANCELLED");
+                    "Trạng thái công việc không hợp lệ.");
         }
     }
 
-    /**
-     * Validate TaskPriorityStatus enum value
-     */
     public void validateTaskPriorityStatus(String priority) {
         if (priority == null || priority.trim().isEmpty()) {
-            return; // Optional field
+            return;
         }
         try {
             TaskPriorityStatus.valueOf(priority.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw ErrorCode.INVALID_STATUS_VALUE.toException(
-                "Độ ưu tiên công việc không hợp lệ. Các giá trị hợp lệ: LOW, MEDIUM, HIGH, URGENT");
+                    "Độ ưu tiên công việc không hợp lệ (LOW, MEDIUM, HIGH, URGENT)");
         }
     }
-}
 
+    // Hàm Validate Tag Mới
+    public void validateTaskTag(String tag) {
+        if (tag == null || tag.trim().isEmpty()) return;
+        try {
+            TaskTag.valueOf(tag.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw ErrorCode.INVALID_STATUS_VALUE.toException("Nhãn (Tag) không hợp lệ (BUG, FEATURE, IMPROVEMENT, DOCUMENTATION)");
+        }
+    }
+
+}

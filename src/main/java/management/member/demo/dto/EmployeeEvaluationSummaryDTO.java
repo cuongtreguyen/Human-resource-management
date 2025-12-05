@@ -1,21 +1,19 @@
 package management.member.demo.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.*;
 import java.time.LocalDate;
 
-@Getter
-@Setter
+@Data
+@Builder
 public class EmployeeEvaluationSummaryDTO {
-    private String id;
-    private String period;
-    private Double overallRating;
-    
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate reviewDate;
-    
-    private String reviewer;
-}
+    Long employeeId;
+    String fullName;
+    String department;
+    String position;
+    String avatar; // Nếu có
 
+    // Thông tin đánh giá gần nhất (có thể null nếu chưa đánh giá lần nào)
+    Double latestScore;
+    LocalDate lastEvaluationDate;
+    Long lastEvaluationId; // Để bấm vào xem chi tiết
+}

@@ -1,0 +1,39 @@
+[
+  {
+    "employeeId": "EMP001",
+    "fullName": "Nguyễn Văn A",
+    "department": "Phòng Nhân sự",
+    "benefitId": "BENEFIT-001",
+    "benefitName": "Bảo hiểm y tế",
+    "grantDate": "2024-01-15",
+    "status": "ACTIVE"
+  },
+  {
+    "employeeId": "EMP001",
+    "fullName": "Nguyễn Văn A",
+    "department": "Phòng Nhân sự",
+    "benefitId": "BENEFIT-003",
+    "benefitName": "Phụ cấp ăn trưa",
+    "grantDate": "2024-01-15",
+    "status": "ACTIVE"
+  },
+  {
+    "employeeId": "EMP001",
+    "fullName": "Nguyễn Văn A",
+    "department": "Phòng Nhân sự",
+    "benefitId": "BENEFIT-004",
+    "benefitName": "Phụ cấp xăng xe",
+    "grantDate": "2024-02-01",
+    "status": "ACTIVE"
+  },
+  {
+    "employeeId": "EMP001",
+    "fullName": "Nguyễn Văn A",
+    "department": "Phòng Nhân sự",
+    "benefitId": "BENEFIT-005",
+    "benefitName": "Phụ cấp điện thoại",
+    "grantDate": "2024-01-15",
+    "status": "INACTIVE"
+  }
+]
+

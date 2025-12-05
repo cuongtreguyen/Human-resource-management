@@ -1,9 +1,13 @@
 package management.member.demo.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import management.member.demo.enums.AttendenceStatus;
+import management.member.demo.enums.EmployeeStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,21 +44,21 @@ public class Attendance {
     @Column(name = "check_out")
     private LocalTime checkOut;
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    /** Địa chỉ văn phòng */
+    @Size(max = 255)
+    @Column(name = "day_off")
+    private String dayOff;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
+    /** Địa chỉ văn phòng */
+    @Size(max = 255)
+    @Column(name = "late_day")
+    private String lateDay;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
+    /** Trạng thái - Default là NOT_CHECKED_IN, chỉ chuyển sang IN_WORK khi check-in */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = true)
+    private AttendenceStatus status = AttendenceStatus.NOT_CHECKED_IN;
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
-}
+ }
+
 

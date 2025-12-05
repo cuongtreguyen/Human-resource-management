@@ -136,4 +136,41 @@ public class OnLeaveController {
         OnLeaveResponse response = service.updateOnLeaveStatus(leaveId, status);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Lấy danh sách đơn xin nghỉ phép cho Accountant theo ID nhân viên
+     */
+    @GetMapping("/accountant/applications")
+    @Operation(
+            summary = "Get list of leave applications for Accountant by employee ID",
+            description = "Get leave applications with employee details for Accountant filtered by employee ID"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Employee ID is required"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
+    public ResponseEntity<List<LeaveApplicationForAccountantDTO>> getLeaveApplicationsForAccountant(
+            @RequestParam Long employeeId) {
+        List<LeaveApplicationForAccountantDTO> result = service.getLeaveApplicationsForAccountant(employeeId);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Lấy chi tiết đơn xin nghỉ phép cho Accountant
+     */
+    @GetMapping("/accountant/applications/{leaveId}")
+    @Operation(
+            summary = "Get leave application details for Accountant",
+            description = "Get detailed information of a specific leave application for Accountant"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Leave application not found")
+    })
+    public ResponseEntity<LeaveApplicationDetailForAccountantDTO> getLeaveApplicationDetailForAccountant(
+            @PathVariable Long leaveId) {
+        LeaveApplicationDetailForAccountantDTO result = service.getLeaveApplicationDetailForAccountant(leaveId);
+        return ResponseEntity.ok(result);
+    }
 }

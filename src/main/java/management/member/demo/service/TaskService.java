@@ -1,13 +1,18 @@
 package management.member.demo.service;
 
 import management.member.demo.dto.*;
+import management.member.demo.entity.Board;
 import management.member.demo.entity.Task;
 import management.member.demo.entity.Employee;
+import management.member.demo.entity.User;
+import management.member.demo.enums.Role;
 import management.member.demo.enums.TaskStatus;
 import management.member.demo.enums.TaskPriorityStatus;
-import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.enums.TaskTag;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
+import management.member.demo.mapper.CommentMapper;
 import management.member.demo.mapper.TaskMapper;
+import management.member.demo.repository.BoardRepository;
 import management.member.demo.repository.TaskRepository;
 import management.member.demo.repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,10 +35,26 @@ public class TaskService {
     private TaskRepository taskRepository;
 
     @Autowired
+    BoardRepository boardRepository;
+
+    @Autowired
+    CommentMapper commentMapper;
+
+    @Autowired
     private EmployeeRepository employeeRepository;
 
     @Autowired
     private TaskMapper taskMapper;
+
+    @Autowired
+    private AuthService authService;
+
+    private Employee getPrimaryAssignee(Task task) {
+        if (task.getEmployees() != null && !task.getEmployees().isEmpty()) {
+            return task.getEmployees().get(0); // Lấy người đầu tiên
+        }
+        return null;
+    }
 
     public List<TaskResponse> findTaskByStatus(TaskStatus status) {
         return taskRepository.findAll().stream()
@@ -92,8 +114,10 @@ public class TaskService {
 
         if (assigneeId != null && !assigneeId.isEmpty()) {
             Long empId = Long.parseLong(assigneeId);
+            // SỬA: Kiểm tra xem empId có nằm trong danh sách employees của task không
             tasks = tasks.stream()
-                    .filter(t -> t.getEmployee() != null && t.getEmployee().getId().equals(empId))
+                    .filter(t -> t.getEmployees() != null &&
+                            t.getEmployees().stream().anyMatch(e -> e.getId().equals(empId)))
                     .collect(Collectors.toList());
         }
 
@@ -109,40 +133,40 @@ public class TaskService {
     }
 
     public CreateTaskResponseDTO createTask(CreateTaskRequestDTO request) {
-        Long assigneeId = Long.parseLong(request.getAssigneeId());
-        Employee employee = employeeRepository.findById(assigneeId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + assigneeId));
+        User user = authService.getCurrentUser();
+        // Check quyền Manager nếu cần thiết (hoặc nới lỏng nếu nhân viên cũng được tạo task)
+        if(!user.getRole().equals(Role.MANAGER)){
+            // throw new ResourceNotFoundException(ErrorCode.TASK_NOT_PERMITTED.getMessage());
+        }
+
+        // 1. Tìm Board
+        Board board = null;
+        if (request.getBoardId() != null) {
+            board = boardRepository.findById(request.getBoardId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Board not found"));
+        }
 
         Task task = new Task();
         task.setTitle(request.getTitle());
-        task.setDescription(request.getDescription());
-        task.setEmployee(employee);
+        task.setBoard(board);
 
-        try {
-            task.setTaskPriorityStatus(TaskPriorityStatus.valueOf(request.getPriority().toUpperCase()));
-        } catch (IllegalArgumentException e) {
-            task.setTaskPriorityStatus(TaskPriorityStatus.MEDIUM);
-        }
-
-        task.setTaskStatus(TaskStatus.NEW);
+        // 2. Set giá trị mặc định (Vì UI tạo nhanh không nhập mấy cái này)
+        task.setDescription("");
+        task.setTaskStatus(TaskStatus.NEW); // Mặc định là Mới/Todo
+        task.setTaskPriorityStatus(TaskPriorityStatus.MEDIUM); // Mặc định Trung bình
         task.setCreatedAt(LocalDate.now());
-        if (request.getStartDate() != null) {
-            task.setCreatedAt(request.getStartDate());
-        }
-        if (request.getEndDate() != null) {
-            task.setEndedAt(request.getEndDate());
-        }
+        task.setEmployees(new ArrayList<>()); // Chưa có ai làm
 
         Task saved = taskRepository.save(task);
 
+        // 3. Trả về response
         CreateTaskResponseDTO response = new CreateTaskResponseDTO();
         CreateTaskResponseDTO.TaskData data = new CreateTaskResponseDTO.TaskData();
         data.setId(String.valueOf(saved.getId()));
         data.setTitle(saved.getTitle());
         data.setStatus(saved.getTaskStatus().name().toLowerCase().replace("_", "-"));
         data.setCreatedAt(LocalDateTime.now());
-        
+
         response.setData(data);
         response.setSuccess(true);
         response.setMessage("Task created successfully");
@@ -155,19 +179,54 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
 
+        // 1. Update Title & Description
+        if (request.getTitle() != null) task.setTitle(request.getTitle());
+        if (request.getDescription() != null) task.setDescription(request.getDescription());
+
+        // 2. Update Status (Kéo thả thẻ)
         if (request.getStatus() != null) {
             try {
                 task.setTaskStatus(TaskStatus.valueOf(request.getStatus().toUpperCase().replace("-", "_")));
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status: " + request.getStatus());
+                // Log error or ignore
             }
         }
+
+        // 3. Update Priority (Độ ưu tiên)
         if (request.getPriority() != null) {
             try {
                 task.setTaskPriorityStatus(TaskPriorityStatus.valueOf(request.getPriority().toUpperCase()));
+            } catch (IllegalArgumentException e) { }
+        }
+
+        // 4. Update Deadline (Ngày hết hạn)
+        if (request.getDeadline() != null) {
+            task.setDeadline(request.getDeadline());
+        }
+
+        // 5. Update Tag (Nhãn)
+        if (request.getTag() != null) {
+            try {
+                // Convert String từ request sang Enum TaskTag
+                task.setTag(TaskTag.valueOf(request.getTag().toUpperCase()));
             } catch (IllegalArgumentException e) {
-                // Invalid priority, ignore
+                // Nếu tag gửi lên không đúng Enum thì bỏ qua hoặc throw lỗi tùy bạn
             }
+        }
+
+        // 6. Update Assignees (Thêm thành viên)
+        // Logic Add thêm (Append) thay vì Replace
+        if (request.getAssigneeIds() != null && !request.getAssigneeIds().isEmpty()) {
+            List<Employee> currentAssignees = task.getEmployees(); // Lấy danh sách hiện tại
+            List<Employee> newAssignees = employeeRepository.findAllById(request.getAssigneeIds());
+
+            for (Employee emp : newAssignees) {
+                // Chỉ thêm nếu chưa có trong list (tránh trùng)
+                if (!currentAssignees.contains(emp)) {
+                    currentAssignees.add(emp);
+                }
+            }
+            task.setEmployees(currentAssignees);
         }
 
         Task updated = taskRepository.save(task);
@@ -186,23 +245,46 @@ public class TaskService {
     public TaskDetailDTO getTaskById(String id) {
         Long taskId = Long.parseLong(id);
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         TaskDetailDTO response = new TaskDetailDTO();
         TaskDetailDTO.TaskDetailData data = new TaskDetailDTO.TaskDetailData();
-        
+
         data.setId(task.getId());
         data.setTitle(task.getTitle());
         data.setDescription(task.getDescription());
         data.setStatus(task.getTaskStatus().name().toLowerCase().replace("_", "-"));
         data.setPriority(task.getTaskPriorityStatus().name().toLowerCase());
-        if (task.getEmployee() != null) {
-            TaskDetailDTO.AssigneeInfo assignee = new TaskDetailDTO.AssigneeInfo();
-            assignee.setId(task.getEmployee().getId());
-            assignee.setName(task.getEmployee().getFullName());
-            data.setAssignee(assignee);
+
+        if (task.getTag() != null) {
+            data.setTag(task.getTag().name());
         }
-        
+
+        // 1. Map Board Info
+        if (task.getBoard() != null) {
+            data.setBoardId(task.getBoard().getId());
+            data.setBoardName(task.getBoard().getName());
+        }
+
+        // 2. Map Assignees (List)
+        if (task.getEmployees() != null) {
+            List<TaskDetailDTO.AssigneeInfo> assigneeDtos = task.getEmployees().stream().map(emp -> {
+                TaskDetailDTO.AssigneeInfo info = new TaskDetailDTO.AssigneeInfo();
+                info.setId(emp.getId());
+                info.setName(emp.getFullName());
+                return info;
+            }).collect(Collectors.toList());
+            data.setAssignees(assigneeDtos);
+        }
+
+        // 3. Map Comments (List)
+        if (task.getComments() != null) {
+            List<CommentResponse> commentDtos = task.getComments().stream()
+                    .map(commentMapper::toResponse) // Dùng mapper bài trước
+                    .collect(Collectors.toList());
+            data.setComments(commentDtos);
+        }
+
         response.setData(data);
         response.setSuccess(true);
         return response;
@@ -231,13 +313,13 @@ public class TaskService {
 
         TaskProgressDTO response = new TaskProgressDTO();
         TaskProgressDTO.TaskProgressData data = new TaskProgressDTO.TaskProgressData();
-        
+
         data.setTaskId(taskId);
         data.setCurrentProgress(0); // Mock progress
         data.setTimeSpent(0);
         data.setEstimatedTime(0);
         data.setLastUpdate(LocalDateTime.now());
-        
+
         response.setData(data);
         response.setSuccess(true);
         return response;
@@ -267,7 +349,6 @@ public class TaskService {
                     TaskAssigneeDTO dto = new TaskAssigneeDTO();
                     dto.setId(String.valueOf(emp.getId()));
                     dto.setName(emp.getFullName());
-                    dto.setAvatar("/api/placeholder/150/150");
                     dto.setDepartment(emp.getDepartment());
                     dto.setPosition(emp.getPosition());
                     dto.setEmail(emp.getEmail());
@@ -281,7 +362,7 @@ public class TaskService {
 
         return response;
     }
-    
+
     public List<Map<String, Object>> employeeEfficiencyAsMaps(LocalDate startDate, LocalDate endDate) {
         List<Task> tasks = taskRepository.findAll();
         // Filter by date range if provided
@@ -295,12 +376,17 @@ public class TaskService {
                     })
                     .collect(Collectors.toList());
         }
-        
+
         // Group by employee and calculate efficiency
-        Map<Long, List<Task>> tasksByEmployee = tasks.stream()
-                .filter(task -> task.getEmployee() != null)
-                .collect(Collectors.groupingBy(task -> task.getEmployee().getId()));
-        
+        Map<Long, List<Task>> tasksByEmployee = new HashMap<>();
+        for (Task task : tasks) {
+            if (task.getEmployees() != null) {
+                for (Employee emp : task.getEmployees()) {
+                    tasksByEmployee.computeIfAbsent(emp.getId(), k -> new ArrayList<>()).add(task);
+                }
+            }
+        }
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map.Entry<Long, List<Task>> entry : tasksByEmployee.entrySet()) {
             List<Task> employeeTasks = entry.getValue();
@@ -308,7 +394,7 @@ public class TaskService {
                     .filter(t -> t.getTaskStatus() == TaskStatus.COMPLETED)
                     .count();
             double efficiency = employeeTasks.isEmpty() ? 0.0 : (double) completed / employeeTasks.size() * 100;
-            
+
             Map<String, Object> map = new java.util.HashMap<>();
             map.put("employeeId", entry.getKey());
             map.put("totalTasks", employeeTasks.size());
@@ -316,10 +402,10 @@ public class TaskService {
             map.put("efficiency", efficiency);
             result.add(map);
         }
-        
+
         return result;
     }
-    
+
     public double averageDaysForCompleted(LocalDate startDate, LocalDate endDate) {
         List<Task> tasks = taskRepository.findAll();
         // Filter by date range if provided
@@ -333,39 +419,40 @@ public class TaskService {
                     })
                     .collect(Collectors.toList());
         }
-        
+
         List<Task> completedTasks = tasks.stream()
                 .filter(task -> task.getTaskStatus() == TaskStatus.COMPLETED &&
-                              task.getCreatedAt() != null &&
-                              task.getEndedAt() != null)
+                        task.getCreatedAt() != null &&
+                        task.getDeadline() != null)
                 .collect(Collectors.toList());
-        
+
         if (completedTasks.isEmpty()) {
             return 0.0;
         }
-        
+
         double totalDays = completedTasks.stream()
-                .mapToLong(task -> java.time.temporal.ChronoUnit.DAYS.between(task.getCreatedAt(), task.getEndedAt()))
+                .mapToLong(task -> java.time.temporal.ChronoUnit.DAYS.between(task.getCreatedAt(), task.getDeadline()))
                 .sum();
-        
+
         return totalDays / completedTasks.size();
     }
 
     public EmployeeTaskSummaryDTO getEmployeeTaskSummary(String employeeId) {
         Long empId = Long.parseLong(employeeId);
         List<Task> tasks = taskRepository.findAll().stream()
-                .filter(t -> t.getEmployee() != null && t.getEmployee().getId().equals(empId))
+                .filter(t -> t.getEmployees() != null &&
+                        t.getEmployees().stream().anyMatch(e -> e.getId().equals(empId)))
                 .collect(Collectors.toList());
 
         EmployeeTaskSummaryDTO response = new EmployeeTaskSummaryDTO();
         EmployeeTaskSummaryDTO.SummaryData data = new EmployeeTaskSummaryDTO.SummaryData();
-        
+
         data.setEmployeeId(employeeId);
         data.setTotalTasks((long) tasks.size());
         data.setCompletedTasks(tasks.stream().filter(t -> t.getTaskStatus() == TaskStatus.COMPLETED).count());
         data.setInProgressTasks(tasks.stream().filter(t -> t.getTaskStatus() == TaskStatus.IN_PROGRESS).count());
         data.setPendingTasks(tasks.stream().filter(t -> t.getTaskStatus() == TaskStatus.PENDING).count());
-        
+
         response.setData(data);
         response.setSuccess(true);
         return response;
@@ -388,7 +475,7 @@ public class TaskService {
     public TaskAnalyticsDTO getTaskAnalytics() {
         TaskAnalyticsDTO response = new TaskAnalyticsDTO();
         TaskAnalyticsDTO.AnalyticsData data = new TaskAnalyticsDTO.AnalyticsData();
-        
+
         // Get real data from database
         List<Task> allTasks = taskRepository.findAll();
         long totalTasks = allTasks.size();
@@ -401,15 +488,15 @@ public class TaskService {
         long pendingTasks = allTasks.stream()
                 .filter(t -> t.getTaskStatus() == TaskStatus.PENDING || t.getTaskStatus() == TaskStatus.NEW)
                 .count();
-        
+
         double completionRate = totalTasks > 0 ? (double) completedTasks / totalTasks * 100 : 0.0;
-        
+
         data.setTotalTasks((int) totalTasks);
         data.setCompletedTasks((int) completedTasks);
         data.setInProgressTasks((int) inProgressTasks);
         data.setPendingTasks((int) pendingTasks);
         data.setCompletionRate(completionRate);
-        
+
         response.setData(data);
         response.setSuccess(true);
         return response;
@@ -419,26 +506,23 @@ public class TaskService {
         TaskMetricsForEvaluationDTO response = new TaskMetricsForEvaluationDTO();
         TaskMetricsForEvaluationDTO.MetricsData data = new TaskMetricsForEvaluationDTO.MetricsData();
         data.setEmployeeId(employeeId);
-        
+
         // Parse dates
         LocalDate start = startDate != null ? LocalDate.parse(startDate) : null;
         LocalDate end = endDate != null ? LocalDate.parse(endDate) : null;
-        
+
         // Get employee tasks
         Long empId = Long.parseLong(employeeId);
         List<Task> employeeTasks = taskRepository.findAll().stream()
-                .filter(t -> t.getEmployee() != null && t.getEmployee().getId().equals(empId))
+                .filter(t -> t.getEmployees() != null &&
+                        t.getEmployees().stream().anyMatch(e -> e.getId().equals(empId)))
                 .filter(t -> {
-                    if (start != null && t.getCreatedAt() != null && t.getCreatedAt().isBefore(start)) {
-                        return false;
-                    }
-                    if (end != null && t.getCreatedAt() != null && t.getCreatedAt().isAfter(end)) {
-                        return false;
-                    }
+                    if (start != null && t.getCreatedAt() != null && t.getCreatedAt().isBefore(start)) return false;
+                    if (end != null && t.getCreatedAt() != null && t.getCreatedAt().isAfter(end)) return false;
                     return true;
                 })
                 .collect(Collectors.toList());
-        
+
         // Calculate completion rate
         long totalTasks = employeeTasks.size();
         long completedTasks = employeeTasks.stream()
@@ -446,33 +530,33 @@ public class TaskService {
                 .count();
         double completionRate = totalTasks > 0 ? (double) completedTasks / totalTasks * 100 : 0.0;
         data.setCompletionRate(completionRate);
-        
+
         // Calculate on-time completion rate
         long onTimeCompleted = employeeTasks.stream()
                 .filter(t -> t.getTaskStatus() == TaskStatus.COMPLETED &&
-                           t.getCreatedAt() != null &&
-                           t.getEndedAt() != null &&
-                           !t.getEndedAt().isAfter(t.getCreatedAt().plusDays(7)))
+                        t.getCreatedAt() != null &&
+                        t.getDeadline() != null &&
+                        !t.getDeadline().isAfter(t.getCreatedAt().plusDays(7)))
                 .count();
         double onTimeCompletionRate = completedTasks > 0 ? (double) onTimeCompleted / completedTasks * 100 : 0.0;
         data.setOnTimeCompletionRate(onTimeCompletionRate);
-        
+
         // Calculate average completion time
         List<Task> completedWithDates = employeeTasks.stream()
                 .filter(t -> t.getTaskStatus() == TaskStatus.COMPLETED &&
-                           t.getCreatedAt() != null &&
-                           t.getEndedAt() != null)
+                        t.getCreatedAt() != null &&
+                        t.getDeadline() != null)
                 .collect(Collectors.toList());
-        
+
         double averageCompletionTime = 0.0;
         if (!completedWithDates.isEmpty()) {
             double totalDays = completedWithDates.stream()
-                    .mapToLong(t -> java.time.temporal.ChronoUnit.DAYS.between(t.getCreatedAt(), t.getEndedAt()))
+                    .mapToLong(t -> java.time.temporal.ChronoUnit.DAYS.between(t.getCreatedAt(), t.getDeadline()))
                     .sum();
             averageCompletionTime = totalDays / completedWithDates.size();
         }
         data.setAverageCompletionTime(averageCompletionTime);
-        
+
         response.setData(data);
         response.setSuccess(true);
         return response;
@@ -516,16 +600,16 @@ public class TaskService {
 
         long completedOnTime = tasks.stream()
                 .filter(t -> t.getTaskStatus() == TaskStatus.COMPLETED &&
-                           t.getEndedAt() != null &&
-                           (t.getCreatedAt() == null || !t.getEndedAt().isAfter(t.getCreatedAt().plusDays(7))))
+                        t.getDeadline() != null &&
+                        (t.getCreatedAt() == null || !t.getDeadline().isAfter(t.getCreatedAt().plusDays(7))))
                 .count();
         int onTimeCompletion = tasks.isEmpty() ? 0 : (int) (completedOnTime * 100 / tasks.size());
         data.setOnTimeCompletion(onTimeCompletion);
 
         long overdueTasks = tasks.stream()
-                .filter(t -> t.getEndedAt() != null &&
-                           t.getEndedAt().isBefore(LocalDate.now()) &&
-                           t.getTaskStatus() != TaskStatus.COMPLETED)
+                .filter(t -> t.getDeadline() != null &&
+                        t.getDeadline().isBefore(LocalDate.now()) &&
+                        t.getTaskStatus() != TaskStatus.COMPLETED)
                 .count();
         data.setOverdueTasks((int) overdueTasks);
 
@@ -553,6 +637,24 @@ public class TaskService {
         return response;
     }
 
+    // API phục vụ cho cái Dropdown tìm kiếm trong hình
+    public List<TaskAssigneeDTO> searchAssignees(String keyword, String department) {
+        // Gọi Repository vừa viết ở Bước 1
+        List<Employee> employees = employeeRepository.searchEmployees(keyword, department);
+
+        // Convert sang DTO để trả về Frontend (Avatar, Tên, Phòng ban)
+        return employees.stream().map(emp -> {
+            TaskAssigneeDTO dto = new TaskAssigneeDTO();
+            dto.setId(String.valueOf(emp.getId()));
+            dto.setName(emp.getFullName());
+            dto.setEmail(emp.getEmail());
+            dto.setDepartment(emp.getDepartment());
+            dto.setPosition(emp.getPosition());
+            // dto.setAvatar(...) // Nếu có avatar
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
     private TaskListItemDTO toTaskListItemDTO(Task task) {
         TaskListItemDTO dto = new TaskListItemDTO();
         dto.setId(task.getId());
@@ -561,16 +663,28 @@ public class TaskService {
         dto.setStatus(task.getTaskStatus().name().toLowerCase().replace("_", "-"));
         dto.setPriority(task.getTaskPriorityStatus().name().toLowerCase());
 
-        if (task.getEmployee() != null) {
-            TaskListItemDTO.AssigneeInfo assignee = new TaskListItemDTO.AssigneeInfo();
-            assignee.setId(task.getEmployee().getId());
-            assignee.setName(task.getEmployee().getFullName());
-            assignee.setAvatar("/api/placeholder/150/150");
-            dto.setAssignee(assignee);
+        if (task.getTag() != null) {
+            dto.setTag(task.getTag().name());
+        }
+
+        if (task.getBoard() != null) {
+            dto.setBoardId(task.getBoard().getId());
+            dto.setBoardName(task.getBoard().getName());
+        }
+        dto.setCommentCount(task.getComments() != null ? task.getComments().size() : 0);
+
+        if (task.getEmployees() != null) {
+            List<TaskListItemDTO.AssigneeInfo> assigneeDtos = task.getEmployees().stream().map(emp -> {
+                TaskListItemDTO.AssigneeInfo info = new TaskListItemDTO.AssigneeInfo();
+                info.setId(emp.getId());
+                info.setName(emp.getFullName());
+                return info;
+            }).collect(Collectors.toList());
+            dto.setAssignees(assigneeDtos);
         }
 
         dto.setStartDate(task.getCreatedAt());
-        dto.setEndDate(task.getEndedAt());
+        dto.setEndDate(task.getDeadline());
         dto.setCreatedAt(task.getCreatedAt() != null ? task.getCreatedAt().atStartOfDay() : LocalDateTime.now());
         dto.setUpdatedAt(LocalDateTime.now());
 

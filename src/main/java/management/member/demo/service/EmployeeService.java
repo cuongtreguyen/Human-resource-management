@@ -11,7 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -45,12 +47,8 @@ public class EmployeeService {
         employee.setBaseSalary(request.getSalary());
         employee.setStatus(EmployeeStatus.ACTIVE);
 
-        // Generate employee code if not provided
-        if (request.getEmployeeCode() == null || request.getEmployeeCode().isEmpty()) {
-            employee.setEmployeeCode("EMP" + System.currentTimeMillis());
-        } else {
-            employee.setEmployeeCode(request.getEmployeeCode());
-        }
+        // Employee entity không có employeeCode field nữa, sử dụng employeeId thay thế
+        // Nếu cần generate code, có thể dùng employeeId
 
         Employee saved = employeeRepository.save(employee);
 
@@ -135,6 +133,20 @@ public class EmployeeService {
         return employeeRepository.countByStatus(EmployeeStatus.ACTIVE);
     }
 
+    /**
+     * Lấy thống kê tổng số nhân viên và số nhân viên đang hoạt động
+     * 
+     * @return Map chứa totalEmployees và activeEmployees
+     */
+    public Map<String, Long> getEmployeeStats() {
+        Long total = getTotalEmployees();
+        Long active = getActiveEmployeesCount();
+        return Map.of(
+            "totalEmployees", total,
+            "activeEmployees", active
+        );
+    }
+
     public EmployeeDetailDTO getEmployeeDetailById(String id) {
         Employee employee = findEmployeeById(id);
         return employeeMapper.toDetailDTO(employee);
@@ -213,21 +225,87 @@ public class EmployeeService {
         return response;
     }
 
-    public ExportResponseDTO exportEmployees(String format, String search, String department, String status) {
-        // Get filtered employees
-        EmployeeListResponse employeesResponse = getEmployeesWithFilters(search, department, null, status);
+    /**
+     * Lấy danh sách nhân viên cho Accountant với đầy đủ filter
+     * Hỗ trợ: search (name/email), department, position, minSalary, maxSalary
+     */
+    public EmployeeListResponse getEmployeesForAccountant(String search, String department, String position, BigDecimal minSalary, BigDecimal maxSalary) {
+        List<Employee> employees;
 
-        // Generate filename
-        String filename = "employees_" + java.time.LocalDate.now() + "." + (format != null ? format : "xlsx");
+        // Xử lý filter theo salary
+        boolean hasSalaryFilter = minSalary != null || maxSalary != null;
 
-        ExportResponseDTO response = new ExportResponseDTO();
-        response.setUrl("/exports/" + filename);
-        response.setFilename(filename);
+        if (search != null && !search.isEmpty()) {
+            // Có search: query theo search trước, sau đó filter theo salary bằng stream
+            if (department != null && position != null) {
+                employees = employeeRepository.searchByNameOrEmailAndDepartmentAndPosition(search, department, position);
+            } else if (department != null) {
+                employees = employeeRepository.searchByNameOrEmailAndDepartment(search, department);
+            } else if (position != null) {
+                employees = employeeRepository.searchByNameOrEmailAndPosition(search, position);
+            } else {
+                employees = employeeRepository.searchByNameOrEmail(search);
+            }
+        } else {
+            // Không có search: có thể dùng repository method với salary
+            if (hasSalaryFilter) {
+                if (department != null && position != null) {
+                    employees = employeeRepository.findByDepartmentAndPositionAndBaseSalaryBetween(department, position, 
+                            minSalary != null ? minSalary : BigDecimal.ZERO, 
+                            maxSalary != null ? maxSalary : new BigDecimal("999999999999"));
+                } else if (department != null) {
+                    employees = employeeRepository.findByDepartmentAndBaseSalaryBetween(department, 
+                            minSalary != null ? minSalary : BigDecimal.ZERO, 
+                            maxSalary != null ? maxSalary : new BigDecimal("999999999999"));
+                } else if (position != null) {
+                    employees = employeeRepository.findByPositionAndBaseSalaryBetween(position, 
+                            minSalary != null ? minSalary : BigDecimal.ZERO, 
+                            maxSalary != null ? maxSalary : new BigDecimal("999999999999"));
+                } else {
+                    employees = employeeRepository.findByBaseSalaryBetween(
+                            minSalary != null ? minSalary : BigDecimal.ZERO, 
+                            maxSalary != null ? maxSalary : new BigDecimal("999999999999"));
+                }
+            } else {
+                // Không có salary filter
+                if (department != null && position != null) {
+                    employees = employeeRepository.findByDepartmentAndPosition(department, position);
+                } else if (department != null) {
+                    employees = employeeRepository.findByDepartment(department);
+                } else if (position != null) {
+                    employees = employeeRepository.findByPosition(position);
+                } else {
+                    employees = employeeRepository.findAll();
+                }
+            }
+        }
+
+        // Filter theo salary nếu có search (vì repository method không hỗ trợ search + salary)
+        if (hasSalaryFilter && (search != null && !search.isEmpty())) {
+            final BigDecimal finalMinSalary = minSalary;
+            final BigDecimal finalMaxSalary = maxSalary;
+            employees = employees.stream()
+                    .filter(e -> {
+                        BigDecimal salary = e.getBaseSalary() != null ? e.getBaseSalary() : BigDecimal.ZERO;
+                        boolean minOk = finalMinSalary == null || salary.compareTo(finalMinSalary) >= 0;
+                        boolean maxOk = finalMaxSalary == null || salary.compareTo(finalMaxSalary) <= 0;
+                        return minOk && maxOk;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        List<EmployeeListItemDTO> employeeDTOs = employees.stream()
+                .map(employeeMapper::toListItemDTO)
+                .collect(Collectors.toList());
+
+        EmployeeListResponse response = new EmployeeListResponse();
+        response.setData(employeeDTOs);
         response.setSuccess(true);
-        response.setMessage("Export completed successfully");
+        response.setTotal(employeeDTOs.size());
 
         return response;
     }
+
 
     private Employee findEmployeeById(String id) {
         // Try to parse as Long
@@ -247,12 +325,7 @@ public class EmployeeService {
             return employee.get();
         }
 
-        // Try as employeeCode
-        employee = employeeRepository.findByEmployeeCode(id);
-        if (employee.isPresent()) {
-            return employee.get();
-        }
-
+        // Employee entity không có employeeCode nữa, chỉ tìm theo employeeId hoặc Long id
         throw new ResourceNotFoundException(
                 ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + id);
     }

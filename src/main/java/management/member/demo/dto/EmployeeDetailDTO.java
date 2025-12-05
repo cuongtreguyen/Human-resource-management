@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -42,8 +43,25 @@ public class EmployeeDetailDTO {
     private String permanentAddress;
     
     private String temporaryAddress;
+    private String address; // Địa chỉ (khác với permanentAddress)
     private String employeeCode;
     private String contractCode;
+    
+    // Thông tin CMND/CCCD
+    private LocalDate idCardIssueDate;
+    private String idCardIssuePlace;
+    
+    // Thông tin nghỉ phép và OT
+    private Integer remainingLeaveDays;
+    private Integer remainingOtHours;
+    
+    // Vai trò
+    private String role;
+    
+    // Thông tin ca làm việc
+    private LocalTime timeIn;
+    private LocalTime timeOut;
+    private String shift;
     
     // ContractType: stored as "Full-time"/"Part-time" in DB, but can be mapped to Vietnamese in response
     private String contractType;

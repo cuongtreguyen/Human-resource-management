@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 import management.member.demo.enums.SalaryStatus;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 
 /**
  * SalaryRequest DTO - Dùng cho tạo và cập nhật Salary
@@ -27,17 +26,28 @@ public class SalaryRequest {
     private BigDecimal baseSalary;
 
     private BigDecimal allowance;
+    private BigDecimal allowances; // Alias cho allowance
     
     private BigDecimal overtimePay;
+    private BigDecimal otPay; // Alias cho overtimePay
+    private BigDecimal otHours; // Số giờ OT
     
     private BigDecimal bonus;
+    private BigDecimal bonuses; // Alias cho bonus
     
     private BigDecimal deduction;
+    private BigDecimal deductions; // Alias cho deduction
+    
+    private BigDecimal grossIncome; // Tổng thu nhập
+    private BigDecimal socialInsurance; // BHXH
+    private BigDecimal healthInsurance; // BHYT
+    private BigDecimal unemploymentInsurance; // BHTN
+    private BigDecimal totalInsurance; // Tổng bảo hiểm
+    private BigDecimal generalDeductions; // Khấu trừ chung
+    private BigDecimal personalIncomeTax; // Thuế thu nhập cá nhân
+    private BigDecimal totalDeductions; // Tổng khấu trừ
 
     @NotNull(message = "Trạng thái lương không được để trống")
     private SalaryStatus status;
-
-    @NotNull(message = "Ngày thanh toán không được để trống")
-    private LocalDate paymentDate;
 }
 

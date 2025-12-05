@@ -7,7 +7,6 @@ import management.member.demo.enums.OnLeaveStatus;
 import management.member.demo.enums.OnLeaveType;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 @Entity
 @AllArgsConstructor
@@ -26,16 +25,14 @@ public class OnLeave {
     Employee employee;
 
     @Enumerated(EnumType.STRING)
-    OnLeaveType onLeaveType;
-
+    private OnLeaveType onLeaveType;
     @Enumerated(EnumType.STRING)
-    OnLeaveStatus onLeaveStatus;
-
-    LocalDate startDate;
-    LocalDate endDate;
-    String reason;
-
-    public long getTotalDays() {
-        return ChronoUnit.DAYS.between(startDate, endDate) + 1;
-    }
+    private OnLeaveStatus onLeaveStatus;
+    private LocalDate startDate;
+    private LocalDate endDate;
+    private String reason;
+    @Column(name = "submitted_date")
+    LocalDate submittedDate;
+    @Column(name = "total_days_onleave")
+    private Long totalDaysOnleave;
 }

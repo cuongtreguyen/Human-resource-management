@@ -111,15 +111,14 @@ public class ProfileService {
     }
 
     public ProfileDTO getProfile(String userId) {
-        // Try to find employee by userId (could be employeeId, employeeCode, or id)
+        // Try to find employee by userId (could be employeeId or id)
         Employee employee = null;
         try {
             Long id = Long.parseLong(userId);
             employee = employeeRepository.findById(id).orElse(null);
         } catch (NumberFormatException e) {
-            // Try to find by employeeId or employeeCode
-            employee = employeeRepository.findByEmployeeId(userId)
-                    .orElse(employeeRepository.findByEmployeeCode(userId).orElse(null));
+            // Try to find by employeeId
+            employee = employeeRepository.findByEmployeeId(userId).orElse(null);
         }
         
         if (employee != null) {

@@ -1,19 +1,19 @@
 package management.member.demo.dto;
 
-import lombok.Getter;
-import lombok.Setter;
-
+import lombok.*;
 import java.time.LocalDate;
+import java.util.List;
 
-@Getter
-@Setter
+@Data
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UpdateTaskRequestDTO {
-    private String title;
-    private String status; // "new", "in-progress", "pending", "complete"
-    private String priority; // "high", "medium", "low"
-    private Integer progress; // 0-100
-    private LocalDate startDate;
-    private LocalDate endDate;
-    private String description;
+    String title;
+    String description;
+    String status;          // "IN-PROGRESS", "DONE"...
+    String priority;        // "HIGH", "MEDIUM"...
+    LocalDate deadline;     // Ngày hết hạn
+    String tag;             // Nhãn
+    List<Long> assigneeIds; // Danh sách ID thành viên ("Thêm thành viên")
 }
-

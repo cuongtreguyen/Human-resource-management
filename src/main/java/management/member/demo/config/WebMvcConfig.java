@@ -12,10 +12,15 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Configuration để tự động tạo và quản lý Trace ID cho mỗi request
@@ -33,6 +38,36 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addConverter(new EmployeeStatusConverter());
         registry.addConverter(new PayrollStatusConverter());
         registry.addConverter(new SalaryStatusConverter());
+    }
+    
+    /**
+     * Cấu hình CORS để cho phép FE gọi API
+     */
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        registry.addMapping("/api/**")
+                .allowedOrigins("http://localhost:5173", "http://localhost:3000", "http://localhost:5174")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
+                .allowedHeaders("*")
+                .exposedHeaders("X-Trace-Id")
+                .allowCredentials(true)
+                .maxAge(3600);
+    }
+    
+    /**
+     * Bean để xử lý CORS filter
+     */
+    @Bean
+    public CorsFilter corsFilter() {
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        config.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://localhost:3000", "http://localhost:5174"));
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
+        config.setExposedHeaders(Arrays.asList("X-Trace-Id"));
+        source.registerCorsConfiguration("/**", config);
+        return new CorsFilter(source);
     }
     
     /**

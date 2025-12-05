@@ -1,8 +1,11 @@
 package management.member.demo.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import management.member.demo.enums.BenefitsStatus;
+import org.hibernate.annotations.Formula;
 
 import java.time.LocalDate;
 
@@ -15,30 +18,27 @@ public class EmployeeBenefits {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @Column(name = "employee_id")
-    private Long employeeId;
+    /** Quan hệ Many-to-One với Employee: 1 nhân viên có thể có nhiều benefit */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", referencedColumnName = "employee_id", nullable = false)
+    private Employee employee;
+
+    /** Lấy employeeId dạng String từ employee entity (không lưu vào DB, read-only) */
+    @Formula("(SELECT e.employee_id FROM employees e WHERE e.employee_id = employee_id)")
+    @Getter
+    @Setter(AccessLevel.NONE) // Không tạo setter vì @Formula là read-only
+    @Transient // Đánh dấu không persist vào DB
+    private String employeeId;
     
-    @Column(name = "benefit_id", unique = true)
-    private String benefitId;
+    /** Quan hệ Many-to-One với Benefits: 1 benefit template có thể được gán cho nhiều nhân viên */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "benefit_id", referencedColumnName = "benefit_id", nullable = false)
+    private Benefits benefit;
+
+    @Column(name = "grant_date")
+    private LocalDate grantDate;
     
-    @Column(name = "name")
-    private String name;
-    
-    @Column(name = "status")
-    private String status;
-    
-    @Column(name = "description", length = 1000)
-    private String description;
-    
-    @Column(name = "coverage", length = 500)
-    private String coverage;
-    
-    @Column(name = "monthly_cost", length = 100)
-    private String monthlyCost;
-    
-    @Column(name = "start_date")
-    private LocalDate startDate;
-    
-    @Column(name = "end_date")
-    private LocalDate endDate;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", length = 50)
+    private BenefitsStatus status;
 }

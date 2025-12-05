@@ -8,9 +8,9 @@ import management.member.demo.dto.AttendanceFlaskResponseDTO;
 import management.member.demo.dto.AttendanceRequest;
 import management.member.demo.dto.AttendanceStatsDTO;
 import management.member.demo.dto.DailyAttendanceResponseDTO;
+import management.member.demo.dto.EmployeeAttendanceForAccountantDTO;
 import management.member.demo.dto.FaceRecognitionRequestDTO;
 import management.member.demo.dto.FaceRecognitionResponseDTO;
-import management.member.demo.dto.ExportResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -40,7 +40,7 @@ public class AttendanceController {
     @Autowired
     private FlaskApiService flaskApiService;
     
-    @Value("${face.recognition.confidence.threshold:20.0}")
+    @Value("${face.recognition.confidence.threshold:40.0}")
     private double confidenceThreshold;
     
     private static final Logger logger = LoggerFactory.getLogger(AttendanceController.class);
@@ -186,11 +186,11 @@ public class AttendanceController {
         }
     }
 
-    // Lấy attendance của một employee (hỗ trợ Long id, employeeId, hoặc employeeCode)
+    // Lấy attendance của một employee (hỗ trợ Long id hoặc employeeId)
     @GetMapping("/employee/{employeeId}")
     @Operation(
             summary = "Get employee attendance",
-            description = "Get attendance records for a specific employee. Supports Long id, employeeId (String), or employeeCode (String). Optional date range filter."
+            description = "Get attendance records for a specific employee. Supports Long id or employeeId (String). Optional date range filter."
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success"),
@@ -348,16 +348,23 @@ public class AttendanceController {
         }
     }
 
-    @GetMapping("/export")
-    @Operation(summary = "Export attendance data", description = "Export attendance data to file")
+
+    /**
+     * Lấy danh sách nhân viên đã chấm công cho Accountant
+     * Trả về thông tin: employeeId, fullName, department, shift, checkIn, checkOut, status
+     */
+    @GetMapping("/accountant/employees")
+    @Operation(
+            summary = "Get employee attendance list for Accountant",
+            description = "Get list of employees who have checked in/out with full details for Accountant. Optional date parameter (default: today)"
+    )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Export completed successfully")
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid date format")
     })
-    public ResponseEntity<ExportResponseDTO> exportAttendance(
-            @RequestParam(required = true) String startDate,
-            @RequestParam(required = true) String endDate,
-            @RequestParam(required = false, defaultValue = "excel") String format) {
-        ExportResponseDTO response = attendanceService.exportAttendance(startDate, endDate, format);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<List<EmployeeAttendanceForAccountantDTO>> getEmployeeAttendanceForAccountant(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        List<EmployeeAttendanceForAccountantDTO> result = attendanceService.getEmployeeAttendanceForAccountant(date);
+        return ResponseEntity.ok(result);
     }
 }

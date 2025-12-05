@@ -4,10 +4,11 @@ import management.member.demo.mapper.AttendanceMapper;
 import management.member.demo.dto.AttendanceDTO;
 import management.member.demo.dto.AttendanceRequest;
 import management.member.demo.dto.DailyAttendanceResponseDTO;
-import management.member.demo.dto.ExportResponseDTO;
+import management.member.demo.dto.EmployeeAttendanceForAccountantDTO;
 import management.member.demo.dto.FaceRecognitionResponseDTO;
 import management.member.demo.entity.Attendance;
 import management.member.demo.entity.Employee;
+import management.member.demo.enums.AttendenceStatus;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.AttendanceRepository;
@@ -45,7 +46,7 @@ public class AttendanceService {
     @Autowired
     private AttendanceValidator attendanceValidator;
 
-    @Value("${face.recognition.confidence.threshold:20.0}")
+    @Value("${face.recognition.confidence.threshold:40.0}")
     private double confidenceThreshold;
 
     /**
@@ -228,11 +229,13 @@ public class AttendanceService {
                 throw new IllegalStateException("Employee đã check-in vào ngày này");
             }
             attendance.setCheckIn(java.time.LocalTime.now());
+            attendance.setStatus(AttendenceStatus.IN_WORK); // Set status khi check-in
         } else {
             attendance = new Attendance();
             attendance.setEmployee(employee);
             attendance.setAttendanceDate(date);
             attendance.setCheckIn(java.time.LocalTime.now());
+            attendance.setStatus(AttendenceStatus.IN_WORK); // Set status khi check-in
             attendance.setFullName(employee.getFullName());
             attendance.setUserId(employee.getEmployeeId() != null ? employee.getEmployeeId() : employee.getId().toString());
         }
@@ -331,10 +334,12 @@ public class AttendanceService {
                 // Nếu đã có check-in, thì đây là check-out
                 if (attendance.getCheckIn() != null && attendance.getCheckOut() == null) {
                     attendance.setCheckOut(java.time.LocalTime.now());
+                    attendance.setStatus(AttendenceStatus.OUT_WORK); // Set status khi check-out
                     isCheckIn = false;
                 } else if (attendance.getCheckIn() == null) {
                     // Chưa có check-in, tạo check-in
                     attendance.setCheckIn(java.time.LocalTime.now());
+                    attendance.setStatus(AttendenceStatus.IN_WORK); // Set status khi check-in
                     isCheckIn = true;
                 } else {
                     // Đã có cả check-in và check-out, không làm gì
@@ -350,6 +355,7 @@ public class AttendanceService {
                 attendance.setEmployee(employee);
                 attendance.setAttendanceDate(today);
                 attendance.setCheckIn(java.time.LocalTime.now());
+                attendance.setStatus(AttendenceStatus.IN_WORK); // Set status khi check-in
                 attendance.setFullName(employee.getFullName());
                 attendance.setUserId(employee.getEmployeeId() != null ? employee.getEmployeeId() : employee.getId().toString());
                 isCheckIn = true;
@@ -367,20 +373,117 @@ public class AttendanceService {
     }
 
     /**
-     * Export attendance data
+     * Lấy danh sách nhân viên đã chấm công cho Accountant
+     * @param date Ngày cần lấy (nếu null thì lấy hôm nay)
+     * @return Danh sách nhân viên đã chấm công với thông tin đầy đủ
      */
-    public ExportResponseDTO exportAttendance(String startDate, String endDate, String format) {
-        // TODO: Implement actual export logic
-        String filename = "attendance_" + startDate + "_to_" + endDate + "." + (format != null ? format : "excel");
-
-        // TODO: Move export response creation to a mapper if needed
-        ExportResponseDTO response = new ExportResponseDTO();
-        response.setUrl("/exports/" + filename);
-        response.setFilename(filename);
-        response.setMessage("Export completed successfully");
-        response.setSuccess(true);
-
-        return response;
+    public List<EmployeeAttendanceForAccountantDTO> getEmployeeAttendanceForAccountant(LocalDate date) {
+        // Nếu không có date thì lấy hôm nay
+        if (date == null) {
+            date = LocalDate.now();
+        }
+        
+        // Lấy tất cả attendance records trong ngày
+        List<Attendance> attendances = attendanceRepository.findByAttendanceDate(date);
+        
+        // Map sang DTO
+        return attendances.stream()
+                .filter(attendance -> attendance.getEmployee() != null) // Chỉ lấy những record có employee
+                .map(attendance -> {
+                    EmployeeAttendanceForAccountantDTO dto = new EmployeeAttendanceForAccountantDTO();
+                    Employee employee = attendance.getEmployee();
+                    
+                    // Thông tin từ Employee
+                    dto.setEmployeeId(employee.getEmployeeId() != null ? employee.getEmployeeId() : String.valueOf(employee.getId()));
+                    dto.setFullName(employee.getFullName());
+                    dto.setDepartment(employee.getDepartment());
+                    dto.setShift(employee.getShift());
+                    
+                    // Thông tin từ Attendance
+                    dto.setCheckIn(attendance.getCheckIn());
+                    dto.setCheckOut(attendance.getCheckOut());
+                    dto.setStatus(attendance.getStatus());
+                    
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
+
+    /**
+     * Tính số ngày nghỉ (dayOff) dựa trên checkIn so với timeIn
+     * Nếu checkIn chênh lệch với timeIn > 120 phút thì tính là nghỉ
+     * 
+     * @param employeeId ID của nhân viên
+     * @return Số ngày nghỉ (String)
+     */
+    public String calculateDayOff(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
+        
+        if (employee.getTimeIn() == null) {
+            return "0"; // Nếu không có timeIn thì không tính được
+        }
+        
+        // Lấy tất cả attendance records của employee
+        List<Attendance> attendances = attendanceRepository.findByEmployeeId(employeeId);
+        
+        long dayOffCount = attendances.stream()
+                .filter(attendance -> {
+                    // Nếu không có checkIn thì tính là nghỉ
+                    if (attendance.getCheckIn() == null) {
+                        return true;
+                    }
+                    
+                    // Tính chênh lệch giữa checkIn và timeIn (tính bằng phút)
+                    // Nếu checkIn muộn hơn timeIn thì minutesDifference > 0
+                    long minutesDifference = java.time.Duration.between(
+                            employee.getTimeIn(),
+                            attendance.getCheckIn()
+                    ).toMinutes();
+                    
+                    // Nếu checkIn muộn hơn timeIn > 120 phút (2 giờ) thì tính là nghỉ
+                    return minutesDifference > 120;
+                })
+                .count();
+        
+        return String.valueOf(dayOffCount);
+    }
+    
+    /**
+     * Tính số ngày đi muộn (lateDay) - đếm số Attendance có status = LATE
+     * 
+     * @param employeeId ID của nhân viên
+     * @return Số ngày đi muộn (String)
+     */
+    public String calculateLateDay(Long employeeId) {
+        // Lấy tất cả Attendance records có status = LATE
+        List<Attendance> lateAttendances = attendanceRepository.findByEmployeeIdAndStatus(
+                employeeId, 
+                AttendenceStatus.LATE
+        );
+        
+        return String.valueOf(lateAttendances.size());
+    }
+    
+    /**
+     * Cập nhật dayOff và lateDay cho Employee
+     * 
+     * @param employeeId ID của nhân viên
+     */
+    public void updateEmployeeDayOffAndLateDay(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
+        
+        String dayOff = calculateDayOff(employeeId);
+        String lateDay = calculateLateDay(employeeId);
+        
+        employee.setDayOff(dayOff);
+        employee.setLateDay(lateDay);
+        
+        employeeRepository.save(employee);
+    }
+
 
 }

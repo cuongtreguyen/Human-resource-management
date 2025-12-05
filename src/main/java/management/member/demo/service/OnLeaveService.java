@@ -33,6 +33,44 @@ public class OnLeaveService {
 
     @Autowired
     private OnLeaveMapper onLeaveMapper;
+    
+    /**
+     * Tính tổng số ngày nghỉ phép và lưu vào field totalDaysOnleave
+     * 
+     * @param onLeave Đối tượng OnLeave cần tính toán
+     * @return Tổng số ngày nghỉ phép
+     */
+    public long calculateAndSetTotalDaysOnleave(OnLeave onLeave) {
+        if (onLeave.getStartDate() == null || onLeave.getEndDate() == null) {
+            onLeave.setTotalDaysOnleave(0L);
+            return 0;
+        }
+        
+        long totalDays = ChronoUnit.DAYS.between(onLeave.getStartDate(), onLeave.getEndDate()) + 1;
+        onLeave.setTotalDaysOnleave(totalDays);
+        return totalDays;
+    }
+    
+    /**
+     * Lấy tổng số ngày nghỉ phép
+     * Nếu đã có totalDaysOnleave, trả về giá trị đó, nếu không tính toán lại
+     * 
+     * @param onLeave Đối tượng OnLeave
+     * @return Tổng số ngày nghỉ phép
+     */
+    public long getTotalDays(OnLeave onLeave) {
+        // Nếu đã có totalDaysOnleave, trả về giá trị đó
+        if (onLeave.getTotalDaysOnleave() != null) {
+            return onLeave.getTotalDaysOnleave();
+        }
+        
+        // Nếu chưa có, tính toán lại
+        if (onLeave.getStartDate() != null && onLeave.getEndDate() != null) {
+            return ChronoUnit.DAYS.between(onLeave.getStartDate(), onLeave.getEndDate()) + 1;
+        }
+        
+        return 0;
+    }
 
     /**
      * Get all leave requests with optional filters
@@ -115,6 +153,9 @@ public class OnLeaveService {
         onLeave.setReason(request.getReason());
         onLeave.setOnLeaveStatus(OnLeaveStatus.PENDING);
         
+        // Tính toán và lưu totalDaysOnleave
+        calculateAndSetTotalDaysOnleave(onLeave);
+        
         OnLeave saved = onLeaveRepository.save(onLeave);
         
         CreateLeaveResponseDTO response = new CreateLeaveResponseDTO();
@@ -124,7 +165,7 @@ public class OnLeaveService {
         data.setType(request.getType());
         data.setStartDate(saved.getStartDate());
         data.setEndDate(saved.getEndDate());
-        data.setDays((int) saved.getTotalDays());
+        data.setDays((int) getTotalDays(saved));
         data.setStatus(saved.getOnLeaveStatus().name().toLowerCase());
         data.setSubmittedDate(LocalDate.now());
         
@@ -145,6 +186,9 @@ public class OnLeaveService {
         
         OnLeaveStatus newStatus = OnLeaveStatus.valueOf(request.getStatus().toUpperCase());
         onLeave.setOnLeaveStatus(newStatus);
+        
+        // Tính toán lại totalDaysOnleave nếu cần
+        calculateAndSetTotalDaysOnleave(onLeave);
         
         OnLeave saved = onLeaveRepository.save(onLeave);
         
@@ -176,6 +220,9 @@ public class OnLeaveService {
             onLeave.setReason(reason);
         }
         
+        // Tính toán lại totalDaysOnleave nếu cần
+        calculateAndSetTotalDaysOnleave(onLeave);
+        
         OnLeave saved = onLeaveRepository.save(onLeave);
         
         UpdateLeaveStatusResponseDTO response = new UpdateLeaveStatusResponseDTO();
@@ -206,26 +253,26 @@ public class OnLeaveService {
         long annualUsed = allLeaves.stream()
                 .filter(leave -> leave.getOnLeaveType() == OnLeaveType.ANNUAL_LEAVE && 
                         leave.getOnLeaveStatus() == OnLeaveStatus.APPROVED)
-                .mapToLong(OnLeave::getTotalDays)
+                .mapToLong(leave -> getTotalDays(leave))
                 .sum();
         
         long annualPending = allLeaves.stream()
                 .filter(leave -> leave.getOnLeaveType() == OnLeaveType.ANNUAL_LEAVE && 
                         leave.getOnLeaveStatus() == OnLeaveStatus.PENDING)
-                .mapToLong(OnLeave::getTotalDays)
+                    .mapToLong(leave -> getTotalDays(leave))
                 .sum();
         
         // Calculate sick leave
         long sickUsed = allLeaves.stream()
                 .filter(leave -> leave.getOnLeaveType() == OnLeaveType.SICK_LEAVE && 
                         leave.getOnLeaveStatus() == OnLeaveStatus.APPROVED)
-                .mapToLong(OnLeave::getTotalDays)
+                .mapToLong(leave -> getTotalDays(leave))
                 .sum();
         
         long sickPending = allLeaves.stream()
                 .filter(leave -> leave.getOnLeaveType() == OnLeaveType.SICK_LEAVE && 
                         leave.getOnLeaveStatus() == OnLeaveStatus.PENDING)
-                .mapToLong(OnLeave::getTotalDays)
+                .mapToLong(leave -> getTotalDays(leave))
                 .sum();
         
         LeaveBalanceResponseDTO response = new LeaveBalanceResponseDTO();
@@ -283,7 +330,7 @@ public class OnLeaveService {
                     item.setType(leave.getOnLeaveType().name().toLowerCase());
                     item.setStartDate(leave.getStartDate().toString());
                     item.setEndDate(leave.getEndDate().toString());
-                    item.setDays((int) leave.getTotalDays());
+                    item.setDays((int) getTotalDays(leave));
                     item.setStatus(leave.getOnLeaveStatus().name().toLowerCase());
                     return item;
                 })
@@ -305,6 +352,9 @@ public class OnLeaveService {
         
         OnLeave onLeave = onLeaveMapper.toOnLeave(request);
         onLeave.setEmployee(employee);
+        
+        // Tính toán và lưu totalDaysOnleave
+        calculateAndSetTotalDaysOnleave(onLeave);
         
         OnLeave saved = onLeaveRepository.save(onLeave);
         return onLeaveMapper.toOnLeaveResponse(saved);
@@ -343,6 +393,10 @@ public class OnLeaveService {
                 .orElseThrow(() -> new ResourceNotFoundException("Leave request not found with ID: " + leaveId));
         
         onLeave.setOnLeaveStatus(status);
+        
+        // Tính toán lại totalDaysOnleave nếu cần
+        calculateAndSetTotalDaysOnleave(onLeave);
+        
         OnLeave saved = onLeaveRepository.save(onLeave);
         return onLeaveMapper.toOnLeaveResponse(saved);
     }
@@ -356,13 +410,82 @@ public class OnLeaveService {
         dto.setType(leave.getOnLeaveType().name().toLowerCase());
         dto.setStartDate(leave.getStartDate());
         dto.setEndDate(leave.getEndDate());
-        dto.setDays((int) leave.getTotalDays());
+        dto.setDays((int) getTotalDays(leave));
         dto.setReason(leave.getReason());
         dto.setStatus(leave.getOnLeaveStatus().name().toLowerCase());
         dto.setSubmittedDate(leave.getStartDate()); // Use startDate as submittedDate
         if (leave.getEmployee().getDepartment() != null) {
             dto.setDepartment(leave.getEmployee().getDepartment());
         }
+        return dto;
+    }
+    
+    /**
+     * Lấy danh sách đơn xin nghỉ phép cho Accountant theo ID nhân viên
+     * 
+     * @param employeeId ID của nhân viên (required)
+     * @return Danh sách đơn xin nghỉ phép với đầy đủ thông tin
+     */
+    public List<LeaveApplicationForAccountantDTO> getLeaveApplicationsForAccountant(Long employeeId) {
+        // Kiểm tra employee có tồn tại không
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
+        
+        // Lấy đơn xin nghỉ phép theo employeeId
+        List<OnLeave> leaves = onLeaveRepository.findByEmployeeId(employeeId);
+        
+        // Map sang DTO
+        return leaves.stream()
+                .map(leave -> {
+                    LeaveApplicationForAccountantDTO dto = new LeaveApplicationForAccountantDTO();
+                    
+                    dto.setEmployeeId(employee.getEmployeeId() != null ? employee.getEmployeeId() : String.valueOf(employee.getId()));
+                    dto.setFullName(employee.getFullName());
+                    dto.setDepartment(employee.getDepartment());
+                    
+                    dto.setOnLeaveType(leave.getOnLeaveType());
+                    dto.setStartDate(leave.getStartDate());
+                    dto.setEndDate(leave.getEndDate());
+                    dto.setOnLeaveStatus(leave.getOnLeaveStatus());
+                    dto.setTotalDaysOnleave(leave.getTotalDaysOnleave());
+                    
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Lấy chi tiết đơn xin nghỉ phép cho Accountant theo ID
+     * 
+     * @param leaveId ID của đơn xin nghỉ phép
+     * @return Chi tiết đơn xin nghỉ phép với đầy đủ thông tin
+     */
+    public LeaveApplicationDetailForAccountantDTO getLeaveApplicationDetailForAccountant(Long leaveId) {
+        // Lấy đơn xin nghỉ phép theo ID
+        OnLeave leave = onLeaveRepository.findById(leaveId)
+                .orElseThrow(() -> new ResourceNotFoundException("Leave application not found with ID: " + leaveId));
+        
+        // Kiểm tra employee có tồn tại không
+        if (leave.getEmployee() == null) {
+            throw new ResourceNotFoundException("Employee not found for leave application ID: " + leaveId);
+        }
+        
+        // Tạo DTO
+        LeaveApplicationDetailForAccountantDTO dto = new LeaveApplicationDetailForAccountantDTO();
+        
+        Employee employee = leave.getEmployee();
+        dto.setEmployeeId(employee.getEmployeeId() != null ? employee.getEmployeeId() : String.valueOf(employee.getId()));
+        dto.setFullName(employee.getFullName());
+        dto.setDepartment(employee.getDepartment());
+        
+        dto.setOnLeaveType(leave.getOnLeaveType());
+        dto.setStartDate(leave.getStartDate());
+        dto.setEndDate(leave.getEndDate());
+        dto.setOnLeaveStatus(leave.getOnLeaveStatus());
+        dto.setSubmittedDate(leave.getSubmittedDate());
+        dto.setTotalDaysOnleave(leave.getTotalDaysOnleave());
+        
         return dto;
     }
 }

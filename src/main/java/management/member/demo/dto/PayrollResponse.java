@@ -19,6 +19,7 @@ public class PayrollResponse {
     private String code;
     private LocalDate period;
     private LocalDate createdDate;
+    private LocalDate paymentDate;
     private BigDecimal totalAmount;
     private PayrollStatus status;
     private String note;
