@@ -15,6 +15,8 @@ public interface OnLeaveRepository extends JpaRepository<OnLeave, Long> {
     List<OnLeave> findByEmployeeId(Long employeeId);
     
     List<OnLeave> findByOnLeaveStatus(OnLeaveStatus status);
+
+    long countByOnLeaveStatus(OnLeaveStatus status);
     
     List<OnLeave> findByEmployeeIdAndOnLeaveStatus(Long employeeId, OnLeaveStatus status);
     

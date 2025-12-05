@@ -329,5 +329,46 @@ public class EmployeeService {
         throw new ResourceNotFoundException(
                 ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + id);
     }
+
+    public java.util.Map<String, String> seniority(String employeeID) {
+        Employee employee = employeeRepository.findByEmployeeId(employeeID)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeID));
+
+        java.time.LocalDate hireDate = employee.getHireDate();
+
+        if (hireDate == null) {
+            throw new IllegalArgumentException("Hire date is null");
+        } else if (hireDate.isAfter(java.time.LocalDate.now())) {
+            throw new IllegalArgumentException("Hire date is in the future");
+        }
+
+        java.time.LocalDate currentDate = java.time.LocalDate.now();
+        java.time.Period period = java.time.Period.between(hireDate, currentDate);
+
+        int years = period.getYears();
+        int months = period.getMonths();
+
+        String seniorityString = "";
+
+        if (years > 0) {
+            seniorityString += years + " năm";
+        }
+        if (months > 0) {
+            if (years > 0) {
+                seniorityString += " ";
+            }
+            seniorityString += months + " tháng";
+        }
+
+        if (seniorityString.isEmpty()) {
+            seniorityString = "Dưới 1 tháng";
+        }
+
+        java.util.Map<String, String> responseBody = new java.util.HashMap<>();
+        responseBody.put("seniority", seniorityString);
+
+        return responseBody;
+    }
 }
 

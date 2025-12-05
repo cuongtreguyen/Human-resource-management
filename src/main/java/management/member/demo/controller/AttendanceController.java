@@ -42,7 +42,7 @@ public class AttendanceController {
     
     @Value("${face.recognition.confidence.threshold:40.0}")
     private double confidenceThreshold;
-    
+
     private static final Logger logger = LoggerFactory.getLogger(AttendanceController.class);
 
     // Get daily attendance from local database - Trả về format API spec
@@ -314,9 +314,9 @@ public class AttendanceController {
     public ResponseEntity<FaceRecognitionResponseDTO> handleRecognitionSuccess(
             @Valid @RequestBody FaceRecognitionRequestDTO request) {
         try {
-            logger.info("Received face recognition request: employeeId={}, name={}, timestamp={}, confidence={}", 
+            logger.info("Received face recognition request: employeeId={}, name={}, timestamp={}, confidence={}",
                     request.getEmployeeId(), request.getEmployeeName(), request.getTimestamp(), request.getConfidence());
-            
+
             // Delegate to service layer
             FaceRecognitionResponseDTO response = attendanceService.handleFaceRecognitionSuccess(
                     request.getEmployeeId(),
@@ -324,7 +324,7 @@ public class AttendanceController {
                     request.getConfidence(),
                     request.getTimestamp()
             );
-            
+
             if (!response.isSuccess()) {
                 // Check if it's a low confidence error
                 if (response.getConfidence() != null && response.getConfidence() < confidenceThreshold) {
@@ -335,8 +335,8 @@ public class AttendanceController {
                 logger.warn("Face recognition failed: {}", response.getMessage());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
-            
-            logger.info("Face recognition success: attendanceId={}, status={}", 
+
+            logger.info("Face recognition success: attendanceId={}, status={}",
                     response.getAttendanceId(), response.getStatus());
             return ResponseEntity.ok(response);
         } catch (Exception e) {

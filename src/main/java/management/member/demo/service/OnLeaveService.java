@@ -3,8 +3,10 @@ package management.member.demo.service;
 import management.member.demo.dto.*;
 import management.member.demo.entity.Employee;
 import management.member.demo.entity.OnLeave;
+import management.member.demo.entity.User;
 import management.member.demo.enums.OnLeaveStatus;
 import management.member.demo.enums.OnLeaveType;
+import management.member.demo.enums.Role;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.OnLeaveMapper;
@@ -33,6 +35,10 @@ public class OnLeaveService {
 
     @Autowired
     private OnLeaveMapper onLeaveMapper;
+
+    @Autowired
+    private AuthService authService;
+
     
     /**
      * Tính tổng số ngày nghỉ phép và lưu vào field totalDaysOnleave
@@ -75,28 +81,36 @@ public class OnLeaveService {
     /**
      * Get all leave requests with optional filters
      */
-    public LeaveListResponseDTO getAllLeaveRequests(String status, String employeeId, String startDate, String endDate) {
+    public LeaveListResponseDTO getAllLeaveRequests(OnLeaveStatus status, String employeeId, String startDate, String endDate) {
         List<OnLeave> leaves;
         
         if (employeeId != null) {
             Long empId = Long.parseLong(employeeId);
             if (status != null) {
-                OnLeaveStatus leaveStatus = OnLeaveStatus.valueOf(status.toUpperCase());
-                leaves = onLeaveRepository.findByEmployeeIdAndOnLeaveStatus(empId, leaveStatus);
+                leaves = onLeaveRepository.findByEmployeeIdAndOnLeaveStatus(empId, status);
             } else {
                 leaves = onLeaveRepository.findByEmployeeId(empId);
             }
         } else if (status != null) {
-            OnLeaveStatus leaveStatus = OnLeaveStatus.valueOf(status.toUpperCase());
-            leaves = onLeaveRepository.findByOnLeaveStatus(leaveStatus);
+            leaves = onLeaveRepository.findByOnLeaveStatus(status);
         } else {
             leaves = onLeaveRepository.findAll();
         }
         
         // Filter by date range if provided
-        if (startDate != null && endDate != null) {
-            LocalDate start = LocalDate.parse(startDate);
-            LocalDate end = LocalDate.parse(endDate);
+        if (startDate != null || endDate != null) {
+            LocalDate start;
+            LocalDate end;
+            if(startDate != null && endDate != null){
+                start = LocalDate.parse(startDate);
+                end = LocalDate.parse(endDate);
+            } else if(startDate != null){
+                start = LocalDate.parse(startDate);
+                end = start;
+            } else{
+                end = LocalDate.parse(endDate);
+                start = end;
+            }
             leaves = leaves.stream()
                     .filter(leave -> !leave.getEndDate().isBefore(start) && !leave.getStartDate().isAfter(end))
                     .collect(Collectors.toList());
@@ -418,6 +432,74 @@ public class OnLeaveService {
             dto.setDepartment(leave.getEmployee().getDepartment());
         }
         return dto;
+    }
+
+    public long countLeaveReqByStatus(OnLeaveStatus status){
+        if(status == null){
+            return onLeaveRepository.count();
+        }
+        return onLeaveRepository.countByOnLeaveStatus(status);
+    }
+
+    public OnLeaveResponse getLeaveReqByID(String id) {
+        OnLeave onleave = onLeaveRepository.findById(Long.parseLong(id))
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
+        return onLeaveMapper.toOnLeaveResponse(onleave);
+    }
+
+    public void setLeaveStatusByID(String id, OnLeaveStatus status) {
+        OnLeave onleave = onLeaveRepository.findById(Long.parseLong(id))
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
+        switch (status) {
+            case APPROVED -> {
+                User currentUser = authService.getCurrentUser();
+                if(currentUser.getRole() == Role.MANAGER) {
+                    if (onleave.getOnLeaveStatus() == OnLeaveStatus.PENDING) {
+                        onleave.setOnLeaveStatus(OnLeaveStatus.APPROVED);
+                        onLeaveRepository.save(onleave);
+                    } else {
+                        throw new ResourceNotFoundException("Status not valid");
+                    }
+                }
+            }
+            case REJECTED -> {
+                User currentUser = authService.getCurrentUser();
+                if(currentUser.getRole() == Role.MANAGER) {
+                    if (onleave.getOnLeaveStatus() == OnLeaveStatus.PENDING) {
+                        onleave.setOnLeaveStatus(OnLeaveStatus.REJECTED);
+                        onLeaveRepository.save(onleave);
+                    } else {
+                        throw new ResourceNotFoundException("Status not valid");
+                    }
+                }
+            }
+            case COMPLETED -> {
+                User currentUser = authService.getCurrentUser();
+                if(currentUser.getRole() == Role.MANAGER) {
+                    if (onleave.getOnLeaveStatus() == OnLeaveStatus.APPROVED) {
+                        onleave.setOnLeaveStatus(OnLeaveStatus.COMPLETED);
+                        onLeaveRepository.save(onleave);
+                    } else {
+                        throw new ResourceNotFoundException("Status not valid");
+                    }
+                }
+            }
+            case CANCELLED -> {
+                User currentUser = authService.getCurrentUser();
+                if(currentUser.getRole() == Role.EMPLOYEE) {
+                    if (onleave.getOnLeaveStatus() == OnLeaveStatus.PENDING) {
+                        onleave.setOnLeaveStatus(OnLeaveStatus.CANCELLED);
+                        onLeaveRepository.save(onleave);
+                    } else {
+                        throw new ResourceNotFoundException("Status not valid");
+                    }
+                }
+            }
+            default -> {
+                System.out.println(status);
+                throw new ResourceNotFoundException("Status not valid");
+            }
+        }
     }
     
     /**

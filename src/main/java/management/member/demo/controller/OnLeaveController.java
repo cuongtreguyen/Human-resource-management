@@ -31,7 +31,7 @@ public class OnLeaveController {
             @ApiResponse(responseCode = "200", description = "Success")
     })
     public ResponseEntity<LeaveListResponseDTO> getAllLeaveRequests(
-            @RequestParam(required = false) String status,
+            @RequestParam(required = false) OnLeaveStatus status,
             @RequestParam(required = false) String employeeId,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
@@ -114,16 +114,31 @@ public class OnLeaveController {
     }
 
     @GetMapping("/getLeaveListByID/{id}")
+    @Operation(summary = "Lấy danh sách đơn xin nghỉ theo ID", description = "Get leave requests for an employee by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
     public ResponseEntity<List<OnLeaveListResponse>> getLeaveListByID(@PathVariable Long id) {
         return ResponseEntity.ok(service.getLeaveListByID(id));
     }
 
     @GetMapping("/countLeaveReqByID/{id}")
+    @Operation(summary = "Đếm số đơn chờ duyệt theo ID", description = "Count pending leave requests for an employee")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
     public ResponseEntity<Long> countLeaveReqByID(@PathVariable Long id) {
         return ResponseEntity.ok(service.countPendingOnLeaveRequestsById(id));
     }
 
     @GetMapping("/onLeaveRequestWaiting/{id}")
+    @Operation(summary = "Đếm tất cả loại đơn theo ID", description = "Count pending leave requests for an employee")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
     public ResponseEntity<Map<String, Long>> getLeaveSummary(@PathVariable Long id) {
         Map<String, Long> summary = service.getLeaveSummary(id);
         return ResponseEntity.ok(summary);
@@ -135,6 +150,35 @@ public class OnLeaveController {
             @RequestParam("status") OnLeaveStatus status) {
         OnLeaveResponse response = service.updateOnLeaveStatus(leaveId, status);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/countOnLeaveReq/{status}")
+    @Operation(summary = "Đếm số đơn xin nghỉ", description = "Count pending leave requests")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success")
+    })
+    public ResponseEntity<Long> countOnLeaveReq(@RequestParam(required = false) OnLeaveStatus status) {
+        return ResponseEntity.ok(service.countLeaveReqByStatus(status));
+    }
+
+    @GetMapping("/getLeaveReqByID/{id}")
+    @Operation(summary = "Lấy đơn xin nghỉ theo ID đơn", description = "Get leave requests for an employee by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
+    public ResponseEntity<OnLeaveResponse> getLeaveReqByID(@PathVariable String id) {
+        return ResponseEntity.ok(service.getLeaveReqByID(id));
+    }
+
+    @PutMapping("/setLeaveStatus/{leaveId}")
+    @Operation(summary = "Set leave status", description = "Set leave status")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
+    public ResponseEntity<OnLeaveResponse> setLeaveStatus(@PathVariable String leaveId, @RequestParam("status") OnLeaveStatus status) {
+        return ResponseEntity.ok(service.updateOnLeaveStatus(Long.parseLong(leaveId), status));
     }
 
     /**

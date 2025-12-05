@@ -14,9 +14,10 @@ import java.time.LocalDate;
 @Builder
 public class OnLeaveResponse {
     Long id;
-    Long employeeId;
+    String employeeId;
     OnLeaveType onLeaveType;
     OnLeaveStatus onLeaveStatus;
+    LocalDate submittedDate;
     LocalDate startDate;
     LocalDate endDate;
     String reason;
