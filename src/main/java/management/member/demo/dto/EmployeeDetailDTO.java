@@ -43,7 +43,6 @@ public class EmployeeDetailDTO {
     private String permanentAddress;
     
     private String temporaryAddress;
-    private String address; // Địa chỉ (khác với permanentAddress)
     private String employeeCode;
     private String contractCode;
     

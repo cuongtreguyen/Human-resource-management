@@ -160,7 +160,6 @@ public class EmployeeMapper {
         dto.setTaxCode(employee.getTaxCode());
         dto.setPermanentAddress(employee.getPermanentAddress());
         dto.setTemporaryAddress(employee.getTemporaryAddress());
-        dto.setAddress(employee.getAddress());
         dto.setContractCode(employee.getContractCode());
         
         // Map thông tin CMND/CCCD

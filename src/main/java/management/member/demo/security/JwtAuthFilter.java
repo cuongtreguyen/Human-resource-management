@@ -4,23 +4,16 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.security.SignatureException;
-import io.jsonwebtoken.ExpiredJwtException;
-import io.jsonwebtoken.JwtException;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -36,7 +29,7 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
-    
+
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
@@ -69,28 +62,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         try {
             // Trích xuất JWT token từ header
             final String jwt = authHeader.substring(7);
-            
+
             // Kiểm tra token đã bị thu hồi chưa
             if (jwtService.isTokenRevoked(jwt)) {
                 logger.debug("Token đã bị thu hồi");
                 filterChain.doFilter(request, response);
                 return;
             }
-            
+
             // Kiểm tra token type (chỉ chấp nhận access token)
             if (!jwtService.isAccessToken(jwt)) {
                 logger.debug("Token không phải là access token");
                 filterChain.doFilter(request, response);
                 return;
             }
-            
+
             // Trích xuất username từ token
             final String username = jwtService.extractUsername(jwt);
 
-            // Xác thực token nếu chưa có authentication trong SecurityContext
-            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                try {
-                    UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
             // Xác thực token nếu chưa có authentication trong SecurityContext
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 try {
@@ -135,7 +124,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             logger.error("Lỗi không mong đợi trong quá trình xác thực JWT", e);
             // Tiếp tục filter chain - không làm gián đoạn ứng dụng
         }
-        
+
         filterChain.doFilter(request, response);
     }
 }
