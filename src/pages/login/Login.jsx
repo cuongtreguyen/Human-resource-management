@@ -10,7 +10,8 @@ import {
   Users,
   TrendingUp,
 } from "lucide-react";
-import { setRole, setUserInfo, clearUserInfo } from "../../utils/auth";
+import { setRole, setUserInfo } from "../../utils/auth";
+import { http, JAVA_API } from "../../services/config";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -98,31 +99,105 @@ const Login = () => {
     generateParticles();
   }, []);
 
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+  //   setIsLoading(true);
+  //   setError("");
+  //
+  //   // Simulate API call
+  //   setTimeout(() => {
+  //     // Find user by email and password
+  //     const user = Object.values(mockUsers).find(
+  //       (u) => u.email === formData.email && u.password === formData.password
+  //     );
+  //
+  //     if (user) {
+  //       // Set role và userInfo trong localStorage
+  //       setRole(user.role);
+  //       // Luôn lưu đầy đủ userInfo với email
+  //       setUserInfo({ ...user.info, email: user.email, role: user.role });
+  //       // Navigate to appropriate route based on role
+  //       navigate(user.route);
+  //     } else {
+  //       setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
+  //     }
+  //     setIsLoading(false);
+  //   }, 1500);
+  // };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
+  e.preventDefault();
+  setIsLoading(true);
+  setError("");
 
-    // Simulate API call
-    setTimeout(() => {
-      // Find user by email and password
-      const user = Object.values(mockUsers).find(
-        (u) => u.email === formData.email && u.password === formData.password
-      );
+  try {
+    const url = `${JAVA_API}/auth/login`;
+    console.log("LOGIN URL =", url);
 
-      if (user) {
-        // Set role và userInfo trong localStorage
-        setRole(user.role);
-        // Luôn lưu đầy đủ userInfo với email
-        setUserInfo({ ...user.info, email: user.email, role: user.role });
-        // Navigate to appropriate route based on role
-        navigate(user.route);
-      } else {
-        setError("Email hoặc mật khẩu không đúng. Vui lòng thử lại.");
+    const response = await http(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+      }),
+    });
+
+    if (!response.ok) {
+      let message = "Email hoặc mật khẩu không đúng!";
+      try {
+        const errorBody = await response.json();
+        if (errorBody?.message) message = errorBody.message;
+      } catch {}
+      throw new Error(message);
+    }
+
+    const data = await response.json();
+    const userFromApi = data.user || {};
+
+    // Bước 1: Lưu tạm thông tin cơ bản + token
+    localStorage.setItem('accessToken', data.accessToken || data.token);
+    if (data.refreshToken) {
+      localStorage.setItem('refreshToken', data.refreshToken);
+    }
+
+    setRole((userFromApi.role || "employee").toLowerCase());
+
+    // Bước 2: Lấy id số thật từ mã nhân viên (EMP001 → 1)
+    let realEmployeeId = null;
+    if (userFromApi.employeeId) {
+      try {
+        realEmployeeId = await getEmployeeIdByCode(userFromApi.employeeId);
+      } catch (err) {
+        console.warn("Không lấy được id số từ mã nhân viên, dùng tạm 1", err);
+        realEmployeeId = 1; // fallback tạm thời nếu API chưa có
       }
-      setIsLoading(false);
-    }, 1500);
-  };
+    }
+
+    // Bước 3: Lưu đầy đủ vào sessionStorage
+    setUserInfo({
+      employeeId: realEmployeeId,                    // ← Đây mới là id số để gọi profile
+      employeeCode: userFromApi.employeeId,          // giữ lại để hiển thị EMP001
+      name: userFromApi.name || userFromApi.fullName || "Nhân viên",
+      email: userFromApi.email || formData.email,
+      role: (userFromApi.role || "employee").toLowerCase(),
+    });
+
+    // Điều hướng
+    const role = (userFromApi.role || "employee").toLowerCase();
+    if (["admin", "manager", "accountant"].includes(role)) {
+      navigate("/dashboard");
+    } else {
+      navigate("/employee");
+    }
+
+  } catch (err) {
+    console.error("Login error:", err);
+    setError(err.message || "Đăng nhập thất bại!");
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleChange = (e) => {
     setFormData({

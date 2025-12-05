@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
-  ArrowLeft, User, Mail, Phone, MapPin, Briefcase,
+  User, Mail, Phone, MapPin, Briefcase,
   Building2, CreditCard, Heart, FileText, Users
 } from 'lucide-react';
-import fakeApi from '../../services/fakeApi';
+
+import { getEmployeeProfile } from '../../services/api';
+import { getCurrentEmployeeId, isAuthenticated } from '../../utils/auth';
 
 const EmployeeProfile = () => {
   const [employee, setEmployee] = useState(null);
@@ -12,10 +14,19 @@ const EmployeeProfile = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        // Lấy thông tin nhân viên hiện tại (giả lập lấy employee đầu tiên)
-        const res = await fakeApi.getEmployees();
-        const emp = res.data[0];
-        setEmployee(emp);
+        if (!isAuthenticated()) {
+          window.location.href = '/login';
+          return;
+        }
+
+        const employeeId = getCurrentEmployeeId();
+        if (!employeeId) {
+          console.error('Không tìm thấy employeeId trong session');
+          return;
+        }
+
+        const data = await getEmployeeProfile(employeeId); // data là object employee
+        setEmployee(data);
       } catch (error) {
         console.error('Error loading employee:', error);
       } finally {
@@ -31,12 +42,12 @@ const EmployeeProfile = () => {
   };
 
   const getStatusBadge = (status) => {
-    const statusConfig = {
-      active: { bg: 'bg-green-100', text: 'text-green-700', label: 'Đang làm việc' },
-      inactive: { bg: 'bg-red-100', text: 'text-red-700', label: 'Nghỉ việc' },
-      on_leave: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Nghỉ phép' }
-    };
-    const config = statusConfig[status] || statusConfig.active;
+    const config = {
+      ACTIVE:   { bg: 'bg-green-100',   text: 'text-green-700',   label: 'Đang làm việc' },
+      INACTIVE: { bg: 'bg-red-100',     text: 'text-red-700',     label: 'Nghỉ việc' },
+      ON_LEAVE: { bg: 'bg-yellow-100',  text: 'text-yellow-700',  label: 'Nghỉ phép' },
+    }[status?.toUpperCase()] || { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Không xác định' };
+
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
         {config.label}
@@ -81,8 +92,7 @@ const EmployeeProfile = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white py-8 px-6 shadow-lg">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-4">         
-          </div>
+          <div className="flex items-center justify-between mb-4"></div>
           <div>
             <h1 className="text-3xl font-bold mb-2">Hồ sơ cá nhân</h1>
             <p className="text-orange-100">Thông tin chi tiết của bạn trong hệ thống</p>
@@ -95,23 +105,23 @@ const EmployeeProfile = () => {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 mb-6">
           <div className="flex items-center gap-6">
             <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-amber-500 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-              {employee.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+              {employee.fullName?.split(' ').map(n => n[0]).join('').slice(-2).toUpperCase() || 'NV'}
             </div>
 
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-2xl font-bold text-gray-900">{employee.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{employee.fullName}</h2>
                 {getStatusBadge(employee.status)}
               </div>
-              <p className="text-xl text-orange-600 font-semibold mb-3">{employee.position}</p>
+              <p className="text-xl text-orange-600 font-semibold mb-3">{employee.position || 'Chưa cập nhật'}</p>
               <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
                   <Building2 className="w-4 h-4 text-orange-500" />
-                  {employee.department}
+                  {employee.department || 'Chưa cập nhật'}
                 </div>
                 <div className="flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-orange-500" />
-                  ID: {employee.id}
+                  ID: {employee.employeeCode || employee.id}
                 </div>
               </div>
             </div>
@@ -128,8 +138,11 @@ const EmployeeProfile = () => {
               Thông tin cá nhân
             </h3>
             <div className="space-y-1">
-              <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth || employee.birthDate)} />
-              <InfoRow label="Giới tính" value={employee.gender} />
+              <InfoRow label="Ngày sinh" value={formatDate(employee.birthDate || employee.dateOfBirth)} />
+              <InfoRow label="Giới tính" value={
+                employee.gender === 'MALE' ? 'Nam' :
+                employee.gender === 'FEMALE' ? 'Nữ' : employee.gender || 'Chưa cập nhật'
+              } />
               <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus} />
             </div>
           </div>
@@ -153,9 +166,9 @@ const EmployeeProfile = () => {
               Giấy tờ tùy thân
             </h3>
             <div className="space-y-1">
-              <InfoRow label="Số CCCD/CMND" value={employee.idCard || employee.idNumber} />
-              <InfoRow label="Ngày cấp" value={formatDate(employee.idCardIssueDate)} />
-              <InfoRow label="Nơi cấp" value={employee.idCardIssuePlace} />
+              <InfoRow label="Số CCCD/CMND" value={employee.idNumber || employee.idCard} />
+              <InfoRow label="Ngày cấp" value={formatDate(employee.idIssueDate || employee.idCardIssueDate)} />
+              <InfoRow label="Nơi cấp" value={employee.idIssuePlace || employee.idCardIssuePlace} />
               <InfoRow label="Mã số thuế" value={employee.taxCode} />
             </div>
           </div>
@@ -169,10 +182,11 @@ const EmployeeProfile = () => {
             <div className="space-y-1">
               <InfoRow label="Phòng ban" value={employee.department} />
               <InfoRow label="Chức vụ" value={employee.position} />
-              <InfoRow label="Quản lý trực tiếp" value={employee.manager} />
+              <InfoRow label="Quản lý trực tiếp" value={employee.manager || employee.directManager} />
               <InfoRow label="Địa điểm làm việc" value={employee.workLocation} />
               <InfoRow label="Loại nhân viên" value={employee.employeeType} />
               <InfoRow label="Loại hợp đồng" value={employee.contractType} />
+              <InfoRow label="Ngày vào làm" value={formatDate(employee.hireDate)} />
             </div>
           </div>
 
