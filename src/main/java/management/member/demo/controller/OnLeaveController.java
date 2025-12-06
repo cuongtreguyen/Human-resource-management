@@ -39,7 +39,7 @@ public class OnLeaveController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping
+    @PostMapping("/create")
     @Operation(summary = "Tạo yêu cầu nghỉ phép mới dành cho manager", description = "Create a new leave request")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Leave request created successfully"),

@@ -63,11 +63,61 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    public Long countTaskByStatus(TaskStatus status) {
-        if (status == null) {
-            return taskRepository.count();
+    public Map<String, Long> getTaskStatisticsGeneral() {
+        // 1. Khởi tạo map với tất cả status = 0 (để tránh trả về null hoặc thiếu key)
+        Map<String, Long> stats = new HashMap<>();
+        for (TaskStatus status : TaskStatus.values()) {
+            stats.put(status.name(), 0L);
         }
-        return taskRepository.countByTaskStatus(status);
+
+        // 2. Lấy dữ liệu từ DB
+        List<Object[]> results = taskRepository.countTotalTasksGroupedByStatus();
+
+        // 3. Map dữ liệu vào
+        for (Object[] row : results) {
+            TaskStatus status = (TaskStatus) row[0];
+            Long count = (Long) row[1];
+            if (status != null) {
+                stats.put(status.name(), count);
+            }
+        }
+        return stats;
+    }
+
+    /**
+     * Thống kê task theo status của MỘT Board cụ thể
+     */
+    public BoardTaskStatDTO getTaskStatisticsBySingleBoard(Long boardId) {
+        // 1. Kiểm tra Board có tồn tại không (để lấy tên Board luôn)
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + boardId));
+
+        // 2. Khởi tạo DTO
+        BoardTaskStatDTO dto = new BoardTaskStatDTO();
+        dto.setBoardId(board.getId());
+        dto.setTotalTasks(0L);
+        dto.setStats(new HashMap<>());
+
+        // 3. Khởi tạo tất cả status = 0 (quan trọng để vẽ biểu đồ không bị lỗi null)
+        for (TaskStatus status : TaskStatus.values()) {
+            dto.getStats().put(status.name(), 0L);
+        }
+
+        // 4. Lấy dữ liệu từ DB
+        List<Object[]> results = taskRepository.countTasksByBoardId(boardId);
+
+        // 5. Map dữ liệu vào DTO
+        for (Object[] row : results) {
+            TaskStatus status = (TaskStatus) row[0];
+            Long count = (Long) row[1];
+
+            if (status != null) {
+                dto.getStats().put(status.name(), count);
+                dto.setTotalTasks(dto.getTotalTasks() + count); // Cộng dồn tổng
+            }
+        }
+
+        return dto;
     }
 
     public List<Map<String, Object>> employeeCompletionPercentAsMaps(LocalDate startDate, LocalDate endDate) {
@@ -451,7 +501,6 @@ public class TaskService {
         data.setTotalTasks((long) tasks.size());
         data.setCompletedTasks(tasks.stream().filter(t -> t.getTaskStatus() == TaskStatus.COMPLETED).count());
         data.setInProgressTasks(tasks.stream().filter(t -> t.getTaskStatus() == TaskStatus.IN_PROGRESS).count());
-        data.setPendingTasks(tasks.stream().filter(t -> t.getTaskStatus() == TaskStatus.PENDING).count());
 
         response.setData(data);
         response.setSuccess(true);
@@ -486,7 +535,7 @@ public class TaskService {
                 .filter(t -> t.getTaskStatus() == TaskStatus.IN_PROGRESS)
                 .count();
         long pendingTasks = allTasks.stream()
-                .filter(t -> t.getTaskStatus() == TaskStatus.PENDING || t.getTaskStatus() == TaskStatus.NEW)
+                .filter(t -> t.getTaskStatus() == TaskStatus.NEW)
                 .count();
 
         double completionRate = totalTasks > 0 ? (double) completedTasks / totalTasks * 100 : 0.0;

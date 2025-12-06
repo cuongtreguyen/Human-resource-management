@@ -31,11 +31,6 @@ public class TaskController {
         return ResponseEntity.ok(service.findTaskByStatus(status));
     }
 
-    @GetMapping("/countTaskByStatus")
-    public ResponseEntity<Long> countTaskByStatus(@RequestParam(required = false) TaskStatus status){
-        return ResponseEntity.ok(service.countTaskByStatus(status));
-    }
-
     @GetMapping("/employee-completion-percent")
     public ResponseEntity<List<Map<String, Object>>> getEmployeeCompletionPercent(
             @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -60,6 +55,26 @@ public class TaskController {
         double avg = service.averageDaysForCompleted(startDate, endDate);
         return ResponseEntity.ok(avg);
     }
+
+    @GetMapping("/stats/general")
+    @Operation(summary = "Thống kê tổng số task theo trạng thái (Toàn hệ thống)" )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Thống kê thành công")
+    })
+    public ResponseEntity<Map<String, Long>> getGeneralTaskStats() {
+        return ResponseEntity.ok(service.getTaskStatisticsGeneral());
+    }
+
+    @GetMapping("/stats/board/{boardId}")
+    @Operation(summary = "Thống kê số task theo trạng thái của một Board cụ thể")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Thống kê thành công")
+    })
+    public ResponseEntity<BoardTaskStatDTO> getTaskStatsByBoardId(@PathVariable Long boardId) {
+        return ResponseEntity.ok(service.getTaskStatisticsBySingleBoard(boardId));
+    }
+
+
 
     // New endpoints according to API spec
     @GetMapping

@@ -53,4 +53,15 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
     List<Object[]> countTasksGroupedByEmployeeAndStatusBetweenDates(@Param("taskStatus") TaskStatus taskStatus,
                                                                     @Param("start") LocalDate start,
                                                                     @Param("end") LocalDate end);
+
+    // 1. Đếm tổng số task theo từng status (cho toàn hệ thống)
+    // Result: [ [NEW, 10], [IN_PROGRESS, 5], ... ]
+    @Query("SELECT t.taskStatus, COUNT(t) FROM Task t GROUP BY t.taskStatus")
+    List<Object[]> countTotalTasksGroupedByStatus();
+
+    @Query("SELECT t.taskStatus, COUNT(t) " +
+            "FROM Task t " +
+            "WHERE t.board.id = :boardId " + // Điều kiện lọc theo Board ID
+            "GROUP BY t.taskStatus")
+    List<Object[]> countTasksByBoardId(@Param("boardId") Long boardId);
 }

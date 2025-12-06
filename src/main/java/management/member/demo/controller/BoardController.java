@@ -75,4 +75,13 @@ public class BoardController {
             @RequestBody @Valid UpdateBoardStatusRequest request) {
         return ResponseEntity.ok(boardService.updateBoardStatus(id, request));
     }
+
+    @GetMapping("/total")
+    @Operation(summary = "Lấy tổng số Board", description = "Get the total number of boards")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Total boards retrieved successfully")
+    })
+    public ResponseEntity<Integer> getTotalBoards() {
+        return ResponseEntity.ok(boardService.getTotalBoards());
+    }
 }

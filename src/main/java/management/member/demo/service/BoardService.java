@@ -119,4 +119,8 @@ public class BoardService {
         // 3. Lưu và trả về
         return boardMapper.toResponse(boardRepository.save(board));
     }
+
+    public int getTotalBoards() {
+        return (int) boardRepository.count();
+    }
 }

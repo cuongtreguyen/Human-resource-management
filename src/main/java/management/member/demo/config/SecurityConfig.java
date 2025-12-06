@@ -82,7 +82,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/employees/{id}/profile",
                                 "/employees/{id}/profile/**"
-                        ).hasAnyRole("ADMIN", "EMPLOYEE")
+                        ).hasAnyRole("ADMIN", "EMPLOYEE", "ACCOUNTANT", "MANAGER")
                         // Các endpoint khác yêu cầu authentication
                         .anyRequest().authenticated())
                 // Thêm JWT filter trước UsernamePasswordAuthenticationFilter
