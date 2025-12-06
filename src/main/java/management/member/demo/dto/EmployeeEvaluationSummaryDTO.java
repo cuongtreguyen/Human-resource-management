@@ -10,7 +10,6 @@ public class EmployeeEvaluationSummaryDTO {
     String fullName;
     String department;
     String position;
-    String avatar; // Nếu có
 
     // Thông tin đánh giá gần nhất (có thể null nếu chưa đánh giá lần nào)
     Double latestScore;

@@ -38,7 +38,6 @@ public class EvaluationService {
                     .fullName(emp.getFullName())
                     .department(emp.getDepartment())
                     .position(emp.getPosition())
-                    // .avatar(emp.getAvatar()) // Nếu có
                     .latestScore(latestEval.map(Evaluation::getAverageScore).orElse(null)) // Null nếu chưa đánh giá
                     .lastEvaluationDate(latestEval.map(Evaluation::getEvaluationDate).orElse(null))
                     .lastEvaluationId(latestEval.map(Evaluation::getId).orElse(null))
