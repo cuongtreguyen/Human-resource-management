@@ -314,11 +314,19 @@ public class PayrollService {
         response.setAllowance(salary.getAllowance() != null ? salary.getAllowance() : BigDecimal.ZERO);
         response.setBonus(salary.getBonus() != null ? salary.getBonus() : BigDecimal.ZERO);
         
+        // Tính otPay từ otHours (đồng bộ với otHours từ OverTime)
+        // Công thức: otPay = otHours * 100,000 VND/giờ
+        BigDecimal otPay = BigDecimal.ZERO;
+        if (totalOtHours != null && totalOtHours.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal otRatePerHour = new BigDecimal("100000");
+            otPay = totalOtHours.multiply(otRatePerHour).setScale(2, java.math.RoundingMode.HALF_UP);
+        }
+        response.setOtPay(otPay);
+        
         // Tính grossIncome = baseSalary + bonus + allowance + otPay
         BigDecimal baseSalary = response.getBaseSalary();
         BigDecimal bonus = response.getBonus();
         BigDecimal allowance = response.getAllowance();
-        BigDecimal otPay = salary.getOtPay() != null ? salary.getOtPay() : BigDecimal.ZERO;
         
         BigDecimal grossIncome = baseSalary
                 .add(bonus)
@@ -503,8 +511,14 @@ public class PayrollService {
                     }
                     dto.setOtHours(totalOtHours);
                     
-                    // Lấy thông tin từ Salary
-                    dto.setOtPay(salary.getOtPay());
+                    // Tính otPay từ otHours (đồng bộ với otHours từ OverTime)
+                    // Công thức: otPay = otHours * 100,000 VND/giờ
+                    BigDecimal otPay = BigDecimal.ZERO;
+                    if (totalOtHours != null && totalOtHours.compareTo(BigDecimal.ZERO) > 0) {
+                        BigDecimal otRatePerHour = new BigDecimal("100000");
+                        otPay = totalOtHours.multiply(otRatePerHour).setScale(2, java.math.RoundingMode.HALF_UP);
+                    }
+                    dto.setOtPay(otPay);
                     dto.setBaseSalary(salary.getBaseSalary());
                     dto.setNetSalary(salary.getNetSalary());
                     
