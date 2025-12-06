@@ -70,7 +70,13 @@ public class SecurityConfig {
                                 "/api/payroll-statistics/**",
                                 "/api/employees/**",
                                 "/error",
-                                "/error/**"
+                                "/error/**",
+                                "/api/tasks",
+                                "/api/boards",
+                                "/api/comment",
+                                "/api/comment",
+                                "/api/overtimes",
+                                "/api/support-requests"
                         ).permitAll()
                         // Admin endpoints - chỉ ADMIN mới truy cập được
                         // (Các endpoints này đã được move lên public endpoints ở trên)
