@@ -1,16 +1,20 @@
+
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
 import { getEmployeeById } from '../../services/employeeService';
+
 import { isAdmin, getRole } from '../../utils/auth';
 import {
   User, Mail, Phone, Briefcase, Calendar,
-  DollarSign, Edit, Trash2, ArrowLeft, CheckCircle,
+  DollarSign, Edit, Trash2, ArrowLeft,
   XCircle, Building2, CreditCard, Heart, Clock
 } from 'lucide-react';
+import { http, JAVA_API } from '../../services/config';
 
 const EmployeeDetails = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // có thể là "1" (ID số) hoặc "EMP001" (mã nhân viên)
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -22,6 +26,22 @@ const EmployeeDetails = () => {
     loadEmployeeDetails();
   }, [id]);
 
+  // ===== HÀM CHUYỂN ĐỔI MÃ NHÂN VIÊN → ID SỐ =====
+  const getEmployeeIdByCode = async (employeeCode) => {
+    const response = await http(`${JAVA_API}/employees/${employeeCode}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
+      }
+    });
+
+    if (!response.ok) throw new Error('Không tìm thấy nhân viên theo mã');
+
+    const result = await response.json();
+    return result.data?.id || result.data?.employeeId;
+  };
+
+  // ===== TẢI CHI TIẾT NHÂN VIÊN =====
   const loadEmployeeDetails = async () => {
     try {
       setLoading(true);
@@ -56,31 +76,71 @@ const EmployeeDetails = () => {
         };
         setEmployee(mappedEmployee);
         console.log('✅ Loaded employee:', mappedEmployee);
+      setError(null);
+
+      let employeeId = id;
+
+      // Kiểm tra xem `id` có phải là mã nhân viên (EMP001) hay ID số (1)?
+      if (isNaN(id)) {
+        console.log(`URL chứa mã nhân viên: ${id}, đang chuyển đổi sang ID số...`);
+        employeeId = await getEmployeeIdByCode(id);
+        console.log(`→ ID số thật: ${employeeId}`);
+      }
+
+      // Gọi API Java với ID số
+      const response = await http(`${JAVA_API}/employees/${employeeId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Không thể tải thông tin nhân viên`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.data) {
+        setEmployee(result.data);
       } else {
-        setError('Không tìm thấy nhân viên');
+        throw new Error(result.message || 'Dữ liệu không hợp lệ');
       }
     } catch (err) {
-      console.error('Error loading employee:', err);
-      setError('Không thể tải thông tin nhân viên');
+      console.error('Load employee error:', err);
+      setError(err.message || 'Không thể tải thông tin nhân viên');
     } finally {
       setLoading(false);
     }
   };
 
   const handleEdit = () => {
-    navigate(`/employees/edit/${id}`);
+    navigate(`/employees/edit/${employee.id}`);
   };
 
   const handleDelete = async () => {
     try {
       // TODO: Gọi API delete employee khi backend có endpoint
       // await deleteEmployee(id);
+      const response = await http(`${JAVA_API}/employees/${employee.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Không thể xóa nhân viên');
+      }
+
       setShowDeleteModal(false);
+      alert('Xóa nhân viên thành công');
       navigate('/employees');
       alert('Đã xóa nhân viên (tạm thời chỉ xóa trên UI)');
     } catch (err) {
-      console.error('Error deleting employee:', err);
-      alert('Không thể xóa nhân viên');
+      console.error('Delete error:', err);
+      alert('Lỗi: ' + err.message);
     }
   };
 
@@ -125,7 +185,7 @@ const EmployeeDetails = () => {
         </div>
       </Layout>
     );
-  };
+  }
 
   const getStatusBadge = (status) => {
     const statusConfig = {
@@ -133,7 +193,7 @@ const EmployeeDetails = () => {
       inactive: { bg: 'bg-red-100', text: 'text-red-700', label: 'Nghỉ việc' },
       on_leave: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Nghỉ phép' }
     };
-    const config = statusConfig[status] || statusConfig.inactive;
+    const config = statusConfig[status?.toLowerCase()] || statusConfig.inactive;
     return (
       <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>
         {config.label}
@@ -188,7 +248,7 @@ const EmployeeDetails = () => {
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-white text-2xl font-bold">
-                {employee.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                {employee.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
               </span>
             </div>
             <div className="flex-1">
@@ -199,11 +259,11 @@ const EmployeeDetails = () => {
               <div className="flex items-center gap-4 text-gray-600">
                 <div className="flex items-center gap-1">
                   <Briefcase className="w-4 h-4" />
-                  <span>{employee.position}</span>
+                  <span>{employee.position || 'N/A'}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Building2 className="w-4 h-4" />
-                  <span>{employee.department}</span>
+                  <span>{employee.department || 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -288,15 +348,9 @@ const EmployeeDetails = () => {
                 Lịch làm việc
               </h3>
               <div className="space-y-1">
-                {employee.shift && (
-                  <InfoRow label="Ca làm việc" value={employee.shift} />
-                )}
-                {employee.timeIn && (
-                  <InfoRow label="Thời gian vào" value={employee.timeIn} />
-                )}
-                {employee.timeOut && (
-                  <InfoRow label="Thời gian ra" value={employee.timeOut} />
-                )}
+                {employee.shift && <InfoRow label="Ca làm việc" value={employee.shift} />}
+                {employee.timeIn && <InfoRow label="Thời gian vào" value={employee.timeIn} />}
+                {employee.timeOut && <InfoRow label="Thời gian ra" value={employee.timeOut} />}
               </div>
             </div>
           )}
