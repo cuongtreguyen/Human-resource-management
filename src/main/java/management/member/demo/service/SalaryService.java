@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Transactional
@@ -33,10 +32,12 @@ public class SalaryService {
     private SalaryMapper salaryMapper;
 
     public BigDecimal calculateLatestSalary(Long employeeId) {
-        Optional<Salary> latestSalary = salaryRepository.findFirstByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
-        return latestSalary.map(Salary::getNetSalary)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
+        List<Salary> salaries = salaryRepository.findFirstByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
+        if (salaries.isEmpty()) {
+            throw new ResourceNotFoundException(
+                    ErrorCode.SALARY_NOT_FOUND.getMessage() + " cho nhân viên ID: " + employeeId);
+        }
+        return salaries.get(0).getNetSalary(); // Lấy record đầu tiên (đã sắp xếp theo paymentDate DESC, id DESC)
     }
 
     public BigDecimal calculateAverageSalary(Long employeeId) {
@@ -76,6 +77,9 @@ public class SalaryService {
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + request.getEmployeeId()));
 
         Salary salary = salaryMapper.toEntity(request);
+        
+        // Set Employee entity thay vì employeeId
+        salary.setEmployee(employee);
         
         // Tính toán các field mới
         calculateSalaryFields(salary);
@@ -230,8 +234,14 @@ public class SalaryService {
         // otHours không còn trong Salary entity, sẽ tính từ OverTime
         // Nếu chưa có otPay, giữ nguyên (sẽ được tính từ OverTime trong PayrollService)
         
-        // Tính grossIncome = baseSalary + bonus + allowance + otPay
-        BigDecimal baseSalary = salary.getBaseSalary();
+        // Lấy baseSalary từ Employee
+        Employee employee = salary.getEmployee() != null ? 
+            (salary.getEmployee().getId() != null ? 
+                employeeRepository.findById(salary.getEmployee().getId()).orElse(null) : 
+                salary.getEmployee()) : null;
+        BigDecimal baseSalary = employee != null && employee.getBaseSalary() != null ? 
+            employee.getBaseSalary() : BigDecimal.ZERO;
+        
         BigDecimal bonus = salary.getBonus() != null ? salary.getBonus() : BigDecimal.ZERO;
         BigDecimal allowance = salary.getAllowance() != null ? salary.getAllowance() : BigDecimal.ZERO;
         BigDecimal otPay = salary.getOtPay() != null ? salary.getOtPay() : BigDecimal.ZERO;
@@ -242,10 +252,10 @@ public class SalaryService {
                 .add(otPay);
         salary.setGrossIncome(grossIncome);
         
-        // Tính các khoản bảo hiểm tự động nếu chưa có (tính trên baseSalary)
+        // Tính các khoản bảo hiểm tự động nếu chưa có (tính trên baseSalary từ Employee)
         // BHXH: 8% của baseSalary
         if (salary.getSocialInsurance() == null) {
-            BigDecimal socialInsurance = salary.getBaseSalary()
+            BigDecimal socialInsurance = baseSalary
                     .multiply(new BigDecimal("0.08"))
                     .setScale(2, RoundingMode.HALF_UP);
             salary.setSocialInsurance(socialInsurance);
@@ -253,7 +263,7 @@ public class SalaryService {
         
         // BHYT: 1.5% của baseSalary
         if (salary.getHealthInsurance() == null) {
-            BigDecimal healthInsurance = salary.getBaseSalary()
+            BigDecimal healthInsurance = baseSalary
                     .multiply(new BigDecimal("0.015"))
                     .setScale(2, RoundingMode.HALF_UP);
             salary.setHealthInsurance(healthInsurance);
@@ -261,7 +271,7 @@ public class SalaryService {
         
         // BHTN: 1% của baseSalary
         if (salary.getUnemploymentInsurance() == null) {
-            BigDecimal unemploymentInsurance = salary.getBaseSalary()
+            BigDecimal unemploymentInsurance = baseSalary
                     .multiply(new BigDecimal("0.01"))
                     .setScale(2, RoundingMode.HALF_UP);
             salary.setUnemploymentInsurance(unemploymentInsurance);

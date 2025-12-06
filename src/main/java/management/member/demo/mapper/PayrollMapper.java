@@ -61,7 +61,7 @@ public class PayrollMapper {
     public PayrollListItemDTO toPayrollListItemDTO(Salary salary, Employee employee) {
         PayrollListItemDTO dto = new PayrollListItemDTO();
         dto.setId(String.valueOf(salary.getId()));
-        dto.setEmployeeId(String.valueOf(salary.getEmployeeId()));
+        dto.setEmployeeId(String.valueOf(salary.getEmployee() != null ? salary.getEmployee().getId() : null));
         
         if (employee != null) {
             dto.setEmployeeName(employee.getFullName());

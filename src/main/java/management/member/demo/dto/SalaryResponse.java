@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 public class SalaryResponse {
     
     private Long id;
-    private Long employeeId;
+    private String employeeId;  // String employeeId (EMP***), không phải Long id
     private BigDecimal baseSalary;
     private BigDecimal allowance;
     private BigDecimal allowances; // Alias cho allowance

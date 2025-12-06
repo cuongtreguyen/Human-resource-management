@@ -2,6 +2,7 @@ package management.member.demo.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import management.member.demo.enums.SalaryStatus;
@@ -18,10 +19,10 @@ public class Salary {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** ID nhân viên */
-    @NotNull
-    @Column(name = "employee_id")
-    private Long employeeId;
+    /** Quan hệ Many-to-One với Employee: 1 nhân viên có thể có nhiều bản ghi lương */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id", referencedColumnName = "id", nullable = false)
+    private Employee employee;
 
     /** Lương cơ bản */
     @NotNull

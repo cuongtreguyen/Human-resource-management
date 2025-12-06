@@ -9,9 +9,7 @@ import management.member.demo.dto.OvertimeDetailResponse;
 import management.member.demo.dto.OvertimeRequest;
 import management.member.demo.dto.OvertimeResponse;
 import management.member.demo.enums.OverTimeStatus;
-import management.member.demo.enums.OverTimeStatus;
 import management.member.demo.service.OvertimeService;
-import org.hibernate.sql.ast.tree.expression.Over;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 

@@ -17,8 +17,13 @@ public class SalaryMapper {
     public SalaryResponse toResponse(Salary salary) {
         SalaryResponse response = SalaryResponse.builder()
                 .id(salary.getId())
-                .employeeId(salary.getEmployeeId())
-                .baseSalary(salary.getBaseSalary())
+                // Lấy String employeeId (EMP***) của Employee, nếu không có thì dùng Long id
+                .employeeId(salary.getEmployee() != null && salary.getEmployee().getEmployeeId() != null 
+                        ? salary.getEmployee().getEmployeeId() 
+                        : (salary.getEmployee() != null ? String.valueOf(salary.getEmployee().getId()) : null))
+                .baseSalary(salary.getEmployee() != null && salary.getEmployee().getBaseSalary() != null 
+                        ? salary.getEmployee().getBaseSalary() 
+                        : null)
                 .allowance(salary.getAllowance())
                 .allowances(salary.getAllowance()) // Alias
                 .overtimePay(salary.getOtPay()) // Map từ otPay
@@ -44,9 +49,10 @@ public class SalaryMapper {
 
     /**
      * Map SalaryRequest DTO sang Salary entity (chỉ mapping, không validate)
+     * Lưu ý: employeeId trong request sẽ được dùng để tìm Employee entity trong Service layer
      */
     public void updateSalaryFromRequest(Salary salary, SalaryRequest request) {
-        salary.setEmployeeId(request.getEmployeeId());
+        // employeeId sẽ được set trong Service layer bằng cách set Employee entity
         salary.setBaseSalary(request.getBaseSalary());
         // Map allowance (ưu tiên allowances nếu có, nếu không thì dùng allowance)
         salary.setAllowance(request.getAllowances() != null ? request.getAllowances() : request.getAllowance());

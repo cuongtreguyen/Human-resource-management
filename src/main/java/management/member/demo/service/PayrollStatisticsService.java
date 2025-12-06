@@ -97,7 +97,8 @@ public class PayrollStatisticsService {
         // Lấy tất cả employeeId từ các payroll này
         List<Long> employeeIds = paidPayrolls.stream()
                 .flatMap(payroll -> salaryRepository.findByPayrollId(payroll.getId()).stream())
-                .map(Salary::getEmployeeId)
+                .map(s -> s.getEmployee() != null ? s.getEmployee().getId() : null)
+                .filter(id -> id != null)
                 .distinct()
                 .collect(Collectors.toList());
         
@@ -140,13 +141,17 @@ public class PayrollStatisticsService {
                 .flatMap(payroll -> salaryRepository.findByPayrollId(payroll.getId()).stream())
                 .collect(Collectors.toList());
         
-        // Lọc các salary của nhân viên có status ACTIVE và tính tổng baseSalary
+        // Lọc các salary của nhân viên có status ACTIVE và tính tổng baseSalary từ Employee
         return salaries.stream()
                 .filter(salary -> {
-                    Employee employee = employeeRepository.findById(salary.getEmployeeId()).orElse(null);
+                    if (salary.getEmployee() == null) return false;
+                    Employee employee = employeeRepository.findById(salary.getEmployee().getId()).orElse(null);
                     return employee != null && employee.getStatus() == EmployeeStatus.ACTIVE;
                 })
-                .map(salary -> salary.getBaseSalary() != null ? salary.getBaseSalary() : BigDecimal.ZERO)
+                .map(salary -> {
+                    Employee employee = employeeRepository.findById(salary.getEmployee().getId()).orElse(null);
+                    return employee != null && employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO;
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
@@ -173,7 +178,8 @@ public class PayrollStatisticsService {
         // Lọc các salary của nhân viên có status ACTIVE
         List<Salary> activeSalaries = salaries.stream()
                 .filter(salary -> {
-                    Employee employee = employeeRepository.findById(salary.getEmployeeId()).orElse(null);
+                    Employee employee = salary.getEmployee() != null ? 
+                        employeeRepository.findById(salary.getEmployee().getId()).orElse(null) : null;
                     return employee != null && employee.getStatus() == EmployeeStatus.ACTIVE;
                 })
                 .collect(Collectors.toList());
@@ -183,8 +189,10 @@ public class PayrollStatisticsService {
         BigDecimal insuranceRate = new BigDecimal("0.215"); // 21.5%
         
         for (Salary salary : activeSalaries) {
-            // Lấy baseSalary từ salary
-            BigDecimal baseSalary = salary.getBaseSalary() != null ? salary.getBaseSalary() : BigDecimal.ZERO;
+            // Lấy baseSalary từ Employee
+            Employee employee = salary.getEmployee() != null ? 
+                employeeRepository.findById(salary.getEmployee().getId()).orElse(null) : null;
+            BigDecimal baseSalary = employee != null && employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO;
             
             // Lấy phụ cấp cố định từ salary
             BigDecimal fixedAllowance = salary.getAllowance() != null ? salary.getAllowance() : BigDecimal.ZERO;
@@ -226,7 +234,8 @@ public class PayrollStatisticsService {
         // Lọc các salary của nhân viên có status ACTIVE và tính tổng otPay
         return salaries.stream()
                 .filter(salary -> {
-                    Employee employee = employeeRepository.findById(salary.getEmployeeId()).orElse(null);
+                    Employee employee = salary.getEmployee() != null ? 
+                        employeeRepository.findById(salary.getEmployee().getId()).orElse(null) : null;
                     return employee != null && employee.getStatus() == EmployeeStatus.ACTIVE;
                 })
                 .map(salary -> salary.getOtPay() != null ? salary.getOtPay() : BigDecimal.ZERO)
@@ -255,7 +264,8 @@ public class PayrollStatisticsService {
         // Lọc các salary của nhân viên có status ACTIVE và tính tổng personalIncomeTax
         return salaries.stream()
                 .filter(salary -> {
-                    Employee employee = employeeRepository.findById(salary.getEmployeeId()).orElse(null);
+                    Employee employee = salary.getEmployee() != null ? 
+                        employeeRepository.findById(salary.getEmployee().getId()).orElse(null) : null;
                     return employee != null && employee.getStatus() == EmployeeStatus.ACTIVE;
                 })
                 .map(salary -> salary.getPersonalIncomeTax() != null ? salary.getPersonalIncomeTax() : BigDecimal.ZERO)
@@ -284,7 +294,8 @@ public class PayrollStatisticsService {
         // Lọc các salary của nhân viên có status ACTIVE và tính tổng bonus
         return salaries.stream()
                 .filter(salary -> {
-                    Employee employee = employeeRepository.findById(salary.getEmployeeId()).orElse(null);
+                    Employee employee = salary.getEmployee() != null ? 
+                        employeeRepository.findById(salary.getEmployee().getId()).orElse(null) : null;
                     return employee != null && employee.getStatus() == EmployeeStatus.ACTIVE;
                 })
                 .map(salary -> salary.getBonus() != null ? salary.getBonus() : BigDecimal.ZERO)
@@ -345,7 +356,8 @@ public class PayrollStatisticsService {
         // Map sang DTO
         return salaries.stream()
                 .map(salary -> {
-                    Employee employee = employeeRepository.findById(salary.getEmployeeId()).orElse(null);
+                    Employee employee = salary.getEmployee() != null ? 
+                        employeeRepository.findById(salary.getEmployee().getId()).orElse(null) : null;
                     
                     WaitingPayrollListDTO dto = new WaitingPayrollListDTO();
                     // Set employeeId (ưu tiên employeeId từ Employee, nếu không có thì dùng id)
@@ -354,7 +366,7 @@ public class PayrollStatisticsService {
                     } else if (employee != null) {
                         dto.setEmployeeId(String.valueOf(employee.getId()));
                     } else {
-                        dto.setEmployeeId(String.valueOf(salary.getEmployeeId()));
+                        dto.setEmployeeId(String.valueOf(salary.getEmployee() != null ? salary.getEmployee().getId() : null));
                     }
                     dto.setFirstName(employee != null && employee.getFirstName() != null 
                             ? employee.getFirstName() 
@@ -452,7 +464,8 @@ public class PayrollStatisticsService {
         // Lọc các salary của nhân viên thuộc department và tính tổng netSalary
         return salaries.stream()
                 .filter(salary -> {
-                    Employee employee = employeeRepository.findById(salary.getEmployeeId()).orElse(null);
+                    Employee employee = salary.getEmployee() != null ? 
+                        employeeRepository.findById(salary.getEmployee().getId()).orElse(null) : null;
                     return employee != null 
                             && employee.getDepartment() != null 
                             && employee.getDepartment().equals(department);

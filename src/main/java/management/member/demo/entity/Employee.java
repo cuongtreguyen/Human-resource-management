@@ -221,6 +221,10 @@ public class Employee {
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EmployeeInsuranceContract> insurances = new ArrayList<>();
 
+    /** Quan hệ One-to-Many với Salary: 1 nhân viên có thể có nhiều bản ghi lương */
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<Salary> salaries = new ArrayList<>();
+
     /** Quan hệ One-to-One với User (inverse side) */
     @OneToOne(mappedBy = "employee", fetch = FetchType.LAZY)
     private User user;

@@ -1,6 +1,7 @@
 package management.member.demo.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import management.member.demo.enums.OverTimeStatus;
@@ -22,9 +23,8 @@ public class OverTime {
     Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "employee_id")
+    @JoinColumn(name = "employee_id", referencedColumnName = "id", nullable = false)
     Employee employee;
-
     LocalDate otDate;
     Double otHours;
     @ManyToOne(fetch = FetchType.LAZY)

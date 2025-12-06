@@ -5,7 +5,7 @@ import management.member.demo.dto.OvertimeListResponse;
 import management.member.demo.dto.OvertimeRequest;
 import management.member.demo.dto.OvertimeResponse;
 import management.member.demo.entity.OverTime;
-import management.member.demo.entity.OverTime;
+import management.member.demo.enums.OverTimeStatus;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;

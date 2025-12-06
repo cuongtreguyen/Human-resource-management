@@ -107,6 +107,8 @@ public class PayrollService {
         List<management.member.demo.entity.Employee> employees = employeeRepository.findAll();
         java.util.Map<Long, String> employeeNames = employees.stream()
                 .collect(Collectors.toMap(management.member.demo.entity.Employee::getId, management.member.demo.entity.Employee::getFullName));
+        java.util.Map<Long, Employee> employeeMap = employees.stream()
+                .collect(Collectors.toMap(Employee::getId, e -> e));
 
         // Apply filters
         if (month != null && !month.isEmpty()) {
@@ -120,7 +122,7 @@ public class PayrollService {
              try {
                  Long empId = Long.parseLong(employeeId);
                  salaries = salaries.stream()
-                         .filter(s -> s.getEmployeeId().equals(empId))
+                         .filter(s -> s.getEmployee() != null && s.getEmployee().getId().equals(empId))
                          .collect(Collectors.toList());
              } catch (NumberFormatException e) {
                  // Ignore if not a number
@@ -136,10 +138,12 @@ public class PayrollService {
         List<PayrollListItemDTO> payrollDTOs = salaries.stream().map(salary -> {
             PayrollListItemDTO dto = new PayrollListItemDTO();
             dto.setId(salary.getPayroll() != null ? String.valueOf(salary.getPayroll().getId()) : "");
-            dto.setEmployeeId(String.valueOf(salary.getEmployeeId()));
-            dto.setEmployeeName(employeeNames.getOrDefault(salary.getEmployeeId(), "Unknown"));
+            Long empId = salary.getEmployee() != null ? salary.getEmployee().getId() : null;
+            Employee employee = empId != null ? employeeMap.get(empId) : null;
+            dto.setEmployeeId(String.valueOf(empId));
+            dto.setEmployeeName(employeeNames.getOrDefault(empId, "Unknown"));
             dto.setMonth(salary.getPayroll() != null ? salary.getPayroll().getPeriod().toString().substring(0, 7) : "");
-            dto.setBasicSalary(salary.getBaseSalary());
+            dto.setBasicSalary(employee != null && employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO);
             dto.setAllowance(salary.getAllowance());
             dto.setOvertime(salary.getOtPay());
             dto.setBonus(salary.getBonus());
@@ -281,15 +285,19 @@ public class PayrollService {
                 .orElseThrow(() -> new RuntimeException("Employee not found with id: " + employeeId));
         
         // Lấy salary mới nhất của employee
-        Salary salary = salaryRepository.findFirstByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId)
-                .orElseThrow(() -> new RuntimeException("No salary record found for employee id: " + employeeId));
+        // Query có thể trả về nhiều kết quả nếu có cùng paymentDate, nên lấy phần tử đầu tiên
+        List<Salary> salaries = salaryRepository.findFirstByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
+        if (salaries.isEmpty()) {
+            throw new RuntimeException("No salary record found for employee id: " + employeeId);
+        }
+        Salary salary = salaries.get(0); // Lấy record đầu tiên (đã sắp xếp theo paymentDate DESC, id DESC)
         
         // Tạo response
         GetPayrollCalculationForAccountantResponseDTO response = new GetPayrollCalculationForAccountantResponseDTO();
         
         // Lấy thông tin cơ bản
         response.setFullName(employee.getFullName());
-        response.setBaseSalary(salary.getBaseSalary() != null ? salary.getBaseSalary() : BigDecimal.ZERO);
+        response.setBaseSalary(employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO);
         
         // Tính otHours từ OverTime entity (tổng số giờ OT đã approved trong tháng của payroll)
         YearMonth yearMonth = YearMonth.from(salary.getPayroll().getPeriod());
@@ -482,7 +490,8 @@ public class PayrollService {
                     MonthlyPayrollForAccountantDTO dto = new MonthlyPayrollForAccountantDTO();
                     
                     // Lấy thông tin từ Employee
-                    Employee employee = employeeMap.get(salary.getEmployeeId());
+                    Long empId = salary.getEmployee() != null ? salary.getEmployee().getId() : null;
+                    Employee employee = empId != null ? employeeMap.get(empId) : null;
                     if (employee != null) {
                         dto.setFullName(employee.getFullName());
                         dto.setEmail(employee.getEmail());
@@ -519,7 +528,7 @@ public class PayrollService {
                         otPay = totalOtHours.multiply(otRatePerHour).setScale(2, java.math.RoundingMode.HALF_UP);
                     }
                     dto.setOtPay(otPay);
-                    dto.setBaseSalary(salary.getBaseSalary());
+                    dto.setBaseSalary(employee != null && employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO);
                     dto.setNetSalary(salary.getNetSalary());
                     
                     // Lấy status từ Payroll

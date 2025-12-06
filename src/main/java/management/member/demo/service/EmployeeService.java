@@ -42,6 +42,9 @@ public class EmployeeService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private EmailService emailService;
+
     public CreateEmployeeResponseDTO createEmployee(AddEmployeeRequest request) {
         // Generate email từ fullName: fullname (không dấu, lowercase, remove spaces) + @company.com
         String generatedEmail = generateEmailFromFullName(request.getName());
@@ -104,6 +107,7 @@ public class EmployeeService {
         // Tự động tạo User cho Employee
         // Email: fullname + @company.com (đã generate ở trên)
         // Password: fullname (không dấu, lowercase, remove spaces) + "123"
+        String defaultPassword = null;
         if (!userRepository.existsByEmail(saved.getEmail())) {
             User user = new User();
             user.setEmail(saved.getEmail()); // Email generated từ fullName
@@ -111,12 +115,29 @@ public class EmployeeService {
             user.setEmployeeId(saved.getEmployeeId()); // Lưu employeeId từ Employee
             user.setRole(Role.EMPLOYEE);
             String passwordBase = generateEmailFromFullName(saved.getFullName()).replace("@company.com", "");
-            String defaultPassword = passwordBase + "123";
+            defaultPassword = passwordBase + "123"; // Lưu password trước khi encode để gửi email
             user.setPassword(passwordEncoder.encode(defaultPassword));
             user.setIsActive(true);
             user.setIsLocked(false);
             user.setEmployee(saved); // Link với Employee
             userRepository.save(user);
+            
+            // Gửi email thông tin đăng nhập về personalEmail
+            if (saved.getPersonalEmail() != null && !saved.getPersonalEmail().trim().isEmpty()) {
+                try {
+                    emailService.sendEmployeeCredentials(
+                        saved.getPersonalEmail(),  // Gửi về personalEmail
+                        saved.getFullName(),       // Full name
+                        saved.getEmail(),          // Email đăng nhập (từ User)
+                        defaultPassword,           // Password (chưa encode)
+                        saved.getEmployeeId()      // Employee ID
+                    );
+                } catch (Exception e) {
+                    // Log lỗi nhưng không fail việc tạo employee
+                    // Email sẽ được in ra console nếu không gửi được
+                    System.err.println("Failed to send credentials email to " + saved.getPersonalEmail() + ": " + e.getMessage());
+                }
+            }
         }
 
         CreateEmployeeResponseDTO response = new CreateEmployeeResponseDTO();
