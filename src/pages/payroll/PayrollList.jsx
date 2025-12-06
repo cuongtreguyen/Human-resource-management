@@ -109,7 +109,7 @@ const PayrollList = () => {
       setLoading(true);
 
       // Nếu là Accountant, dùng API chuyên dụng với filter lương
-      const employeeData = userRole === 'accountant'
+      const response = userRole === 'accountant'
         ? await searchEmployeesForAccountant({
             department: selectedDepartment !== 'all' ? selectedDepartment : undefined
           })
@@ -117,7 +117,33 @@ const PayrollList = () => {
             department: selectedDepartment !== 'all' ? selectedDepartment : undefined
           });
 
-      setEmployees(employeeData);
+      // API có thể trả về array trực tiếp hoặc { data: [...] }
+      const employeeData = Array.isArray(response) ? response : response.data || [];
+
+      // Debug: xem API trả về gì
+      console.log('📋 Raw employee data from API:', employeeData);
+
+      // Map data từ API để phù hợp với component
+      const mappedEmployees = employeeData.map(emp => {
+        // Tìm salary từ nhiều field có thể có
+        const salary = emp.salary || emp.baseSalary || emp.basicSalary || emp.base_salary || emp.monthlySalary || 0;
+
+        return {
+          id: emp.employeeId || emp.id,
+          employeeId: emp.employeeId || emp.id,
+          name: emp.fullName || emp.name || `${emp.lastName || ''} ${emp.firstName || ''}`.trim(),
+          email: emp.email || '',
+          phone: emp.phone || emp.phoneNumber || '',
+          department: emp.department || emp.departmentName || 'N/A',
+          position: emp.position || emp.jobTitle || 'N/A',
+          salary: salary,
+          basicSalary: salary,
+          status: emp.status || 'active',
+        };
+      });
+
+      console.log('✅ Mapped employees for payroll:', mappedEmployees);
+      setEmployees(mappedEmployees);
     } catch (err) {
       console.error('Error loading employees:', err);
       setError('Không thể tải dữ liệu nhân viên');
@@ -136,24 +162,33 @@ const PayrollList = () => {
       const formattedMonth = selectedMonth;
 
       // Call API to get monthly payroll
-      const payrollData = await getMonthlyPayroll(formattedMonth);
+      const response = await getMonthlyPayroll(formattedMonth);
 
-      // Map API data to component state format
-      const mappedPayrolls = payrollData.map(item => ({
-        id: item.employeeId || Math.random().toString(),
-        employeeId: item.employeeId,
-        name: item.fullName,
-        email: item.email,
-        department: item.department,
-        basicSalary: item.baseSalary,
-        otHours: item.otHours,
-        otPay: item.otPay,
-        netSalary: item.netSalary,
-        status: item.status, // PENDING | APPROVED | PAID | CANCELLED | FAILED
-        month: formattedMonth
-      }));
+      // API có thể trả về array trực tiếp hoặc { data: [...] }
+      const payrollData = Array.isArray(response) ? response : response.data || [];
 
-      setPayrollRecords(mappedPayrolls);
+      if (payrollData.length > 0) {
+        // Map API data to component state format
+        const mappedPayrolls = payrollData.map(item => ({
+          id: item.id || item.employeeId || Math.random().toString(),
+          employeeId: item.employeeId || item.id,
+          name: item.fullName || item.employeeName || item.name,
+          email: item.email,
+          department: item.department || item.departmentName,
+          basicSalary: item.baseSalary || item.basicSalary || 0,
+          otHours: item.otHours || 0,
+          otPay: item.otPay || 0,
+          netSalary: item.netSalary || item.totalSalary || 0,
+          status: item.status || 'PENDING', // PENDING | APPROVED | PAID | CANCELLED | FAILED
+          month: formattedMonth,
+          paidDate: item.paidDate || null
+        }));
+
+        console.log('✅ Loaded payroll from API:', mappedPayrolls);
+        setPayrollRecords(mappedPayrolls);
+      } else {
+        console.log('📋 No payroll data from API, will generate from employees');
+      }
     } catch (err) {
       console.error('Error loading monthly payroll:', err);
       // Nếu API lỗi hoặc chưa có data, fallback về generate local

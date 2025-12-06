@@ -3,8 +3,8 @@ import {
   User, Mail, Phone, MapPin, Briefcase,
   Building2, CreditCard, Heart, FileText, Users
 } from 'lucide-react';
-import fakeApi from '../services/fakeApi';
-import { getRole, getUserInfo } from '../utils/auth';
+import { getEmployeeProfile, getEmployeeIdByCode } from '../services/api';
+import { getRole, getUserInfo, getCurrentEmployeeId } from '../utils/auth';
 import Layout from '../components/layout/Layout';
 
 const Profile = () => {
@@ -20,50 +20,64 @@ const Profile = () => {
   const loadProfile = async () => {
     try {
       setLoading(true);
-      // Lấy danh sách employees và tìm employee theo email hoặc name từ userInfo
-      const res = await fakeApi.getEmployees();
-      let foundEmployee = null;
 
-      if (userInfo) {
-        // Tìm theo email nếu có
-        if (userInfo.email) {
-          foundEmployee = res.data.find(emp => emp.email === userInfo.email);
-        }
-        // Nếu không tìm thấy theo email, tìm theo fullName hoặc name
-        if (!foundEmployee && userInfo.name) {
-          foundEmployee = res.data.find(emp => 
-            emp.fullName === userInfo.name || 
-            emp.name === userInfo.name ||
-            (emp.name && emp.name.toLowerCase().includes(userInfo.name.toLowerCase()))
-          );
-        }
-        // Nếu vẫn không tìm thấy, thử tìm theo employeeId
-        if (!foundEmployee && userInfo.employeeId) {
-          foundEmployee = res.data.find(emp => emp.id === userInfo.employeeId);
+      let employeeId = getCurrentEmployeeId();
+      console.log('📋 Loading profile for employeeId:', employeeId);
+
+      // Nếu employeeId là dạng "EMP001" → chuyển sang ID số
+      if (employeeId && isNaN(Number(employeeId))) {
+        console.log('🔄 Converting employee code to numeric ID...');
+        try {
+          employeeId = await getEmployeeIdByCode(employeeId);
+        } catch (err) {
+          console.warn('Could not convert employee code:', err);
         }
       }
 
-      // Nếu không tìm thấy, lấy employee đầu tiên làm fallback (cho demo)
-      if (!foundEmployee && res.data.length > 0) {
-        foundEmployee = res.data[0];
+      if (!employeeId) {
+        console.error('❌ Không tìm thấy employeeId');
+        setEmployee(null);
+        return;
       }
 
-      // Debug: Log để kiểm tra
-      if (foundEmployee) {
-        console.log('Found employee:', foundEmployee);
-        console.log('Emergency contact:', {
-          name: foundEmployee.emergencyContactName,
-          relationship: foundEmployee.emergencyContactRelationship,
-          phone: foundEmployee.emergencyContactPhone
-        });
-      } else {
-        console.log('No employee found. userInfo:', userInfo);
-        console.log('Available employees:', res.data.map(emp => ({ id: emp.id, name: emp.name, email: emp.email })));
-      }
+      // Gọi API lấy thông tin nhân viên
+      const data = await getEmployeeProfile(employeeId);
+      console.log('✅ Loaded employee profile:', data);
 
-      setEmployee(foundEmployee);
+      // Map dữ liệu từ API
+      const mappedEmployee = {
+        id: data.employeeId || data.id,
+        fullName: data.fullName || data.name || `${data.lastName || ''} ${data.firstName || ''}`.trim(),
+        name: data.fullName || data.name,
+        email: data.email,
+        phone: data.phone || data.phoneNumber,
+        department: data.department || data.departmentName,
+        position: data.position || data.jobTitle,
+        status: data.status || 'active',
+        dateOfBirth: data.dateOfBirth || data.dob,
+        gender: data.gender,
+        maritalStatus: data.maritalStatus,
+        address: data.address,
+        permanentAddress: data.permanentAddress || data.address,
+        temporaryAddress: data.temporaryAddress,
+        idCard: data.idCard || data.idNumber,
+        idCardIssueDate: data.idCardIssueDate,
+        idCardIssuePlace: data.idCardIssuePlace,
+        taxCode: data.taxCode,
+        manager: data.manager || data.directManager,
+        workLocation: data.workLocation,
+        employeeType: data.employeeType,
+        contractType: data.contractType,
+        hireDate: data.hireDate || data.startDate,
+        emergencyContactName: data.emergencyContactName || data.emergencyContact?.name,
+        emergencyContactRelationship: data.emergencyContactRelationship || data.emergencyContact?.relationship,
+        emergencyContactPhone: data.emergencyContactPhone || data.emergencyContact?.phone,
+      };
+
+      setEmployee(mappedEmployee);
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('❌ Error loading profile:', error);
+      setEmployee(null);
     } finally {
       setLoading(false);
     }

@@ -56,6 +56,8 @@ const EmployeeList = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true);
+      setError(null);
+
       const response = await getAllEmployees();
       // API có thể trả về array trực tiếp hoặc { data: [...] }
       const employeesData = Array.isArray(response) ? response : response.data || [];
@@ -71,36 +73,13 @@ const EmployeeList = () => {
         position: emp.position || emp.jobTitle || 'N/A',
         salary: emp.salary || emp.baseSalary || 0,
         startDate: emp.startDate || emp.hireDate || '',
+        hireDate: emp.startDate || emp.hireDate || '',
         status: emp.status || 'active',
         avatar: emp.avatar || emp.profileImage || null,
       }));
 
       setEmployees(mappedEmployees);
       console.log('✅ Loaded employees:', mappedEmployees);
-
-      setError(null);
-
-      const response = await http(`${JAVA_API}/employees`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Không thể tải danh sách`);
-      }
-
-      const result = await response.json();
-      
-      // Backend trả về: { success: true, data: [...] }
-      if (result.success && Array.isArray(result.data)) {
-        setEmployees(result.data);
-      } else {
-        throw new Error('Dữ liệu không hợp lệ từ server');
-      }
-
     } catch (err) {
       console.error('Load employees error:', err);
       setError(err.message || 'Không thể tải danh sách nhân viên');
@@ -164,36 +143,13 @@ const EmployeeList = () => {
     const employee = employees.find(emp => emp.id === employeeId);
     const employeeName = employee?.name || 'Unknown';
 
-    if (window.confirm('Bạn có chắc chắn muốn xóa nhân viên này không?')) {
-      try {
-        setLoading(true);
-        // TODO: Gọi API delete employee khi backend có endpoint
-        // await deleteEmployee(employeeId);
-        setEmployees(employees.filter(emp => emp.id !== employeeId));
-
-        // Log hành động xóa nhân viên
-        logDeleteEmployee(employeeId, employeeName);
-
-        alert('Xóa nhân viên thành công');
-      } catch (err) {
-        alert('Không thể xóa nhân viên: ' + (err.message || 'Lỗi không xác định'));
-        console.error('Delete error:', err);
-      } finally {
-        setLoading(false);
-      }
-
     if (!window.confirm(`Bạn có chắc chắn muốn xóa nhân viên "${employeeName}"?`)) {
       return;
     }
 
     try {
-      // TODO: Gọi API export khi backend có endpoint
-      // const response = await exportEmployeeData('csv');
-      // window.open(response.data.url, '_blank');
-      alert('Tính năng xuất dữ liệu đang được phát triển');
-
       setLoading(true);
-      
+
       const response = await http(`${JAVA_API}/employees/${employeeId}`, {
         method: 'DELETE',
         headers: {

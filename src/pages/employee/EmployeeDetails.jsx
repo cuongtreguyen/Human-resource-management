@@ -1,11 +1,7 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
-import { getEmployeeById } from '../../services/employeeService';
-
-import { isAdmin, getRole } from '../../utils/auth';
+import { isAdmin } from '../../utils/auth';
 import {
   User, Mail, Phone, Briefcase, Calendar,
   DollarSign, Edit, Trash2, ArrowLeft,
@@ -14,81 +10,24 @@ import {
 import { http, JAVA_API } from '../../services/config';
 
 const EmployeeDetails = () => {
-  const { id } = useParams(); // có thể là "1" (ID số) hoặc "EMP001" (mã nhân viên)
+  const { id } = useParams();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const userRole = getRole();
 
   useEffect(() => {
     loadEmployeeDetails();
   }, [id]);
 
-  // ===== HÀM CHUYỂN ĐỔI MÃ NHÂN VIÊN → ID SỐ =====
-  const getEmployeeIdByCode = async (employeeCode) => {
-    const response = await http(`${JAVA_API}/employees/${employeeCode}`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
-      }
-    });
-
-    if (!response.ok) throw new Error('Không tìm thấy nhân viên theo mã');
-
-    const result = await response.json();
-    return result.data?.id || result.data?.employeeId;
-  };
-
-  // ===== TẢI CHI TIẾT NHÂN VIÊN =====
   const loadEmployeeDetails = async () => {
     try {
       setLoading(true);
-      console.log('📋 Loading employee details for ID:', id);
-      const response = await getEmployeeById(id);
-
-      // API có thể trả về { success, data } hoặc data trực tiếp
-      const employeeData = response?.data || response;
-
-      if (employeeData) {
-        // Map data để phù hợp với UI
-        const mappedEmployee = {
-          id: employeeData.employeeId || employeeData.id,
-          employeeId: employeeData.employeeId || employeeData.id,
-          name: employeeData.fullName || employeeData.name || `${employeeData.firstName || ''} ${employeeData.lastName || ''}`.trim(),
-          email: employeeData.email || '',
-          phone: employeeData.phone || employeeData.phoneNumber || '',
-          department: employeeData.department || employeeData.departmentName || 'N/A',
-          position: employeeData.position || employeeData.jobTitle || 'N/A',
-          salary: employeeData.salary || employeeData.baseSalary || 0,
-          startDate: employeeData.startDate || employeeData.hireDate || '',
-          status: employeeData.status || 'active',
-          avatar: employeeData.avatar || employeeData.profileImage || null,
-          address: employeeData.address || '',
-          dateOfBirth: employeeData.dateOfBirth || employeeData.dob || '',
-          gender: employeeData.gender || '',
-          emergencyContact: employeeData.emergencyContact || '',
-          bankAccount: employeeData.bankAccount || employeeData.bankAccountNumber || '',
-          bankName: employeeData.bankName || '',
-          taxId: employeeData.taxId || employeeData.taxCode || '',
-          insuranceNumber: employeeData.insuranceNumber || employeeData.socialInsuranceNumber || '',
-        };
-        setEmployee(mappedEmployee);
-        console.log('✅ Loaded employee:', mappedEmployee);
       setError(null);
+      console.log('📋 Loading employee details for ID:', id);
 
-      let employeeId = id;
-
-      // Kiểm tra xem `id` có phải là mã nhân viên (EMP001) hay ID số (1)?
-      if (isNaN(id)) {
-        console.log(`URL chứa mã nhân viên: ${id}, đang chuyển đổi sang ID số...`);
-        employeeId = await getEmployeeIdByCode(id);
-        console.log(`→ ID số thật: ${employeeId}`);
-      }
-
-      // Gọi API Java với ID số
-      const response = await http(`${JAVA_API}/employees/${employeeId}`, {
+      const response = await http(`${JAVA_API}/employees/${id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -101,11 +40,13 @@ const EmployeeDetails = () => {
       }
 
       const result = await response.json();
+      const employeeData = result.data || result;
 
-      if (result.success && result.data) {
-        setEmployee(result.data);
+      if (employeeData) {
+        setEmployee(employeeData);
+        console.log('✅ Loaded employee:', employeeData);
       } else {
-        throw new Error(result.message || 'Dữ liệu không hợp lệ');
+        throw new Error('Không tìm thấy nhân viên');
       }
     } catch (err) {
       console.error('Load employee error:', err);
@@ -116,14 +57,12 @@ const EmployeeDetails = () => {
   };
 
   const handleEdit = () => {
-    navigate(`/employees/edit/${employee.id}`);
+    navigate(`/employees/edit/${employee?.id || id}`);
   };
 
   const handleDelete = async () => {
     try {
-      // TODO: Gọi API delete employee khi backend có endpoint
-      // await deleteEmployee(id);
-      const response = await http(`${JAVA_API}/employees/${employee.id}`, {
+      const response = await http(`${JAVA_API}/employees/${employee?.id || id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
@@ -137,7 +76,6 @@ const EmployeeDetails = () => {
       setShowDeleteModal(false);
       alert('Xóa nhân viên thành công');
       navigate('/employees');
-      alert('Đã xóa nhân viên (tạm thời chỉ xóa trên UI)');
     } catch (err) {
       console.error('Delete error:', err);
       alert('Lỗi: ' + err.message);
@@ -151,17 +89,14 @@ const EmployeeDetails = () => {
 
   const formatCurrency = (amount) => {
     if (!amount) return 'Chưa cập nhật';
-    return new Intl.NumberFormat('vi-VN').format(amount) + ' VNĐ';
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
   if (loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Đang tải thông tin nhân viên...</p>
-          </div>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
         </div>
       </Layout>
     );
@@ -170,11 +105,11 @@ const EmployeeDetails = () => {
   if (error || !employee) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-64">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-bold text-gray-900 mb-2">Không tìm thấy</h2>
-            <p className="text-gray-600 mb-4">{error}</p>
+            <p className="text-gray-600 mb-4">{error || 'Không tìm thấy nhân viên'}</p>
             <button
               onClick={() => navigate('/employees')}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -202,27 +137,28 @@ const EmployeeDetails = () => {
   };
 
   const InfoRow = ({ label, value }) => (
-    <div className="flex justify-between py-3 border-b border-gray-100 last:border-0">
-      <span className="text-gray-500">{label}</span>
-      <span className="text-gray-900 font-medium">{value || 'Chưa cập nhật'}</span>
+    <div className="flex justify-between py-2 border-b border-gray-100 last:border-0">
+      <span className="text-gray-600">{label}</span>
+      <span className="font-medium text-gray-900">{value || 'Chưa cập nhật'}</span>
     </div>
   );
 
+  const employeeName = employee.fullName || employee.name || 'N/A';
+  const employeeDepartment = employee.department || employee.departmentName || 'N/A';
+  const employeePosition = employee.position || employee.jobTitle || 'N/A';
+
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate('/employees')}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900">Chi tiết nhân viên</h1>
-          </div>
-
+          <button
+            onClick={() => navigate('/employees')}
+            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Quay lại</span>
+          </button>
           {isAdmin() && (
             <div className="flex gap-2">
               <button
@@ -248,112 +184,59 @@ const EmployeeDetails = () => {
           <div className="flex items-center gap-6">
             <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
               <span className="text-white text-2xl font-bold">
-                {employee.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                {employeeName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </span>
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-2xl font-bold text-gray-900">{employee.name}</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{employeeName}</h2>
                 {getStatusBadge(employee.status)}
               </div>
               <div className="flex items-center gap-4 text-gray-600">
                 <div className="flex items-center gap-1">
                   <Briefcase className="w-4 h-4" />
-                  <span>{employee.position || 'N/A'}</span>
+                  <span>{employeePosition}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Building2 className="w-4 h-4" />
-                  <span>{employee.department || 'N/A'}</span>
+                  <span>{employeeDepartment}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* All Information */}
+        {/* Information Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Thông tin liên hệ */}
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Mail className="w-5 h-5 text-blue-600" />
-              Thông tin liên hệ
-            </h3>
-            <div className="space-y-1">
-              <InfoRow label="Email công ty" value={employee.email || employee.companyEmail} />
-              <InfoRow label="Email cá nhân" value={employee.personalEmail} />
-              <InfoRow label="Số điện thoại" value={employee.phone} />
-              <InfoRow label="Địa chỉ thường trú" value={employee.permanentAddress || employee.address} />
-              <InfoRow label="Địa chỉ tạm trú" value={employee.temporaryAddress} />
-            </div>
-          </div>
-
           {/* Thông tin cá nhân */}
           <div className="bg-white rounded-xl border p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <User className="w-5 h-5 text-purple-600" />
+              <User className="w-5 h-5 text-blue-600" />
               Thông tin cá nhân
             </h3>
             <div className="space-y-1">
-              <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth)} />
+              <InfoRow label="Mã nhân viên" value={employee.employeeId || employee.id} />
+              <InfoRow label="Email" value={employee.email} />
+              <InfoRow label="Số điện thoại" value={employee.phone || employee.phoneNumber} />
+              <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth || employee.dob)} />
               <InfoRow label="Giới tính" value={employee.gender} />
-              <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus} />
-            </div>
-          </div>
-
-          {/* Giấy tờ tùy thân */}
-          <div className="bg-white rounded-xl border p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-green-600" />
-              Giấy tờ tùy thân
-            </h3>
-            <div className="space-y-1">
-              <InfoRow label="Số CCCD/CMND" value={employee.idCard || employee.idNumber} />
-              <InfoRow label="Ngày cấp" value={formatDate(employee.idCardIssueDate)} />
-              <InfoRow label="Nơi cấp" value={employee.idCardIssuePlace} />
-              <InfoRow label="Mã số thuế" value={employee.taxCode} />
+              <InfoRow label="Địa chỉ" value={employee.address} />
             </div>
           </div>
 
           {/* Thông tin công việc */}
           <div className="bg-white rounded-xl border p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-orange-600" />
+              <Briefcase className="w-5 h-5 text-purple-600" />
               Thông tin công việc
             </h3>
             <div className="space-y-1">
-              <InfoRow label="Mã nhân viên" value={employee.employeeCode || employee.id} />
-              <InfoRow label="Phòng ban" value={employee.department} />
-              <InfoRow label="Chức vụ" value={employee.position} />
-              <InfoRow label="Quản lý trực tiếp" value={employee.manager} />
-              <InfoRow label="Địa điểm làm việc" value={employee.workLocation} />
-              <InfoRow label="Loại nhân viên" value={employee.employeeType} />
+              <InfoRow label="Phòng ban" value={employeeDepartment} />
+              <InfoRow label="Chức vụ" value={employeePosition} />
+              <InfoRow label="Ngày vào làm" value={formatDate(employee.startDate || employee.hireDate)} />
               <InfoRow label="Loại hợp đồng" value={employee.contractType} />
-              {employee.contractCode && (
-                <InfoRow label="Mã hợp đồng" value={employee.contractCode} />
-              )}
-              {employee.signDate && (
-                <InfoRow label="Ngày ký hợp đồng" value={formatDate(employee.signDate)} />
-              )}
-              {employee.hireDate && (
-                <InfoRow label="Ngày vào làm" value={formatDate(employee.hireDate)} />
-              )}
             </div>
           </div>
-
-          {/* Lịch làm việc */}
-          {(employee.shift || employee.timeIn || employee.timeOut) && (
-            <div className="bg-white rounded-xl border p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-purple-600" />
-                Lịch làm việc
-              </h3>
-              <div className="space-y-1">
-                {employee.shift && <InfoRow label="Ca làm việc" value={employee.shift} />}
-                {employee.timeIn && <InfoRow label="Thời gian vào" value={employee.timeIn} />}
-                {employee.timeOut && <InfoRow label="Thời gian ra" value={employee.timeOut} />}
-              </div>
-            </div>
-          )}
 
           {/* Thông tin lương */}
           <div className="bg-white rounded-xl border p-6">
@@ -363,62 +246,47 @@ const EmployeeDetails = () => {
             </h3>
             <div className="space-y-1">
               <InfoRow label="Lương cơ bản" value={formatCurrency(employee.salary || employee.baseSalary)} />
+              <InfoRow label="Phụ cấp" value={formatCurrency(employee.allowance)} />
             </div>
           </div>
 
-          {/* Liên hệ khẩn cấp */}
-          <div className="bg-white rounded-xl border p-6 md:col-span-2">
+          {/* Thông tin ngân hàng */}
+          <div className="bg-white rounded-xl border p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Heart className="w-5 h-5 text-red-600" />
-              Liên hệ khẩn cấp
+              <CreditCard className="w-5 h-5 text-indigo-600" />
+              Thông tin ngân hàng
             </h3>
-            {(employee.emergencyContactName || employee.emergencyContactRelationship || employee.emergencyContactPhone) ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <span className="text-gray-500 text-sm">Họ và tên</span>
-                  <p className="text-gray-900 font-medium">{employee.emergencyContactName || 'Chưa cập nhật'}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500 text-sm">Mối quan hệ</span>
-                  <p className="text-gray-900 font-medium">{employee.emergencyContactRelationship || 'Chưa cập nhật'}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500 text-sm">Số điện thoại</span>
-                  <p className="text-gray-900 font-medium">{employee.emergencyContactPhone || 'Chưa cập nhật'}</p>
-                </div>
-              </div>
-            ) : (
-              <p className="text-gray-500">Chưa cập nhật thông tin liên hệ khẩn cấp</p>
-            )}
+            <div className="space-y-1">
+              <InfoRow label="Ngân hàng" value={employee.bankName} />
+              <InfoRow label="Số tài khoản" value={employee.bankAccount || employee.bankAccountNumber} />
+              <InfoRow label="Mã số thuế" value={employee.taxId || employee.taxCode} />
+              <InfoRow label="Số BHXH" value={employee.insuranceNumber || employee.socialInsuranceNumber} />
+            </div>
           </div>
         </div>
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Modal */}
         {showDeleteModal && (
-          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-md w-full p-6">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Trash2 className="w-6 h-6 text-red-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">Xác nhận xóa</h3>
-                <p className="text-gray-600 mb-6">
-                  Bạn có chắc chắn muốn xóa nhân viên <strong>{employee.name}</strong>?
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setShowDeleteModal(false)}
-                    className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  >
-                    Xóa
-                  </button>
-                </div>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+              <h3 className="text-lg font-bold text-gray-900 mb-2">Xác nhận xóa</h3>
+              <p className="text-gray-600 mb-4">
+                Bạn có chắc chắn muốn xóa nhân viên <strong>{employeeName}</strong>?
+                Hành động này không thể hoàn tác.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  Xóa
+                </button>
               </div>
             </div>
           </div>
