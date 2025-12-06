@@ -19,7 +19,7 @@ public class CreateEmployeeResponseDTO {
     @Getter
     @Setter
     public static class EmployeeData {
-        private String id;  // employeeId or employeeCode
+        private String id;  // employeeId
         // FE có thể gửi name hoặc firstName/lastName
         @Size(max = 200, message = "Name must not exceed 200 characters")
         private String name; // firstName + lastName (FE có thể gửi)
@@ -79,9 +79,6 @@ public class CreateEmployeeResponseDTO {
 
         @Size(max = 50, message = "Employee ID must not exceed 50 characters")
         private String employeeId;
-
-        @Size(max = 50, message = "Employee code must not exceed 50 characters")
-        private String employeeCode;
 
         @Size(max = 50, message = "Contract code must not exceed 50 characters")
         private String contractCode;

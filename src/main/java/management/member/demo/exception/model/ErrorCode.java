@@ -22,7 +22,6 @@ public enum ErrorCode {
     INVALID_PHONE_FORMAT("INVALID_PHONE_FORMAT", "Số điện thoại không đúng định dạng (phải có 10-11 chữ số)"),
     INVALID_DATE_OF_BIRTH("INVALID_DATE_OF_BIRTH", "Ngày sinh không hợp lệ"),
     INVALID_DATE_RANGE("INVALID_DATE_RANGE", "Khoảng thời gian không hợp lệ"),
-    INVALID_EMPLOYEE_CODE("INVALID_EMPLOYEE_CODE", "Mã nhân viên không được để trống"),
     INVALID_DEPARTMENT("INVALID_DEPARTMENT", "Phòng ban không được để trống"),
     INVALID_POSITION("INVALID_POSITION", "Chức vụ không được để trống"),
     INVALID_HIRE_DATE("INVALID_HIRE_DATE", "Ngày vào làm không được để trống"),
@@ -33,7 +32,6 @@ public enum ErrorCode {
     
     // Employee conflicts
     EMPLOYEE_EMAIL_EXISTS("EMPLOYEE_EMAIL_EXISTS", "Email nhân viên đã tồn tại"),
-    EMPLOYEE_CODE_EXISTS("EMPLOYEE_CODE_EXISTS", "Mã nhân viên đã tồn tại"),
     
     // Salary errors
     SALARY_NOT_FOUND("SALARY_NOT_FOUND", "Bản ghi lương không tồn tại"),

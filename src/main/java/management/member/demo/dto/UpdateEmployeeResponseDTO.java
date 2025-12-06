@@ -13,7 +13,7 @@ public class UpdateEmployeeResponseDTO {
     @Getter
     @Setter
     public static class EmployeeData {
-        private String id;  // employeeId or employeeCode
+        private String id;  // employeeId
         private String name;  // fullName
     }
 }

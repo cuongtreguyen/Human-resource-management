@@ -15,7 +15,6 @@ import java.time.LocalDate;
 public class OnLeaveDetailResponse {
     Long id;
     String fullName;
-    String employeeCode;
     String department;
     OnLeaveStatus onLeaveStatus;
     OnLeaveType onLeaveType;

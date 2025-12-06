@@ -177,7 +177,7 @@ public class Employee {
     @Column(name = "remaining_ot_hours")
     private Integer remainingOtHours = 40;
 
-    /** Vai trò của user (ADMIN, EMPLOYEE) */
+
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "role")

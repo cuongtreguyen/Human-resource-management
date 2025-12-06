@@ -4,8 +4,6 @@ import management.member.demo.dto.EmployeeDetailDTO;
 import management.member.demo.dto.EmployeeListItemDTO;
 import management.member.demo.dto.EmployeeRequest;
 import management.member.demo.dto.EmployeeResponse;
-import management.member.demo.dto.ProfileResponse;
-import management.member.demo.dto.ProfileUpdateRequest;
 import management.member.demo.entity.Employee;
 import management.member.demo.normalizer.config.ContractTypeMappingConfig;
 import management.member.demo.normalizer.config.GenderMappingConfig;
@@ -41,7 +39,6 @@ public class EmployeeMapper {
                 .fullName(employee.getFullName())
                 .email(employee.getEmail())
                 .phone(employee.getPhone())
-                .employeeCode(null) // Employee entity không có employeeCode
                 .department(employee.getDepartment())
                 .position(employee.getPosition())
                 .hireDate(employee.getHireDate())
@@ -51,58 +48,12 @@ public class EmployeeMapper {
     }
 
     /**
-     * Map Employee entity sang ProfileResponse DTO
-     */
-    public ProfileResponse toProfileResponse(Employee employee) {
-        ProfileResponse response = new ProfileResponse();
-        response.setData(ProfileResponse.ProfileData.builder()
-                .id(employee.getId())
-                .fullName(employee.getFullName())
-                .email(employee.getEmail())
-                .phone(employee.getPhone())
-                .gender(employee.getGender())
-                .status(employee.getStatus())
-                .department(employee.getDepartment())
-                .position(employee.getPosition())
-                .employeeId(employee.getEmployeeId())
-                .idCardIssueDate(employee.getIdCardIssueDate())
-                .idCardIssuePlace(employee.getIdCardIssuePlace())
-                .maritalStatus(employee.getMaritalStatus())
-                .taxCode(employee.getTaxCode())
-                .contractCode(employee.getContractCode())
-                .employeeType(employee.getEmployeeType())
-                .emergencyContactName(employee.getEmergencyContactName())
-                .emergencyContactPhone(employee.getEmergencyContactPhone())
-                .emergencyContactRelationship(employee.getEmergencyContactRelationship())
-                .timeIn(employee.getTimeIn())
-                .timeOut(employee.getTimeOut())
-                .shift(employee.getShift())
-                .permanentAddress(employee.getPermanentAddress())
-                .temporaryAddress(employee.getTemporaryAddress())
-                .build());
-        return response;
-    }
-
-    /**
-     * Map ProfileUpdateRequest DTO sang Employee entity (chỉ update các field trong profile)
-     * Chỉ update thông tin liên hệ, không update thông tin công việc
-     */
-    public void updateProfileFromRequest(Employee employee, ProfileUpdateRequest request) {
-        employee.setFullName(request.getFullName());
-        employee.setEmail(request.getEmail());
-        employee.setPhone(request.getPhone());
-        employee.setAddress(request.getAddress());
-        // Các field như department, position, hireDate, status, baseSalary không được update qua profile
-    }
-
-    /**
      * Map EmployeeRequest DTO sang Employee entity (chỉ mapping, không validate)
      */
     public void updateEmployeeFromRequest(Employee employee, EmployeeRequest request) {
         employee.setFullName(request.getFullName());
         employee.setEmail(request.getEmail());
         employee.setPhone(request.getPhone());
-        // Employee entity không có employeeCode field
         employee.setDepartment(request.getDepartment());
         employee.setPosition(request.getPosition());
         employee.setHireDate(request.getHireDate());
@@ -246,7 +197,6 @@ public class EmployeeMapper {
         dto.setBankAccount(null); // Not in entity
         dto.setBankName(null); // Not in entity
         dto.setBankBranch(null); // Not in entity
-        dto.setEmployeeCode(null); // Not in entity (removed)
         
         return dto;
     }

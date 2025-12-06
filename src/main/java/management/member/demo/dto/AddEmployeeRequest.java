@@ -1,10 +1,12 @@
 package management.member.demo.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import management.member.demo.converter.LocalTimeDeserializer;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -54,7 +56,7 @@ public class AddEmployeeRequest {
     @DecimalMin(value = "0.0", message = "Salary must be greater than or equal to 0")
     private BigDecimal salary; // VND
 
-    @Email(message = "Personal email must be valid")
+    @Email(message = "Personal email must be valid", regexp = "^$|^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
     @Size(max = 120, message = "Personal email must not exceed 120 characters")
     private String personalEmail;
 
@@ -74,9 +76,6 @@ public class AddEmployeeRequest {
 
     @Size(max = 50, message = "Employee ID must not exceed 50 characters")
     private String employeeId;
-
-    @Size(max = 50, message = "Employee code must not exceed 50 characters")
-    private String employeeCode;
 
     @Size(max = 50, message = "Contract code must not exceed 50 characters")
     private String contractCode;
@@ -113,9 +112,11 @@ public class AddEmployeeRequest {
     @Size(max = 50, message = "Emergency contact relationship must not exceed 50 characters")
     private String emergencyContactRelationship;
 
+    @JsonDeserialize(using = LocalTimeDeserializer.class)
     @JsonFormat(pattern = "HH:mm")
     private LocalTime timeIn;
 
+    @JsonDeserialize(using = LocalTimeDeserializer.class)
     @JsonFormat(pattern = "HH:mm")
     private LocalTime timeOut;
 

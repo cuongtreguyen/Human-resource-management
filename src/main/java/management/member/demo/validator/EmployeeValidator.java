@@ -4,7 +4,6 @@ import management.member.demo.enums.EmployeeStatus;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.dto.AddEmployeeRequest;
 import management.member.demo.dto.EmployeeRequest;
-import management.member.demo.dto.ProfileUpdateRequest;
 import management.member.demo.entity.Employee;
 import org.springframework.stereotype.Component;
 
@@ -61,8 +60,6 @@ public class EmployeeValidator {
         validateRequest(request);
         validateFullName(request.getFullName());
         validateEmail(request.getEmail());
-        // Employee entity không có employeeCode nữa, bỏ qua validation
-        // validateEmployeeCode(request.getEmployeeCode());
         validateDepartment(request.getDepartment());
         validatePosition(request.getPosition());
         validateHireDate(request.getHireDate());
@@ -147,15 +144,6 @@ public class EmployeeValidator {
     }
 
     /**
-     * Validate employeeCode
-     */
-    public void validateEmployeeCode(String employeeCode) {
-        if (employeeCode == null || employeeCode.trim().isEmpty()) {
-            throw ErrorCode.INVALID_EMPLOYEE_CODE.toException();
-        }
-    }
-
-    /**
      * Validate department
      */
     public void validateDepartment(String department) {
@@ -203,24 +191,6 @@ public class EmployeeValidator {
         }
     }
 
-    /**
-     * Validate ProfileUpdateRequest
-     */
-    public void validateProfileUpdateRequest(ProfileUpdateRequest request) {
-        if (request == null) {
-            throw ErrorCode.INVALID_REQUEST.toException();
-        }
-        if (request.getFullName() != null) {
-            validateFullName(request.getFullName());
-        }
-        if (request.getEmail() != null) {
-            validateEmail(request.getEmail());
-        }
-        if (request.getPhone() != null) {
-            validatePhone(request.getPhone());
-        }
-    }
-    
     /**
      * Validate AddEmployeeRequest - validate tất cả dữ liệu nhập từ người dùng
      */

@@ -8,8 +8,6 @@ import management.member.demo.dto.DeleteEmployeeResponseDTO;
 import management.member.demo.dto.EmployeeDetailDTO;
 import management.member.demo.dto.EmployeeDetailResponse;
 import management.member.demo.dto.EmployeeListResponse;
-import management.member.demo.dto.ProfileResponse;
-import management.member.demo.dto.ProfileUpdateRequest;
 import management.member.demo.dto.UpdateEmployeeRequest;
 import management.member.demo.dto.UpdateEmployeeResponseDTO;
 import management.member.demo.normalizer.EmployeeRequestNormalizer;
@@ -120,9 +118,9 @@ public class EmployeeController {
         return ResponseEntity.ok(stats);
     }
 
-    // Lấy thông tin nhân viên theo ID (hỗ trợ Long id hoặc employeeId)
+    // Lấy thông tin nhân viên theo employeeId (String, ví dụ: EMP001)
     @GetMapping("/{id}")
-    @Operation(summary = "Get employee by id", description = "Get employee information by id. Supports Long id or employeeId (String)")
+    @Operation(summary = "Get employee by employeeId", description = "Get employee information by employeeId (String, e.g., EMP001)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Employee not found")
@@ -135,9 +133,9 @@ public class EmployeeController {
         return ResponseEntity.ok(response);
     }
 
-    // Cập nhật thông tin nhân viên theo ID (hỗ trợ Long id hoặc employeeId)
+    // Cập nhật thông tin nhân viên theo employeeId (String, ví dụ: EMP001)
     @PutMapping("/{id}")
-    @Operation(summary = "Update employee", description = "Update employee information by id. Supports Long id or employeeId (String)")
+    @Operation(summary = "Update employee", description = "Update employee information by employeeId (String, e.g., EMP001). Only updates fields provided in request, other fields remain unchanged.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Updated successfully"),
             @ApiResponse(responseCode = "404", description = "Employee not found"),
@@ -154,36 +152,11 @@ public class EmployeeController {
         return ResponseEntity.ok(service.updateEmployeeById(id, request));
     }
 
-    // Lấy thông tin profile của nhân viên theo ID (bao gồm thông tin sliên hệ và công việc)
-    @GetMapping("/{id}/profile")
-    @Operation(summary = "Get employee profile", description = "Get employee profile information including contact and work details")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Employee not found")
-    })
-    public ResponseEntity<ProfileResponse> getProfile(@PathVariable Long id) {
-        return ResponseEntity.ok(service.getProfile(id));
-    }
-
-    // Cập nhật profile của nhân viên theo ID (chỉ cho phép update thông tin liên hệ)
-    @PutMapping("/{id}/profile")
-    @Operation(summary = "Update employee profile", description = "Update employee profile information (contact details only)")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Employee not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data")
-    })
-    public ResponseEntity<ProfileResponse> updateProfile(
-            @PathVariable Long id,
-            @Valid @RequestBody ProfileUpdateRequest request) {
-        return ResponseEntity.ok(service.updateProfile(id, request));
-    }
-
-    // Xóa nhân viên theo ID (hỗ trợ Long id hoặc employeeId)
+    // Xóa nhân viên theo employeeId (String, ví dụ: EMP001)
     @DeleteMapping("/{id}")
     @Operation(
             summary = "Delete employee",
-            description = "Xóa nhân viên theo ID. Supports Long id or employeeId (String)"
+            description = "Xóa nhân viên theo employeeId (String, e.g., EMP001)"
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Employee deleted successfully"),

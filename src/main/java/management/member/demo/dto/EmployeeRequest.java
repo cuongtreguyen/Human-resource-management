@@ -30,10 +30,6 @@ public class EmployeeRequest {
     private String phone;
 
     @NotBlank
-    @Size(max = 50)
-    private String employeeCode;
-
-    @NotBlank
     @Size(max = 100)
     private String department;
 

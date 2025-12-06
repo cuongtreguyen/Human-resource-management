@@ -11,7 +11,7 @@ import java.time.LocalTime;
 @Setter
 public class DailyAttendanceResponseDTO {
     private String id;  // Attendance ID (String format)
-    private String employeeId;  // Employee ID (String: employeeId or employeeCode)
+    private String employeeId;  // Employee ID (String)
     private String employeeName;
     
     @JsonFormat(pattern = "yyyy-MM-dd")

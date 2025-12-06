@@ -67,7 +67,6 @@ public class EmployeeService {
         employee.setPosition(request.getPosition());
         employee.setEmployeeId(request.getEmployeeId());
         employee.setRole(Role.EMPLOYEE);
-
         // Set các field bổ sung
         employee.setIdCardIssueDate(request.getIdCardIssueDate());
         employee.setIdCardIssuePlace(request.getIdCardIssuePlace());
@@ -111,8 +110,6 @@ public class EmployeeService {
             user.setFullName(saved.getFullName()); // Lưu fullName từ Employee
             user.setEmployeeId(saved.getEmployeeId()); // Lưu employeeId từ Employee
             user.setRole(Role.EMPLOYEE);
-            // Password: fullname (normalized như email) + "123"
-            // Ví dụ: "Nguyễn V L" -> password: "nguyenvl123"
             String passwordBase = generateEmailFromFullName(saved.getFullName()).replace("@company.com", "");
             String defaultPassword = passwordBase + "123";
             user.setPassword(passwordEncoder.encode(defaultPassword));
@@ -247,23 +244,154 @@ public class EmployeeService {
     public UpdateEmployeeResponseDTO updateEmployeeById(String id, UpdateEmployeeRequest request) {
         Employee employee = findEmployeeById(id);
 
-        if (request.getName() != null) {
-            employee.setFullName(request.getName());
+        // Partial update: Chỉ update các field được gửi trong request
+        // Các field không được gửi hoặc null sẽ giữ nguyên giá trị cũ
+        // Helper method để kiểm tra giá trị có phải placeholder từ Swagger không
+        // Swagger UI tự động điền "string" vào các field, cần bỏ qua những giá trị này
+        java.util.function.Predicate<String> isValidValue = value -> 
+            value != null && !value.trim().isEmpty() && !value.trim().equalsIgnoreCase("string");
+        
+        // Helper method để kiểm tra date có phải giá trị mặc định từ Swagger không
+        // Swagger UI tự động điền ngày hiện tại vào các field date, cần bỏ qua nếu là ngày hôm nay
+        java.util.function.Predicate<LocalDate> isValidDate = date -> 
+            date != null && !date.equals(LocalDate.now());
+        
+        // Update basic fields: chỉ update nếu có giá trị hợp lệ (không phải null, empty string, hoặc placeholder "string")
+        if (isValidValue.test(request.getName())) {
+            employee.setFullName(request.getName().trim());
         }
-        if (request.getPhone() != null) {
-            employee.setPhone(request.getPhone());
+        if (isValidValue.test(request.getFirstName())) {
+            employee.setFirstName(request.getFirstName().trim());
         }
-        if (request.getPosition() != null) {
-            employee.setPosition(request.getPosition());
+        if (isValidValue.test(request.getLastName())) {
+            employee.setLastName(request.getLastName().trim());
         }
-        if (request.getDepartment() != null) {
-            employee.setDepartment(request.getDepartment());
+        if (isValidValue.test(request.getPhone())) {
+            employee.setPhone(request.getPhone().trim());
         }
-        if (request.getEmail() != null && !request.getEmail().equals(employee.getEmail())) {
-            if (employeeRepository.existsByEmail(request.getEmail())) {
-                throw new IllegalArgumentException("Email already exists: " + request.getEmail());
+        if (isValidValue.test(request.getPosition())) {
+            employee.setPosition(request.getPosition().trim());
+        }
+        if (isValidValue.test(request.getDepartment())) {
+            employee.setDepartment(request.getDepartment().trim());
+        }
+        // Update email: chỉ update nếu email mới khác email hiện tại và không phải placeholder "string"
+        if (isValidValue.test(request.getEmail())) {
+            String newEmail = request.getEmail().trim();
+            if (!newEmail.equals(employee.getEmail())) {
+                if (employeeRepository.existsByEmail(newEmail)) {
+                    throw new IllegalArgumentException("Email already exists: " + newEmail);
+                }
+                employee.setEmail(newEmail);
             }
-            employee.setEmail(request.getEmail());
+        }
+        // Update personalEmail: chỉ update nếu có giá trị hợp lệ (không phải placeholder "string")
+        if (isValidValue.test(request.getPersonalEmail())) {
+            employee.setPersonalEmail(request.getPersonalEmail().trim());
+        }
+        // Update dateOfBirth: chỉ update nếu có giá trị và không phải ngày hiện tại (placeholder từ Swagger)
+        if (isValidDate.test(request.getDateOfBirth())) {
+            employee.setDateOfBirth(request.getDateOfBirth());
+        }
+        if (isValidValue.test(request.getGender())) {
+            employee.setGender(request.getGender().trim());
+        }
+        if (isValidValue.test(request.getEmployeeId())) {
+            employee.setEmployeeId(request.getEmployeeId().trim());
+        }
+        if (isValidValue.test(request.getIdNumber())) {
+            employee.setIdCard(request.getIdNumber().trim());
+        }
+        if (isValidValue.test(request.getTaxCode())) {
+            employee.setTaxCode(request.getTaxCode().trim());
+        }
+        if (isValidValue.test(request.getContractCode())) {
+            employee.setContractCode(request.getContractCode().trim());
+        }
+        if (isValidValue.test(request.getContractType())) {
+            employee.setContractType(request.getContractType().trim());
+        }
+        if (isValidValue.test(request.getPermanentAddress())) {
+            employee.setPermanentAddress(request.getPermanentAddress().trim());
+        }
+        if (isValidValue.test(request.getTemporaryAddress())) {
+            employee.setTemporaryAddress(request.getTemporaryAddress().trim());
+        }
+        // Update idCardIssueDate: chỉ update nếu có giá trị và không phải ngày hiện tại (placeholder từ Swagger)
+        if (isValidDate.test(request.getIdCardIssueDate())) {
+            employee.setIdCardIssueDate(request.getIdCardIssueDate());
+        }
+        if (isValidValue.test(request.getIdCardIssuePlace())) {
+            employee.setIdCardIssuePlace(request.getIdCardIssuePlace().trim());
+        }
+        if (isValidValue.test(request.getMaritalStatus())) {
+            employee.setMaritalStatus(request.getMaritalStatus().trim());
+        }
+        // Update employeeType: chỉ update nếu có giá trị hợp lệ (không phải placeholder "string")
+        if (request.getEmployeeType() != null && !request.getEmployeeType().trim().equalsIgnoreCase("string")) {
+            try {
+                employee.setEmployeeType(EmployeeType.valueOf(request.getEmployeeType().toUpperCase()));
+            } catch (IllegalArgumentException ignored) {
+                // Ignore if invalid enum value
+            }
+        }
+        if (isValidValue.test(request.getEmergencyContactName())) {
+            employee.setEmergencyContactName(request.getEmergencyContactName().trim());
+        }
+        if (isValidValue.test(request.getEmergencyContactPhone())) {
+            employee.setEmergencyContactPhone(request.getEmergencyContactPhone().trim());
+        }
+        if (isValidValue.test(request.getEmergencyContactRelationship())) {
+            employee.setEmergencyContactRelationship(request.getEmergencyContactRelationship().trim());
+        }
+        if (request.getTimeIn() != null) {
+            employee.setTimeIn(request.getTimeIn());
+        }
+        if (request.getTimeOut() != null) {
+            employee.setTimeOut(request.getTimeOut());
+        }
+        if (isValidValue.test(request.getShift())) {
+            employee.setShift(request.getShift().trim());
+        }
+        if (isValidValue.test(request.getWorkLocation())) {
+            employee.setWorkLocation(request.getWorkLocation().trim());
+        }
+        // Update startDate (hireDate): chỉ update nếu có giá trị và không phải ngày hiện tại (placeholder từ Swagger)
+        if (isValidDate.test(request.getStartDate())) {
+            employee.setHireDate(request.getStartDate());
+        }
+        // Update status: chỉ update nếu có giá trị hợp lệ (không phải placeholder "string")
+        if (request.getStatus() != null && !request.getStatus().trim().equalsIgnoreCase("string")) {
+            try {
+                employee.setStatus(EmployeeStatus.valueOf(request.getStatus().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid status: " + request.getStatus());
+            }
+        }
+        if (request.getSalary() != null) {
+            employee.setBaseSalary(request.getSalary());
+        }
+        if (isValidValue.test(request.getAddress())) {
+            employee.setAddress(request.getAddress().trim());
+        }
+        if (isValidValue.test(request.getManager())) {
+            employee.setManager(request.getManager().trim());
+        }
+        // Update role: chỉ update nếu có giá trị hợp lệ (không phải placeholder "string")
+        if (request.getRole() != null && !request.getRole().trim().equalsIgnoreCase("string")) {
+            try {
+                Role newRole = Role.valueOf(request.getRole().toUpperCase());
+                employee.setRole(newRole);
+                
+                // Cập nhật role trong bảng User nếu employee có user liên kết
+                if (employee.getUser() != null) {
+                    User user = employee.getUser();
+                    user.setRole(newRole);
+                    userRepository.save(user);
+                }
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("Invalid role: " + request.getRole());
+            }
         }
 
         Employee updated = employeeRepository.save(employee);
@@ -276,33 +404,6 @@ public class EmployeeService {
         response.setMessage("Employee updated successfully");
 
         return response;
-    }
-
-    public ProfileResponse getProfile(Long id) {
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + id));
-        return employeeMapper.toProfileResponse(employee);
-    }
-
-    public ProfileResponse updateProfile(Long id, ProfileUpdateRequest request) {
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + id));
-
-        if (request.getPhone() != null) {
-            employee.setPhone(request.getPhone());
-        }
-        // TODO: Add personalEmail field to UpdateEmployeeRequest if needed
-        // if (request.getPersonalEmail() != null) {
-        //     employee.setPersonalEmail(request.getPersonalEmail());
-        // }
-        if (request.getAddress() != null) {
-            employee.setAddress(request.getAddress());
-        }
-
-        Employee updated = employeeRepository.save(employee);
-        return employeeMapper.toProfileResponse(updated);
     }
 
     public DeleteEmployeeResponseDTO deleteEmployeeById(String id) {
@@ -400,26 +501,15 @@ public class EmployeeService {
 
 
     private Employee findEmployeeById(String id) {
-        // Try to parse as Long
-        try {
-            Long longId = Long.parseLong(id);
-            Optional<Employee> employee = employeeRepository.findById(longId);
-            if (employee.isPresent()) {
-                return employee.get();
-            }
-        } catch (NumberFormatException e) {
-            // Not a Long, try as employeeId or employeeCode
-        }
-
-        // Try as employeeId
+        // Chỉ tìm theo employeeId (String), ví dụ: EMP001, EMP002
         Optional<Employee> employee = employeeRepository.findByEmployeeId(id);
         if (employee.isPresent()) {
             return employee.get();
         }
 
-        // Employee entity không có employeeCode nữa, chỉ tìm theo employeeId hoặc Long id
+        // Không tìm thấy employee với employeeId này
         throw new ResourceNotFoundException(
-                ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + id);
+                ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với employeeId: " + id);
     }
 
     public java.util.Map<String, String> seniority(String employeeID) {

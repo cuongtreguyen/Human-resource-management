@@ -26,8 +26,7 @@ public class HttpStatusMapper {
         }
 
         // Employee conflicts
-        if (ErrorCode.EMPLOYEE_EMAIL_EXISTS.getCode().equals(errorCode) ||
-            ErrorCode.EMPLOYEE_CODE_EXISTS.getCode().equals(errorCode)) {
+        if (ErrorCode.EMPLOYEE_EMAIL_EXISTS.getCode().equals(errorCode)) {
             return HttpStatus.CONFLICT;
         }
 

@@ -11,7 +11,7 @@ import java.time.LocalTime;
 @Getter
 @Setter
 public class EmployeeDetailDTO {
-    private String id;  // employeeId or employeeCode
+    private String id;  // employeeId
     private String firstName;
     private String lastName;
     
@@ -43,7 +43,6 @@ public class EmployeeDetailDTO {
     private String permanentAddress;
     
     private String temporaryAddress;
-    private String employeeCode;
     private String contractCode;
     
     // Thông tin CMND/CCCD

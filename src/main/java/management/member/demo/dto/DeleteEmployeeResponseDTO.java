@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class DeleteEmployeeResponseDTO {
-    private String id;  // employeeId or employeeCode
+    private String id;  // employeeId
     private String message;
     private boolean success = true;
 }

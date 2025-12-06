@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 @Setter
 public class PayrollListItemDTO {
     private String id; // Payroll ID as string
-    private String employeeId; // Employee ID (String: employeeId or employeeCode)
+    private String employeeId; // Employee ID (String)
     private String employeeName;
     
     @JsonFormat(pattern = "yyyy-MM")
