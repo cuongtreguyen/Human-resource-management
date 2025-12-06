@@ -511,6 +511,7 @@ import {
 import fakeApi from '../../services/fakeApi';
 import { getRole, getUserInfo } from '../../utils/auth';
 import { logCreateLeave } from '../../utils/systemLogger';
+import { LEAVE_TYPE_OPTIONS, getLeaveTypeInfo as getLeaveTypeInfoFromConstants, LEAVE_TYPES } from '../../constants/leaveTypes';
 
 const LeaveRequest = () => {
   const navigate = useNavigate();
@@ -632,17 +633,11 @@ const LeaveRequest = () => {
   };
 
   const getLeaveTypeInfo = (type) => {
-    const types = {
-      'annual': { name: 'Nghỉ phép thường', color: 'blue', description: 'Nghỉ phép hàng năm, cần bàn giao công việc' },
-      'sick': { name: 'Nghỉ ốm', color: 'red', description: 'Nghỉ ốm, công việc cần xử lý khẩn cấp' },
-      'maternity': { name: 'Nghỉ thai sản', color: 'purple', description: 'Nghỉ thai sản dài hạn, cần kế hoạch chi tiết' },
-      'emergency': { name: 'Nghỉ khẩn cấp', color: 'orange', description: 'Nghỉ khẩn cấp, cần xử lý ngay lập tức' }
-    };
-    return types[type] || { name: 'Khác', color: 'gray', description: '' };
+    return getLeaveTypeInfoFromConstants(type);
   };
 
   const getDelegationStrategy = (leaveType, days) => {
-    if (leaveType === 'maternity' || days > 30) {
+    if (leaveType === LEAVE_TYPES.MATERNITY_LEAVE || days > 30) {
       return {
         strategy: 'Thay thế dài hạn',
         description: 'Cần tìm người thay thế dài hạn hoặc thuê ngoài',
@@ -756,12 +751,7 @@ const LeaveRequest = () => {
                   <div>
                     <Select
                       label="Loại nghỉ phép"
-                      options={[
-                        { value: 'annual', label: 'Nghỉ phép thường' },
-                        { value: 'sick', label: 'Nghỉ ốm' },
-                        { value: 'maternity', label: 'Nghỉ thai sản' },
-                        { value: 'emergency', label: 'Nghỉ khẩn cấp' }
-                      ]}
+                      options={LEAVE_TYPE_OPTIONS}
                       value={formData.leaveType}
                       onChange={(value) => handleInputChange('leaveType', value)}
                       error={errors.leaveType}

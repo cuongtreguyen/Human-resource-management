@@ -17,6 +17,7 @@ import fakeApi from '../../services/fakeApi';
 import { toast } from 'react-toastify';
 import { getRole } from '../../utils/auth';
 import { logApproveLeave, logRejectLeave } from '../../utils/systemLogger';
+import { getLeaveTypeName, getLeaveTypeColor } from '../../constants/leaveTypes';
 
 const LeaveDetail = () => {
     const { id } = useParams();
@@ -117,25 +118,6 @@ const LeaveDetail = () => {
         return statuses[status] || status;
     };
 
-    const getLeaveTypeColor = (type) => {
-        switch (type) {
-            case 'annual': return 'bg-blue-100 text-blue-800';
-            case 'sick': return 'bg-red-100 text-red-800';
-            case 'maternity': return 'bg-purple-100 text-purple-800';
-            case 'emergency': return 'bg-orange-100 text-orange-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    };
-
-    const getLeaveTypeName = (type) => {
-        const types = {
-            'annual': 'Nghỉ phép thường',
-            'sick': 'Nghỉ ốm',
-            'maternity': 'Nghỉ thai sản',
-            'emergency': 'Nghỉ khẩn cấp'
-        };
-        return types[type] || 'Khác';
-    };
 
     if (loading) {
         return (

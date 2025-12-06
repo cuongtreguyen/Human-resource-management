@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Calendar, User, Clock, FileText, AlertCircle, CheckCircle } from 'lucide-react';
+import { getLeaveTypeColor as getLeaveTypeColorFromConstants, getLeaveTypeName } from '../../constants/leaveTypes';
 
 const DelegationDetailModal = ({ delegation, isOpen, onClose }) => {
   if (!isOpen || !delegation) return null;
@@ -24,13 +25,17 @@ const DelegationDetailModal = ({ delegation, isOpen, onClose }) => {
   };
 
   const getLeaveTypeColor = (type) => {
-    switch (type) {
-      case 'maternity': return 'text-purple-600 bg-purple-100';
-      case 'annual': return 'text-blue-600 bg-blue-100';
-      case 'sick': return 'text-red-600 bg-red-100';
-      case 'emergency': return 'text-orange-600 bg-orange-100';
-      default: return 'text-gray-600 bg-gray-100';
+    // Chuyển đổi class names từ constants để phù hợp với format hiện tại
+    const colorClass = getLeaveTypeColorFromConstants(type);
+    // colorClass format: "bg-blue-100 text-blue-800"
+    // Cần format: "text-blue-600 bg-blue-100"
+    const parts = colorClass.split(' ');
+    if (parts.length === 2) {
+      const bg = parts[0]; // bg-blue-100
+      const text = parts[1].replace('-800', '-600'); // text-blue-600
+      return `${text} ${bg}`;
     }
+    return colorClass;
   };
 
   return (

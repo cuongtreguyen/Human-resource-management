@@ -24,6 +24,7 @@ import {
   X
 } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
+import { LEAVE_TYPES, LEAVE_TYPE_OPTIONS } from '../../constants/leaveTypes';
 
 const TaskDelegation = () => {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ const TaskDelegation = () => {
     delegatedToId: '',
     taskTitle: '',
     priority: 'medium',
-    leaveType: 'annual',
+    leaveType: LEAVE_TYPES.ANNUAL_LEAVE,
     startDate: '',
     endDate: '',
     reason: '',
@@ -220,7 +221,7 @@ const TaskDelegation = () => {
       delegatedToId: '',
       taskTitle: '',
       priority: 'medium',
-      leaveType: 'annual',
+      leaveType: LEAVE_TYPES.ANNUAL_LEAVE,
       startDate: '',
       endDate: '',
       reason: '',
@@ -662,10 +663,11 @@ const TaskDelegation = () => {
                         onChange={(e) => setNewDelegation({ ...newDelegation, leaveType: e.target.value })}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       >
-                        <option value="annual">Nghỉ phép thường</option>
-                        <option value="sick">Nghỉ ốm</option>
-                        <option value="maternity">Nghỉ thai sản</option>
-                        <option value="emergency">Nghỉ khẩn cấp</option>
+                        {LEAVE_TYPE_OPTIONS.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 

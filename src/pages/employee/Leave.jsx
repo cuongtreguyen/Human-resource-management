@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Send, Calendar, FileText, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import fakeApi from '../../services/fakeApi';
 import { getUserInfo } from '../../utils/auth';
+import { LEAVE_TYPES, LEAVE_TYPE_OPTIONS, getLeaveTypeName, getLeaveTypeColor } from '../../constants/leaveTypes';
 
 const EmployeeLeave = () => {
-  const [form, setForm] = useState({ type: 'annual', startDate: '', endDate: '', reason: '' });
+  const [form, setForm] = useState({ type: LEAVE_TYPES.ANNUAL_LEAVE, startDate: '', endDate: '', reason: '' });
   const [leaveHistory, setLeaveHistory] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ const EmployeeLeave = () => {
 
       await fakeApi.createLeaveRequest(leaveRequest);
       alert('Đã gửi yêu cầu nghỉ phép thành công!');
-      setForm({ type: 'annual', startDate: '', endDate: '', reason: '' });
+      setForm({ type: LEAVE_TYPES.ANNUAL_LEAVE, startDate: '', endDate: '', reason: '' });
       loadLeaveData(); // Refresh data
     } catch (err) {
       console.error('Error submitting leave:', err);
@@ -166,9 +167,9 @@ const EmployeeLeave = () => {
                   className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                   required
                 >
-                  <option value="annual">🌴 Nghỉ phép năm</option>
-                  <option value="sick">🏥 Nghỉ ốm</option>
-                  <option value="unpaid">💼 Nghỉ không lương</option>
+                  {LEAVE_TYPE_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
               
@@ -268,45 +269,41 @@ const EmployeeLeave = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {leaveHistory.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-2 rounded-lg ${
-                        item.type === 'annual' ? 'bg-green-100' :
-                        item.type === 'sick' ? 'bg-red-100' :
-                        'bg-gray-100'
+                {leaveHistory.map((item) => {
+                  // Lấy màu sắc từ constants (format: "bg-blue-100 text-blue-800")
+                  const colorClass = getLeaveTypeColor(item.type);
+                  const bgClass = colorClass.split(' ')[0]; // bg-blue-100
+                  const textClass = colorClass.split(' ')[1]?.replace('-800', '-600') || 'text-gray-600'; // text-blue-600
+
+                  return (
+                    <div key={item.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-2 rounded-lg ${bgClass}`}>
+                          <Calendar className={textClass} size={20} />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {new Date(item.startDate).toLocaleDateString('vi-VN')} - {new Date(item.endDate).toLocaleDateString('vi-VN')}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {getLeaveTypeName(item.type)} • {item.days} ngày
+                          </p>
+                        </div>
+                      </div>
+                      <span className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full ${
+                        item.status === 'approved' ? 'bg-green-100 text-green-700' :
+                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
                       }`}>
-                        <Calendar className={`${
-                          item.type === 'annual' ? 'text-green-600' :
-                          item.type === 'sick' ? 'text-red-600' :
-                          'text-gray-600'
-                        }`} size={20} />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {new Date(item.startDate).toLocaleDateString('vi-VN')} - {new Date(item.endDate).toLocaleDateString('vi-VN')}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {item.type === 'annual' ? 'Nghỉ phép năm' :
-                           item.type === 'sick' ? 'Nghỉ ốm' :
-                           item.type === 'unpaid' ? 'Không lương' :
-                           item.type === 'maternity' ? 'Thai sản' : 'Khác'} • {item.days} ngày
-                        </p>
-                      </div>
+                        {item.status === 'approved' && <CheckCircle2 size={14} />}
+                        {item.status === 'pending' && <Clock size={14} />}
+                        {item.status === 'rejected' && <XCircle size={14} />}
+                        {item.status === 'approved' ? 'Đã duyệt' :
+                         item.status === 'pending' ? 'Chờ duyệt' : 'Từ chối'}
+                      </span>
                     </div>
-                    <span className={`flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full ${
-                      item.status === 'approved' ? 'bg-green-100 text-green-700' :
-                      item.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {item.status === 'approved' && <CheckCircle2 size={14} />}
-                      {item.status === 'pending' && <Clock size={14} />}
-                      {item.status === 'rejected' && <XCircle size={14} />}
-                      {item.status === 'approved' ? 'Đã duyệt' :
-                       item.status === 'pending' ? 'Chờ duyệt' : 'Từ chối'}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
