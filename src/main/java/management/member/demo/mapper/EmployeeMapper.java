@@ -12,6 +12,8 @@ import management.member.demo.normalizer.config.GenderMappingConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -119,13 +121,25 @@ public class EmployeeMapper {
         dto.setEmail(employee.getEmail());
         dto.setPosition(employee.getPosition());
         dto.setDepartment(employee.getDepartment());
-        dto.setPhone(employee.getPhone());
-        // Convert status enum to lowercase string (ACTIVE -> active, ON_LEAVE -> on_leave)
+        dto.setSeniority(calculateSeniority(employee.getHireDate()));
         dto.setStatus(employee.getStatus() != null ? employee.getStatus().name().toLowerCase() : null);
-        dto.setAvatar("/api/placeholder/150/150"); // Placeholder avatar URL
         dto.setHireDate(employee.getHireDate());
-        dto.setSalary(employee.getBaseSalary());
         return dto;
+    }
+
+    private String calculateSeniority(LocalDate hireDate) {
+        if (hireDate == null) return "";
+        Period period = Period.between(hireDate, LocalDate.now());
+        int years = period.getYears();
+        int months = period.getMonths();
+
+        if (years == 0 && months == 0) return "Dưới 1 tháng";
+
+        String result = "";
+        if (years > 0) result += years + " năm ";
+        if (months > 0) result += months + " tháng";
+
+        return result.trim();
     }
 
     /**

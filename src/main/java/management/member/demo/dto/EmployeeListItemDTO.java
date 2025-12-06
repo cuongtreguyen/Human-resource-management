@@ -1,5 +1,6 @@
 package management.member.demo.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -8,45 +9,16 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class EmployeeListItemDTO {
-    private String id;  // employeeId or employeeCode as string
-    private String name;  // fullName
-    private String email;
-    private String position;
-    private String department;
-    private String phone;
-    private String status;  // lowercase: active, inactive, on_leave, terminated
-    private String avatar;  // placeholder URL
-    private LocalDate hireDate;
-    private BigDecimal salary;  // baseSalary
-    
-    // Additional fields for Frontend
-    private LocalDate dateOfBirth;
-    private String gender;
-    private String nationality;
-    private String idCard;  // Maps to idNumber in entity
-    private String address;  // Maps to permanentAddress in entity
-    private String maritalStatus;
-    private String employeeType;
-    private String contractType;
-    private String manager;
-    private String workLocation;
-    private String education;
-    private String educationDetails;
-    
-    // Emergency contact as nested object
-    private EmergencyContact emergencyContact;
-    
-    private String bankAccount;
-    private String bankName;
-    private String bankBranch;
-    
-    @Getter
-    @Setter
-    public static class EmergencyContact {
-        private String name;
-        private String relationship;
-        private String phone;
-    }
+    // 1. Các trường hiển thị trên UI
+    private String id;          // Dùng để làm ID thao tác (nút con mắt)
+    private String name;        // Cột "TÊN NHÂN VIÊN"
+    private String email;       // Dòng dưới tên nhân viên
+    private String department;  // Cột "PHÒNG BAN"
+    private String position;    // Cột "CHỨC VỤ"
+    private LocalDate hireDate; // Cột "NGÀY BẮT ĐẦU" (FE sẽ tự tính thâm niên từ ngày này)
+    private String seniority;
+    private String status;      // Cột "TRẠNG THÁI"
 }
 

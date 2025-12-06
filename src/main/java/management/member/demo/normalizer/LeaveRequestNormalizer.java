@@ -41,27 +41,31 @@ public class LeaveRequestNormalizer implements RequestNormalizer<CreateLeaveRequ
     @Override
     public void normalize(CreateLeaveRequestDTO request) {
         if (request == null) {
-            logger.warn("CreateLeaveRequestDTO is null, skipping normalization");
             return;
         }
 
         try {
-            // Note: CreateLeaveRequestDTO hiện tại chỉ có field "type" và "days"
-            // Nếu FE gửi "leaveType" hoặc "leaveDays", cần dùng Jackson @JsonProperty để map
-            // Hoặc tạo FlexibleCreateLeaveRequestDTO riêng để nhận flexible input
-            
-            // Normalize tasks: extract task IDs nếu là objects
-            if (request.getTasks() != null && !request.getTasks().isEmpty()) {
-                int originalSize = request.getTasks().size();
-                List<String> taskIds = extractTaskIds(request.getTasks());
-                request.setTasks(taskIds);
-                if (taskIds.size() != originalSize) {
-                    logger.debug("Normalized tasks: {} items → {} task IDs", originalSize, taskIds.size());
-                }
+            // 1. Normalize Employee ID
+            if (request.getEmployeeId() != null) {
+                request.setEmployeeId(request.getEmployeeId().trim());
             }
+
+            // 2. Normalize Type (Quan trọng: chuyển về chữ hoa để switch-case trong Service hoạt động tốt)
+            if (request.getType() != null) {
+                // Ví dụ: "  Annual  " -> "ANNUAL"
+                request.setType(request.getType().trim().toUpperCase());
+            }
+
+            // 3. Normalize Reason
+            if (request.getReason() != null) {
+                request.setReason(request.getReason().trim());
+            }
+
+            // Note: Đã xóa logic xử lý 'tasks' vì field này không còn trong DTO và UI
+
         } catch (Exception e) {
             logger.error("Error normalizing CreateLeaveRequestDTO: {}", e.getMessage(), e);
-            throw new IllegalArgumentException("Failed to normalize leave request: " + e.getMessage(), e);
+            // Không ném lỗi để flow vẫn tiếp tục, data xấu thì Validator sẽ bắt sau
         }
     }
 

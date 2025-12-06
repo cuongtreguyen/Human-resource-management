@@ -1,5 +1,6 @@
 package management.member.demo.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -11,23 +12,23 @@ import java.util.List;
 @Getter
 @Setter
 public class CreateLeaveRequestDTO {
-    @NotBlank(message = "Employee ID is required")
+    @NotBlank(message = "Vui lòng cung cấp ID nhân viên")
     private String employeeId;
-    
-    @NotBlank(message = "Leave type is required")
-    private String type; // "annual", "sick", "unpaid", "special"
-    
-    @NotNull(message = "Start date is required")
-    private LocalDate startDate;
-    
-    @NotNull(message = "End date is required")
-    private LocalDate endDate;
-    
-    private Integer days; // Optional, will be calculated if not provided
-    
-    private String reason;
-    private String emergencyContact;
-    private List<String> tasks; // Optional task IDs
-    private String delegateTo; // Optional employee ID to delegate tasks to
-}
 
+    // Dropdown "Loại nghỉ phép"
+    @NotBlank(message = "Vui lòng chọn loại nghỉ phép")
+    private String type;
+
+    // Datepicker "Ngày bắt đầu"
+    @NotNull(message = "Vui lòng chọn ngày bắt đầu")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate startDate;
+
+    // Datepicker "Ngày kết thúc"
+    @NotNull(message = "Vui lòng chọn ngày kết thúc")
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate endDate;
+
+    // Textarea "Lý do nghỉ phép"
+    private String reason;
+}

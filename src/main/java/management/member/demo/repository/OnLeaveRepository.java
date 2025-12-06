@@ -27,4 +27,7 @@ public interface OnLeaveRepository extends JpaRepository<OnLeave, Long> {
     List<OnLeave> findByEmployeeIdAndDateRange(@Param("employeeId") Long employeeId, 
                                                 @Param("startDate") LocalDate startDate, 
                                                 @Param("endDate") LocalDate endDate);
+    // Trong interface OnLeaveRepository
+    @Query("SELECT r.onLeaveStatus, COUNT(r) FROM OnLeave r GROUP BY r.onLeaveStatus")
+    List<Object[]> countRequestGroupedByStatus();
 }

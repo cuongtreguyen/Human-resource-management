@@ -25,11 +25,19 @@ public class OnLeave {
     Employee employee;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "on_leave_type", nullable = false)
     private OnLeaveType onLeaveType;
+
     @Enumerated(EnumType.STRING)
+    @Column(name = "on_leave_status", nullable = false)
     private OnLeaveStatus onLeaveStatus;
+
+    @Column(name = "start_date")
     private LocalDate startDate;
+
+    @Column(name = "end_date")
     private LocalDate endDate;
+
     private String reason;
     @Column(name = "submitted_date")
     LocalDate submittedDate;

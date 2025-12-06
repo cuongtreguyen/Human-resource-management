@@ -9,25 +9,17 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class LeaveListItemDTO {
-    private String id; // Leave ID as string
-    private String employeeId; // Employee ID (String)
+    private String id;
+    private String employeeId;
     private String employeeName;
-    private String type; // "annual", "sick", "unpaid", "special"
-    
+    private String department;
+    private String type;
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate startDate;
-    
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate endDate;
-    
-    private Integer days; // Number of days
+    private Integer days;
     private String reason;
-    private String status; // "pending", "approved", "rejected", "cancelled"
-    
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private LocalDate submittedDate;
-    
-    private String approvedBy; // Can be null
-    private String department; // Department name
+    private String status;
 }
 

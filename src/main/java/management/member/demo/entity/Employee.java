@@ -140,7 +140,8 @@ public class Employee {
     private String idCardIssuePlace;
 
     /** Số ngày nghỉ phép còn lại trong năm */
-    private int remainingLeaveDays = 12;
+    @Column(name = "remaining_leave_days")
+    private Integer remainingLeaveDays = 12; // Mặc định 12 ngày
 
 
     /** Quản lý trực tiếp */

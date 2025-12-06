@@ -130,63 +130,81 @@ public class OnLeaveService {
     /**
      * Create a new leave request
      */
-    public CreateLeaveResponseDTO createLeaveRequest(CreateLeaveRequestDTO request) {
+    /**
+     * TẠO ĐƠN NGHỈ PHÉP (Hàm hợp nhất - Dùng cho cả Mobile và Web)
+     */
+    public CreateLeaveResponseDTO createLeaveRequestForManager(CreateLeaveRequestDTO request) {
+        // 1. Tìm nhân viên
         Long employeeId = Long.parseLong(request.getEmployeeId());
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + request.getEmployeeId()));
-        
+
         OnLeave onLeave = new OnLeave();
         onLeave.setEmployee(employee);
-        // Map frontend type to enum
-        String typeUpper = request.getType().toUpperCase();
+
+        // 2. Xử lý Loại nghỉ phép (Logic mapping thông minh)
+        String typeInput = request.getType() != null ? request.getType().trim().toUpperCase() : "CASUAL";
         OnLeaveType leaveType;
-        switch (typeUpper) {
-            case "ANNUAL":
+
+        switch (typeInput) {
+            case "ANNUAL": case "ANNUAL_LEAVE": case "NGHỈ PHÉP NĂM": case "PHÉP NĂM":
                 leaveType = OnLeaveType.ANNUAL_LEAVE;
                 break;
-            case "SICK":
+            case "SICK": case "SICK_LEAVE": case "NGHỈ ỐM":
                 leaveType = OnLeaveType.SICK_LEAVE;
                 break;
-            case "UNPAID":
-                leaveType = OnLeaveType.UNPAID_LEAVE;
+            case "MATERNITY": case "MATERNITY_LEAVE": case "THAI SẢN": case "NGHỈ THAI SẢN":
+                leaveType = OnLeaveType.MATERNITY_LEAVE;
                 break;
-            case "SPECIAL":
-                leaveType = OnLeaveType.CASUAL_LEAVE;
+            case "BEREAVEMENT": case "BEREAVEMENT_LEAVE": case "NGHỈ TANG": case "TANG CHẾ":
+                leaveType = OnLeaveType.BEREAVEMENT_LEAVE;
                 break;
+            case "MARRIAGE": case "MARRIAGE_LEAVE": case "WEDDING": case "NGHỈ CƯỚI":
+                leaveType = OnLeaveType.MARRIAGE_LEAVE;
+                break;
+            case "STUDY": case "STUDY_LEAVE": case "TRAINING": case "HỌC TẬP":
+                leaveType = OnLeaveType.STUDY_LEAVE;
+                break;
+            case "CASUAL": case "CASUAL_LEAVE": case "SPECIAL": case "VIỆC RIÊNG":
             default:
                 try {
-                    leaveType = OnLeaveType.valueOf(typeUpper + "_LEAVE");
+                    leaveType = OnLeaveType.valueOf(typeInput);
                 } catch (IllegalArgumentException e) {
-                    leaveType = OnLeaveType.CASUAL_LEAVE; // Default
+                    try {
+                        leaveType = OnLeaveType.valueOf(typeInput + "_LEAVE");
+                    } catch (IllegalArgumentException ex) {
+                        leaveType = OnLeaveType.CASUAL_LEAVE;
+                    }
                 }
         }
         onLeave.setOnLeaveType(leaveType);
+
+        // 3. Gán dữ liệu từ Request
         onLeave.setStartDate(request.getStartDate());
         onLeave.setEndDate(request.getEndDate());
         onLeave.setReason(request.getReason());
-        onLeave.setOnLeaveStatus(OnLeaveStatus.PENDING);
-        
-        // Tính toán và lưu totalDaysOnleave
+
+        // 4. Gán dữ liệu hệ thống (Mặc định)
+        onLeave.setOnLeaveStatus(OnLeaveStatus.PENDING); // Chờ duyệt
+        onLeave.setSubmittedDate(LocalDate.now());       // Ngày nộp là hôm nay
+
+        // 5. Tính toán tổng số ngày
         calculateAndSetTotalDaysOnleave(onLeave);
-        
+
+        // 6. Lưu xuống DB
         OnLeave saved = onLeaveRepository.save(onLeave);
-        
+
+        // 7. Tạo Response (Sử dụng hàm Mapper để tái sử dụng code)
         CreateLeaveResponseDTO response = new CreateLeaveResponseDTO();
-        CreateLeaveResponseDTO.LeaveData data = new CreateLeaveResponseDTO.LeaveData();
-        data.setId(saved.getId().toString());
-        data.setEmployeeId(saved.getEmployee().getId().toString());
-        data.setType(request.getType());
-        data.setStartDate(saved.getStartDate());
-        data.setEndDate(saved.getEndDate());
-        data.setDays((int) getTotalDays(saved));
-        data.setStatus(saved.getOnLeaveStatus().name().toLowerCase());
-        data.setSubmittedDate(LocalDate.now());
-        
-        response.setData(data);
+
+        // --- GỌI HÀM MAPPER Ở ĐÂY ---
+        response.setData(toLeaveListItemDTO(saved));
+        // -----------------------------
+
         response.setSuccess(true);
-        response.setMessage("Leave request submitted successfully");
-        
+        response.setMessage("Tạo đơn nghỉ phép thành công!");
+
         return response;
     }
 
@@ -358,21 +376,6 @@ public class OnLeaveService {
     }
 
     // Legacy methods for backward compatibility
-    
-    public OnLeaveResponse createOnLeave(OnLeaveRequest request) {
-        Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + request.getEmployeeId()));
-        
-        OnLeave onLeave = onLeaveMapper.toOnLeave(request);
-        onLeave.setEmployee(employee);
-        
-        // Tính toán và lưu totalDaysOnleave
-        calculateAndSetTotalDaysOnleave(onLeave);
-        
-        OnLeave saved = onLeaveRepository.save(onLeave);
-        return onLeaveMapper.toOnLeaveResponse(saved);
-    }
 
     public List<OnLeaveListResponse> getLeaveListByID(Long id) {
         List<OnLeave> leaves = onLeaveRepository.findByEmployeeId(id);
@@ -419,26 +422,54 @@ public class OnLeaveService {
     private LeaveListItemDTO toLeaveListItemDTO(OnLeave leave) {
         LeaveListItemDTO dto = new LeaveListItemDTO();
         dto.setId(leave.getId().toString());
-        dto.setEmployeeId(leave.getEmployee().getId().toString());
-        dto.setEmployeeName(leave.getEmployee().getFullName());
+        Employee emp = leave.getEmployee();
+        if (emp != null) {
+            String code = emp.getEmployeeId() != null ? emp.getEmployeeId() : String.valueOf(emp.getId());
+            dto.setEmployeeId(code);
+            dto.setEmployeeName(emp.getFullName());
+            dto.setDepartment(emp.getDepartment());
+        }
         dto.setType(leave.getOnLeaveType().name().toLowerCase());
         dto.setStartDate(leave.getStartDate());
         dto.setEndDate(leave.getEndDate());
         dto.setDays((int) getTotalDays(leave));
         dto.setReason(leave.getReason());
         dto.setStatus(leave.getOnLeaveStatus().name().toLowerCase());
-        dto.setSubmittedDate(leave.getStartDate()); // Use startDate as submittedDate
-        if (leave.getEmployee().getDepartment() != null) {
-            dto.setDepartment(leave.getEmployee().getDepartment());
-        }
         return dto;
     }
 
-    public long countLeaveReqByStatus(OnLeaveStatus status){
-        if(status == null){
-            return onLeaveRepository.count();
+    public Map<String, Long> countLeaveReq() {
+        // 1. Khởi tạo Map với giá trị mặc định là 0 cho tất cả trạng thái
+        Map<String, Long> stats = new HashMap<>();
+
+        // Giả sử Enum của bạn là: PENDING, APPROVED, REJECTED
+        // Khởi tạo trước để nếu DB không có dòng nào thì FE vẫn nhận được số 0 thay vì null
+        stats.put("PENDING", 0L);
+        stats.put("APPROVED", 0L);
+        stats.put("REJECTED", 0L);
+        // ... thêm các status khác nếu có (VD: CANCELLED)
+
+        // 2. Gọi DB lấy dữ liệu Group By
+        List<Object[]> results = onLeaveRepository.countRequestGroupedByStatus();
+
+        long totalCount = 0;
+
+        // 3. Đổ dữ liệu từ DB vào Map
+        for (Object[] result : results) {
+            // result[0] là Enum (Status), result[1] là Long (Count)
+            if (result[0] != null) {
+                String statusName = ((OnLeaveStatus) result[0]).name();
+                Long count = (Long) result[1];
+
+                stats.put(statusName, count);
+                totalCount += count;
+            }
         }
-        return onLeaveRepository.countByOnLeaveStatus(status);
+
+        // 4. Thêm tổng số đơn (để hiển thị ô đầu tiên bên trái dashboard)
+        stats.put("TOTAL", totalCount);
+
+        return stats;
     }
 
     public OnLeaveResponse getLeaveReqByID(String id) {
@@ -450,11 +481,35 @@ public class OnLeaveService {
     public void setLeaveStatusByID(String id, OnLeaveStatus status) {
         OnLeave onleave = onLeaveRepository.findById(Long.parseLong(id))
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
+
         switch (status) {
             case APPROVED -> {
                 User currentUser = authService.getCurrentUser();
                 if(currentUser.getRole() == Role.MANAGER) {
                     if (onleave.getOnLeaveStatus() == OnLeaveStatus.PENDING) {
+
+                        // --- [BẮT ĐẦU LOGIC TRỪ PHÉP] ---
+                        // Chỉ trừ nếu là Nghỉ phép năm
+                        if (onleave.getOnLeaveType() == OnLeaveType.ANNUAL_LEAVE) {
+                            Employee employee = onleave.getEmployee();
+
+                            // Lấy số ngày nghỉ của đơn này
+                            long daysRequested = getTotalDays(onleave);
+
+                            // Lấy số dư hiện tại (nếu null coi như 0)
+                            int currentBalance = employee.getRemainingLeaveDays() != null ? employee.getRemainingLeaveDays() : 0;
+
+                            // (Tuỳ chọn) Kiểm tra xem còn đủ phép không
+                            if (currentBalance < daysRequested) {
+                                throw new ResourceNotFoundException("Nhân viên không đủ ngày phép năm. (Còn lại: " + currentBalance + ", Yêu cầu: " + daysRequested + ")");
+                            }
+
+                            // Trừ phép và cập nhật Employee
+                            employee.setRemainingLeaveDays(currentBalance - (int) daysRequested);
+                            employeeRepository.save(employee);
+                        }
+                        // --- [KẾT THÚC LOGIC TRỪ PHÉP] ---
+
                         onleave.setOnLeaveStatus(OnLeaveStatus.APPROVED);
                         onLeaveRepository.save(onleave);
                     } else {
@@ -487,10 +542,13 @@ public class OnLeaveService {
             case CANCELLED -> {
                 User currentUser = authService.getCurrentUser();
                 if(currentUser.getRole() == Role.EMPLOYEE) {
+                    // Logic Hủy đơn: Chỉ cho hủy khi đang Pending
                     if (onleave.getOnLeaveStatus() == OnLeaveStatus.PENDING) {
                         onleave.setOnLeaveStatus(OnLeaveStatus.CANCELLED);
                         onLeaveRepository.save(onleave);
-                    } else {
+                    }
+                    // Nếu bạn muốn cho phép hủy đơn ĐÃ DUYỆT thì phải cộng lại ngày phép ở đây
+                    else {
                         throw new ResourceNotFoundException("Status not valid");
                     }
                 }

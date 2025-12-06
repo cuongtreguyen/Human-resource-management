@@ -40,19 +40,19 @@ public class OnLeaveController {
     }
 
     @PostMapping
-    @Operation(summary = "Create leave request", description = "Create a new leave request")
+    @Operation(summary = "Tạo yêu cầu nghỉ phép mới dành cho manager", description = "Create a new leave request")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Leave request created successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request data")
     })
-    public ResponseEntity<CreateLeaveResponseDTO> createLeaveRequest(
+    public ResponseEntity<CreateLeaveResponseDTO> createLeaveRequestForManager(
             @Valid @RequestBody CreateLeaveRequestDTO request) {
         // Normalize request từ FE format → BE format
         // FE có thể gửi: tasks (objects) → normalizer sẽ extract task IDs
         normalizer.normalize(request);
         
         // Service chỉ nhận input đã normalize
-        CreateLeaveResponseDTO response = service.createLeaveRequest(request);
+        CreateLeaveResponseDTO response = service.createLeaveRequestForManager(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -107,12 +107,6 @@ public class OnLeaveController {
         return ResponseEntity.ok(response);
     }
 
-    // Keep old endpoints for backward compatibility
-    @PostMapping("/create")
-    public ResponseEntity<OnLeaveResponse> createOnLeave(@Valid @RequestBody OnLeaveRequest request) {
-        return ResponseEntity.ok(service.createOnLeave(request));
-    }
-
     @GetMapping("/getLeaveListByID/{id}")
     @Operation(summary = "Lấy danh sách đơn xin nghỉ theo ID", description = "Get leave requests for an employee by ID")
     @ApiResponses({
@@ -152,13 +146,15 @@ public class OnLeaveController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/countOnLeaveReq/{status}")
-    @Operation(summary = "Đếm số đơn xin nghỉ", description = "Count pending leave requests")
+    @GetMapping("/leave-statistics") // Đổi tên endpoint cho đúng ý nghĩa
+    @Operation(summary = "Thống kê số lượng đơn xin nghỉ theo từng trạng thái",
+            description = "Trả về Map chứa: TOTAL, PENDING, APPROVED, REJECTED...")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success")
     })
-    public ResponseEntity<Long> countOnLeaveReq(@RequestParam(required = false) OnLeaveStatus status) {
-        return ResponseEntity.ok(service.countLeaveReqByStatus(status));
+    public ResponseEntity<Map<String, Long>> getLeaveStatistics() {
+        // Gọi hàm service vừa viết ở bước trước
+        return ResponseEntity.ok(service.countLeaveReq());
     }
 
     @GetMapping("/getLeaveReqByID/{id}")
@@ -172,13 +168,18 @@ public class OnLeaveController {
     }
 
     @PutMapping("/setLeaveStatus/{leaveId}")
-    @Operation(summary = "Set leave status", description = "Set leave status")
+    @Operation(summary = "Duyệt hoặc Từ chối đơn nghỉ phép", description = "Update leave status (APPROVED, REJECTED...)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Employee not found")
+            @ApiResponse(responseCode = "404", description = "Leave request not found")
     })
-    public ResponseEntity<OnLeaveResponse> setLeaveStatus(@PathVariable String leaveId, @RequestParam("status") OnLeaveStatus status) {
-        return ResponseEntity.ok(service.updateOnLeaveStatus(Long.parseLong(leaveId), status));
+    public ResponseEntity<OnLeaveResponse> setLeaveStatus(
+            @PathVariable String leaveId,
+            @RequestParam("status") OnLeaveStatus status) {
+        service.setLeaveStatusByID(leaveId, status);
+        OnLeaveResponse updatedResponse = service.getLeaveReqByID(leaveId);
+
+        return ResponseEntity.ok(updatedResponse);
     }
 
     /**
@@ -217,4 +218,5 @@ public class OnLeaveController {
         LeaveApplicationDetailForAccountantDTO result = service.getLeaveApplicationDetailForAccountant(leaveId);
         return ResponseEntity.ok(result);
     }
+
 }
