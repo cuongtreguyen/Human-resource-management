@@ -16,7 +16,8 @@ import {
   Calendar,
   MessageSquare
 } from 'lucide-react';
-import fakeApi from '../../services/fakeApi';
+import { getLeaveRequests } from '../../services/leaveService';
+import { getAllEmployees } from '../../services/employeeService';
 import { toast } from 'react-toastify';
 import { getRole } from '../../utils/auth';
 import { logApproveLeave, logRejectLeave } from '../../utils/systemLogger';
@@ -66,14 +67,31 @@ const LeaveManagement = () => {
     try {
       setLoading(true);
       const [employeesRes, leaveRequestsRes] = await Promise.all([
-        fakeApi.getEmployees(),
-        fakeApi.getLeaveRequests()
+        getAllEmployees(),
+        getLeaveRequests()
       ]);
 
-      setEmployees(employeesRes.data);
-      setLeaveRequests(leaveRequestsRes.data);
-    } catch {
-      console.error('Error loading data');
+      // API trả về array trực tiếp hoặc { data: [...] }
+      setEmployees(Array.isArray(employeesRes) ? employeesRes : employeesRes.data || []);
+
+      // Map data từ API sang format FE
+      const leaveData = Array.isArray(leaveRequestsRes) ? leaveRequestsRes : leaveRequestsRes.data || [];
+      const mappedLeaves = leaveData.map(leave => ({
+        id: leave.leaveId || leave.id,
+        employeeId: leave.employeeId,
+        employeeName: leave.employeeName || leave.fullName || 'N/A',
+        department: leave.department || 'Chưa xác định',
+        type: leave.leaveType || leave.type,
+        startDate: leave.startDate,
+        endDate: leave.endDate,
+        days: leave.days || leave.totalDays || 1,
+        reason: leave.reason || '',
+        status: (leave.status || 'PENDING').toLowerCase(),
+      }));
+      setLeaveRequests(mappedLeaves);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      toast.error('Không thể tải dữ liệu');
     } finally {
       setLoading(false);
     }

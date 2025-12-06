@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calculator, DollarSign, Clock, Gift, AlertTriangle } from 'lucide-react';
 import { getRole } from '../../utils/auth';
-import fakeApi from '../../services/fakeApi';
 import { toast } from 'react-toastify';
+import { calculatePayroll as calculatePayrollAPI, getPayrollCalculation, createPayroll } from '../../services/payrollService';
+import { getEmployeeById } from '../../services/employeeService';
 
 const PayrollCalculation = () => {
   const { employeeId } = useParams();
@@ -36,36 +37,111 @@ const PayrollCalculation = () => {
 
   useEffect(() => {
     loadEmployee();
+    loadExistingCalculation();
   }, [employeeId]);
+
+  // Load existing payroll calculation if available
+  const loadExistingCalculation = async () => {
+    try {
+      const calculation = await getPayrollCalculation(employeeId);
+
+      if (calculation) {
+        // Pre-fill form with existing data
+        setCalculatedPayroll({
+          basicSalary: calculation.baseSalary,
+          overtimeHours: calculation.otHours,
+          allowances: calculation.allowance,
+          bonuses: calculation.bonus,
+          generalDeductions: calculation.generalDeductions,
+          grossIncome: calculation.grossIncome,
+          socialInsurance: calculation.socialInsurance,
+          healthInsurance: calculation.healthInsurance,
+          unemploymentInsurance: calculation.unemploymentInsurance,
+          personalIncomeTax: calculation.personalIncomeTax,
+          totalDeductions: calculation.totalDeductions,
+          netSalary: calculation.netSalary
+        });
+      }
+    } catch (err) {
+      // No existing calculation, that's ok
+      console.log('No existing calculation found');
+    }
+  };
 
   const loadEmployee = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getEmployees();
-      const employees = response.data || [];
-      const emp = employees.find(e => e.id === employeeId || e.id === String(employeeId));
+
+      // Call API to get employee by ID
+      const emp = await getEmployeeById(employeeId);
 
       if (emp) {
         setEmployee(emp);
         setFormData({
-          basicSalary: emp.basicSalary || 10000000,
+          basicSalary: emp.basicSalary || emp.salary || 10000000,
           workingDays: emp.workingDays || 22,
           lateDays: emp.lateDays || 0,
           overtimeHours: emp.overtimeHours || 0,
-          allowances: emp.allowances?.reduce((sum, a) => sum + a.amount, 0) || 1000000,
+          allowances: emp.allowances?.reduce((sum, a) => sum + a.amount, 0) || emp.allowance || 1000000,
           deductions: 0,
-          bonuses: emp.bonuses || 0
+          bonuses: emp.bonuses || emp.bonus || 0
         });
       }
     } catch (error) {
       console.error('Error loading employee:', error);
-      toast.error('Không thể tải thông tin nhân viên');
+      toast.error(error.message || 'Không thể tải thông tin nhân viên');
+      // Không navigate để user có thể retry
     } finally {
       setLoading(false);
     }
   };
 
-  const calculatePayroll = () => {
+  const calculatePayroll = async () => {
+    try {
+      // Prepare request data theo API spec
+      const requestData = {
+        employeeId: Number(employeeId),
+        fullName: employee?.name || '',
+        baseSalary: Number(formData.basicSalary) || 0,
+        otHours: Number(formData.overtimeHours) || 0,
+        dayOff: String(formData.lateDays),
+        lateDay: String(formData.lateDays),
+        allowance: Number(formData.allowances) || 0,
+        generalDeductions: Number(formData.deductions) || 0,
+        bonus: Number(formData.bonuses) || 0
+      };
+
+      // Call API to calculate payroll
+      const response = await calculatePayrollAPI(requestData);
+
+      // Map response to calculatedPayroll state
+      setCalculatedPayroll({
+        ...response,
+        basicSalary: response.baseSalary,
+        workingDays: formData.workingDays,
+        lateDays: formData.lateDays,
+        overtimeHours: response.otHours,
+        allowances: response.allowance,
+        bonuses: response.bonus,
+        deductions: response.generalDeductions,
+        adjustedBasicSalary: response.baseSalary, // API không trả adjusted, dùng baseSalary
+        overtimePay: response.otHours * (response.baseSalary / 22 / 8) * 1.5, // Tính từ otHours
+        generalDeductions: response.generalDeductions,
+        grossIncome: response.grossIncome,
+        netSalary: response.netSalary
+      });
+
+      toast.success('Đã tính lương thành công!');
+    } catch (err) {
+      console.error('Error calculating payroll:', err);
+      toast.error(err.message || 'Không thể tính lương. Vui lòng thử lại!');
+
+      // Fallback to local calculation
+      calculatePayrollLocally();
+    }
+  };
+
+  const calculatePayrollLocally = () => {
     const basicSalary = Number(formData.basicSalary) || 0;
     const workingDays = Number(formData.workingDays) || 22;
     const lateDays = Number(formData.lateDays) || 0;
@@ -104,11 +180,32 @@ const PayrollCalculation = () => {
     }
 
     try {
-      // TODO: Call API to save payroll
+      // Prepare payroll data to save
+      const payrollData = {
+        employeeId: Number(employeeId),
+        fullName: employee?.name || '',
+        email: employee?.email || '',
+        department: employee?.department || '',
+        baseSalary: calculatedPayroll.basicSalary,
+        otHours: calculatedPayroll.overtimeHours,
+        otPay: calculatedPayroll.overtimePay,
+        allowance: calculatedPayroll.allowances,
+        bonus: calculatedPayroll.bonuses,
+        generalDeductions: calculatedPayroll.generalDeductions,
+        dayOff: String(formData.lateDays),
+        lateDay: String(formData.lateDays),
+        grossIncome: calculatedPayroll.grossIncome,
+        netSalary: calculatedPayroll.netSalary
+      };
+
+      // Call API to create payroll
+      await createPayroll(payrollData);
+
       toast.success(`Đã lưu bảng lương cho ${employee?.name}`);
       navigate('/payroll');
     } catch (error) {
-      toast.error('Không thể lưu bảng lương');
+      console.error('Error saving payroll:', error);
+      toast.error(error.message || 'Không thể lưu bảng lương');
     }
   };
 
@@ -315,29 +412,72 @@ const PayrollCalculation = () => {
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <h3 className="font-semibold text-red-800 mb-3">Khấu trừ</h3>
                 <div className="space-y-2 text-sm">
+                  {calculatedPayroll.socialInsurance && (
+                    <div className="flex justify-between">
+                      <span>BHXH (8%):</span>
+                      <span className="font-medium">{calculatedPayroll.socialInsurance.toLocaleString()} VND</span>
+                    </div>
+                  )}
+                  {calculatedPayroll.healthInsurance && (
+                    <div className="flex justify-between">
+                      <span>BHYT (1.5%):</span>
+                      <span className="font-medium">{calculatedPayroll.healthInsurance.toLocaleString()} VND</span>
+                    </div>
+                  )}
+                  {calculatedPayroll.unemploymentInsurance && (
+                    <div className="flex justify-between">
+                      <span>BHTN (1%):</span>
+                      <span className="font-medium">{calculatedPayroll.unemploymentInsurance.toLocaleString()} VND</span>
+                    </div>
+                  )}
+                  {calculatedPayroll.personalIncomeTax && (
+                    <div className="flex justify-between">
+                      <span>Thuế TNCN:</span>
+                      <span className="font-medium">{calculatedPayroll.personalIncomeTax.toLocaleString()} VND</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Khấu trừ chung:</span>
-                    <span className="font-medium">{calculatedPayroll.generalDeductions.toLocaleString()} VND</span>
+                    <span className="font-medium">{(calculatedPayroll.generalDeductions || 0).toLocaleString()} VND</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2 italic">
-                    * BHXH, BHYT, BHTN và Thuế TNCN sẽ được hệ thống tính toán
-                  </p>
+                  {!calculatedPayroll.socialInsurance && (
+                    <p className="text-xs text-gray-500 mt-2 italic">
+                      * BHXH, BHYT, BHTN và Thuế TNCN sẽ được hệ thống tính toán
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Tổng */}
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                <h3 className="font-semibold text-emerald-800 mb-3">Tổng kết (tạm tính)</h3>
+                <h3 className="font-semibold text-emerald-800 mb-3">Tổng kết</h3>
                 <div className="space-y-2">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Tổng thu nhập:</span>
+                  {calculatedPayroll.grossIncome && (
+                    <div className="flex justify-between text-sm">
+                      <span>Tổng thu nhập:</span>
+                      <span className="font-medium text-emerald-700">
+                        {calculatedPayroll.grossIncome.toLocaleString()} VND
+                      </span>
+                    </div>
+                  )}
+                  {calculatedPayroll.totalDeductions && (
+                    <div className="flex justify-between text-sm">
+                      <span>Tổng khấu trừ:</span>
+                      <span className="font-medium text-red-600">
+                        -{calculatedPayroll.totalDeductions.toLocaleString()} VND
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-lg font-bold pt-2 border-t border-emerald-300">
+                    <span>Lương thực lĩnh:</span>
                     <span className="text-emerald-600">
-                      {(
+                      {(calculatedPayroll.netSalary || (
                         calculatedPayroll.adjustedBasicSalary +
                         calculatedPayroll.overtimePay +
                         calculatedPayroll.allowances +
-                        calculatedPayroll.bonuses
-                      ).toLocaleString()} VND
+                        calculatedPayroll.bonuses -
+                        (calculatedPayroll.generalDeductions || 0)
+                      )).toLocaleString()} VND
                     </span>
                   </div>
                 </div>

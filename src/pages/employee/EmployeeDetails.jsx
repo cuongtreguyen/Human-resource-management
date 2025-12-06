@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/layout/Layout';
-import fakeApi from '../../services/fakeApi';
+import { getEmployeeById } from '../../services/employeeService';
 import { isAdmin, getRole } from '../../utils/auth';
 import {
   User, Mail, Phone, Briefcase, Calendar,
@@ -25,9 +25,37 @@ const EmployeeDetails = () => {
   const loadEmployeeDetails = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getEmployeeById(id);
-      if (response.success) {
-        setEmployee(response.data);
+      console.log('📋 Loading employee details for ID:', id);
+      const response = await getEmployeeById(id);
+
+      // API có thể trả về { success, data } hoặc data trực tiếp
+      const employeeData = response?.data || response;
+
+      if (employeeData) {
+        // Map data để phù hợp với UI
+        const mappedEmployee = {
+          id: employeeData.employeeId || employeeData.id,
+          employeeId: employeeData.employeeId || employeeData.id,
+          name: employeeData.fullName || employeeData.name || `${employeeData.firstName || ''} ${employeeData.lastName || ''}`.trim(),
+          email: employeeData.email || '',
+          phone: employeeData.phone || employeeData.phoneNumber || '',
+          department: employeeData.department || employeeData.departmentName || 'N/A',
+          position: employeeData.position || employeeData.jobTitle || 'N/A',
+          salary: employeeData.salary || employeeData.baseSalary || 0,
+          startDate: employeeData.startDate || employeeData.hireDate || '',
+          status: employeeData.status || 'active',
+          avatar: employeeData.avatar || employeeData.profileImage || null,
+          address: employeeData.address || '',
+          dateOfBirth: employeeData.dateOfBirth || employeeData.dob || '',
+          gender: employeeData.gender || '',
+          emergencyContact: employeeData.emergencyContact || '',
+          bankAccount: employeeData.bankAccount || employeeData.bankAccountNumber || '',
+          bankName: employeeData.bankName || '',
+          taxId: employeeData.taxId || employeeData.taxCode || '',
+          insuranceNumber: employeeData.insuranceNumber || employeeData.socialInsuranceNumber || '',
+        };
+        setEmployee(mappedEmployee);
+        console.log('✅ Loaded employee:', mappedEmployee);
       } else {
         setError('Không tìm thấy nhân viên');
       }
@@ -45,9 +73,11 @@ const EmployeeDetails = () => {
 
   const handleDelete = async () => {
     try {
-      await fakeApi.deleteEmployee(id);
+      // TODO: Gọi API delete employee khi backend có endpoint
+      // await deleteEmployee(id);
       setShowDeleteModal(false);
       navigate('/employees');
+      alert('Đã xóa nhân viên (tạm thời chỉ xóa trên UI)');
     } catch (err) {
       console.error('Error deleting employee:', err);
       alert('Không thể xóa nhân viên');

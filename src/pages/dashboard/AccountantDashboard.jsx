@@ -1,88 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DollarSign, Users, FileText, Calculator, TrendingUp, TrendingDown,
   CreditCard, Wallet, PiggyBank, Receipt, Clock, CheckCircle,
-  AlertCircle, BarChart3, PieChart, ArrowUpRight, ArrowDownRight
+  AlertCircle, BarChart3, PieChart, ArrowUpRight, ArrowDownRight,
+  RefreshCw
 } from 'lucide-react';
+import { usePayrollDashboard } from '../../hooks/useAccountantData';
 
 const AccountantDashboard = () => {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      // Giả lập data cho Accountant
-      const accountantStats = {
-        // Tổng quan lương
-        totalPayroll: 2850000000,
-        pendingPayroll: 23,
-        completedPayroll: 133,
-        payrollGrowth: 5.2,
-
-        // Chi tiết lương tháng này
-        basicSalaryTotal: 2200000000,
-        allowanceTotal: 350000000,
-        overtimeTotal: 180000000,
-        bonusTotal: 120000000,
-        deductionTotal: 85000000,
-
-        // Phúc lợi & Bảo hiểm
-        insuranceTotal: 420000000,
-        benefitsTotal: 150000000,
-        pendingBenefitRequests: 7,
-
-        // Chấm công (để tính lương)
-        totalWorkDays: 22,
-        avgAttendanceRate: 94.5,
-        overtimeHours: 156,
-
-        // Lương theo phòng ban
-        payrollByDepartment: [
-          { name: 'Công nghệ thông tin', amount: 850000000, employees: 45, color: '#3B82F6' },
-          { name: 'Kinh doanh', amount: 620000000, employees: 32, color: '#F59E0B' },
-          { name: 'Marketing', amount: 380000000, employees: 28, color: '#10B981' },
-          { name: 'Vận hành', amount: 350000000, employees: 21, color: '#EC4899' },
-          { name: 'Tài chính', amount: 320000000, employees: 18, color: '#8B5CF6' },
-          { name: 'Nhân sự', amount: 180000000, employees: 12, color: '#EF4444' },
-        ],
-
-        // Lương 6 tháng gần nhất
-        monthlyPayroll: [
-          { month: 'T8', amount: 2650000000 },
-          { month: 'T9', amount: 2700000000 },
-          { month: 'T10', amount: 2720000000 },
-          { month: 'T11', amount: 2780000000 },
-          { month: 'T12', amount: 2800000000 },
-          { month: 'T1', amount: 2850000000 },
-        ],
-
-        // Nhân viên chờ xử lý lương
-        pendingPayrollList: [
-          { id: 1, name: 'Nguyễn Văn A', department: 'IT', salary: 18000000, status: 'pending' },
-          { id: 2, name: 'Trần Thị B', department: 'Marketing', salary: 15000000, status: 'pending' },
-          { id: 3, name: 'Lê Minh C', department: 'Sales', salary: 20000000, status: 'pending' },
-        ],
-
-        // Yêu cầu phúc lợi chờ duyệt
-        pendingBenefits: [
-          { id: 1, name: 'Phạm Thu D', type: 'Bảo hiểm sức khỏe', amount: 5000000 },
-          { id: 2, name: 'Hoàng Đức E', type: 'Hỗ trợ đào tạo', amount: 3000000 },
-        ]
-      };
-      setStats(accountantStats);
-    } catch (err) {
-      console.error('Dashboard error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Sử dụng React Query hook - tự động cache và refetch
+  const { data: stats, isLoading: loading, error, refetch } = usePayrollDashboard();
 
   const formatCurrency = (amount) => {
     if (amount >= 1000000000) {
@@ -113,12 +43,35 @@ const AccountantDashboard = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Lỗi tải dữ liệu</h2>
+          <p className="text-gray-600 mb-4">{error?.message || 'Không thể tải dữ liệu dashboard'}</p>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+          >
+            Thử lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white p-8 rounded-2xl shadow-xl mb-6">
-        <h1 className="text-3xl sm:text-4xl font-bold mb-2">Bảng điều khiển Kế toán</h1>
-        <p className="text-emerald-100 text-base sm:text-lg">Tổng quan tài chính và lương</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-bold mb-2">Bảng điều khiển Kế toán</h1>
+            <p className="text-emerald-100 text-base sm:text-lg">Tổng quan tài chính và lương</p>
+          </div>
+          
+        </div>
       </div>
 
       {/* Main Stats Cards */}
@@ -130,8 +83,17 @@ const AccountantDashboard = () => {
               <p className="text-sm text-gray-500 mb-1">Tổng lương tháng này</p>
               <p className="text-2xl font-bold text-gray-900">{formatCurrency(stats?.totalPayroll)}</p>
               <div className="flex items-center gap-1 mt-2">
-                <ArrowUpRight className="w-4 h-4 text-green-500" />
-                <span className="text-xs text-green-600">+{stats?.payrollGrowth}% so với tháng trước</span>
+                {stats?.payrollGrowth >= 0 ? (
+                  <>
+                    <ArrowUpRight className="w-4 h-4 text-green-500" />
+                    <span className="text-xs text-green-600">+{stats?.payrollGrowth?.toFixed(1)}% so với tháng trước</span>
+                  </>
+                ) : (
+                  <>
+                    <ArrowDownRight className="w-4 h-4 text-red-500" />
+                    <span className="text-xs text-red-600">{stats?.payrollGrowth?.toFixed(1)}% so với tháng trước</span>
+                  </>
+                )}
               </div>
             </div>
             <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, DollarSign, FileText, Download } from 'lucide-react';
 import { getRole } from '../../utils/auth';
-import fakeApi from '../../services/fakeApi';
+import { getEmployeeById } from '../../services/employeeService';
+import { getPayrollCalculation } from '../../services/payrollService';
 
 const PayrollDetails = () => {
   const { employeeId } = useParams();
@@ -31,29 +32,52 @@ const PayrollDetails = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getEmployees();
-      const employees = response.data || [];
-      const emp = employees.find(e => e.id === employeeId || e.id === String(employeeId));
+
+      // Gọi API lấy thông tin nhân viên
+      const emp = await getEmployeeById(employeeId);
 
       if (emp) {
         setEmployee(emp);
-        // Mock payroll data - in real app, fetch from API
-        setPayroll({
-          month: new Date().toISOString().slice(0, 7),
-          basicSalary: emp.basicSalary || 15000000,
-          allowances: 2000000,
-          bonuses: 500000,
-          overtimePay: 1500000,
-          grossIncome: 19000000,
-          socialInsurance: 1200000,
-          healthInsurance: 225000,
-          unemploymentInsurance: 150000,
-          personalIncomeTax: 500000,
-          deductions: 0,
-          totalDeductions: 2075000,
-          netSalary: 16925000,
-          status: 'PENDING'
-        });
+
+        // Gọi API lấy thông tin payroll calculation
+        try {
+          const payrollData = await getPayrollCalculation(employeeId);
+          setPayroll({
+            month: new Date().toISOString().slice(0, 7),
+            basicSalary: payrollData.baseSalary || emp.basicSalary || 0,
+            allowances: payrollData.allowance || 0,
+            bonuses: payrollData.bonus || 0,
+            overtimePay: payrollData.otPay || 0,
+            grossIncome: payrollData.grossIncome || 0,
+            socialInsurance: payrollData.socialInsurance || 0,
+            healthInsurance: payrollData.healthInsurance || 0,
+            unemploymentInsurance: payrollData.unemploymentInsurance || 0,
+            personalIncomeTax: payrollData.personalIncomeTax || 0,
+            deductions: payrollData.generalDeductions || 0,
+            totalDeductions: payrollData.totalDeductions || 0,
+            netSalary: payrollData.netSalary || 0,
+            status: payrollData.status || 'PENDING'
+          });
+        } catch (payrollError) {
+          console.log('No payroll calculation found, using defaults');
+          // Nếu chưa có payroll, hiển thị thông tin cơ bản
+          setPayroll({
+            month: new Date().toISOString().slice(0, 7),
+            basicSalary: emp.basicSalary || emp.salary || 0,
+            allowances: 0,
+            bonuses: 0,
+            overtimePay: 0,
+            grossIncome: 0,
+            socialInsurance: 0,
+            healthInsurance: 0,
+            unemploymentInsurance: 0,
+            personalIncomeTax: 0,
+            deductions: 0,
+            totalDeductions: 0,
+            netSalary: 0,
+            status: 'NOT_CALCULATED'
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -149,10 +173,16 @@ const PayrollDetails = () => {
                   ? 'bg-green-100 text-green-800'
                   : payroll.status === 'APPROVED'
                   ? 'bg-blue-100 text-blue-800'
+                  : payroll.status === 'NOT_CALCULATED'
+                  ? 'bg-gray-100 text-gray-800'
+                  : payroll.status === 'CANCELLED'
+                  ? 'bg-red-100 text-red-800'
                   : 'bg-yellow-100 text-yellow-800'
               }`}>
                 {payroll.status === 'PAID' ? 'Đã thanh toán' :
-                 payroll.status === 'APPROVED' ? 'Đã duyệt' : 'Chờ duyệt'}
+                 payroll.status === 'APPROVED' ? 'Đã duyệt' :
+                 payroll.status === 'NOT_CALCULATED' ? 'Chưa tính' :
+                 payroll.status === 'CANCELLED' ? 'Đã hủy' : 'Chờ duyệt'}
               </span>
             </div>
           </div>

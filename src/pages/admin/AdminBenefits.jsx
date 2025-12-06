@@ -26,7 +26,26 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import fakeApi from '../../services/fakeApi';
+import {
+  getAllBenefits,
+  createBenefit,
+  updateBenefit,
+  deleteBenefit,
+  getEmployeeBenefits,
+  grantBenefitToEmployee,
+  updateEmployeeBenefit,
+  deleteEmployeeBenefit,
+  getAllInsuranceContracts,
+  createInsuranceContract,
+  updateInsuranceContract,
+  deleteInsuranceContract,
+  getEmployeeInsurance,
+  grantInsuranceToEmployee,
+  updateEmployeeInsurance,
+  deleteEmployeeInsurance,
+} from '../../services/benefitsService';
+import { getAllEmployees, getEmployeeById } from '../../services/employeeService';
+import { getPendingBenefitRequests, approveBenefitRequest, rejectBenefitRequest } from '../../services/benefitRequestService';
 import { getRole } from '../../utils/auth';
 
 const AdminBenefits = () => {
@@ -255,20 +274,111 @@ const AdminBenefits = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [welfareRes, insuranceRes, requestsRes, welfareHistoryRes, insuranceHistoryRes] = await Promise.all([
-        fakeApi.getWelfarePrograms(),
-        fakeApi.getInsurancePolicies(),
-        fakeApi.getBenefitRequests(),
-        fakeApi.getWelfareHistory(),
-        fakeApi.getInsuranceHistory()
+
+      // Load benefits và insurance templates từ API
+      const [benefitsRes, insuranceRes] = await Promise.all([
+        getAllBenefits().catch(() => []),
+        getAllInsuranceContracts().catch(() => [])
       ]);
 
-      if (welfareRes.success) setWelfarePrograms(welfareRes.data);
-      if (insuranceRes.success) setInsurancePolicies(insuranceRes.data);
-      if (requestsRes.success) setRequests(requestsRes.data);
-      if (welfareHistoryRes.success) setWelfareHistory(welfareHistoryRes.data);
-      if (insuranceHistoryRes.success) setInsuranceHistory(insuranceHistoryRes.data);
+      // Map benefits data
+      const benefitsData = Array.isArray(benefitsRes) ? benefitsRes : benefitsRes.data || [];
+      const mappedBenefits = benefitsData.map(b => ({
+        id: b.benefitId || b.id,
+        name: b.benefitName || b.name,
+        description: b.description || '',
+        budget: b.totalCost || b.allowanceAmount || 0,
+        participants: b.numberOfEmployees || 0,
+        type: b.type || 'welfare',
+        status: b.status || 'ACTIVE',
+      }));
+      setWelfarePrograms(mappedBenefits);
+
+      // Map insurance data
+      const insuranceData = Array.isArray(insuranceRes) ? insuranceRes : insuranceRes.data || [];
+      const mappedInsurance = insuranceData.map(i => ({
+        id: i.id,
+        name: i.insurenceName || i.name,
+        provider: i.provider || '',
+        type: i.type || 'mandatory',
+        employerRate: i.employerRate || 0,
+        employeeRate: i.employeeRate || 0,
+        effective: i.effective,
+        expiry: i.expiry,
+        status: i.status || 'ACTIVE',
+      }));
+      setInsurancePolicies(mappedInsurance);
+
+      // Load yêu cầu phúc lợi chờ duyệt từ service (localStorage tạm thời)
+      // TODO: Thay bằng API thật khi có: GET /api/benefit-requests?status=pending
+      try {
+        const requestsRes = await getPendingBenefitRequests();
+        if (requestsRes.success) {
+          setRequests(requestsRes.data);
+          console.log('✅ Loaded pending benefit requests:', requestsRes.data);
+        }
+      } catch (err) {
+        console.error('Error loading benefit requests:', err);
+        setRequests([]);
+      }
+
+      // Load employee benefits và insurance cho TẤT CẢ nhân viên
+      try {
+        const employeesRes = await getAllEmployees();
+        const employees = Array.isArray(employeesRes) ? employeesRes : employeesRes.data || [];
+
+        // Load phúc lợi và bảo hiểm cho từng nhân viên
+        const allBenefitsPromises = employees.map(emp =>
+          getEmployeeBenefits(emp.employeeId || emp.id).catch(() => [])
+        );
+        const allInsurancePromises = employees.map(emp =>
+          getEmployeeInsurance(emp.employeeId || emp.id).catch(() => [])
+        );
+
+        const [benefitsResults, insuranceResults] = await Promise.all([
+          Promise.all(allBenefitsPromises),
+          Promise.all(allInsurancePromises)
+        ]);
+
+        // Flatten và map benefits data
+        const allEmployeeBenefits = benefitsResults.flat().map((b, idx) => ({
+          id: b.id || idx + 1,
+          employeeId: b.employeeId,
+          employeeName: b.fullName || b.employeeName || 'N/A',
+          department: b.department || 'N/A',
+          benefitId: b.benefitId,
+          benefitName: b.benefitName || 'N/A',
+          amount: b.allowanceAmount || 0,
+          grantDate: b.grantDate,
+          status: b.status || 'ACTIVE',
+        }));
+        setWelfareHistory(allEmployeeBenefits);
+        console.log('✅ Loaded employee benefits:', allEmployeeBenefits);
+
+        // Flatten và map insurance data
+        const allEmployeeInsurance = insuranceResults.flat().map((ins, idx) => ({
+          id: ins.id || ins.contractId || idx + 1,
+          employeeId: ins.employeeId,
+          employeeName: ins.fullName || ins.employeeName || 'N/A',
+          department: ins.department || 'N/A',
+          contractId: ins.contractId,
+          insuranceName: ins.insurenceName || ins.insuranceName || 'N/A',
+          employerRate: ins.employerRate || 0,
+          employeeRate: ins.employeeRate || 0,
+          grantDate: ins.grantDate,
+          status: ins.status || 'ACTIVE',
+        }));
+        setInsuranceHistory(allEmployeeInsurance);
+        console.log('✅ Loaded employee insurance:', allEmployeeInsurance);
+
+      } catch (err) {
+        console.error('Error loading employee benefits/insurance:', err);
+        setWelfareHistory([]);
+        setInsuranceHistory([]);
+      }
+
     } catch (error) {
+      console.error('Error loading data:', error);
       toast.error('Không thể tải dữ liệu');
     } finally {
       setLoading(false);
@@ -280,10 +390,14 @@ const AdminBenefits = () => {
 
   const openDetail = async (req) => {
     setSelectedRequest(req);
-    // Load employee insurance detail
-    const insRes = await fakeApi.getEmployeeInsuranceDetail(req.employeeId);
-    if (insRes.success) {
-      setEmployeeInsurance(insRes.data);
+    // Load employee insurance detail từ API
+    try {
+      const insRes = await getEmployeeInsurance(req.employeeId);
+      const insData = Array.isArray(insRes) ? insRes : insRes.data || [];
+      setEmployeeInsurance(insData);
+    } catch (error) {
+      console.error('Error loading employee insurance:', error);
+      setEmployeeInsurance([]);
     }
     setIsModalOpen(true);
   };
@@ -295,11 +409,19 @@ const AdminBenefits = () => {
     }
 
     if (window.confirm('Bạn có chắc chắn muốn PHÊ DUYỆT yêu cầu này?')) {
-      const result = await fakeApi.approveBenefitRequest(id, 'Kế Toán Viên');
-      if (result.success) {
-        setRequests(prev => prev.filter(r => r.id !== id));
-        toast.success(result.message);
-        setIsModalOpen(false);
+      try {
+        // Dùng service (localStorage) - TODO: Thay bằng API thật khi có
+        const result = await approveBenefitRequest(id);
+        if (result.success) {
+          setRequests(prev => prev.filter(r => r.id !== id));
+          toast.success('Đã phê duyệt yêu cầu thành công!');
+          setIsModalOpen(false);
+        } else {
+          toast.error(result.message || 'Có lỗi xảy ra');
+        }
+      } catch (error) {
+        console.error('Error approving request:', error);
+        toast.error('Có lỗi xảy ra khi phê duyệt');
       }
     }
   };
@@ -311,11 +433,19 @@ const AdminBenefits = () => {
     }
 
     if (window.confirm('Bạn có chắc chắn muốn TỪ CHỐI yêu cầu này?')) {
-      const result = await fakeApi.rejectBenefitRequest(id, 'Kế Toán Viên', 'Không đủ điều kiện');
-      if (result.success) {
-        setRequests(prev => prev.filter(r => r.id !== id));
-        toast.error(result.message);
-        setIsModalOpen(false);
+      try {
+        // Dùng service (localStorage) - TODO: Thay bằng API thật khi có
+        const result = await rejectBenefitRequest(id);
+        if (result.success) {
+          setRequests(prev => prev.filter(r => r.id !== id));
+          toast.info('Đã từ chối yêu cầu');
+          setIsModalOpen(false);
+        } else {
+          toast.error(result.message || 'Có lỗi xảy ra');
+        }
+      } catch (error) {
+        console.error('Error rejecting request:', error);
+        toast.error('Có lỗi xảy ra khi từ chối');
       }
     }
   };
@@ -689,24 +819,22 @@ const AdminBenefits = () => {
     // Nếu nhập mã nhân viên, tự động lấy thông tin nhân viên
     if (field === 'employeeId' && value && value.trim()) {
       try {
-        const empRes = await fakeApi.getEmployeeById(value.trim());
-        if (empRes.success && empRes.data) {
-          const emp = empRes.data;
+        const emp = await getEmployeeById(value.trim());
+        if (emp) {
           updated[index]['employeeName'] = emp.fullName || emp.name || '';
           updated[index]['department'] = emp.department || '';
         } else {
           // Nếu không tìm thấy, thử tìm trong danh sách employees
-          const allEmpRes = await fakeApi.getEmployees();
-          if (allEmpRes.success) {
-            const foundEmp = allEmpRes.data.find(e =>
-              e.id === value.trim() ||
-              e.employeeCode === value.trim() ||
-              e.employeeId === value.trim()
-            );
-            if (foundEmp) {
-              updated[index]['employeeName'] = foundEmp.fullName || foundEmp.name || '';
-              updated[index]['department'] = foundEmp.department || '';
-            }
+          const allEmpRes = await getAllEmployees();
+          const empList = Array.isArray(allEmpRes) ? allEmpRes : allEmpRes.data || [];
+          const foundEmp = empList.find(e =>
+            e.id === value.trim() ||
+            e.employeeCode === value.trim() ||
+            e.employeeId === value.trim()
+          );
+          if (foundEmp) {
+            updated[index]['employeeName'] = foundEmp.fullName || foundEmp.name || '';
+            updated[index]['department'] = foundEmp.department || '';
           }
         }
       } catch (error) {
@@ -821,24 +949,22 @@ const AdminBenefits = () => {
     // Nếu nhập mã nhân viên, tự động lấy thông tin nhân viên
     if (field === 'employeeId' && value && value.trim()) {
       try {
-        const empRes = await fakeApi.getEmployeeById(value.trim());
-        if (empRes.success && empRes.data) {
-          const emp = empRes.data;
+        const emp = await getEmployeeById(value.trim());
+        if (emp) {
           updated[index]['employeeName'] = emp.fullName || emp.name || '';
           updated[index]['department'] = emp.department || '';
         } else {
           // Nếu không tìm thấy, thử tìm trong danh sách employees
-          const allEmpRes = await fakeApi.getEmployees();
-          if (allEmpRes.success) {
-            const foundEmp = allEmpRes.data.find(e =>
-              e.id === value.trim() ||
-              e.employeeCode === value.trim() ||
-              e.employeeId === value.trim()
-            );
-            if (foundEmp) {
-              updated[index]['employeeName'] = foundEmp.fullName || foundEmp.name || '';
-              updated[index]['department'] = foundEmp.department || '';
-            }
+          const allEmpRes = await getAllEmployees();
+          const empList = Array.isArray(allEmpRes) ? allEmpRes : allEmpRes.data || [];
+          const foundEmp = empList.find(e =>
+            e.id === value.trim() ||
+            e.employeeCode === value.trim() ||
+            e.employeeId === value.trim()
+          );
+          if (foundEmp) {
+            updated[index]['employeeName'] = foundEmp.fullName || foundEmp.name || '';
+            updated[index]['department'] = foundEmp.department || '';
           }
         }
       } catch (error) {
@@ -1638,6 +1764,75 @@ const AdminBenefits = () => {
           </Card>
         </div>
       </div>
+
+      {/* YÊU CẦU CHỜ DUYỆT */}
+      <Card
+        title="Yêu cầu phúc lợi chờ duyệt"
+        subtitle={`${requests.length} yêu cầu đang chờ xử lý`}
+        icon={<Clock className="w-6 h-6 text-amber-600" />}
+        className="mt-6"
+      >
+        {requests.length === 0 ? (
+          <div className="text-center py-12 text-gray-500">
+            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-300" />
+            <p className="text-xl font-bold">Không có yêu cầu nào</p>
+            <p className="text-sm mt-2">Tất cả yêu cầu đã được xử lý</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {requests.map(req => (
+              <div
+                key={req.id}
+                className="flex items-center justify-between p-5 bg-amber-50 border border-amber-200 rounded-xl hover:shadow-md transition-all cursor-pointer"
+                onClick={() => openDetail(req)}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center">
+                    <User className="w-6 h-6 text-amber-700" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-gray-900">{req.employee}</p>
+                    <p className="text-sm text-gray-600">{req.department}</p>
+                  </div>
+                </div>
+                <div className="flex-1 mx-6">
+                  <p className="font-medium text-amber-800">{req.typeLabel}</p>
+                  <p className="text-sm text-gray-500 truncate max-w-md">{req.reason}</p>
+                </div>
+                <div className="text-right">
+                  <span className="inline-block px-3 py-1 bg-amber-200 text-amber-800 rounded-full text-sm font-medium">
+                    Chờ duyệt
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1">{req.createdAt}</p>
+                </div>
+                <div className="ml-4 flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); approveRequest(req.id); }}
+                    className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition"
+                    title="Phê duyệt"
+                  >
+                    <CheckCircle className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); rejectRequest(req.id); }}
+                    className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
+                    title="Từ chối"
+                  >
+                    <XCircle className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openDetail(req); }}
+                    className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
+                    title="Xem chi tiết"
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {/* MODAL CHI TIẾT YÊU CẦU */}
       {isModalOpen && selectedRequest && (
