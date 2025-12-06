@@ -104,15 +104,17 @@ public class EmployeeService {
 
         // Tự động tạo User cho Employee
         // Email: fullname + @company.com (đã generate ở trên)
-        // Password: fullname + "123"
+        // Password: fullname (không dấu, lowercase, remove spaces) + "123"
         if (!userRepository.existsByEmail(saved.getEmail())) {
             User user = new User();
             user.setEmail(saved.getEmail()); // Email generated từ fullName
             user.setFullName(saved.getFullName()); // Lưu fullName từ Employee
             user.setEmployeeId(saved.getEmployeeId()); // Lưu employeeId từ Employee
             user.setRole(Role.EMPLOYEE);
-            // Password: fullname + "123"
-            String defaultPassword = saved.getFullName() + "123";
+            // Password: fullname (normalized như email) + "123"
+            // Ví dụ: "Nguyễn V L" -> password: "nguyenvl123"
+            String passwordBase = generateEmailFromFullName(saved.getFullName()).replace("@company.com", "");
+            String defaultPassword = passwordBase + "123";
             user.setPassword(passwordEncoder.encode(defaultPassword));
             user.setIsActive(true);
             user.setIsLocked(false);
