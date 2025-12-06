@@ -262,6 +262,7 @@
 
 
 
+// src/pages/EmployeeProfile.jsx (hoặc đường dẫn của bạn)
 import React, { useEffect, useState } from 'react';
 import {
   User, Mail, Phone, MapPin, Briefcase,
@@ -269,47 +270,61 @@ import {
 } from 'lucide-react';
 
 import { getEmployeeProfile } from '../../services/api';
-import { getCurrentEmployeeId, isAuthenticated } from '../../utils/auth';
+import { getUserInfo, isAuthenticated } from '../../utils/auth';
 
 const EmployeeProfile = () => {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  const load = async () => {
-    try {
-      if (!isAuthenticated()) {
-        window.location.href = '/login';
-        return;
+    const load = async () => {
+      try {
+        if (!isAuthenticated()) {
+          window.location.href = '/login';
+          return;
+        }
+
+        const userInfo = getUserInfo();
+        if (!userInfo) {
+          setLoading(false);
+          return;
+        }
+
+        // Ưu tiên dùng id từ login response (hiện tại BE trả "id": "16")
+        let identifier = userInfo.id;
+
+        // Nếu không có id → fallback các field khác
+        if (!identifier) {
+          identifier = userInfo.employeeId || userInfo.employeeCode || userInfo.code || userInfo.email?.split('@')[0];
+        }
+
+        if (!identifier) {
+          console.error('Không xác định được ID nhân viên:', userInfo);
+          setLoading(false);
+          return;
+        }
+
+        console.log('Tải hồ sơ với identifier:', identifier);
+        const data = await getEmployeeProfile(identifier);
+        setEmployee(data);
+
+      } catch (error) {
+        console.error('Lỗi tải hồ sơ:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      let employeeId = getCurrentEmployeeId();
-
-      // BƯỚC QUAN TRỌNG: Nếu employeeId là dạng "EMP001" → đổi sang ID số thật
-      if (employeeId && !Number.isInteger(Number(employeeId))) {
-        // Đây là mã nhân viên (EMP001, NV2025,...)
-        console.log('Đang chuyển mã nhân viên sang ID số:', employeeId);
-        employeeId = await getEmployeeIdByCode(employeeId); // ← API bạn đã viết
-        if (!employeeId) throw new Error('Không tìm được ID nhân viên');
-      }
-
-      console.log('Gọi profile với ID số:', employeeId);
-      const data = await getEmployeeProfile(employeeId); // ← giờ mới đúng ID số
-      setEmployee(data);
-
-    } catch (error) {
-      console.error('Error loading employee profile:', error);
-      // Có thể thêm toast thông báo
-    } finally {
-      setLoading(false);
-    }
-  };
-  load();
-}, []);
+    load();
+  }, []);
 
   const formatDate = (dateString) => {
     if (!dateString) return 'Chưa cập nhật';
-    return new Date(dateString).toLocaleDateString('vi-VN');
+    try {
+      return new Date(dateString).toLocaleDateString('vi-VN');
+    } catch {
+      return 'Chưa cập nhật';
+    }
   };
 
   const getStatusBadge = (status) => {
@@ -349,16 +364,16 @@ const EmployeeProfile = () => {
 
   if (!employee) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-600">Không tìm thấy thông tin nhân viên</p>
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-yellow-50">
+        <div className="text-center p-8 bg-white rounded-xl shadow-lg">
+          <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-xl font-medium text-gray-700 mb-2">Chưa có thông tin hồ sơ</p>
+          <p className="text-sm text-gray-500">Vui lòng liên hệ HR để được bổ sung thông tin.</p>
         </div>
       </div>
     );
   }
 
-  // Tạo fullName từ firstName + lastName (ưu tiên name nếu có)
   const fullName = employee.name || `${employee.lastName || ''} ${employee.firstName || ''}`.trim() || 'Nhân viên';
 
   return (
@@ -366,10 +381,8 @@ const EmployeeProfile = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white py-8 px-6 shadow-lg">
         <div className="max-w-5xl mx-auto">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Hồ sơ cá nhân</h1>
-            <p className="text-orange-100">Thông tin chi tiết của bạn trong hệ thống</p>
-          </div>
+          <h1 className="text-3xl font-bold mb-2">Hồ sơ cá nhân</h1>
+          <p className="text-orange-100">Thông tin chi tiết của bạn trong hệ thống</p>
         </div>
       </div>
 
@@ -394,14 +407,14 @@ const EmployeeProfile = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <CreditCard className="w-4 h-4 text-orange-500" />
-                  ID: {employee.employeeCode || employee.id}
+                  ID: {employee.employeeCode || employee.id || 'Chưa có'}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Grid thông tin */}
+        {/* Grid thông tin - GIỮ NGUYÊN LAYOUT GỐC 100% */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
           {/* Thông tin cá nhân */}
@@ -412,13 +425,9 @@ const EmployeeProfile = () => {
             </h3>
             <div className="space-y-1">
               <InfoRow label="Ngày sinh" value={formatDate(employee.dateOfBirth)} />
-              <InfoRow label="Giới tính" value={
-                employee.gender === 'male' ? 'Nam' :
-                employee.gender === 'female' ? 'Nữ' :
-                employee.gender || 'Chưa cập nhật'
-              } />
-              <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus} />
-              <InfoRow label="Quốc tịch" value={employee.nationality} />
+              <InfoRow label="Giới tính" value={employee.gender === 'male' ? 'Nam' : employee.gender === 'female' ? 'Nữ' : employee.gender || 'Chưa cập nhật'} />
+              <InfoRow label="Tình trạng hôn nhân" value={employee.maritalStatus || 'Chưa cập nhật'} />
+              <InfoRow label="Quốc tịch" value={employee.nationality || 'Chưa cập nhật'} />
             </div>
           </div>
 
