@@ -168,16 +168,23 @@ public class AuthController {
     @Operation(summary = "Forgot password", description = "Send OTP to email for password reset")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OTP sent successfully"),
-            @ApiResponse(responseCode = "400", description = "EMAIL_NOT_FOUND")
+            @ApiResponse(responseCode = "400", description = "USER_NOT_FOUND")
     })
     public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        String otp = authService.sendForgotPasswordOtp(request.getEmail());
+        try {
+            String otp = authService.sendForgotPasswordOtp(request.getEmail());
 
-        // Lấy tên đầy đủ từ database để gửi email
-        String fullName = "User"; // Có thể lấy từ database nếu cần
-        emailService.sendForgotPasswordOtp(request.getEmail(), fullName, otp);
+            // Lấy tên đầy đủ từ database để gửi email
+            User user = authService.getUserByEmail(request.getEmail());
+            String fullName = (user != null && user.getEmployee() != null && user.getEmployee().getFullName() != null) 
+                    ? user.getEmployee().getFullName() 
+                    : "User";
+            emailService.sendForgotPasswordOtp(request.getEmail(), fullName, otp);
 
-        return ResponseEntity.ok(Map.of("message", "OTP sent to your email"));
+            return ResponseEntity.ok(Map.of("message", "OTP sent to your email"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to send OTP"));
+        }
     }
 
     @PostMapping("/reset-password")
@@ -187,8 +194,14 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "OTP_NOT_FOUND/OTP_EXPIRED/INVALID_OTP/USER_NOT_FOUND")
     })
     public ResponseEntity<Map<String, String>> resetPassword(@RequestBody ResetPasswordRequest request) {
-        authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
-        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+        try {
+            authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+            return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to reset password"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "An unexpected error occurred: " + e.getMessage()));
+        }
     }
 
     // Endpoint test để reset password trực tiếp (không cần OTP) - chỉ dùng cho development

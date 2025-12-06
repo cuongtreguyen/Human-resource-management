@@ -35,6 +35,9 @@ public class AuthService {
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
+    @Autowired
+    private OtpService otpService;
+
     public static class Tokens {
         private String accessToken;
         private String refreshToken;
@@ -153,8 +156,13 @@ public class AuthService {
     }
     
     public String sendForgotPasswordOtp(String email) {
-        // TODO: Generate and save OTP
-        return "123456"; // Mock OTP
+        // Kiểm tra email có tồn tại trong database không
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage() + ": " + email));
+        
+        // Generate OTP và lưu vào OtpService
+        String otp = otpService.generateOtp(email);
+        return otp;
     }
     public User getCurrentUser() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -164,11 +172,31 @@ public class AuthService {
 
 
     public void resetPassword(String email, String otp, String newPassword) {
-        // TODO: Validate OTP and reset password
+        // Kiểm tra email có tồn tại không
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage() + ": " + email));
+        
+        // Validate OTP trước khi reset password
+        try {
+            otpService.verifyOtp(email, otp);
+        } catch (RuntimeException e) {
+            // Map các exception từ OtpService sang ErrorCode
+            if (e.getMessage().equals("OTP_NOT_FOUND")) {
+                throw new RuntimeException(ErrorCode.OTP_INVALID.getMessage());
+            } else if (e.getMessage().equals("OTP_EXPIRED")) {
+                throw new RuntimeException(ErrorCode.OTP_EXPIRED.getMessage());
+            } else if (e.getMessage().equals("INVALID_OTP")) {
+                throw new RuntimeException(ErrorCode.OTP_INVALID.getMessage());
+            }
+            throw e;
+        }
+        
+        // OTP hợp lệ, reset password
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
+        
+        // Xóa OTP sau khi đã sử dụng
+        otpService.removeOtp(email);
     }
     
     public void testResetPassword(String email, String newPassword) {
