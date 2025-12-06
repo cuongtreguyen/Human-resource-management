@@ -5,6 +5,7 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { EmployeeSummaryCards, Pagination } from '../../components/employee';
+import { getAllEmployees } from '../../services/employeeService';
 import { getRole, isAdmin } from '../../utils/auth';
 import { canViewSalary } from '../../utils/fieldPermissions';
 import { logDeleteEmployee, logViewDetail } from '../../utils/systemLogger';
@@ -55,6 +56,28 @@ const EmployeeList = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true);
+      const response = await getAllEmployees();
+      // API có thể trả về array trực tiếp hoặc { data: [...] }
+      const employeesData = Array.isArray(response) ? response : response.data || [];
+
+      // Map data để phù hợp với UI
+      const mappedEmployees = employeesData.map(emp => ({
+        id: emp.employeeId || emp.id,
+        employeeId: emp.employeeId || emp.id,
+        name: emp.fullName || emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim(),
+        email: emp.email || '',
+        phone: emp.phone || emp.phoneNumber || '',
+        department: emp.department || emp.departmentName || 'N/A',
+        position: emp.position || emp.jobTitle || 'N/A',
+        salary: emp.salary || emp.baseSalary || 0,
+        startDate: emp.startDate || emp.hireDate || '',
+        status: emp.status || 'active',
+        avatar: emp.avatar || emp.profileImage || null,
+      }));
+
+      setEmployees(mappedEmployees);
+      console.log('✅ Loaded employees:', mappedEmployees);
+
       setError(null);
 
       const response = await http(`${JAVA_API}/employees`, {
@@ -77,6 +100,7 @@ const EmployeeList = () => {
       } else {
         throw new Error('Dữ liệu không hợp lệ từ server');
       }
+
     } catch (err) {
       console.error('Load employees error:', err);
       setError(err.message || 'Không thể tải danh sách nhân viên');
@@ -140,11 +164,34 @@ const EmployeeList = () => {
     const employee = employees.find(emp => emp.id === employeeId);
     const employeeName = employee?.name || 'Unknown';
 
+    if (window.confirm('Bạn có chắc chắn muốn xóa nhân viên này không?')) {
+      try {
+        setLoading(true);
+        // TODO: Gọi API delete employee khi backend có endpoint
+        // await deleteEmployee(employeeId);
+        setEmployees(employees.filter(emp => emp.id !== employeeId));
+
+        // Log hành động xóa nhân viên
+        logDeleteEmployee(employeeId, employeeName);
+
+        alert('Xóa nhân viên thành công');
+      } catch (err) {
+        alert('Không thể xóa nhân viên: ' + (err.message || 'Lỗi không xác định'));
+        console.error('Delete error:', err);
+      } finally {
+        setLoading(false);
+      }
+
     if (!window.confirm(`Bạn có chắc chắn muốn xóa nhân viên "${employeeName}"?`)) {
       return;
     }
 
     try {
+      // TODO: Gọi API export khi backend có endpoint
+      // const response = await exportEmployeeData('csv');
+      // window.open(response.data.url, '_blank');
+      alert('Tính năng xuất dữ liệu đang được phát triển');
+
       setLoading(true);
       
       const response = await http(`${JAVA_API}/employees/${employeeId}`, {

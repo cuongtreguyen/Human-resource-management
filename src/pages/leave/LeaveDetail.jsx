@@ -13,7 +13,7 @@ import {
     MessageSquare,
     ArrowLeft
 } from 'lucide-react';
-import fakeApi from '../../services/fakeApi';
+import { getLeaveRequests, approveLeaveRequest, rejectLeaveRequest } from '../../services/leaveService';
 import { toast } from 'react-toastify';
 import { getRole } from '../../utils/auth';
 import { logApproveLeave, logRejectLeave } from '../../utils/systemLogger';
@@ -36,11 +36,29 @@ const LeaveDetail = () => {
     const loadLeaveDetail = async () => {
         try {
             setLoading(true);
-            const response = await fakeApi.getLeaveRequests();
-            const request = response.data.find(r => r.id === id);
+            const response = await getLeaveRequests();
+            const leaveData = Array.isArray(response) ? response : response.data || [];
+
+            // Tìm đơn nghỉ phép theo id
+            const request = leaveData.find(r => String(r.leaveId || r.id) === String(id));
 
             if (request) {
-                setSelectedRequest(request);
+                // Map data từ API sang format FE
+                setSelectedRequest({
+                    id: request.leaveId || request.id,
+                    employeeId: request.employeeId,
+                    employeeName: request.employeeName || request.fullName || 'N/A',
+                    department: request.department || 'Chưa xác định',
+                    type: request.leaveType || request.type,
+                    startDate: request.startDate,
+                    endDate: request.endDate,
+                    days: request.days || request.totalDays || 1,
+                    reason: request.reason || '',
+                    status: (request.status || 'PENDING').toLowerCase(),
+                    submittedDate: request.submittedDate || request.createdAt || new Date().toISOString(),
+                    approvedBy: request.approvedBy,
+                    rejectReason: request.rejectReason,
+                });
             } else {
                 toast.error('Không tìm thấy đơn nghỉ phép');
                 navigate('/leaves');
@@ -64,14 +82,16 @@ const LeaveDetail = () => {
         try {
             if (!selectedRequest) return;
 
-            const approverName = userRole === 'admin' ? 'Admin' : userRole === 'manager' ? 'Manager' : 'Accountant';
+            // Gọi API duyệt đơn
+            await approveLeaveRequest(selectedRequest.id);
 
             // Log hành động duyệt đơn nghỉ phép
             logApproveLeave(selectedRequest.id, selectedRequest.employeeName || 'Unknown', selectedRequest.days || 0);
 
             toast.success('Đã duyệt đơn nghỉ phép thành công!');
             navigate('/leaves');
-        } catch {
+        } catch (error) {
+            console.error('Error approving leave:', error);
             toast.error('Có lỗi xảy ra khi duyệt đơn');
         }
     };
@@ -85,7 +105,8 @@ const LeaveDetail = () => {
         try {
             if (!selectedRequest) return;
 
-            const approverName = userRole === 'admin' ? 'Admin' : userRole === 'manager' ? 'Manager' : 'Accountant';
+            // Gọi API từ chối đơn
+            await rejectLeaveRequest(selectedRequest.id, rejectReason);
 
             // Log hành động từ chối đơn nghỉ phép
             logRejectLeave(selectedRequest.id, selectedRequest.employeeName || 'Unknown', rejectReason);
@@ -93,7 +114,8 @@ const LeaveDetail = () => {
             setShowRejectModal(false);
             toast.success('Đã từ chối đơn nghỉ phép thành công!');
             navigate('/leaves');
-        } catch {
+        } catch (error) {
+            console.error('Error rejecting leave:', error);
             toast.error('Có lỗi xảy ra khi từ chối đơn');
         }
     };

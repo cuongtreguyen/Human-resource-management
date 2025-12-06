@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { setRole, setUserInfo } from "../../utils/auth";
 import { http, JAVA_API } from "../../services/config";
+import { getEmployeeIdByCode } from "../../services/api";
 
 const Login = () => {
   const navigate = useNavigate();

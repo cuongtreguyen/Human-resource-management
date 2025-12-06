@@ -172,6 +172,29 @@ class AttendanceApi {
       return { success: false, message: 'Failed to send recognition data' };
     }
   }
+
+  /**
+   * API cho Accountant - Lấy danh sách chấm công nhân viên
+   * GET /api/attendance/accountant/employees?date=YYYY-MM-DD
+   */
+  async getAccountantEmployeesAttendance(date) {
+    try {
+      const d = date || new Date().toISOString().split('T')[0];
+      const token = localStorage.getItem('accessToken') || '';
+      const res = await fetch(`${JAVA_API}/attendance/accountant/employees?date=${d}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    } catch (e) {
+      console.error('getAccountantEmployeesAttendance failed:', e);
+      return [];
+    }
+  }
 }
 
 export default new AttendanceApi();
