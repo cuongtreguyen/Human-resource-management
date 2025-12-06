@@ -113,10 +113,10 @@ public class AddEmployeeRequest {
     @Size(max = 50, message = "Emergency contact relationship must not exceed 50 characters")
     private String emergencyContactRelationship;
 
-    @JsonFormat(pattern = "HH:mm:ss")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime timeIn;
 
-    @JsonFormat(pattern = "HH:mm:ss")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime timeOut;
 
     @Size(max = 50, message = "Shift must not exceed 50 characters")

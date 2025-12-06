@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import management.member.demo.enums.EmployeeStatus;
+import management.member.demo.enums.EmployeeType;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -47,7 +48,7 @@ public class ProfileResponse {
         private String maritalStatus;
         private String taxCode;
         private String contractCode;
-        private EmployeeStatus employeeType;
+        private EmployeeType employeeType;
         
         // Thông tin liên hệ khẩn cấp
         private String emergencyContactName;

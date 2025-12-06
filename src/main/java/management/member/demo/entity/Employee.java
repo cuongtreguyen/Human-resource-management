@@ -1,5 +1,6 @@
 package management.member.demo.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -8,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import management.member.demo.enums.EmployeeStatus;
+import management.member.demo.enums.EmployeeType;
 import management.member.demo.enums.Role;
 
 import java.math.BigDecimal;
@@ -151,10 +153,9 @@ public class Employee {
     private String  maritalStatus;
 
     /** Loại nhân viên */
-    @Size(max = 100)
     @Enumerated(EnumType.STRING)
     @Column(name = "employee_type")
-    private EmployeeStatus employeeType;
+    private EmployeeType employeeType;
 
     /** Tên người liên hệ khẩn cấp */
     @Size(max = 100)
@@ -192,10 +193,12 @@ public class Employee {
 
     /** Giờ vào làm */
     @Column(name = "time_in")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime timeIn;
 
     /** Giờ tan ca */
     @Column(name = "time_out")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime timeOut;
 
     /** Ca làm việc */

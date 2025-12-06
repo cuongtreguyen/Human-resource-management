@@ -4,6 +4,7 @@ import management.member.demo.dto.*;
 import management.member.demo.entity.Employee;
 import management.member.demo.entity.User;
 import management.member.demo.enums.EmployeeStatus;
+import management.member.demo.enums.EmployeeType;
 import management.member.demo.enums.Role;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
@@ -65,18 +66,20 @@ public class EmployeeService {
         employee.setDepartment(request.getDepartment());
         employee.setPosition(request.getPosition());
         employee.setEmployeeId(request.getEmployeeId());
-        
+        employee.setRole(Role.EMPLOYEE);
+
         // Set các field bổ sung
         employee.setIdCardIssueDate(request.getIdCardIssueDate());
         employee.setIdCardIssuePlace(request.getIdCardIssuePlace());
         employee.setMaritalStatus(request.getMaritalStatus());
         employee.setTaxCode(request.getTaxCode());
         employee.setContractCode(request.getContractCode());
+        // EmployeeType enum
         if (request.getEmployeeType() != null) {
             try {
-                employee.setEmployeeType(EmployeeStatus.valueOf(request.getEmployeeType().toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                // Ignore if invalid
+                employee.setEmployeeType(EmployeeType.valueOf(request.getEmployeeType().toUpperCase()));
+            } catch (IllegalArgumentException ignored) {
+                // Nếu sai enum → bỏ qua
             }
         }
         employee.setEmergencyContactName(request.getEmergencyContactName());
