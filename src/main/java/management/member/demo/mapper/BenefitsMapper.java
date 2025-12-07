@@ -42,6 +42,7 @@ public class BenefitsMapper {
         }
         
         AllBenefitResponseDTO dto = new AllBenefitResponseDTO();
+        dto.setId(benefit.getId());
         dto.setBenefitName(benefit.getBenefitName());
         dto.setAllowance_amount(benefit.getAllowanceAmount() != null ? benefit.getAllowanceAmount() : BigDecimal.ZERO);
         dto.setDepartment(null); // Department không có trong Benefits entity, có thể set null hoặc lấy từ EmployeeBenefits
