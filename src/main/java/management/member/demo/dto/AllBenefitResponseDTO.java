@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 @Setter
 public class AllBenefitResponseDTO {
     private Long id;
+    private String benefitId;
     private String benefitName;
     private BigDecimal allowance_amount;
     private String department;
