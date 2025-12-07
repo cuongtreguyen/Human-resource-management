@@ -12,7 +12,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/face-recognition")
-@CrossOrigin(origins = "*")
 public class FaceRecognitionController {
 
     @Autowired

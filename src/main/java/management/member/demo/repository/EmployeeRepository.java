@@ -100,32 +100,32 @@ public interface EmployeeRepository extends JpaRepository<Employee, Long> {
                                    @Param("department") String department);
 
     @Query(value = """
-        SELECT
-            e.id AS employeeId,
-            e.full_name AS fullName,
-            e.department AS department,
-            e.position AS position,
-            ee.overall_rating AS latestScore,
-            ee.review_date AS lastEvaluationDate,
-            ee.id AS lastEvaluationId
-        FROM employees e
-        -- LEFT JOIN LATERAL để tìm bản đánh giá mới nhất (chỉ 1 bản ghi/nhân viên)
-        LEFT JOIN LATERAL (
-            SELECT ev.* FROM employee_evaluations ev
-            WHERE ev.employee_id = e.id
-            ORDER BY ev.review_date DESC, ev.id DESC
-            LIMIT 1
-        ) ee ON TRUE
-        
-        WHERE (:keyword IS NULL 
-            OR e.full_name ILIKE CONCAT('%', :keyword, '%') 
-            OR e.position ILIKE CONCAT('%', :keyword, '%')
-        )
-        -- Sử dụng ILIKE cho Department
-        AND (:department IS NULL OR e.department ILIKE CONCAT('%', :department, '%')) 
+    SELECT
+        e.id AS employeeId,
+        e.full_name AS fullName,
+        e.department AS department,
+        e.position AS position,
+        ee.average_score AS latestScore,
+        ee.evaluation_date AS lastEvaluationDate,
+        ee.id AS lastEvaluationId
+    FROM employees e
+    LEFT JOIN LATERAL (
+        SELECT ev.*
+        FROM evaluation ev
+        WHERE ev.employee_id = e.id
+        ORDER BY ev.evaluation_date DESC, ev.id DESC
+        LIMIT 1
+    ) ee ON TRUE
+    
+    WHERE (:keyword IS NULL 
+        OR e.full_name ILIKE CONCAT('%', :keyword, '%') 
+        OR e.position ILIKE CONCAT('%', :keyword, '%')
+    )
+    AND (:department IS NULL OR e.department ILIKE CONCAT('%', :department, '%'))
     """, nativeQuery = true)
     List<EmployeeEvaluationSummaryDTO> findEmployeeSummariesWithLatestEvaluation(
             @Param("keyword") String keyword,
             @Param("department") String department);
+
 }
 

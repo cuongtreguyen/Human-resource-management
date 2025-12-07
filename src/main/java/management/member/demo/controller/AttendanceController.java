@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import management.member.demo.service.AttendanceService;
 import management.member.demo.service.FlaskApiService;
 import management.member.demo.dto.AttendanceDTO;
+import management.member.demo.dto.AttendanceFilterResponseDTO;
 import management.member.demo.dto.AttendanceFlaskResponseDTO;
 import management.member.demo.dto.AttendanceRequest;
 import management.member.demo.dto.AttendanceStatsDTO;
@@ -30,7 +31,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/attendance")
-@CrossOrigin(origins = "*")
 @Tag(name = "Attendance", description = "Attendance management endpoints")
 public class AttendanceController {
 
@@ -366,5 +366,58 @@ public class AttendanceController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         List<EmployeeAttendanceForAccountantDTO> result = attendanceService.getEmployeeAttendanceForAccountant(date);
         return ResponseEntity.ok(result);
+    }
+
+    /**
+     * API 1: Lấy tất cả attendance theo filter ngày/tháng/năm
+     * - Nếu không nhập gì: lấy tất cả
+     * - Nếu chỉ nhập năm: filter theo năm
+     * - Nếu nhập tháng và năm: filter theo tháng/năm
+     * - Nếu nhập đầy đủ ngày/tháng/năm: filter theo ngày cụ thể
+     * - Nếu không nhập ngày: mặc định lấy ngày hiện tại
+     */
+    @GetMapping("/filter")
+    @Operation(
+            summary = "Get all attendance by date filter",
+            description = "Filter attendance by day/month/year. If no parameters provided, returns all. If only year provided, filters by year. If month and year provided, filters by month/year. If all provided, filters by specific date. If day not provided, defaults to today."
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameters")
+    })
+    public ResponseEntity<List<AttendanceFilterResponseDTO>> getAllAttendanceByDateFilter(
+            @RequestParam(required = false) Integer day,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
+        try {
+            List<AttendanceFilterResponseDTO> result = attendanceService.getAllAttendanceByDateFilter(day, month, year);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("Error getting attendance by date filter: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * API 2: Tìm attendance theo fullName (ignore case)
+     */
+    @GetMapping("/search")
+    @Operation(
+            summary = "Search attendance by full name",
+            description = "Search attendance records by employee full name (case-insensitive)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "400", description = "Invalid parameter")
+    })
+    public ResponseEntity<List<AttendanceFilterResponseDTO>> searchAttendanceByFullName(
+            @RequestParam(required = false) String fullName) {
+        try {
+            List<AttendanceFilterResponseDTO> result = attendanceService.searchAttendanceByFullName(fullName);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            logger.error("Error searching attendance by full name: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

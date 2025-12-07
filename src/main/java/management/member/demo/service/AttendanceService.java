@@ -3,6 +3,7 @@ package management.member.demo.service;
 import management.member.demo.mapper.AttendanceMapper;
 import management.member.demo.dto.AttendanceDTO;
 import management.member.demo.dto.AttendanceRequest;
+import management.member.demo.dto.AttendanceFilterResponseDTO;
 import management.member.demo.dto.DailyAttendanceResponseDTO;
 import management.member.demo.dto.EmployeeAttendanceForAccountantDTO;
 import management.member.demo.dto.FaceRecognitionResponseDTO;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -217,6 +219,7 @@ public class AttendanceService {
 
     /**
      * Check-in cho employee
+     * Tự động set status = LATE nếu check-in muộn hơn employee.timeIn
      */
     public AttendanceDTO checkIn(Long employeeId, LocalDate date) {
         Employee employee = employeeRepository.findById(employeeId)
@@ -224,21 +227,24 @@ public class AttendanceService {
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
 
         Optional<Attendance> existing = attendanceRepository.findByEmployeeIdAndDate(employeeId, date);
+        LocalTime checkInTime = java.time.LocalTime.now();
 
         Attendance attendance;
+        AttendenceStatus status = calculateCheckInStatus(employee, checkInTime);
+
         if (existing.isPresent()) {
             attendance = existing.get();
             if (attendance.getCheckIn() != null) {
                 throw new IllegalStateException("Employee đã check-in vào ngày này");
             }
-            attendance.setCheckIn(java.time.LocalTime.now());
-            attendance.setStatus(AttendenceStatus.IN_WORK); // Set status khi check-in
+            attendance.setCheckIn(checkInTime);
+            attendance.setStatus(status);
         } else {
             attendance = new Attendance();
             attendance.setEmployee(employee);
             attendance.setAttendanceDate(date);
-            attendance.setCheckIn(java.time.LocalTime.now());
-            attendance.setStatus(AttendenceStatus.IN_WORK); // Set status khi check-in
+            attendance.setCheckIn(checkInTime);
+            attendance.setStatus(status);
             attendance.setFullName(employee.getFullName());
             attendance.setUserId(employee.getEmployeeId() != null ? employee.getEmployeeId() : employee.getId().toString());
         }
@@ -337,12 +343,16 @@ public class AttendanceService {
                 // Nếu đã có check-in, thì đây là check-out
                 if (attendance.getCheckIn() != null && attendance.getCheckOut() == null) {
                     attendance.setCheckOut(java.time.LocalTime.now());
-                    attendance.setStatus(AttendenceStatus.OUT_WORK); // Set status khi check-out
+                    // Giữ nguyên status LATE nếu đã đi muộn, không đổi thành OUT_WORK
+                    if (attendance.getStatus() != AttendenceStatus.LATE) {
+                        attendance.setStatus(AttendenceStatus.OUT_WORK); // Set status khi check-out
+                    }
                     isCheckIn = false;
                 } else if (attendance.getCheckIn() == null) {
-                    // Chưa có check-in, tạo check-in
-                    attendance.setCheckIn(java.time.LocalTime.now());
-                    attendance.setStatus(AttendenceStatus.IN_WORK); // Set status khi check-in
+                    // Chưa có check-in, tạo check-in với logic kiểm tra muộn
+                    LocalTime checkInTime = java.time.LocalTime.now();
+                    attendance.setCheckIn(checkInTime);
+                    attendance.setStatus(calculateCheckInStatus(attendance.getEmployee(), checkInTime));
                     isCheckIn = true;
                 } else {
                     // Đã có cả check-in và check-out, không làm gì
@@ -354,11 +364,12 @@ public class AttendanceService {
                         .orElseThrow(() -> new ResourceNotFoundException(
                                 ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
 
+                LocalTime checkInTime = java.time.LocalTime.now();
                 attendance = new Attendance();
                 attendance.setEmployee(employee);
                 attendance.setAttendanceDate(today);
-                attendance.setCheckIn(java.time.LocalTime.now());
-                attendance.setStatus(AttendenceStatus.IN_WORK); // Set status khi check-in
+                attendance.setCheckIn(checkInTime);
+                attendance.setStatus(calculateCheckInStatus(employee, checkInTime));
                 attendance.setFullName(employee.getFullName());
                 attendance.setUserId(employee.getEmployeeId() != null ? employee.getEmployeeId() : employee.getId().toString());
                 isCheckIn = true;
@@ -633,5 +644,196 @@ public class AttendanceService {
         // Giữ lại để tương thích với code cũ, nhưng không làm gì cả
     }
 
+    /**
+     * API 1: Lấy tất cả attendance theo filter ngày/tháng/năm
+     * - Nếu không nhập gì: lấy tất cả
+     * - Nếu chỉ nhập năm: filter theo năm
+     * - Nếu nhập tháng và năm: filter theo tháng/năm
+     * - Nếu nhập đầy đủ ngày/tháng/năm: filter theo ngày cụ thể
+     * - Nếu chỉ nhập ngày (không có tháng/năm): lấy ngày hiện tại của tháng/năm hiện tại
+     */
+    public List<AttendanceFilterResponseDTO> getAllAttendanceByDateFilter(
+            Integer day, Integer month, Integer year) {
+        // Nếu không có tham số nào, lấy tất cả với Employee được load
+        if (day == null && month == null && year == null) {
+            List<Attendance> allAttendance = attendanceRepository.findAllWithEmployee();
+            return mapToFilterResponseDTO(allAttendance);
+        }
+
+        // Xử lý logic filter:
+        // - Nếu có ngày nhưng không có tháng/năm: dùng tháng/năm hiện tại
+        // - Nếu có tháng nhưng không có năm: dùng năm hiện tại
+        LocalDate today = LocalDate.now();
+        Integer finalDay = day;
+        Integer finalMonth = month != null ? month : (day != null ? today.getMonthValue() : null);
+        Integer finalYear = year != null ? year : ((day != null || month != null) ? today.getYear() : null);
+
+        List<Attendance> attendanceList = attendanceRepository.findByDateFilter(
+                finalDay, finalMonth, finalYear);
+        return mapToFilterResponseDTO(attendanceList);
+    }
+
+    /**
+     * API 2: Tìm attendance theo fullName (ignore case)
+     */
+    public List<AttendanceFilterResponseDTO> searchAttendanceByFullName(String fullName) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            // Nếu không có fullName, trả về tất cả với Employee được load
+            List<Attendance> allAttendance = attendanceRepository.findAllWithEmployee();
+            return mapToFilterResponseDTO(allAttendance);
+        }
+
+        List<Attendance> attendanceList = attendanceRepository.findByFullNameIgnoreCase(fullName.trim());
+        return mapToFilterResponseDTO(attendanceList);
+    }
+
+    /**
+     * Helper method: Map Attendance entity sang AttendanceFilterResponseDTO
+     */
+    private List<AttendanceFilterResponseDTO> mapToFilterResponseDTO(List<Attendance> attendanceList) {
+        return attendanceList.stream().map(attendance -> {
+            AttendanceFilterResponseDTO dto = new AttendanceFilterResponseDTO();
+            
+            // Load lại Employee nếu cần (đảm bảo có đầy đủ thông tin)
+            Employee employee = attendance.getEmployee();
+            // Nếu employee là proxy/lazy hoặc timeIn null, load lại từ database
+            if (employee != null && employee.getTimeIn() == null) {
+                Long employeeId = employee.getId();
+                if (employeeId != null) {
+                    employee = employeeRepository.findById(employeeId).orElse(employee);
+                }
+            }
+            
+            // Lấy employeeID từ employee.employeeId hoặc userId
+            if (employee != null && employee.getEmployeeId() != null) {
+                dto.setEmployeeID(employee.getEmployeeId());
+            } else if (attendance.getUserId() != null) {
+                dto.setEmployeeID(attendance.getUserId());
+            } else {
+                dto.setEmployeeID("emp" + (employee != null ? employee.getId() : attendance.getId()));
+            }
+
+            // Lấy fullName
+            dto.setFullName(attendance.getFullName() != null ? 
+                attendance.getFullName() : 
+                (employee != null ? employee.getFullName() : null));
+
+            // Lấy department từ Employee
+            dto.setDepartment(employee != null ? employee.getDepartment() : null);
+
+            // Lấy shift từ Employee
+            dto.setShift(employee != null ? employee.getShift() : null);
+
+            // timeIn và timeOut
+            dto.setTimeIn(attendance.getCheckIn());
+            dto.setTimeOut(attendance.getCheckOut());
+
+            // status - LUÔN tính lại dựa trên checkIn và employee.timeIn để đảm bảo đúng
+            AttendenceStatus status;
+            
+            // Nếu có checkIn, LUÔN kiểm tra lại xem có đi muộn không (ưu tiên LATE)
+            if (attendance.getCheckIn() != null) {
+                if (employee != null) {
+                    // LUÔN gọi calculateCheckInStatus (có fallback logic nếu timeIn null)
+                    AttendenceStatus calculatedStatus = calculateCheckInStatus(employee, attendance.getCheckIn());
+                    
+                    logger.info("Attendance ID: {}, CheckIn: {}, Employee.timeIn: {}, Shift: {}, CalculatedStatus: {}", 
+                        attendance.getId(), attendance.getCheckIn(), employee.getTimeIn(), employee.getShift(), calculatedStatus);
+                    
+                    // Nếu tính ra là LATE, LUÔN ưu tiên LATE (kể cả khi đã check-out)
+                    if (calculatedStatus == AttendenceStatus.LATE) {
+                        status = AttendenceStatus.LATE;
+                        logger.info("Setting status to LATE for attendance ID: {} (checkIn: {}, expectedTimeIn based on shift: {})", 
+                            attendance.getId(), attendance.getCheckIn(), 
+                            employee.getTimeIn() != null ? employee.getTimeIn() : "default from shift");
+                    } else {
+                        // Nếu không muộn, tính dựa trên checkIn/checkOut
+                        if (attendance.getCheckOut() != null) {
+                            status = AttendenceStatus.OUT_WORK; // Đã check-in và check-out
+                        } else {
+                            status = AttendenceStatus.IN_WORK; // Đã check-in nhưng chưa check-out
+                        }
+                    }
+                } else {
+                    // Không có employee, tính dựa trên checkOut
+                    logger.warn("Employee is null for attendance ID: {}", attendance.getId());
+                    if (attendance.getCheckOut() != null) {
+                        status = AttendenceStatus.OUT_WORK;
+                    } else {
+                        status = AttendenceStatus.IN_WORK;
+                    }
+                }
+            } else {
+                // Không có checkIn
+                if (attendance.getCheckOut() != null) {
+                    status = AttendenceStatus.OUT_WORK;
+                } else {
+                    status = attendance.getStatus() != null ? 
+                        attendance.getStatus() : AttendenceStatus.NOT_CHECKED_IN;
+                }
+            }
+            
+            dto.setStatus(status);
+
+            return dto;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * Helper method: Tính status khi check-in dựa trên thời gian check-in và employee.timeIn
+     * - Nếu check-in muộn hơn timeIn > 0 phút nhưng <= 120 phút: LATE
+     * - Nếu check-in đúng giờ hoặc sớm: IN_WORK
+     * - Nếu muộn > 120 phút: IN_WORK (coi như nghỉ, không tính là muộn)
+     * 
+     * Fallback: Nếu employee.timeIn là null, dùng giá trị mặc định dựa trên shift:
+     * - Morning shift: 08:00
+     * - Afternoon shift: 13:00
+     * - Night shift: 18:00
+     * - Không có shift: 08:00 (mặc định)
+     */
+    private AttendenceStatus calculateCheckInStatus(Employee employee, LocalTime checkInTime) {
+        if (employee == null) {
+            logger.warn("Employee is null when calculating check-in status");
+            return AttendenceStatus.IN_WORK;
+        }
+        
+        LocalTime expectedTimeIn = employee.getTimeIn();
+        
+        // Fallback: Nếu timeIn null, dùng giá trị mặc định dựa trên shift
+        if (expectedTimeIn == null) {
+            String shift = employee.getShift();
+            String originalShift = shift; // Giữ lại để log
+            if (shift != null) {
+                shift = shift.toLowerCase().trim();
+                if (shift.contains("morning") || shift.contains("sáng")) {
+                    expectedTimeIn = LocalTime.of(8, 0); // 08:00
+                } else if (shift.contains("afternoon") || shift.contains("chiều")) {
+                    expectedTimeIn = LocalTime.of(13, 0); // 13:00
+                } else if (shift.contains("night") || shift.contains("tối") || shift.contains("đêm")) {
+                    expectedTimeIn = LocalTime.of(18, 0); // 18:00
+                } else {
+                    expectedTimeIn = LocalTime.of(8, 0); // Mặc định 08:00
+                }
+            } else {
+                expectedTimeIn = LocalTime.of(8, 0); // Mặc định 08:00 nếu không có shift
+            }
+            logger.warn("Employee.timeIn is null for employeeId: {}, using default timeIn: {} based on shift: {}", 
+                employee.getId(), expectedTimeIn, originalShift);
+        }
+
+        if (checkInTime.isAfter(expectedTimeIn)) {
+            long minutesLate = java.time.Duration.between(expectedTimeIn, checkInTime).toMinutes();
+            logger.debug("Check-in time: {}, Expected timeIn: {}, Minutes late: {}", 
+                checkInTime, expectedTimeIn, minutesLate);
+            // Nếu muộn > 0 phút thì tính là đi muộn (LATE)
+            // Bỏ giới hạn 120 phút - nếu muộn thì luôn là LATE
+            if (minutesLate > 0) {
+                return AttendenceStatus.LATE;
+            }
+        }
+        
+        // Check-in đúng giờ hoặc sớm
+        return AttendenceStatus.IN_WORK;
+    }
 
 }

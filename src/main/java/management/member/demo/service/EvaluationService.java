@@ -13,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -26,10 +24,6 @@ public class EvaluationService {
     // 1. API Tổng hợp: Tìm kiếm nhân viên + Lấy đánh giá gần nhất
     // (Phục vụ cho màn hình List danh sách)
     public List<EmployeeEvaluationSummaryDTO> getEmployeeEvaluationSummaries(String keyword, String department) {
-        // ⚠️ Xử lý tham số keyword cho LIKE: nếu keyword != null, bạn nên thêm '%' ở 2 đầu
-        // trong logic Service trước khi truyền vào Repository, hoặc điều chỉnh JPQL.
-
-        // Giả định bạn truyền keyword đã có dấu % nếu cần (hoặc JPQL đã xử lý).
         return employeeRepository.findEmployeeSummariesWithLatestEvaluation(keyword, department);
     }
 
@@ -47,10 +41,14 @@ public class EvaluationService {
         // Làm tròn 1 chữ số thập phân (4.333 -> 4.3)
         average = Math.round(average * 10.0) / 10.0;
 
+        LocalDate evalDate = request.getEvaluationDate() != null
+                ? request.getEvaluationDate()
+                : LocalDate.now();
+
         Evaluation evaluation = Evaluation.builder()
                 .employee(employee)
                 .evaluator(evaluator)
-                .evaluationDate(request.getEvaluationDate() != null ? request.getEvaluationDate() : LocalDate.now())
+                .evaluationDate(evalDate)
                 .workPerformanceScore(request.getWorkPerformanceScore())
                 .teamworkScore(request.getTeamworkScore())
                 .attitudeScore(request.getAttitudeScore())

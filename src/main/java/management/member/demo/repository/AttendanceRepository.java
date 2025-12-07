@@ -61,4 +61,48 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
             @Param("employeeId") Long employeeId,
             @Param("status") management.member.demo.enums.AttendenceStatus status
     );
+
+    /**
+     * Lấy tất cả attendance với Employee được load (JOIN FETCH)
+     */
+    @Query("SELECT DISTINCT a FROM Attendance a LEFT JOIN FETCH a.employee")
+    List<Attendance> findAllWithEmployee();
+
+    /**
+     * Filter attendance theo ngày/tháng/năm
+     * - Nếu có day, month, year: filter theo ngày cụ thể
+     * - Nếu chỉ có month, year: filter theo tháng
+     * - Nếu chỉ có year: filter theo năm
+     * - Nếu không có gì: trả về tất cả
+     */
+    @Query("SELECT DISTINCT a FROM Attendance a LEFT JOIN FETCH a.employee WHERE " +
+            "(:day IS NULL OR DAY(a.attendanceDate) = :day) AND " +
+            "(:month IS NULL OR MONTH(a.attendanceDate) = :month) AND " +
+            "(:year IS NULL OR YEAR(a.attendanceDate) = :year)")
+    List<Attendance> findByDateFilter(
+            @Param("day") Integer day,
+            @Param("month") Integer month,
+            @Param("year") Integer year
+    );
+
+    /**
+     * Tìm attendance theo fullName (ignore case)
+     */
+    @Query("SELECT DISTINCT a FROM Attendance a LEFT JOIN FETCH a.employee WHERE LOWER(a.fullName) LIKE LOWER(CONCAT('%', :fullName, '%'))")
+    List<Attendance> findByFullNameIgnoreCase(@Param("fullName") String fullName);
+
+    /**
+     * Tìm attendance theo fullName (ignore case) kết hợp với filter ngày/tháng/năm
+     */
+    @Query("SELECT DISTINCT a FROM Attendance a LEFT JOIN FETCH a.employee WHERE " +
+            "LOWER(a.fullName) LIKE LOWER(CONCAT('%', :fullName, '%')) AND " +
+            "(:day IS NULL OR DAY(a.attendanceDate) = :day) AND " +
+            "(:month IS NULL OR MONTH(a.attendanceDate) = :month) AND " +
+            "(:year IS NULL OR YEAR(a.attendanceDate) = :year)")
+    List<Attendance> findByFullNameAndDateFilter(
+            @Param("fullName") String fullName,
+            @Param("day") Integer day,
+            @Param("month") Integer month,
+            @Param("year") Integer year
+    );
 }
