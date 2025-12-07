@@ -40,5 +40,8 @@ public class PayrollCalculationForAccountantRequestDTO {
     
     /** Thưởng (tự nhập) */
     private BigDecimal bonus;
+    
+    /** Payroll ID (optional) - Nếu có, sẽ gán Salary vào Payroll này */
+    private Long payrollId;
 }
 
