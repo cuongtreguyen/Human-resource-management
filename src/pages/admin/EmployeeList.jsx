@@ -5,6 +5,7 @@ import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { EmployeeSummaryCards, Pagination } from '../../components/employee';
+import { getAllEmployees } from '../../services/employeeService';
 import { getRole, isAdmin } from '../../utils/auth';
 import { canViewSalary } from '../../utils/fieldPermissions';
 import { logDeleteEmployee, logViewDetail } from '../../utils/systemLogger';
@@ -57,26 +58,28 @@ const EmployeeList = () => {
       setLoading(true);
       setError(null);
 
-      const response = await http(`${JAVA_API}/employees`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
-        }
-      });
+      const response = await getAllEmployees();
+      // API có thể trả về array trực tiếp hoặc { data: [...] }
+      const employeesData = Array.isArray(response) ? response : response.data || [];
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Không thể tải danh sách`);
-      }
+      // Map data để phù hợp với UI
+      const mappedEmployees = employeesData.map(emp => ({
+        id: emp.employeeId || emp.id,
+        employeeId: emp.employeeId || emp.id,
+        name: emp.fullName || emp.name || `${emp.firstName || ''} ${emp.lastName || ''}`.trim(),
+        email: emp.email || '',
+        phone: emp.phone || emp.phoneNumber || '',
+        department: emp.department || emp.departmentName || 'N/A',
+        position: emp.position || emp.jobTitle || 'N/A',
+        salary: emp.salary || emp.baseSalary || 0,
+        startDate: emp.startDate || emp.hireDate || '',
+        hireDate: emp.startDate || emp.hireDate || '',
+        status: emp.status || 'active',
+        avatar: emp.avatar || emp.profileImage || null,
+      }));
 
-      const result = await response.json();
-      
-      // Backend trả về: { success: true, data: [...] }
-      if (result.success && Array.isArray(result.data)) {
-        setEmployees(result.data);
-      } else {
-        throw new Error('Dữ liệu không hợp lệ từ server');
-      }
+      setEmployees(mappedEmployees);
+      console.log('✅ Loaded employees:', mappedEmployees);
     } catch (err) {
       console.error('Load employees error:', err);
       setError(err.message || 'Không thể tải danh sách nhân viên');
@@ -146,7 +149,7 @@ const EmployeeList = () => {
 
     try {
       setLoading(true);
-      
+
       const response = await http(`${JAVA_API}/employees/${employeeId}`, {
         method: 'DELETE',
         headers: {

@@ -5,9 +5,10 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import fakeApi from '../../services/fakeApi';
 import { getRole } from '../../utils/auth';
 import { useOTContext } from '../../context/OTContext';
+import { getMonthlyPayroll, getPayrollSummary, createPayroll, updatePayroll, cancelPayroll as cancelPayrollAPI } from '../../services/payrollService';
+import { searchEmployeesForAccountant, getAllEmployees } from '../../services/employeeService';
 
 // OT Rate: 100,000 VND per hour
 const OT_HOURLY_RATE = 100000;
@@ -78,7 +79,8 @@ const PayrollList = () => {
 
   useEffect(() => {
     loadEmployees();
-  }, []);
+    loadMonthlyPayrollData();
+  }, [selectedMonth, selectedDepartment]);
 
   // Get approved OT hours for an employee in selected month
   // OT is visible when Manager approves (status: approved, completed, reviewed, payroll_approved)
@@ -105,11 +107,92 @@ const PayrollList = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getEmployees();
-      setEmployees(response.data);
+
+      // Nếu là Accountant, dùng API chuyên dụng với filter lương
+      const response = userRole === 'accountant'
+        ? await searchEmployeesForAccountant({
+            department: selectedDepartment !== 'all' ? selectedDepartment : undefined
+          })
+        : await getAllEmployees({
+            department: selectedDepartment !== 'all' ? selectedDepartment : undefined
+          });
+
+      // API có thể trả về array trực tiếp hoặc { data: [...] }
+      const employeeData = Array.isArray(response) ? response : response.data || [];
+
+      // Debug: xem API trả về gì
+      console.log('📋 Raw employee data from API:', employeeData);
+
+      // Map data từ API để phù hợp với component
+      const mappedEmployees = employeeData.map(emp => {
+        // Tìm salary từ nhiều field có thể có
+        const salary = emp.salary || emp.baseSalary || emp.basicSalary || emp.base_salary || emp.monthlySalary || 0;
+
+        return {
+          id: emp.employeeId || emp.id,
+          employeeId: emp.employeeId || emp.id,
+          name: emp.fullName || emp.name || `${emp.lastName || ''} ${emp.firstName || ''}`.trim(),
+          email: emp.email || '',
+          phone: emp.phone || emp.phoneNumber || '',
+          department: emp.department || emp.departmentName || 'N/A',
+          position: emp.position || emp.jobTitle || 'N/A',
+          salary: salary,
+          basicSalary: salary,
+          status: emp.status || 'active',
+        };
+      });
+
+      console.log('✅ Mapped employees for payroll:', mappedEmployees);
+      setEmployees(mappedEmployees);
     } catch (err) {
       console.error('Error loading employees:', err);
       setError('Không thể tải dữ liệu nhân viên');
+      // Fallback: empty array nếu API lỗi
+      setEmployees([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load monthly payroll from API
+  const loadMonthlyPayrollData = async () => {
+    try {
+      setLoading(true);
+      // Format month to YYYY-MM
+      const formattedMonth = selectedMonth;
+
+      // Call API to get monthly payroll
+      const response = await getMonthlyPayroll(formattedMonth);
+
+      // API có thể trả về array trực tiếp hoặc { data: [...] }
+      const payrollData = Array.isArray(response) ? response : response.data || [];
+
+      if (payrollData.length > 0) {
+        // Map API data to component state format
+        const mappedPayrolls = payrollData.map(item => ({
+          id: item.id || item.employeeId || Math.random().toString(),
+          employeeId: item.employeeId || item.id,
+          name: item.fullName || item.employeeName || item.name,
+          email: item.email,
+          department: item.department || item.departmentName,
+          basicSalary: item.baseSalary || item.basicSalary || 0,
+          otHours: item.otHours || 0,
+          otPay: item.otPay || 0,
+          netSalary: item.netSalary || item.totalSalary || 0,
+          status: item.status || 'PENDING', // PENDING | APPROVED | PAID | CANCELLED | FAILED
+          month: formattedMonth,
+          paidDate: item.paidDate || null
+        }));
+
+        console.log('✅ Loaded payroll from API:', mappedPayrolls);
+        setPayrollRecords(mappedPayrolls);
+      } else {
+        console.log('📋 No payroll data from API, will generate from employees');
+      }
+    } catch (err) {
+      console.error('Error loading monthly payroll:', err);
+      // Nếu API lỗi hoặc chưa có data, fallback về generate local
+      console.log('Fallback to generate payroll locally');
     } finally {
       setLoading(false);
     }
@@ -246,13 +329,24 @@ const PayrollList = () => {
   };
 
   // Rollback payroll record (đổi status thành Canceled, giữ data để chỉnh sửa)
-  const handleRollbackPayroll = (payrollId) => {
+  const handleRollbackPayroll = async (payrollId) => {
     if (window.confirm('Bạn có chắc chắn muốn hủy bảng lương này? Dữ liệu sẽ được giữ lại để chỉnh sửa.')) {
-      setPayrollRecords(payrollRecords.map(p =>
-        p.id === payrollId
-          ? { ...p, status: 'Canceled', paidDate: null }
-          : p
-      ));
+      try {
+        // Call API to cancel payroll
+        await cancelPayrollAPI(payrollId);
+
+        // Update local state
+        setPayrollRecords(payrollRecords.map(p =>
+          p.id === payrollId
+            ? { ...p, status: 'CANCELLED', paidDate: null }
+            : p
+        ));
+
+        alert('Đã hủy bảng lương thành công!');
+      } catch (err) {
+        console.error('Error canceling payroll:', err);
+        alert('Không thể hủy bảng lương. Vui lòng thử lại!');
+      }
     }
   };
 
@@ -318,8 +412,23 @@ const PayrollList = () => {
     alert('Xuất dữ liệu lương thành công!');
   };
 
-  // Calculate total payroll statistics
-  const payrollStats = payrollRecords.length > 0 ? payrollRecords.reduce((stats, payroll) => ({
+  // Load payroll statistics from API
+  const [apiStats, setApiStats] = useState(null);
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const stats = await getPayrollSummary();
+        setApiStats(stats);
+      } catch (err) {
+        console.error('Error loading payroll summary:', err);
+      }
+    };
+    loadStats();
+  }, [selectedMonth, payrollRecords]);
+
+  // Calculate total payroll statistics (use API stats if available, fallback to local calculation)
+  const payrollStats = apiStats || (payrollRecords.length > 0 ? payrollRecords.reduce((stats, payroll) => ({
     totalEmployees: stats.totalEmployees + 1,
     totalPayroll: stats.totalPayroll + (payroll.netSalary || 0),
     totalTax: stats.totalTax + ((payroll.socialInsurance || 0) + (payroll.healthInsurance || 0) + (payroll.unemploymentInsurance || 0)),
@@ -327,7 +436,7 @@ const PayrollList = () => {
     totalOTHours: stats.totalOTHours + (payroll.otHours || 0),
     totalOTPay: stats.totalOTPay + (payroll.otPay || 0)
   }), { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0, totalOTHours: 0, totalOTPay: 0 }) :
-    { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0, totalOTHours: 0, totalOTPay: 0 };
+    { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0, totalOTHours: 0, totalOTPay: 0 });
 
   // Generate payrolls when employees are loaded or OT data changes
   useEffect(() => {

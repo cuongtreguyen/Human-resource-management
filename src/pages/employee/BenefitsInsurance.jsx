@@ -7,7 +7,8 @@ import {
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import fakeApi from '../../services/fakeApi';
-import { getRole, getCurrentEmployeeId } from '../../utils/auth';
+import { createBenefitRequest, getMyBenefitRequests } from '../../services/benefitRequestService';
+import { getUserInfo, getRole, getCurrentEmployeeId } from '../../utils/auth';
 
 const EmployeeBenefitsInsurance = () => {
   const userRole = getRole();
@@ -88,7 +89,7 @@ const EmployeeBenefitsInsurance = () => {
       const [benefitsRes, voluntaryRes, requestsRes] = await Promise.all([
         fakeApi.getEmployeeBenefits(employeeId),
         fakeApi.getVoluntaryInsurance(),
-        fakeApi.getEmployeeBenefitRequests(employeeId)
+        getMyBenefitRequests(employeeId)  // Dùng service mới
       ]);
 
       if (benefitsRes.success) {
@@ -132,8 +133,13 @@ const EmployeeBenefitsInsurance = () => {
     setIsSubmitting(true);
     try {
       const employeeId = getCurrentEmployeeId();
-      const result = await fakeApi.createBenefitRequest({
+      const userInfo = getUserInfo();
+
+      // Dùng service mới thay vì fakeApi
+      const result = await createBenefitRequest({
         employeeId: employeeId,
+        employee: userInfo?.name || 'Nhân viên',
+        department: userInfo?.department || 'N/A',
         type: selectedType,
         typeLabel: requestTypes.find(t => t.value === selectedType)?.label,
         reason,
@@ -146,8 +152,8 @@ const EmployeeBenefitsInsurance = () => {
         setSelectedType('');
         setReason('');
         setFiles([]);
-        // Reload requests
-        const requestsRes = await fakeApi.getEmployeeBenefitRequests(employeeId);
+        // Reload requests - dùng service mới
+        const requestsRes = await getMyBenefitRequests(employeeId);
         if (requestsRes.success) {
           setMyRequests(requestsRes.data);
         }

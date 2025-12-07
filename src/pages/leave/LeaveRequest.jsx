@@ -508,10 +508,12 @@ import {
   XCircle,
   Hourglass
 } from 'lucide-react';
-import fakeApi from '../../services/fakeApi';
+import { getLeaveBalance, getLeaveHistory, createLeaveRequest } from '../../services/leaveService';
+import { getAllEmployees } from '../../services/employeeService';
 import { getRole, getUserInfo } from '../../utils/auth';
 import { logCreateLeave } from '../../utils/systemLogger';
 import { LEAVE_TYPE_OPTIONS, getLeaveTypeInfo as getLeaveTypeInfoFromConstants, LEAVE_TYPES } from '../../constants/leaveTypes';
+import { toast } from 'react-toastify';
 
 const LeaveRequest = () => {
   const navigate = useNavigate();
@@ -543,8 +545,9 @@ const LeaveRequest = () => {
 
   const loadEmployees = async () => {
     try {
-      const response = await fakeApi.getEmployees();
-      setEmployees(response.data);
+      const response = await getAllEmployees();
+      const empData = Array.isArray(response) ? response : response.data || [];
+      setEmployees(empData);
     } catch (err) {
       console.error('Error loading employees:', err);
     }
@@ -552,8 +555,9 @@ const LeaveRequest = () => {
 
   const loadCurrentTasks = async () => {
     try {
-      const response = await fakeApi.getTasks();
-      setCurrentTasks(response.data);
+      // TODO: Gọi API tasks khi có endpoint
+      // Tạm thời để trống, không ảnh hưởng đến chức năng chính
+      setCurrentTasks([]);
     } catch (err) {
       console.error('Error loading tasks:', err);
     }
@@ -562,19 +566,32 @@ const LeaveRequest = () => {
   const loadLeaveHistory = async () => {
     try {
       const userInfo = getUserInfo();
-      const employeeId = userInfo?.employeeId || 'emp001';
+      const employeeId = userInfo?.employeeId || userInfo?.id || '1';
       const currentYear = new Date().getFullYear();
 
-      // Load leave balance
-      const balanceRes = await fakeApi.getLeaveBalance(employeeId);
-      if (balanceRes.success) {
-        setLeaveBalance(balanceRes.data);
+      // Load leave balance từ API
+      try {
+        const balanceRes = await getLeaveBalance(employeeId);
+        // API trả về: { employeeId, totalLeaveDays, usedLeaveDays, remainingLeaveDays }
+        setLeaveBalance({
+          totalLeaveDays: balanceRes.totalLeaveDays || 12,
+          usedLeaveDays: balanceRes.usedLeaveDays || 0,
+          remainingLeaveDays: balanceRes.remainingLeaveDays || 12,
+        });
+      } catch (e) {
+        console.log('Could not load leave balance, using defaults');
+        setLeaveBalance({ totalLeaveDays: 12, usedLeaveDays: 0, remainingLeaveDays: 12 });
       }
 
-      // Load leave history
-      const historyRes = await fakeApi.getLeaveHistory(employeeId, currentYear);
-      if (historyRes.success) {
-        setLeaveHistory(historyRes.data);
+      // Load leave history từ API
+      try {
+        const historyRes = await getLeaveHistory(employeeId, currentYear);
+        // API trả về: { employeeId, year, history: [...] }
+        const historyData = historyRes.history || historyRes.data || historyRes || [];
+        setLeaveHistory(Array.isArray(historyData) ? historyData : []);
+      } catch (e) {
+        console.log('Could not load leave history');
+        setLeaveHistory([]);
       }
     } catch (err) {
       console.error('Error loading leave history:', err);
@@ -660,37 +677,63 @@ const LeaveRequest = () => {
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      // Scroll to top or show toast
+      toast.warning('Vui lòng kiểm tra lại thông tin');
       return;
     }
 
     try {
       setLoading(true);
       const leaveDays = calculateLeaveDays();
-      const leaveTypeInfo = getLeaveTypeInfo(formData.leaveType);
-      const delegationStrategy = getDelegationStrategy(formData.leaveType, leaveDays);
+      const userInfo = getUserInfo();
 
-      const leaveRequest = {
-        ...formData,
-        leaveDays,
-        leaveTypeInfo,
-        delegationStrategy,
-        status: 'pending',
-        submittedAt: new Date().toISOString()
+      console.log('👤 UserInfo from session:', userInfo);
+
+      // Lấy employeeId - thử nhiều cách
+      let employeeId = userInfo?.employeeId || userInfo?.id;
+
+      // Nếu không tìm thấy, thử lấy từ localStorage
+      if (!employeeId) {
+        const storedInfo = sessionStorage.getItem('hrm_user_info');
+        if (storedInfo) {
+          try {
+            const parsed = JSON.parse(storedInfo);
+            employeeId = parsed?.employeeId || parsed?.id;
+            console.log('📦 Parsed from sessionStorage:', parsed);
+          } catch (e) {
+            console.error('Parse error:', e);
+          }
+        }
+      }
+
+      // Fallback tạm thời cho testing - bạn có thể bỏ sau khi fix login
+      if (!employeeId) {
+        console.warn('⚠️ Không tìm thấy employeeId, dùng tạm "1" để test');
+        employeeId = '1'; // TODO: Xóa dòng này sau khi fix login
+      }
+
+      // Format data cho API - Backend expects 'type' not 'leaveType'
+      const leaveRequestData = {
+        employeeId: String(employeeId),
+        type: formData.leaveType,        // Giờ đã là lowercase: "annual", "sick"...
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        reason: formData.reason,
       };
 
-      const response = await fakeApi.createLeaveRequest(leaveRequest);
-      
+      console.log('📤 Leave request data:', leaveRequestData);
+
+      const response = await createLeaveRequest(leaveRequestData);
+
       // Log hành động tạo đơn nghỉ phép
-      const userInfo = getUserInfo();
       const employeeName = userInfo?.name || userInfo?.email || 'Unknown';
-      const leaveId = response?.data?.id || Date.now().toString();
+      const leaveId = response?.leaveId || response?.id || Date.now().toString();
       logCreateLeave(leaveId, employeeName, leaveDays);
-      
-      // alert('Đơn nghỉ phép đã được gửi thành công!');
+
+      toast.success('Đơn nghỉ phép đã được gửi thành công!');
       navigate('/leaves');
     } catch (err) {
       console.error('Submit error:', err);
+      toast.error('Có lỗi xảy ra khi gửi đơn nghỉ phép');
     } finally {
       setLoading(false);
     }
