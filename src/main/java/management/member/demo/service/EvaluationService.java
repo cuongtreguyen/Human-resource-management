@@ -26,23 +26,11 @@ public class EvaluationService {
     // 1. API Tổng hợp: Tìm kiếm nhân viên + Lấy đánh giá gần nhất
     // (Phục vụ cho màn hình List danh sách)
     public List<EmployeeEvaluationSummaryDTO> getEmployeeEvaluationSummaries(String keyword, String department) {
-        // Bước 1: Tìm danh sách nhân viên theo tiêu chí search
-        List<Employee> employees = employeeRepository.searchEmployees(keyword, department);
+        // ⚠️ Xử lý tham số keyword cho LIKE: nếu keyword != null, bạn nên thêm '%' ở 2 đầu
+        // trong logic Service trước khi truyền vào Repository, hoặc điều chỉnh JPQL.
 
-        // Bước 2: Map sang DTO và tìm đánh giá gần nhất cho từng người
-        return employees.stream().map(emp -> {
-            Optional<Evaluation> latestEval = evaluationRepository.findTopByEmployeeIdOrderByEvaluationDateDesc(emp.getId());
-
-            return EmployeeEvaluationSummaryDTO.builder()
-                    .employeeId(emp.getId())
-                    .fullName(emp.getFullName())
-                    .department(emp.getDepartment())
-                    .position(emp.getPosition())
-                    .latestScore(latestEval.map(Evaluation::getAverageScore).orElse(null)) // Null nếu chưa đánh giá
-                    .lastEvaluationDate(latestEval.map(Evaluation::getEvaluationDate).orElse(null))
-                    .lastEvaluationId(latestEval.map(Evaluation::getId).orElse(null))
-                    .build();
-        }).collect(Collectors.toList());
+        // Giả định bạn truyền keyword đã có dấu % nếu cần (hoặc JPQL đã xử lý).
+        return employeeRepository.findEmployeeSummariesWithLatestEvaluation(keyword, department);
     }
 
     // 2. API Tạo đánh giá mới
