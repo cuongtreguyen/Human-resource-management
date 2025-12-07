@@ -207,16 +207,8 @@ public class Employee {
     @Column(name = "shift")
     private String shift;
 
-    /** Số ngày nghỉ (tính từ checkIn so với timeIn, nếu chênh lệch > 120 phút) */
-    @Size(max = 255)
-    @Column(name = "day_off")
-    private String dayOff;
-
-    /** Số ngày đi muộn (đếm từ Attendance có status = LATE) */
-    @Size(max = 255)
-    @Column(name = "late_day")
-    private String lateDay;
-
+    // dayOff và lateDay đã được chuyển sang tính từ bảng attendance
+    // Sử dụng AttendanceService.calculateDayOff() và calculateLateDay() để lấy giá trị
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EmployeeInsuranceContract> insurances = new ArrayList<>();
@@ -228,5 +220,57 @@ public class Employee {
     /** Quan hệ One-to-One với User (inverse side) */
     @OneToOne(mappedBy = "employee", fetch = FetchType.LAZY)
     private User user;
+
+    /** Quan hệ One-to-Many với Attendance: 1 nhân viên có thể có nhiều bản ghi chấm công */
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<Attendance> attendances = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với OnLeave: 1 nhân viên có thể có nhiều đơn nghỉ phép */
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<OnLeave> onLeaves = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với OverTime (employee): 1 nhân viên có thể có nhiều yêu cầu OT */
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<OverTime> overTimes = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với OverTime (approvedBy): 1 nhân viên có thể duyệt nhiều yêu cầu OT */
+    @OneToMany(mappedBy = "approvedBy", fetch = FetchType.LAZY)
+    private List<OverTime> approvedOverTimes = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với EmployeeEvaluation: 1 nhân viên có thể có nhiều đánh giá */
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<EmployeeEvaluation> employeeEvaluations = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với SupportTicket: 1 nhân viên có thể tạo nhiều ticket hỗ trợ */
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<SupportTicket> supportTickets = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với SupportRequest: 1 nhân viên có thể gửi nhiều yêu cầu hỗ trợ */
+    @OneToMany(mappedBy = "requester", fetch = FetchType.LAZY)
+    private List<SupportRequest> supportRequests = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với Evaluation (employee): 1 nhân viên có thể được đánh giá nhiều lần */
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<Evaluation> evaluations = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với Evaluation (evaluator): 1 nhân viên có thể đánh giá nhiều nhân viên khác */
+    @OneToMany(mappedBy = "evaluator", fetch = FetchType.LAZY)
+    private List<Evaluation> evaluationsAsEvaluator = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với Comment: 1 nhân viên có thể viết nhiều comment */
+    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+    private List<Comment> comments = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với TaskDelegation (fromEmployee): 1 nhân viên có thể ủy thác nhiều task */
+    @OneToMany(mappedBy = "fromEmployee", fetch = FetchType.LAZY)
+    private List<TaskDelegation> taskDelegationsFrom = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với TaskDelegation (toEmployee): 1 nhân viên có thể nhận nhiều task được ủy thác */
+    @OneToMany(mappedBy = "toEmployee", fetch = FetchType.LAZY)
+    private List<TaskDelegation> taskDelegationsTo = new ArrayList<>();
+
+    /** Quan hệ One-to-Many với EmployeeBenefits: 1 nhân viên có thể có nhiều phúc lợi */
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
+    private List<EmployeeBenefits> employeeBenefits = new ArrayList<>();
 
 }

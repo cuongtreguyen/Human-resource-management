@@ -53,7 +53,7 @@ public class SalaryMapper {
      */
     public void updateSalaryFromRequest(Salary salary, SalaryRequest request) {
         // employeeId sẽ được set trong Service layer bằng cách set Employee entity
-        salary.setBaseSalary(request.getBaseSalary());
+        // baseSalary không được set vào Salary, sẽ lấy từ Employee trong Service layer
         // Map allowance (ưu tiên allowances nếu có, nếu không thì dùng allowance)
         salary.setAllowance(request.getAllowances() != null ? request.getAllowances() : request.getAllowance());
         // Map otPay (ưu tiên otPay nếu có, nếu không thì dùng overtimePay)

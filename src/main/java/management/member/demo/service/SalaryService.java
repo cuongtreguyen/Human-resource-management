@@ -37,7 +37,8 @@ public class SalaryService {
             throw new ResourceNotFoundException(
                     ErrorCode.SALARY_NOT_FOUND.getMessage() + " cho nhân viên ID: " + employeeId);
         }
-        return salaries.get(0).getNetSalary(); // Lấy record đầu tiên (đã sắp xếp theo paymentDate DESC, id DESC)
+        Salary latestSalary = salaries.get(0);
+        return latestSalary.getNetSalary() != null ? latestSalary.getNetSalary() : BigDecimal.ZERO;
     }
 
     public BigDecimal calculateAverageSalary(Long employeeId) {
@@ -48,7 +49,7 @@ public class SalaryService {
         }
 
         BigDecimal sum = salaries.stream()
-                .map(Salary::getNetSalary)
+                .map(s -> s.getNetSalary() != null ? s.getNetSalary() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return sum.divide(BigDecimal.valueOf(salaries.size()), 2, RoundingMode.HALF_UP);
@@ -65,7 +66,7 @@ public class SalaryService {
         response.setLatestSalary(calculateLatestSalary(employeeId));
         response.setAverageSalary(calculateAverageSalary(employeeId));
         response.setTotalIncome(salaries.stream()
-                .map(Salary::getNetSalary)
+                .map(s -> s.getNetSalary() != null ? s.getNetSalary() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add));
 
         return response;
@@ -287,8 +288,21 @@ public class SalaryService {
                 .add(unemploymentInsurance);
         salary.setTotalInsurance(totalInsurance);
         
-        // Tính thuế thu nhập cá nhân (tính trên grossIncome)
-        BigDecimal personalIncomeTax = calculatePersonalIncomeTax(grossIncome);
+        // Tính thu nhập chịu thuế (taxableIncome) = grossIncome - BHXH - BHYT - BHTN - Giảm trừ bản thân (11,000,000)
+        BigDecimal personalDeduction = new BigDecimal("11000000"); // Giảm trừ bản thân
+        BigDecimal taxableIncome = grossIncome
+                .subtract(socialInsurance)
+                .subtract(healthInsurance)
+                .subtract(unemploymentInsurance)
+                .subtract(personalDeduction);
+        
+        // Đảm bảo taxableIncome không âm
+        if (taxableIncome.compareTo(BigDecimal.ZERO) < 0) {
+            taxableIncome = BigDecimal.ZERO;
+        }
+        
+        // Tính thuế thu nhập cá nhân (tính trên taxableIncome, không phải grossIncome)
+        BigDecimal personalIncomeTax = calculatePersonalIncomeTax(taxableIncome);
         salary.setPersonalIncomeTax(personalIncomeTax);
         
         // Tính totalDeductions = socialInsurance + healthInsurance + unemploymentInsurance + personalIncomeTax + generalDeductions
@@ -309,7 +323,7 @@ public class SalaryService {
     public BigDecimal calculateTotalIncome(Long employeeId) {
         List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
         return salaries.stream()
-                .map(Salary::getNetSalary)
+                .map(s -> s.getNetSalary() != null ? s.getNetSalary() : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
     

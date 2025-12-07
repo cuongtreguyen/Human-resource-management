@@ -44,12 +44,11 @@ public class Attendance {
     @Column(name = "check_out")
     private LocalTime checkOut;
 
-    /** Địa chỉ văn phòng */
+
     @Size(max = 255)
     @Column(name = "day_off")
     private String dayOff;
 
-    /** Địa chỉ văn phòng */
     @Size(max = 255)
     @Column(name = "late_day")
     private String lateDay;

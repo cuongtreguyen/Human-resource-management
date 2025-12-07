@@ -72,7 +72,8 @@ public class PayrollMapper {
             dto.setMonth(salary.getPayroll().getPaymentDate().format(DateTimeFormatter.ofPattern("yyyy-MM")));
         }
         
-        dto.setBasicSalary(salary.getBaseSalary());
+        // Lấy baseSalary từ Employee, không phải từ Salary
+        dto.setBasicSalary(employee != null && employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO);
         dto.setAllowance(salary.getAllowance() != null ? salary.getAllowance() : BigDecimal.ZERO);
         dto.setOvertime(salary.getOtPay() != null ? salary.getOtPay() : BigDecimal.ZERO);
         dto.setBonus(salary.getBonus() != null ? salary.getBonus() : BigDecimal.ZERO);

@@ -46,6 +46,9 @@ public class AttendanceService {
     @Autowired
     private AttendanceValidator attendanceValidator;
 
+    @Autowired
+    private management.member.demo.repository.OnLeaveRepository onLeaveRepository;
+
     @Value("${face.recognition.confidence.threshold:40.0}")
     private double confidenceThreshold;
 
@@ -451,38 +454,183 @@ public class AttendanceService {
     }
     
     /**
-     * Tính số ngày đi muộn (lateDay) - đếm số Attendance có status = LATE
+     * Tính số ngày đi muộn (lateDay) dựa trên checkIn so với timeIn
+     * Nếu checkIn muộn hơn timeIn nhưng <= 120 phút thì tính là đi muộn
+     * (Nếu > 120 phút thì tính là nghỉ - dayOff)
      * 
      * @param employeeId ID của nhân viên
      * @return Số ngày đi muộn (String)
      */
     public String calculateLateDay(Long employeeId) {
-        // Lấy tất cả Attendance records có status = LATE
-        List<Attendance> lateAttendances = attendanceRepository.findByEmployeeIdAndStatus(
-                employeeId, 
-                AttendenceStatus.LATE
-        );
-        
-        return String.valueOf(lateAttendances.size());
-    }
-    
-    /**
-     * Cập nhật dayOff và lateDay cho Employee
-     * 
-     * @param employeeId ID của nhân viên
-     */
-    public void updateEmployeeDayOffAndLateDay(Long employeeId) {
         Employee employee = employeeRepository.findById(employeeId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
         
-        String dayOff = calculateDayOff(employeeId);
+        if (employee.getTimeIn() == null) {
+            return "0"; // Nếu không có timeIn thì không tính được
+        }
+        
+        // Lấy tất cả attendance records của employee
+        List<Attendance> attendances = attendanceRepository.findByEmployeeId(employeeId);
+        
+        long lateDayCount = attendances.stream()
+                .filter(attendance -> {
+                    // Phải có checkIn mới tính là đi muộn
+                    if (attendance.getCheckIn() == null) {
+                        return false; // Không check-in thì không tính là đi muộn (tính là nghỉ)
+                    }
+                    
+                    // Tính chênh lệch giữa checkIn và timeIn (tính bằng phút)
+                    // Nếu checkIn muộn hơn timeIn thì minutesDifference > 0
+                    long minutesDifference = java.time.Duration.between(
+                            employee.getTimeIn(),
+                            attendance.getCheckIn()
+                    ).toMinutes();
+                    
+                    // Đi muộn: checkIn muộn hơn timeIn > 0 phút nhưng <= 120 phút
+                    // (Nếu > 120 phút thì tính là nghỉ - dayOff, không phải lateDay)
+                    return minutesDifference > 0 && minutesDifference <= 120;
+                })
+                .count();
+        
+        return String.valueOf(lateDayCount);
+    }
+    
+    /**
+     * Tính tổng số ngày nghỉ (dayOff) bao gồm:
+     * 1. Số ngày nghỉ từ bảng attendance (tính từ checkIn so với timeIn)
+     *    - Trừ đi những ngày đã có trong onLeave (đã APPROVED) để tránh tính trùng
+     * 2. Tổng số ngày nghỉ phép từ bảng on_leave (total_days_onleave) - chỉ tính các đơn đã APPROVED
+     * 
+     * @param employeeId ID của nhân viên
+     * @return Tổng số ngày nghỉ (String)
+     */
+    public String calculateTotalDayOff(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
+        
+        if (employee.getTimeIn() == null) {
+            // Nếu không có timeIn thì chỉ tính từ onLeave
+            List<management.member.demo.entity.OnLeave> approvedLeaves = onLeaveRepository.findByEmployeeIdAndOnLeaveStatus(
+                    employeeId, 
+                    management.member.demo.enums.OnLeaveStatus.APPROVED
+            );
+            long totalDaysOnLeave = approvedLeaves.stream()
+                    .mapToLong(leave -> {
+                        if (leave.getTotalDaysOnleave() != null) {
+                            return leave.getTotalDaysOnleave();
+                        }
+                        if (leave.getStartDate() != null && leave.getEndDate() != null) {
+                            return java.time.temporal.ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
+                        }
+                        return 0L;
+                    })
+                    .sum();
+            return String.valueOf(totalDaysOnLeave);
+        }
+        
+        // 1. Lấy tất cả attendance records của employee
+        List<Attendance> attendances = attendanceRepository.findByEmployeeId(employeeId);
+        
+        // 2. Lấy tất cả onLeave đã APPROVED
+        List<management.member.demo.entity.OnLeave> approvedLeaves = onLeaveRepository.findByEmployeeIdAndOnLeaveStatus(
+                employeeId, 
+                management.member.demo.enums.OnLeaveStatus.APPROVED
+        );
+        
+        // 3. Tính dayOff từ attendance, nhưng trừ đi những ngày đã có trong onLeave (đã APPROVED)
+        long dayOffFromAttendance = attendances.stream()
+                .filter(attendance -> {
+                    // Kiểm tra xem attendance này có phải là dayOff không
+                    boolean isDayOff = false;
+                    
+                    // Nếu không có checkIn thì tính là nghỉ
+                    if (attendance.getCheckIn() == null) {
+                        isDayOff = true;
+                    } else {
+                        // Tính chênh lệch giữa checkIn và timeIn (tính bằng phút)
+                        long minutesDifference = java.time.Duration.between(
+                                employee.getTimeIn(),
+                                attendance.getCheckIn()
+                        ).toMinutes();
+                        
+                        // Nếu checkIn muộn hơn timeIn > 120 phút (2 giờ) thì tính là nghỉ
+                        if (minutesDifference > 120) {
+                            isDayOff = true;
+                        }
+                    }
+                    
+                    // Nếu không phải dayOff thì không tính
+                    if (!isDayOff) {
+                        return false;
+                    }
+                    
+                    // Kiểm tra xem attendanceDate có nằm trong khoảng thời gian nghỉ phép đã APPROVED không
+                    if (attendance.getAttendanceDate() != null) {
+                        for (management.member.demo.entity.OnLeave leave : approvedLeaves) {
+                            if (leave.getStartDate() != null && leave.getEndDate() != null) {
+                                // Nếu attendanceDate nằm trong khoảng startDate và endDate của onLeave
+                                // thì không tính vào dayOff (vì đã được tính trong onLeave)
+                                if (!attendance.getAttendanceDate().isBefore(leave.getStartDate()) &&
+                                    !attendance.getAttendanceDate().isAfter(leave.getEndDate())) {
+                                    return false; // Trừ ngày này ra khỏi dayOff
+                                }
+                            }
+                        }
+                    }
+                    
+                    return true; // Tính vào dayOff
+                })
+                .count();
+        
+        // 4. Tính tổng số ngày nghỉ phép từ onLeave (chỉ tính các đơn đã APPROVED)
+        long totalDaysOnLeave = approvedLeaves.stream()
+                .mapToLong(leave -> {
+                    // Sử dụng totalDaysOnleave nếu có, nếu không tính từ startDate và endDate
+                    if (leave.getTotalDaysOnleave() != null) {
+                        return leave.getTotalDaysOnleave();
+                    }
+                    if (leave.getStartDate() != null && leave.getEndDate() != null) {
+                        return java.time.temporal.ChronoUnit.DAYS.between(leave.getStartDate(), leave.getEndDate()) + 1;
+                    }
+                    return 0L;
+                })
+                .sum();
+        
+        // 5. Tổng dayOff = dayOff từ attendance (đã trừ ngày nghỉ phép) + tổng ngày nghỉ phép
+        long totalDayOff = dayOffFromAttendance + totalDaysOnLeave;
+        
+        return String.valueOf(totalDayOff);
+    }
+    
+    /**
+     * Tính và trả về dayOff và lateDay từ bảng attendance
+     * dayOff bao gồm cả số ngày nghỉ phép (total_days_onleave)
+     * Không còn lưu vào bảng employees nữa, chỉ tính toán và trả về
+     * 
+     * @param employeeId ID của nhân viên
+     * @return Map chứa dayOff và lateDay
+     */
+    public java.util.Map<String, String> getDayOffAndLateDay(Long employeeId) {
+        String dayOff = calculateTotalDayOff(employeeId); // Sử dụng method mới tính tổng dayOff
         String lateDay = calculateLateDay(employeeId);
         
-        employee.setDayOff(dayOff);
-        employee.setLateDay(lateDay);
+        java.util.Map<String, String> result = new java.util.HashMap<>();
+        result.put("dayOff", dayOff);
+        result.put("lateDay", lateDay);
         
-        employeeRepository.save(employee);
+        return result;
+    }
+    
+    /**
+     * @deprecated Không còn cần thiết vì dayOff và lateDay không lưu vào employees nữa
+     * Sử dụng getDayOffAndLateDay() thay thế
+     */
+    @Deprecated
+    public void updateEmployeeDayOffAndLateDay(Long employeeId) {
+        // Method này không còn cần thiết vì dayOff và lateDay không lưu vào employees nữa
+        // Giữ lại để tương thích với code cũ, nhưng không làm gì cả
     }
 
 

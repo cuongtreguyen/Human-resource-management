@@ -43,6 +43,9 @@ public class PayrollService {
     @Autowired
     private OverTimeRepository overTimeRepository;
 
+    @Autowired
+    private management.member.demo.service.AttendanceService attendanceService;
+
     public PayrollResponse getPayrollById(Long id) {
         Payroll payroll = payrollRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
@@ -162,16 +165,38 @@ public class PayrollService {
 
     public CalculatePayrollResponseDTO calculatePayroll(CalculatePayrollRequestDTO request) {
         // Calculate payroll based on request
-        BigDecimal grossSalary = request.getBasicSalary()
+        BigDecimal basicSalary = request.getBasicSalary() != null ? request.getBasicSalary() : BigDecimal.ZERO;
+        BigDecimal grossSalary = basicSalary
                 .add(request.getAllowance() != null ? request.getAllowance() : BigDecimal.ZERO)
                 .add(request.getOvertime() != null ? request.getOvertime() : BigDecimal.ZERO)
                 .add(request.getBonus() != null ? request.getBonus() : BigDecimal.ZERO);
 
-        // Calculate deductions (mock calculation)
-        BigDecimal socialInsurance = grossSalary.multiply(new BigDecimal("0.08"));
-        BigDecimal healthInsurance = grossSalary.multiply(new BigDecimal("0.015"));
-        BigDecimal unemploymentInsurance = grossSalary.multiply(new BigDecimal("0.01"));
-        BigDecimal personalIncomeTax = grossSalary.multiply(new BigDecimal("0.1"));
+        // Calculate deductions - Insurance tính trên baseSalary (basicSalary), không phải grossSalary
+        BigDecimal socialInsurance = basicSalary
+                .multiply(new BigDecimal("0.08"))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal healthInsurance = basicSalary
+                .multiply(new BigDecimal("0.015"))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        BigDecimal unemploymentInsurance = basicSalary
+                .multiply(new BigDecimal("0.01"))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        
+        // Tính thu nhập chịu thuế (taxableIncome) = grossSalary - BHXH - BHYT - BHTN - Giảm trừ bản thân (11,000,000)
+        BigDecimal personalDeduction = new BigDecimal("11000000"); // Giảm trừ bản thân
+        BigDecimal taxableIncome = grossSalary
+                .subtract(socialInsurance)
+                .subtract(healthInsurance)
+                .subtract(unemploymentInsurance)
+                .subtract(personalDeduction);
+        
+        // Đảm bảo taxableIncome không âm
+        if (taxableIncome.compareTo(BigDecimal.ZERO) < 0) {
+            taxableIncome = BigDecimal.ZERO;
+        }
+        
+        // Tính thuế thu nhập cá nhân theo bậc thuế lũy tiến (tính trên taxableIncome)
+        BigDecimal personalIncomeTax = calculatePersonalIncomeTax(taxableIncome);
 
         BigDecimal totalDeductions = socialInsurance
                 .add(healthInsurance)
@@ -245,8 +270,16 @@ public class PayrollService {
         response.setFullName(request.getFullName());
         response.setBaseSalary(request.getBaseSalary());
         response.setOtHours(request.getOtHours() != null ? request.getOtHours() : BigDecimal.ZERO);
-        response.setDayOff(request.getDayOff() != null ? request.getDayOff() : "0");
-        response.setLateDay(request.getLateDay() != null ? request.getLateDay() : "0");
+        
+        // dayOff: Luôn tự động tính từ attendance + onLeave (total_days_onleave)
+        // dayOff = tổng dayOff từ attendance + tổng total_days_onleave từ onLeave (chỉ tính các đơn đã APPROVED)
+        String calculatedDayOff = attendanceService.calculateTotalDayOff(request.getEmployeeId());
+        response.setDayOff(calculatedDayOff);
+        
+        // lateDay: Tự động tính từ attendance
+        String calculatedLateDay = attendanceService.calculateLateDay(request.getEmployeeId());
+        response.setLateDay(calculatedLateDay);
+        
         response.setAllowance(request.getAllowance() != null ? request.getAllowance() : BigDecimal.ZERO);
         response.setGeneralDeductions(request.getGeneralDeductions() != null ? request.getGeneralDeductions() : BigDecimal.ZERO);
         response.setBonus(request.getBonus() != null ? request.getBonus() : BigDecimal.ZERO);
@@ -259,14 +292,57 @@ public class PayrollService {
         }
         
         // Tính grossIncome = baseSalary + allowance + otPay + bonus
-        BigDecimal grossIncome = response.getBaseSalary()
+        BigDecimal baseSalary = response.getBaseSalary() != null ? response.getBaseSalary() : BigDecimal.ZERO;
+        BigDecimal grossIncome = baseSalary
                 .add(response.getAllowance())
                 .add(otPay)
                 .add(response.getBonus());
         response.setGrossIncome(grossIncome);
         
-        // Tính netSalary = grossIncome - generalDeductions
-        BigDecimal netSalary = grossIncome.subtract(response.getGeneralDeductions());
+        // Tính các khoản bảo hiểm (tính trên baseSalary)
+        BigDecimal socialInsurance = baseSalary
+                .multiply(new BigDecimal("0.08"))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        response.setSocialInsurance(socialInsurance);
+        
+        BigDecimal healthInsurance = baseSalary
+                .multiply(new BigDecimal("0.015"))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        response.setHealthInsurance(healthInsurance);
+        
+        BigDecimal unemploymentInsurance = baseSalary
+                .multiply(new BigDecimal("0.01"))
+                .setScale(2, java.math.RoundingMode.HALF_UP);
+        response.setUnemploymentInsurance(unemploymentInsurance);
+        
+        // Tính thu nhập chịu thuế (taxableIncome) = grossIncome - BHXH - BHYT - BHTN - Giảm trừ bản thân (11,000,000)
+        BigDecimal personalDeduction = new BigDecimal("11000000"); // Giảm trừ bản thân
+        BigDecimal taxableIncome = grossIncome
+                .subtract(socialInsurance)
+                .subtract(healthInsurance)
+                .subtract(unemploymentInsurance)
+                .subtract(personalDeduction);
+        
+        // Đảm bảo taxableIncome không âm
+        if (taxableIncome.compareTo(BigDecimal.ZERO) < 0) {
+            taxableIncome = BigDecimal.ZERO;
+        }
+        
+        // Tính thuế thu nhập cá nhân (tính trên taxableIncome với bậc thuế lũy tiến)
+        BigDecimal personalIncomeTax = calculatePersonalIncomeTax(taxableIncome);
+        response.setPersonalIncomeTax(personalIncomeTax);
+        
+        // Tính totalDeductions = socialInsurance + healthInsurance + unemploymentInsurance + personalIncomeTax + generalDeductions
+        BigDecimal generalDeductions = response.getGeneralDeductions() != null ? response.getGeneralDeductions() : BigDecimal.ZERO;
+        BigDecimal totalDeductions = socialInsurance
+                .add(healthInsurance)
+                .add(unemploymentInsurance)
+                .add(personalIncomeTax)
+                .add(generalDeductions);
+        response.setTotalDeductions(totalDeductions);
+        
+        // Tính netSalary = grossIncome - totalDeductions
+        BigDecimal netSalary = grossIncome.subtract(totalDeductions);
         response.setNetSalary(netSalary);
         
         return response;
@@ -292,11 +368,16 @@ public class PayrollService {
         }
         Salary salary = salaries.get(0); // Lấy record đầu tiên (đã sắp xếp theo paymentDate DESC, id DESC)
         
+        // Kiểm tra salary có payroll không
+        if (salary.getPayroll() == null || salary.getPayroll().getPeriod() == null) {
+            throw new RuntimeException("Salary record does not have valid payroll information for employee id: " + employeeId);
+        }
+        
         // Tạo response
         GetPayrollCalculationForAccountantResponseDTO response = new GetPayrollCalculationForAccountantResponseDTO();
         
         // Lấy thông tin cơ bản
-        response.setFullName(employee.getFullName());
+        response.setFullName(employee.getFullName() != null ? employee.getFullName() : "");
         response.setBaseSalary(employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO);
         
         // Tính otHours từ OverTime entity (tổng số giờ OT đã approved trong tháng của payroll)
@@ -362,8 +443,21 @@ public class PayrollService {
         BigDecimal generalDeductions = salary.getGeneralDeductions() != null ? salary.getGeneralDeductions() : BigDecimal.ZERO;
         response.setGeneralDeductions(generalDeductions);
         
-        // Tính thuế thu nhập cá nhân (tính trên grossIncome)
-        BigDecimal personalIncomeTax = calculatePersonalIncomeTax(grossIncome);
+        // Tính thu nhập chịu thuế (taxableIncome) = grossIncome - BHXH - BHYT - BHTN - Giảm trừ bản thân (11,000,000)
+        BigDecimal personalDeduction = new BigDecimal("11000000"); // Giảm trừ bản thân
+        BigDecimal taxableIncome = grossIncome
+                .subtract(socialInsurance)
+                .subtract(healthInsurance)
+                .subtract(unemploymentInsurance)
+                .subtract(personalDeduction);
+        
+        // Đảm bảo taxableIncome không âm
+        if (taxableIncome.compareTo(BigDecimal.ZERO) < 0) {
+            taxableIncome = BigDecimal.ZERO;
+        }
+        
+        // Tính thuế thu nhập cá nhân (tính trên taxableIncome)
+        BigDecimal personalIncomeTax = calculatePersonalIncomeTax(taxableIncome);
         response.setPersonalIncomeTax(personalIncomeTax);
         
         // Tính totalDeductions = socialInsurance + healthInsurance + unemploymentInsurance + personalIncomeTax + generalDeductions
@@ -485,7 +579,7 @@ public class PayrollService {
         
         // Map sang DTO
         return salaries.stream()
-                .filter(s -> s.getPayroll() != null) // Chỉ lấy salary có payroll
+                .filter(s -> s.getPayroll() != null && s.getPayroll().getPeriod() != null) // Chỉ lấy salary có payroll và period hợp lệ
                 .map(salary -> {
                     MonthlyPayrollForAccountantDTO dto = new MonthlyPayrollForAccountantDTO();
                     
@@ -493,9 +587,9 @@ public class PayrollService {
                     Long empId = salary.getEmployee() != null ? salary.getEmployee().getId() : null;
                     Employee employee = empId != null ? employeeMap.get(empId) : null;
                     if (employee != null) {
-                        dto.setFullName(employee.getFullName());
-                        dto.setEmail(employee.getEmail());
-                        dto.setDepartment(employee.getDepartment());
+                        dto.setFullName(employee.getFullName() != null ? employee.getFullName() : "");
+                        dto.setEmail(employee.getEmail() != null ? employee.getEmail() : "");
+                        dto.setDepartment(employee.getDepartment() != null ? employee.getDepartment() : "");
                     }
                     
                     // Tính otHours từ OverTime entity (tổng số giờ OT đã approved trong tháng)
@@ -529,10 +623,11 @@ public class PayrollService {
                     }
                     dto.setOtPay(otPay);
                     dto.setBaseSalary(employee != null && employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO);
-                    dto.setNetSalary(salary.getNetSalary());
+                    dto.setNetSalary(salary.getNetSalary() != null ? salary.getNetSalary() : BigDecimal.ZERO);
                     
                     // Lấy status từ Payroll
-                    dto.setStatus(salary.getPayroll().getStatus());
+                    dto.setStatus(salary.getPayroll() != null && salary.getPayroll().getStatus() != null ? 
+                            salary.getPayroll().getStatus() : PayrollStatus.PENDING);
                     
                     return dto;
                 })

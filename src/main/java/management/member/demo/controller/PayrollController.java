@@ -37,7 +37,7 @@ public class PayrollController {
         return ResponseEntity.ok(service.getPayrollById(id));
     }
 
-    @PostMapping
+    @PostMapping("/create")
     @Operation(summary = "Create payroll", description = "Create a new payroll")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Payroll created successfully"),
@@ -110,7 +110,7 @@ public class PayrollController {
     }
 
     // New endpoints according to API spec
-    @GetMapping
+    @GetMapping("/getAllListPayroll")
     @Operation(summary = "Get all payroll records", description = "Get payroll records with optional filters: month, employeeId, status")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success")

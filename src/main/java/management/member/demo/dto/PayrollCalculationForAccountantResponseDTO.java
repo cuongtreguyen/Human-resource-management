@@ -20,8 +20,13 @@ public class PayrollCalculationForAccountantResponseDTO {
     private BigDecimal generalDeductions;
     private BigDecimal bonus;
     
-    // Có thể thêm các field tính toán khác nếu cần
+    // Các field tính toán
     private BigDecimal grossIncome; // Tổng thu nhập
+    private BigDecimal socialInsurance; // BHXH (8% của baseSalary)
+    private BigDecimal healthInsurance; // BHYT (1.5% của baseSalary)
+    private BigDecimal unemploymentInsurance; // BHTN (1% của baseSalary)
+    private BigDecimal personalIncomeTax; // Thuế thu nhập cá nhân (bậc lũy tiến)
+    private BigDecimal totalDeductions; // Tổng khấu trừ
     private BigDecimal netSalary; // Lương thực lĩnh
 }
 
