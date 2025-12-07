@@ -66,6 +66,14 @@ public class InsuranceContractService {
                     "Insurance Contract", "insurenceName", insurenceName
                 ));
         
+        // Kiểm tra nếu update insurenceName: phải đảm bảo không trùng với contract khác
+        if (request.getInsurenceName() != null && !request.getInsurenceName().equals(insurenceName)) {
+            // Kiểm tra insurenceName mới có trùng với contract khác không
+            if (insuranceContractRepository.existsByInsurenceName(request.getInsurenceName())) {
+                throw new IllegalArgumentException("Insurance contract với tên '" + request.getInsurenceName() + "' đã tồn tại");
+            }
+        }
+        
         // Cập nhật các field từ request
         insuranceContractMapper.updateEntityFromRequest(contract, request);
         
@@ -78,6 +86,8 @@ public class InsuranceContractService {
 
     /**
      * Xóa insurance contract theo insurenceName
+     * Cho phép xóa ngay cả khi có EmployeeInsuranceContract đang sử dụng
+     * EmployeeInsuranceContract sẽ tự động bị xóa khi hết hạn (expiry date)
      */
     public void deleteInsuranceContract(String insurenceName) {
         // Tìm contract theo insurenceName
@@ -86,7 +96,8 @@ public class InsuranceContractService {
                     "Insurance Contract", "insurenceName", insurenceName
                 ));
         
-        // Xóa contract
+        // Cho phép xóa contract template ngay cả khi có EmployeeInsuranceContract đang sử dụng
+        // EmployeeInsuranceContract sẽ tự động bị xóa khi hết hạn (expiry date < today)
         insuranceContractRepository.delete(contract);
     }
 

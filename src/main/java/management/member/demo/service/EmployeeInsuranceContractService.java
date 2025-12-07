@@ -13,9 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * Service quản lý EmployeeInsuranceContract (liên kết nhân viên với contracts)
@@ -147,5 +147,30 @@ public class EmployeeInsuranceContractService {
         
         // Xóa tất cả contracts tìm được
         employeeInsuranceContractRepository.deleteAll(employeeContracts);
+    }
+    
+    /**
+     * Xóa tự động tất cả EmployeeInsuranceContract đã hết hạn (expiry < today)
+     * Method này có thể được gọi bởi scheduled job hoặc manual
+     */
+    @Transactional
+    public int cleanupExpiredEmployeeInsuranceContracts() {
+        LocalDate today = LocalDate.now();
+        List<EmployeeInsuranceContract> expiredContracts = 
+                employeeInsuranceContractRepository.findExpiredContracts(today);
+        
+        if (!expiredContracts.isEmpty()) {
+            employeeInsuranceContractRepository.deleteAll(expiredContracts);
+        }
+        
+        return expiredContracts.size();
+    }
+    
+    /**
+     * Lấy danh sách EmployeeInsuranceContract đã hết hạn (expiry < today)
+     */
+    public List<EmployeeInsuranceContract> getExpiredEmployeeInsuranceContracts() {
+        LocalDate today = LocalDate.now();
+        return employeeInsuranceContractRepository.findExpiredContracts(today);
     }
 }

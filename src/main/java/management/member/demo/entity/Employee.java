@@ -207,8 +207,6 @@ public class Employee {
     @Column(name = "shift")
     private String shift;
 
-    // dayOff và lateDay đã được chuyển sang tính từ bảng attendance
-    // Sử dụng AttendanceService.calculateDayOff() và calculateLateDay() để lấy giá trị
 
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<EmployeeInsuranceContract> insurances = new ArrayList<>();

@@ -88,6 +88,7 @@ public class BenefitsService {
 
     /**
      * Cập nhật benefit theo benefitId
+     * Khi update benefit template, tất cả EmployeeBenefits đang sử dụng benefit đó sẽ bị xóa
      */
     public AllBenefitResponseDTO updateBenefit(String benefitId, UpdateBenefitRequestDTO request) {
         // Tìm benefit theo benefitId
@@ -95,6 +96,14 @@ public class BenefitsService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                     "Benefit", "benefitId", benefitId
                 ));
+        
+        // Tìm tất cả EmployeeBenefits đang sử dụng benefit này
+        List<EmployeeBenefits> employeeBenefits = employeeBenefitsRepository.findByBenefit(benefit);
+        
+        // Xóa tất cả EmployeeBenefits đang sử dụng benefit này
+        if (!employeeBenefits.isEmpty()) {
+            employeeBenefitsRepository.deleteAll(employeeBenefits);
+        }
         
         // Cập nhật các field từ request
         benefitsMapper.updateEntityFromRequest(benefit, request);
@@ -108,6 +117,7 @@ public class BenefitsService {
 
     /**
      * Xóa benefit theo benefitId
+     * Khi xóa benefit template, tất cả EmployeeBenefits đang sử dụng benefit đó cũng sẽ bị xóa
      */
     public void deleteBenefit(String benefitId) {
         // Tìm benefit theo benefitId
@@ -116,7 +126,15 @@ public class BenefitsService {
                     "Benefit", "benefitId", benefitId
                 ));
         
-        // Xóa benefit
+        // Tìm tất cả EmployeeBenefits đang sử dụng benefit này
+        List<EmployeeBenefits> employeeBenefits = employeeBenefitsRepository.findByBenefit(benefit);
+        
+        // Xóa tất cả EmployeeBenefits đang sử dụng benefit này
+        if (!employeeBenefits.isEmpty()) {
+            employeeBenefitsRepository.deleteAll(employeeBenefits);
+        }
+        
+        // Xóa benefit template
         benefitsRepository.delete(benefit);
     }
 
