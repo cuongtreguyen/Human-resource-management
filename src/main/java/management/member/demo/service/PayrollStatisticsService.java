@@ -45,16 +45,18 @@ public class PayrollStatisticsService {
 
     /**
      * Tổng lương thực lĩnh của tất cả nhân viên có trạng thái payroll là PAID (tháng hiện tại)
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate (ngày thanh toán)
      */
     public BigDecimal getTotalPayroll() {
         LocalDate now = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(now);
         
-        // Lấy tất cả payroll có status PAID và paymentDate trong tháng hiện tại
+        // ⚠️ FIX: Lấy tất cả payroll có status PAID và period (tháng lương) trong tháng hiện tại
+        // Không dùng paymentDate vì có thể thanh toán lương tháng trước vào tháng này
         List<Payroll> paidPayrolls = payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PAID 
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .collect(Collectors.toList());
         
         // Lấy tất cả salary từ các payroll này và tính tổng netSalary
@@ -66,6 +68,7 @@ public class PayrollStatisticsService {
 
     /**
      * Đếm những payroll có trạng thái PENDING (tháng hiện tại)
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate
      */
     public Long getPendingPayroll() {
         LocalDate now = LocalDate.now();
@@ -73,24 +76,25 @@ public class PayrollStatisticsService {
         
         return payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PENDING
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .count();
     }
 
     /**
      * Tổng của các tổng chi của các phúc lợi có trạng thái active (tháng hiện tại)
      * Chỉ tính cho nhân viên có payroll PAID trong tháng hiện tại
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate
      */
     public BigDecimal getAllowanceTotal() {
         LocalDate now = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(now);
         
-        // Lấy tất cả payroll có status PAID và paymentDate trong tháng hiện tại
+        // ⚠️ FIX: Lấy tất cả payroll có status PAID và period (tháng lương) trong tháng hiện tại
         List<Payroll> paidPayrolls = payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PAID 
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .collect(Collectors.toList());
         
         // Lấy tất cả employeeId từ các payroll này
@@ -123,16 +127,17 @@ public class PayrollStatisticsService {
 
     /**
      * Tổng lương cơ bản của tất cả nhân viên đang active và payroll có trạng thái PAID (tháng hiện tại)
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate
      */
     public BigDecimal getBasicSalaryTotal() {
         LocalDate now = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(now);
         
-        // Lấy tất cả payroll có status PAID và paymentDate trong tháng hiện tại
+        // ⚠️ FIX: Lấy tất cả payroll có status PAID và period (tháng lương) trong tháng hiện tại
         List<Payroll> paidPayrolls = payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PAID 
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .collect(Collectors.toList());
         
         // Lấy tất cả salary từ các payroll này
@@ -157,16 +162,17 @@ public class PayrollStatisticsService {
     /**
      * Lương cơ bản của từng nhân viên + phụ cấp cố định * 21.5% trần là 36tr trên từng nhân viên rồi tổng tất cả lại (tháng hiện tại)
      * Chỉ tính cho nhân viên có payroll PAID trong tháng hiện tại
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate
      */
     public BigDecimal getInsuranceTotal() {
         LocalDate now = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(now);
         
-        // Lấy tất cả payroll có status PAID và paymentDate trong tháng hiện tại
+        // ⚠️ FIX: Lấy tất cả payroll có status PAID và period (tháng lương) trong tháng hiện tại
         List<Payroll> paidPayrolls = payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PAID 
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .collect(Collectors.toList());
         
         // Lấy tất cả salary từ các payroll này
@@ -213,16 +219,17 @@ public class PayrollStatisticsService {
 
     /**
      * Tổng otPay của tất cả nhân viên có trạng thái hoạt động và payroll có trạng thái PAID (tháng hiện tại)
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate
      */
     public BigDecimal getOvertimeTotal() {
         LocalDate now = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(now);
         
-        // Lấy tất cả payroll có status PAID và paymentDate trong tháng hiện tại
+        // ⚠️ FIX: Lấy tất cả payroll có status PAID và period (tháng lương) trong tháng hiện tại
         List<Payroll> paidPayrolls = payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PAID 
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .collect(Collectors.toList());
         
         // Lấy tất cả salary từ các payroll này
@@ -243,16 +250,17 @@ public class PayrollStatisticsService {
 
     /**
      * Tổng thuế thu nhập cá nhân (personalIncomeTax) của tất cả nhân viên có trạng thái hoạt động và payroll có trạng thái PAID (tháng hiện tại)
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate
      */
     public BigDecimal getTotalTax() {
         LocalDate now = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(now);
         
-        // Lấy tất cả payroll có status PAID và paymentDate trong tháng hiện tại
+        // ⚠️ FIX: Lấy tất cả payroll có status PAID và period (tháng lương) trong tháng hiện tại
         List<Payroll> paidPayrolls = payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PAID 
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .collect(Collectors.toList());
         
         // Lấy tất cả salary từ các payroll này
@@ -273,16 +281,17 @@ public class PayrollStatisticsService {
 
     /**
      * Tổng bonus của tất cả nhân viên có trạng thái hoạt động và payroll có trạng thái PAID (tháng hiện tại)
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate
      */
     public BigDecimal getBonusTotal() {
         LocalDate now = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(now);
         
-        // Lấy tất cả payroll có status PAID và paymentDate trong tháng hiện tại
+        // ⚠️ FIX: Lấy tất cả payroll có status PAID và period (tháng lương) trong tháng hiện tại
         List<Payroll> paidPayrolls = payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PAID 
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .collect(Collectors.toList());
         
         // Lấy tất cả salary từ các payroll này
@@ -443,16 +452,17 @@ public class PayrollStatisticsService {
 
     /**
      * Tổng lương thực lĩnh (netSalary) của tất cả nhân viên thuộc phòng ban đó, với payroll tháng này có trạng thái PAID
+     * ⚠️ FIX: Filter theo period (tháng lương) thay vì paymentDate
      */
     public BigDecimal getTotalPayrollEmployeeByDepartment(String department) {
         LocalDate now = LocalDate.now();
         YearMonth currentMonth = YearMonth.from(now);
         
-        // Lấy tất cả payroll có status PAID và paymentDate trong tháng hiện tại
+        // ⚠️ FIX: Lấy tất cả payroll có status PAID và period (tháng lương) trong tháng hiện tại
         List<Payroll> paidPayrolls = payrollRepository.findAll().stream()
                 .filter(p -> p.getStatus() == PayrollStatus.PAID 
-                        && p.getPaymentDate() != null
-                        && YearMonth.from(p.getPaymentDate()).equals(currentMonth))
+                        && p.getPeriod() != null
+                        && YearMonth.from(p.getPeriod()).equals(currentMonth))
                 .collect(Collectors.toList());
         
         // Lấy tất cả salary từ các payroll này

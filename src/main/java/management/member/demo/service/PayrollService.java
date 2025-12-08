@@ -88,7 +88,37 @@ public class PayrollService {
         Payroll payroll = payrollRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
         payroll.setStatus(PayrollStatus.PAID);
+        payroll.setPaymentDate(LocalDate.now()); // Set payment date khi thanh toán
         payrollRepository.save(payroll);
+        
+        // ⚠️ FIX: Update status của tất cả Salary records liên quan thành SUCCESS
+        List<Salary> salaries = salaryRepository.findAll().stream()
+                .filter(s -> s.getPayroll() != null && s.getPayroll().getId().equals(id))
+                .collect(Collectors.toList());
+        
+        for (Salary salary : salaries) {
+            salary.setStatus(management.member.demo.enums.SalaryStatus.SUCCESS);
+            salary.setPaymentDate(LocalDate.now()); // Set payment date cho Salary
+            salaryRepository.save(salary);
+        }
+    }
+    
+    /**
+     * Thanh toán 1 Salary record cụ thể (không phải toàn bộ Payroll)
+     * @param salaryId ID của Salary record cần thanh toán
+     */
+    public void paySalary(Long salaryId) {
+        Salary salary = salaryRepository.findById(salaryId)
+                .orElseThrow(() -> new RuntimeException("Salary not found with id: " + salaryId));
+        
+        // Update status của Salary record này thành SUCCESS
+        salary.setStatus(management.member.demo.enums.SalaryStatus.SUCCESS);
+        salary.setPaymentDate(LocalDate.now()); // Set payment date cho Salary
+        salaryRepository.save(salary);
+        
+        // ⚠️ LƯU Ý: Không update Payroll status vì có thể còn Salary records khác chưa thanh toán
+        // Nếu tất cả Salary records của Payroll đều SUCCESS, có thể tự động update Payroll status
+        // Nhưng hiện tại không làm vậy để tránh side effects
     }
 
     public void failPayroll(Long id) {
@@ -260,18 +290,16 @@ public class PayrollService {
      * @param request Request chứa tất cả thông tin (fullName, baseSalary, otHours, dayOff, lateDay, allowance, deduction, bonus)
      * @return Response với đầy đủ thông tin tính toán
      */
-    /**
-     * Tính toán Payroll cho Accountant và tự động lưu vào database
-     * 
-     * @param request Request DTO chứa thông tin tính toán
-     * @return Response DTO chứa kết quả tính toán và đã được lưu vào database
-     */
     public PayrollCalculationForAccountantResponseDTO calculatePayrollForAccountant(
             PayrollCalculationForAccountantRequestDTO request) {
-        
+
+        // Lấy Employee để có cả id (Long) và employeeId (String)
+        Employee employee = employeeRepository.findById(request.getEmployeeId())
+                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + request.getEmployeeId()));
+
         // Tạo response
         PayrollCalculationForAccountantResponseDTO response = new PayrollCalculationForAccountantResponseDTO();
-        
+
         // Lấy tất cả giá trị từ request (tự nhập)
         response.setFullName(request.getFullName());
         response.setBaseSalary(request.getBaseSalary());
@@ -294,9 +322,8 @@ public class PayrollService {
         BigDecimal otPay = BigDecimal.ZERO;
         if (response.getOtHours() != null && response.getOtHours().compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal otRatePerHour = new BigDecimal("100000");
-            otPay = response.getOtHours().multiply(otRatePerHour).setScale(2, java.math.RoundingMode.HALF_UP);
+            otPay = response.getOtHours().multiply(otRatePerHour);
         }
-        response.setOtPay(otPay);
         
         // Tính grossIncome = baseSalary + allowance + otPay + bonus
         BigDecimal baseSalary = response.getBaseSalary() != null ? response.getBaseSalary() : BigDecimal.ZERO;
@@ -321,12 +348,6 @@ public class PayrollService {
                 .multiply(new BigDecimal("0.01"))
                 .setScale(2, java.math.RoundingMode.HALF_UP);
         response.setUnemploymentInsurance(unemploymentInsurance);
-        
-        // Tính totalInsurance = socialInsurance + healthInsurance + unemploymentInsurance
-        BigDecimal totalInsurance = socialInsurance
-                .add(healthInsurance)
-                .add(unemploymentInsurance);
-        response.setTotalInsurance(totalInsurance);
         
         // Tính thu nhập chịu thuế (taxableIncome) = grossIncome - BHXH - BHYT - BHTN - Giảm trừ bản thân (11,000,000)
         BigDecimal personalDeduction = new BigDecimal("11000000"); // Giảm trừ bản thân
@@ -357,106 +378,73 @@ public class PayrollService {
         // Tính netSalary = grossIncome - totalDeductions
         BigDecimal netSalary = grossIncome.subtract(totalDeductions);
         response.setNetSalary(netSalary);
-        
-        // Set status mặc định là AWAITING
-        response.setStatus("AWAITING");
-        
-        // Luôn luôn lưu vào database khi tính toán (tự động lưu)
-        Salary savedSalary = saveSalaryFromCalculation(request, response);
-        
-        // Cập nhật status trong response nếu đã lưu thành công
-        if (savedSalary != null && savedSalary.getId() != null) {
-            response.setStatus(savedSalary.getStatus() != null ? savedSalary.getStatus().name() : "AWAITING");
+
+        // ⚠️ Backend luôn tự động lưu vào database khi tính toán (không có preview mode)
+        // ⚠️ FIX: Dùng tháng từ request (nếu có), nếu không thì dùng tháng hiện tại
+        // ⚠️ QUAN TRỌNG: Phải dùng final hoặc effectively final để dùng trong lambda
+        final String monthToSave = (request.getMonth() != null && !request.getMonth().isEmpty()) 
+                ? request.getMonth() 
+                : java.time.YearMonth.now().toString(); // Fallback: tháng hiện tại (YYYY-MM)
+
+        // Tìm Payroll theo tháng (period)
+        LocalDate periodDate = LocalDate.parse(monthToSave + "-01");
+        Payroll payroll = payrollRepository.findAll().stream()
+                .filter(p -> p.getPeriod() != null && p.getPeriod().toString().startsWith(monthToSave))
+                .findFirst()
+                .orElse(null);
+
+        // Nếu chưa có Payroll cho tháng này, tạo mới
+        if (payroll == null) {
+            payroll = new Payroll();
+            payroll.setCode("PAYROLL-" + monthToSave);
+            payroll.setPeriod(periodDate);
+            payroll.setCreatedDate(LocalDate.now());
+            payroll.setStatus(PayrollStatus.PENDING);
+            payroll = payrollRepository.save(payroll);
         }
-        
-        return response;
-    }
-    
-    /**
-     * Lưu Salary record vào database từ kết quả tính toán của calculatePayrollForAccountant
-     * Luôn luôn được gọi khi tính toán (tự động lưu)
-     * 
-     * @param request Request DTO chứa thông tin employeeId, payrollId
-     * @param response Response DTO chứa các giá trị đã tính toán
-     * @return Salary entity đã được lưu vào database
-     */
-    private Salary saveSalaryFromCalculation(
-            PayrollCalculationForAccountantRequestDTO request,
-            PayrollCalculationForAccountantResponseDTO response) {
-        
-        // Lấy Employee entity
-        Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + request.getEmployeeId()));
-        
-        // Tạo Salary entity mới
-        Salary salary = new Salary();
-        
-        // Set Employee
+
+        // Tìm Salary record hiện có của employee trong payroll này
+        final Payroll finalPayroll = payroll;
+        Salary existingSalary = salaryRepository.findAll().stream()
+                .filter(s -> s.getEmployee() != null &&
+                        s.getEmployee().getId().equals(employee.getId()) &&
+                        s.getPayroll() != null &&
+                        s.getPayroll().getId().equals(finalPayroll.getId()))
+                .findFirst()
+                .orElse(null);
+
+        // Tạo hoặc update Salary record
+        Salary salary = existingSalary != null ? existingSalary : new Salary();
         salary.setEmployee(employee);
-        
-        // Set baseSalary từ response (hoặc từ Employee nếu response không có)
-        salary.setBaseSalary(response.getBaseSalary() != null ? response.getBaseSalary() : 
-                (employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO));
-        
-        // Set các field từ response
-        salary.setAllowance(response.getAllowance() != null ? response.getAllowance() : BigDecimal.ZERO);
-        
-        // Tính otPay từ otHours (100,000 VND/giờ)
-        BigDecimal otPay = BigDecimal.ZERO;
-        if (response.getOtHours() != null && response.getOtHours().compareTo(BigDecimal.ZERO) > 0) {
-            BigDecimal otRatePerHour = new BigDecimal("100000");
-            otPay = response.getOtHours().multiply(otRatePerHour).setScale(2, java.math.RoundingMode.HALF_UP);
-        }
+        salary.setPayroll(payroll);
+        salary.setBaseSalary(baseSalary);
+        salary.setAllowance(response.getAllowance());
         salary.setOtPay(otPay);
+        salary.setBonus(response.getBonus());
+        salary.setGrossIncome(grossIncome);
+        salary.setSocialInsurance(socialInsurance);
+        salary.setHealthInsurance(healthInsurance);
+        salary.setUnemploymentInsurance(unemploymentInsurance);
+        salary.setTotalInsurance(socialInsurance.add(healthInsurance).add(unemploymentInsurance));
+        salary.setGeneralDeductions(generalDeductions);
+        salary.setPersonalIncomeTax(personalIncomeTax);
+        salary.setTotalDeductions(totalDeductions);
+        salary.setNetSalary(netSalary);
+        salary.setStatus(management.member.demo.enums.SalaryStatus.AWAITING);
         
-        salary.setBonus(response.getBonus() != null ? response.getBonus() : BigDecimal.ZERO);
-        salary.setGrossIncome(response.getGrossIncome() != null ? response.getGrossIncome() : BigDecimal.ZERO);
-        salary.setSocialInsurance(response.getSocialInsurance() != null ? response.getSocialInsurance() : BigDecimal.ZERO);
-        salary.setHealthInsurance(response.getHealthInsurance() != null ? response.getHealthInsurance() : BigDecimal.ZERO);
-        salary.setUnemploymentInsurance(response.getUnemploymentInsurance() != null ? response.getUnemploymentInsurance() : BigDecimal.ZERO);
-        
-        // Tính totalInsurance
-        BigDecimal totalInsurance = salary.getSocialInsurance()
-                .add(salary.getHealthInsurance())
-                .add(salary.getUnemploymentInsurance());
-        salary.setTotalInsurance(totalInsurance);
-        
-        salary.setGeneralDeductions(response.getGeneralDeductions() != null ? response.getGeneralDeductions() : BigDecimal.ZERO);
-        salary.setPersonalIncomeTax(response.getPersonalIncomeTax() != null ? response.getPersonalIncomeTax() : BigDecimal.ZERO);
-        salary.setTotalDeductions(response.getTotalDeductions() != null ? response.getTotalDeductions() : BigDecimal.ZERO);
-        salary.setNetSalary(response.getNetSalary() != null ? response.getNetSalary() : BigDecimal.ZERO);
-        
-        // Set status: Nếu có trong response thì dùng, nếu không thì mặc định là AWAITING (UNPAID)
-        // Map từ String status trong response sang SalaryStatus enum
-        if (response.getStatus() != null) {
-            try {
-                // Nếu response có status, convert từ String sang enum
-                String statusStr = response.getStatus().toUpperCase();
-                if ("PAID".equals(statusStr) || "SUCCESS".equals(statusStr)) {
-                    salary.setStatus(management.member.demo.enums.SalaryStatus.SUCCESS);
-                } else if ("UNPAID".equals(statusStr) || "AWAITING".equals(statusStr)) {
-                    salary.setStatus(management.member.demo.enums.SalaryStatus.AWAITING);
-                } else {
-                    salary.setStatus(management.member.demo.enums.SalaryStatus.valueOf(statusStr));
-                }
-            } catch (IllegalArgumentException e) {
-                // Nếu không parse được, dùng mặc định
-                salary.setStatus(management.member.demo.enums.SalaryStatus.AWAITING);
-            }
+        // ⚠️ FIX: Set payment_date để tránh lỗi NOT NULL constraint
+        // Nếu status là SUCCESS/PAID, set payment_date = current date
+        // Nếu status là AWAITING/PENDING, set payment_date = current date (ngày tính lương)
+        if (salary.getStatus() == management.member.demo.enums.SalaryStatus.SUCCESS) {
+            salary.setPaymentDate(LocalDate.now()); // Đã thanh toán
         } else {
-            // Mặc định là AWAITING (UNPAID) khi mới tạo
-            salary.setStatus(management.member.demo.enums.SalaryStatus.AWAITING);
+            // Set payment_date = current date (ngày tính lương) để tránh lỗi NOT NULL
+            salary.setPaymentDate(LocalDate.now());
         }
-        
-        // Set Payroll nếu có payrollId (foreign key)
-        if (request.getPayrollId() != null) {
-            Payroll payroll = payrollRepository.findById(request.getPayrollId())
-                    .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + request.getPayrollId()));
-            salary.setPayroll(payroll);
-        }
-        
-        // Lưu vào database và trả về Salary đã lưu
-        return salaryRepository.save(salary);
+
+        salaryRepository.save(salary);
+
+        return response;
     }
 
     /**
@@ -694,6 +682,10 @@ public class PayrollService {
                 .map(salary -> {
                     MonthlyPayrollForAccountantDTO dto = new MonthlyPayrollForAccountantDTO();
                     
+                    // ⚠️ QUAN TRỌNG: Set payrollId và salaryId để frontend có thể gọi API pay/cancel
+                    dto.setPayrollId(salary.getPayroll() != null ? salary.getPayroll().getId() : null);
+                    dto.setSalaryId(salary.getId());
+                    
                     // Lấy thông tin từ Employee
                     Long empId = salary.getEmployee() != null ? salary.getEmployee().getId() : null;
                     Employee employee = empId != null ? employeeMap.get(empId) : null;
@@ -733,12 +725,40 @@ public class PayrollService {
                         otPay = totalOtHours.multiply(otRatePerHour).setScale(2, java.math.RoundingMode.HALF_UP);
                     }
                     dto.setOtPay(otPay);
-                    dto.setBaseSalary(employee != null && employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO);
+                    // ⚠️ FIX: Lấy baseSalary từ Salary entity (đã lưu) thay vì từ Employee entity
+                    // Ưu tiên: salary.getBaseSalary() > employee.getBaseSalary() > 0
+                    dto.setBaseSalary(salary.getBaseSalary() != null ? salary.getBaseSalary() : 
+                            (employee != null && employee.getBaseSalary() != null ? employee.getBaseSalary() : BigDecimal.ZERO));
                     dto.setNetSalary(salary.getNetSalary() != null ? salary.getNetSalary() : BigDecimal.ZERO);
                     
-                    // Lấy status từ Payroll
-                    dto.setStatus(salary.getPayroll() != null && salary.getPayroll().getStatus() != null ? 
-                            salary.getPayroll().getStatus() : PayrollStatus.PENDING);
+                    // ⚠️ FIX: Lấy status từ Salary entity (status của bản ghi lương cụ thể) thay vì từ Payroll entity
+                    // SalaryStatus: AWAITING, SUCCESS, CANCELLED, FAILED
+                    // PayrollStatus: PENDING, PAID, CANCELLED, FAILED
+                    // Frontend cần biết status của từng bản ghi lương (Salary), không phải status của toàn bộ Payroll
+                    if (salary.getStatus() != null) {
+                        // Map SalaryStatus sang PayrollStatus để frontend hiển thị đúng
+                        // SalaryStatus.SUCCESS -> PayrollStatus.PAID
+                        // SalaryStatus.AWAITING -> PayrollStatus.PENDING (vì PayrollStatus không có AWAITING)
+                        // SalaryStatus.CANCELLED -> PayrollStatus.CANCELLED
+                        // SalaryStatus.FAILED -> PayrollStatus.FAILED
+                        if (salary.getStatus() == management.member.demo.enums.SalaryStatus.SUCCESS) {
+                            dto.setStatus(PayrollStatus.PAID);
+                        } else if (salary.getStatus() == management.member.demo.enums.SalaryStatus.AWAITING) {
+                            dto.setStatus(PayrollStatus.PENDING);
+                        } else if (salary.getStatus() == management.member.demo.enums.SalaryStatus.CANCELLED) {
+                            dto.setStatus(PayrollStatus.CANCELLED);
+                        } else if (salary.getStatus() == management.member.demo.enums.SalaryStatus.FAILED) {
+                            dto.setStatus(PayrollStatus.FAILED);
+                        } else {
+                            // Fallback: dùng Payroll status nếu Salary status không khớp
+                            dto.setStatus(salary.getPayroll() != null && salary.getPayroll().getStatus() != null ? 
+                                    salary.getPayroll().getStatus() : PayrollStatus.PENDING);
+                        }
+                    } else {
+                        // Nếu Salary không có status, fallback về Payroll status
+                        dto.setStatus(salary.getPayroll() != null && salary.getPayroll().getStatus() != null ? 
+                                salary.getPayroll().getStatus() : PayrollStatus.PENDING);
+                    }
                     
                     return dto;
                 })

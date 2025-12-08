@@ -43,5 +43,8 @@ public class PayrollCalculationForAccountantRequestDTO {
     
     /** Payroll ID (optional) - Nếu có, sẽ gán Salary vào Payroll này */
     private Long payrollId;
+    
+    /** Tháng lương (optional) - Format: "YYYY-MM", ví dụ: "2025-10". Nếu không có, dùng tháng hiện tại */
+    private String month;
 }
 
