@@ -8,6 +8,7 @@ import lombok.Setter;
 import management.member.demo.enums.SalaryStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -88,5 +89,9 @@ public class Salary {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payroll_id")
     private Payroll payroll;
+
+    /** Ngày thanh toán lương */
+    @Column(name = "payment_date")
+    private LocalDate paymentDate;
 
 }

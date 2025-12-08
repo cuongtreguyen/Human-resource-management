@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 public class MonthlyPayrollForAccountantDTO {
+    private Long payrollId; // ID của Payroll entity (dùng để pay/cancel payroll)
+    private Long salaryId; // ID của Salary entity (dùng để update/delete salary)
     private String fullName;
     private String email;
     private String department;
