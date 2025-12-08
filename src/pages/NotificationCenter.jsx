@@ -1,3 +1,4 @@
+// src/pages/NotificationCenter.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
@@ -12,13 +13,18 @@ import {
   CheckCheck,
   Filter
 } from 'lucide-react';
-import fakeApi from '../services/fakeApi';
 import { isAdmin, getRole } from '../utils/auth';
+import * as api from '../services/api';
 
 const NotificationCenter = () => {
   const userRole = getRole();
+  const navigate = useNavigate();
 
-  // Màu sắc theo role
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+
+  // ===== Màu sắc theo role =====
   const getBannerColor = () => {
     switch (userRole) {
       case 'admin':
@@ -44,11 +50,8 @@ const NotificationCenter = () => {
         return 'text-orange-100';
     }
   };
-  const navigate = useNavigate();
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('all');
 
+  // ===== Load dữ liệu =====
   useEffect(() => {
     loadNotifications();
   }, []);
@@ -56,8 +59,8 @@ const NotificationCenter = () => {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getNotifications();
-      setNotifications(response.data);
+      const result = await api.getNotifications();
+      setNotifications(result);
     } catch (err) {
       console.error('Error loading notifications:', err);
     } finally {
@@ -65,19 +68,29 @@ const NotificationCenter = () => {
     }
   };
 
+  // ===== Đánh dấu đã đọc =====
   const markAsRead = async (notificationId) => {
     try {
-      await fakeApi.markNotificationRead(notificationId);
+      await api.markNotificationRead(notificationId);
       setNotifications(notifications.map(notif =>
-        notif.id === notificationId
-          ? { ...notif, read: true }
-          : notif
+        notif.id === notificationId ? { ...notif, read: true } : notif
       ));
     } catch (err) {
       console.error('Error marking notification as read:', err);
     }
   };
 
+  // ===== Đánh dấu tất cả đã đọc =====
+  const markAllAsRead = async () => {
+    try {
+      await api.markAllNotificationsRead();
+      setNotifications(notifications.map(n => ({ ...n, read: true })));
+    } catch (err) {
+      console.error('Error marking all as read:', err);
+    }
+  };
+
+  // ===== Icon theo loại =====
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'task_assigned': return <User className="h-5 w-5 text-blue-500" />;
@@ -89,17 +102,8 @@ const NotificationCenter = () => {
     }
   };
 
-  const getNotificationColor = (type, priority) => {
-    if (priority === 'high') return 'border-l-red-500 bg-red-50';
-    if (priority === 'medium') return 'border-l-yellow-500 bg-yellow-50';
-    if (priority === 'low') return 'border-l-green-500 bg-green-50';
-    return 'border-l-gray-500 bg-gray-50';
-  };
-
   const handleNotificationClick = (notification) => {
     markAsRead(notification.id);
-
-    // Navigate based on notification type
     switch (notification.type) {
       case 'task_assigned':
         navigate('/tasks');
@@ -118,13 +122,11 @@ const NotificationCenter = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-  };
-
-  const filteredNotifications = filter === 'all'
-    ? notifications
-    : filter === 'unread'
+  // ===== Lọc =====
+  const filteredNotifications =
+    filter === 'all'
+      ? notifications
+      : filter === 'unread'
       ? notifications.filter(n => !n.read)
       : notifications.filter(n => n.type.includes(filter));
 
@@ -151,7 +153,6 @@ const NotificationCenter = () => {
               <h1 className="text-3xl font-bold">Trung tâm thông báo</h1>
               <p className={`${getSubtitleColor()} mt-1`}>Quản lý tất cả thông báo của bạn</p>
             </div>
-            {/* Ẩn badge chuông cho Admin */}
             {!isAdmin() && (
               <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 flex items-center gap-3">
                 <Bell className="h-7 w-7" />
@@ -234,10 +235,11 @@ const NotificationCenter = () => {
                   <button
                     key={item.value}
                     onClick={() => setFilter(item.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === item.value
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      filter === item.value
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
+                    }`}
                   >
                     {item.label}
                   </button>
@@ -276,39 +278,64 @@ const NotificationCenter = () => {
               filteredNotifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-5 cursor-pointer transition-all hover:bg-gray-50 ${!notification.read ? 'bg-purple-50/50' : ''
-                    }`}
+                  className={`p-5 cursor-pointer transition-all hover:bg-gray-50 ${
+                    !notification.read ? 'bg-purple-50/50' : ''
+                  }`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start gap-4">
-                    <div className={`p-3 rounded-xl flex-shrink-0 ${notification.type === 'task_assigned' ? 'bg-blue-100' :
-                        notification.type === 'leave_approved' ? 'bg-green-100' :
-                          notification.type === 'leave_rejected' ? 'bg-red-100' :
-                            notification.type === 'task_delegation' ? 'bg-purple-100' :
-                              notification.type === 'deadline_approaching' ? 'bg-orange-100' :
-                                'bg-gray-100'
-                      }`}>
+                    <div
+                      className={`p-3 rounded-xl flex-shrink-0 ${
+                        notification.type === 'task_assigned'
+                          ? 'bg-blue-100'
+                          : notification.type === 'leave_approved'
+                          ? 'bg-green-100'
+                          : notification.type === 'leave_rejected'
+                          ? 'bg-red-100'
+                          : notification.type === 'task_delegation'
+                          ? 'bg-purple-100'
+                          : notification.type === 'deadline_approaching'
+                          ? 'bg-orange-100'
+                          : 'bg-gray-100'
+                      }`}
+                    >
                       {getNotificationIcon(notification.type)}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
                         <div>
-                          <h4 className={`font-semibold ${!notification.read ? 'text-gray-900' : 'text-gray-700'}`}>
+                          <h4
+                            className={`font-semibold ${
+                              !notification.read ? 'text-gray-900' : 'text-gray-700'
+                            }`}
+                          >
                             {notification.title}
                           </h4>
-                          <p className={`text-sm mt-1 ${!notification.read ? 'text-gray-700' : 'text-gray-500'}`}>
+                          <p
+                            className={`text-sm mt-1 ${
+                              !notification.read ? 'text-gray-700' : 'text-gray-500'
+                            }`}
+                          >
                             {notification.message}
                           </p>
                         </div>
 
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${notification.priority === 'high' ? 'bg-red-100 text-red-700' :
-                              notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                'bg-green-100 text-green-700'
-                            }`}>
-                            {notification.priority === 'high' ? 'Quan trọng' :
-                              notification.priority === 'medium' ? 'Trung bình' : 'Thấp'}
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              notification.priority === 'high'
+                                ? 'bg-red-100 text-red-700'
+                                : notification.priority === 'medium'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-green-100 text-green-700'
+                            }`}
+                          >
+                            {notification.priority === 'high'
+                              ? 'Quan trọng'
+                              : notification.priority === 'medium'
+                              ? 'Trung bình'
+                              : 'Thấp'}
                           </span>
                           {!notification.read && (
                             <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>

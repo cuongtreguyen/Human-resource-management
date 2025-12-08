@@ -529,6 +529,80 @@ export const checkEmployeeCodeExists = async (code) => {
   const result = await handleResponse(response);
   return result.exists || false;
 };
+/* ===== NOTIFICATIONS ===== */
+export const getNotifications = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.read !== undefined) params.append('read', filters.read);
+  if (filters.type) params.append('type', filters.type);
+
+  const response = await http(`${JAVA_API}/notifications?${params.toString()}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  const result = await handleResponse(response);
+  return Array.isArray(result) ? result : (result.data || []);
+};
+
+// ✅ Đánh dấu 1 thông báo đã đọc
+export const markNotificationRead = async (id) => {
+  const response = await http(`${JAVA_API}/notifications/${id}/read`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// ✅ Đánh dấu tất cả thông báo đã đọc
+export const markAllNotificationsRead = async () => {
+  const response = await http(`${JAVA_API}/notifications/read-all`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+
+
+
+
+export const getEvaluations = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.keyword) params.append('keyword', filters.keyword);
+  if (filters.department) params.append('department', filters.department);
+
+  const response = await http(`${JAVA_API}/evaluations?${params.toString()}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+
+  return handleResponse(response); // ← Đây là danh sách EVALUATIONS, không phải employees
+};
+
+
+// Lấy chi tiết 1 evaluation theo ID (nếu cần sau này)
+export const getEvaluationById = async (id) => {
+  const response = await http(`${JAVA_API}/evaluations/${id}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// Tạo evaluation mới
+export const createEvaluation = async (data) => {
+  const response = await http(`${JAVA_API}/evaluations`, {
+    method: 'POST',
+    headers: {
+      ...getAuthHeaders(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
+
+  return handleResponse(response);
+};
+
 
 /* ===== EXPORT DEFAULT ===== */
 export default {
@@ -551,4 +625,10 @@ export default {
   bulkDeleteEmployees,
   checkEmailExists,
   checkEmployeeCodeExists,
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  getEvaluations,
+  createEvaluation,
+  getEvaluationById,
 };
