@@ -19,7 +19,6 @@ const PayrollCalculation = () => {
   const stateEmployee = location.state?.employee;
   const statePayroll = location.state?.payroll;
   const selectedMonth = location.state?.selectedMonth; // ⚠️ QUAN TRỌNG: Tháng đã chọn từ PayrollList
-
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -202,6 +201,7 @@ const PayrollCalculation = () => {
       resolvedId: numericEmployeeId
     });
 
+
     // Nếu không có employeeId thật, tính local
     if (isFakeId || isNaN(numericEmployeeId)) {
       console.log('Fake employeeId detected, calculating locally. realId:', realId);
@@ -211,6 +211,7 @@ const PayrollCalculation = () => {
     }
 
     try {
+
       // Prepare request data theo Backend DTO: PayrollCalculationForAccountantRequestDTO
       // Backend luôn tự động lưu vào database khi tính toán (không có preview mode)
       const requestData = {
@@ -227,6 +228,7 @@ const PayrollCalculation = () => {
       };
 
       console.log('📤 Calling calculatePayroll API (will auto-save to DB):', requestData);
+
       const response = await calculatePayrollAPI(requestData);
       console.log('✅ CalculatePayroll API response:', response);
 
@@ -253,6 +255,7 @@ const PayrollCalculation = () => {
         grossIncome: response.grossIncome ? Number(response.grossIncome) : 0,
         netSalary: response.netSalary ? Number(response.netSalary) : 0,
         status: response.status || 'AWAITING' // Status từ response
+
       });
 
       toast.success('Đã tính và lưu lương thành công!');
@@ -314,7 +317,6 @@ const PayrollCalculation = () => {
       toast.warning('Vui lòng tính lương trước');
       return;
     }
-
     // Backend đã lưu rồi, chỉ cần quay lại trang danh sách
     toast.success(`Đã lưu bảng lương cho ${employee?.name || employee?.fullName || calculatedPayroll.fullName || 'nhân viên'}!`);
     navigate('/payroll');

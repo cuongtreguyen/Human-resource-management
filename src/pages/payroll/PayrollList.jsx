@@ -196,6 +196,7 @@ const PayrollList = () => {
 
       if (payrollData.length > 0) {
         // Map API data to component state format
+
         // ⚠️ QUAN TRỌNG: Phân biệt rõ:
         // - salaryId: ID của bản ghi Salary trong DB (dùng cho update/delete salary record)
         // - employeeId: ID của nhân viên (Long, dùng để tính lương)
@@ -222,6 +223,7 @@ const PayrollList = () => {
             paidDate: item.paidDate || null
           };
         });
+
 
         console.log('✅ Loaded payroll from API:', mappedPayrolls);
         setPayrollRecords(mappedPayrolls);
@@ -861,6 +863,7 @@ const PayrollList = () => {
                       // Tìm employee bằng nhiều cách: employeeId, email, hoặc fullName
                       let matchedEmployee = null;
 
+
                       // 1. Thử tìm bằng employeeId nếu có (so sánh cả String và Number)
                       if (payroll.employeeId != null) {
                         const payrollEmpId = Number(payroll.employeeId);
@@ -884,12 +887,12 @@ const PayrollList = () => {
                           e.name?.toLowerCase() === payrollName
                         );
                       }
-
                       // ⚠️ QUAN TRỌNG: Lấy employeeId thật (Number) để truyền sang PayrollCalculation
                       // Ưu tiên: matchedEmployee > payroll.employeeId (đã là Number từ mapping)
                       const realEmployeeId = matchedEmployee
                         ? Number(matchedEmployee.id || matchedEmployee.employeeId)
                         : (payroll.employeeId != null ? Number(payroll.employeeId) : null);
+
 
                       // Ưu tiên data từ payroll (API trả về), fallback employee
                       const displayName = payroll.name || payroll.fullName || matchedEmployee?.name || 'Unknown';
@@ -1011,6 +1014,7 @@ const PayrollList = () => {
                                       salary: payroll.basicSalary,
                                       basicSalary: payroll.basicSalary
                                     };
+
                                     
                                     console.log('Opening payroll modal for:', {
                                       empData,
@@ -1019,6 +1023,7 @@ const PayrollList = () => {
                                       payrollEmployeeId: payroll.employeeId
                                     });
                                     
+
                                     openPayrollModal(empData, payroll);
                                   }}
                                   className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer"
@@ -1039,6 +1044,7 @@ const PayrollList = () => {
                                     department: displayDepartment
                                   };
                                   console.log('Opening details modal for:', empData);
+
                                   // Truyền trực tiếp payroll record để tránh lỗi tìm kiếm
                                   openPayrollDetailsModal(empData, payroll);
                                 }}
