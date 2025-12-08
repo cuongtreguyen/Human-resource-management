@@ -900,13 +900,51 @@ public class PayrollStatisticsService {
         LocalDate endDate = today;
         List<Attendance> attendances = attendanceRepository.findByDateRange(startDate, endDate);
         
+        // Lấy tất cả OnLeave APPROVED trong khoảng thời gian này để loại trừ khỏi vắng mặt
+        List<OnLeave> approvedLeaves = onLeaveRepository.findAll().stream()
+                .filter(leave -> leave.getOnLeaveStatus() == OnLeaveStatus.APPROVED &&
+                        leave.getStartDate() != null &&
+                        leave.getEndDate() != null &&
+                        !leave.getStartDate().isAfter(endDate) &&
+                        !leave.getEndDate().isBefore(startDate))
+                .collect(Collectors.toList());
+        
+        // Tạo map: employeeId -> Set<LocalDate> (các ngày có OnLeave APPROVED)
+        //  Đảm bảo map đầy đủ & chính xác - chỉ lấy các ngày trong khoảng 7 ngày
+        Map<Long, java.util.Set<LocalDate>> employeeApprovedLeaveDates = new HashMap<>();
+        for (OnLeave leave : approvedLeaves) {
+            if (leave.getEmployee() == null || leave.getEmployee().getId() == null ||
+                    leave.getStartDate() == null || leave.getEndDate() == null) {
+                continue; // Skip invalid leave records
+            }
+            
+            Long employeeId = leave.getEmployee().getId();
+            LocalDate leaveStart = leave.getStartDate();
+            LocalDate leaveEnd = leave.getEndDate();
+            
+            // Chỉ lấy các ngày trong khoảng 7 ngày (startDate đến endDate)
+            LocalDate current = leaveStart.isBefore(startDate) ? startDate : leaveStart;
+            LocalDate end = leaveEnd.isAfter(endDate) ? endDate : leaveEnd;
+            
+            employeeApprovedLeaveDates.putIfAbsent(employeeId, new java.util.HashSet<>());
+            java.util.Set<LocalDate> dates = employeeApprovedLeaveDates.get(employeeId);
+            
+            while (!current.isAfter(end)) {
+                dates.add(current);
+                current = current.plusDays(1);
+            }
+        }
+        
         // Tạo map: date -> List<Attendance> để dễ truy vấn
         Map<LocalDate, List<Attendance>> attendanceByDate = attendances.stream()
                 .collect(Collectors.groupingBy(Attendance::getAttendanceDate));
         
         // Tạo map: employeeId -> Set<LocalDate> để biết nhân viên nào đã có attendance
+        // ⚠️ FIX 1: Exclude NOT_CHECKED_IN để không làm giảm absentCount sai
         Map<Long, java.util.Set<LocalDate>> employeeAttendanceDates = attendances.stream()
-                .filter(a -> a.getEmployee() != null && a.getEmployee().getId() != null)
+                .filter(a -> a.getEmployee() != null && 
+                        a.getEmployee().getId() != null &&
+                        a.getStatus() != AttendenceStatus.NOT_CHECKED_IN) // Exclude NOT_CHECKED_IN
                 .collect(Collectors.groupingBy(
                         a -> a.getEmployee().getId(),
                         Collectors.mapping(
@@ -947,26 +985,51 @@ public class PayrollStatisticsService {
             dailyStat.setLateCount(lateCount);
             
             // Đếm số nhân viên vắng mặt
-            // Vắng mặt = không có attendance record hoặc status = NOT_CHECKED_IN
+            // Logic hợp lý:
+            // 1. Chỉ đếm trong ngày làm việc (Monday-Friday)
+            // 2. Chỉ đếm nhân viên ACTIVE đã được thuê (hireDate <= date)
+            // 3. Loại trừ nhân viên có OnLeave APPROVED trong ngày đó
+            // 4. Vắng mặt = không có attendance record HOẶC status = NOT_CHECKED_IN (và không có OnLeave APPROVED)
             long absentCount = 0;
-            for (Employee employee : activeEmployees) {
-                Long employeeId = employee.getId();
-                java.util.Set<LocalDate> attendedDates = employeeAttendanceDates.getOrDefault(employeeId, java.util.Collections.emptySet());
-                
-                if (!attendedDates.contains(date)) {
-                    // Không có attendance record = vắng mặt
-                    absentCount++;
-                } else {
-                    // Có attendance record nhưng kiểm tra status
-                    Attendance attendance = dayAttendances.stream()
-                            .filter(a -> a.getEmployee() != null &&
-                                    a.getEmployee().getId().equals(employeeId))
-                            .findFirst()
-                            .orElse(null);
-                    if (attendance != null && attendance.getStatus() == AttendenceStatus.NOT_CHECKED_IN) {
+            java.time.DayOfWeek dayOfWeek = date.getDayOfWeek();
+            
+            // Chỉ đếm vắng mặt trong ngày làm việc (Monday-Friday)
+            if (dayOfWeek != java.time.DayOfWeek.SATURDAY && dayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                for (Employee employee : activeEmployees) {
+                    // Chỉ đếm nhân viên đã được thuê (hireDate <= date)
+                    if (employee.getHireDate() != null && employee.getHireDate().isAfter(date)) {
+                        continue; // Nhân viên chưa được thuê vào ngày này
+                    }
+                    
+                    Long employeeId = employee.getId();
+                    java.util.Set<LocalDate> attendedDates = employeeAttendanceDates.getOrDefault(employeeId, java.util.Collections.emptySet());
+                    java.util.Set<LocalDate> approvedLeaveDates = employeeApprovedLeaveDates.getOrDefault(employeeId, java.util.Collections.emptySet());
+                    
+                    // Nếu có OnLeave APPROVED trong ngày này → không tính là vắng mặt
+                    if (approvedLeaveDates.contains(date)) {
+                        continue; // Nhân viên có phép, không tính vắng mặt
+                    }
+                    
+                    if (!attendedDates.contains(date)) {
+                        // Không có attendance record = vắng mặt
                         absentCount++;
+                    } else {
+                        // Có attendance record nhưng kiểm tra status
+                        //  Filter checkIn != null để tránh lấy record sai
+                        Attendance attendance = dayAttendances.stream()
+                                .filter(a -> a.getEmployee() != null &&
+                                        a.getEmployee().getId().equals(employeeId) &&
+                                        a.getCheckIn() != null) // Filter checkIn != null
+                                .findFirst()
+                                .orElse(null);
+                        if (attendance != null && attendance.getStatus() == AttendenceStatus.NOT_CHECKED_IN) {
+                            absentCount++;
+                        }
                     }
                 }
+            } else {
+                // Cuối tuần: không có nhân viên vắng mặt (vì không phải ngày làm việc)
+                absentCount = 0;
             }
             dailyStat.setAbsentCount(absentCount);
             
