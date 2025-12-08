@@ -713,5 +713,44 @@ public class OnLeaveService {
         
         return dto;
     }
+    public EmployeeLeaveSummaryDTO getEmployeeLeaveSummary(Long employeeId) {
+
+        List<OnLeave> allLeaves = onLeaveRepository.findByEmployeeId(employeeId);
+
+        long used = allLeaves.stream()
+                .filter(l -> l.getOnLeaveType() == OnLeaveType.ANNUAL_LEAVE)
+                .filter(l -> l.getOnLeaveStatus() == OnLeaveStatus.APPROVED)
+                .mapToLong(this::getTotalDays)
+                .sum();
+
+        long pending = allLeaves.stream()
+                .filter(l -> l.getOnLeaveType() == OnLeaveType.ANNUAL_LEAVE)
+                .filter(l -> l.getOnLeaveStatus() == OnLeaveStatus.PENDING)
+                .mapToLong(this::getTotalDays)
+                .sum();
+
+        // lấy phép còn lại từ Employee
+        Employee emp = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        long remaining = emp.getRemainingLeaveDays() != null ? emp.getRemainingLeaveDays() : 12;
+
+        return EmployeeLeaveSummaryDTO.builder()
+                .remaining(remaining)
+                .used(used)
+                .pending(pending)
+                .build();
+    }
+
+    public List<LeaveListItemDTO> getEmployeeRecentHistory(Long employeeId) {
+        List<OnLeave> leaves = onLeaveRepository.findByEmployeeId(employeeId);
+
+        return leaves.stream()
+                .sorted((a, b) -> b.getStartDate().compareTo(a.getStartDate())) // sort recent first
+                .map(this::toLeaveListItemDTO)
+                .collect(Collectors.toList());
+    }
+
+
 }
 

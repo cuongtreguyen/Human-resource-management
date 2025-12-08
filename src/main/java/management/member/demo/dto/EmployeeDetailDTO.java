@@ -3,6 +3,7 @@ package management.member.demo.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
+import management.member.demo.enums.EmployeeStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,7 +24,7 @@ public class EmployeeDetailDTO {
     private String phone;
     private String position;
     private String department;
-    private String status;  // lowercase: active, inactive, on_leave, terminated
+    private EmployeeStatus status;  // ACTIVE, INACTIVE, ON_LEAVE, TERMINATED
     private LocalDate hireDate;
     private BigDecimal salary;  // baseSalary
     private String personalEmail;

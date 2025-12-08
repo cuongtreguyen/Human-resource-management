@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/employee/salary")
+@RequestMapping("/api/employee/salary")
 @Tag(name = "Employee Salary", description = "Employee salary information endpoints - Accessible by all roles")
 public class EmployeeSalaryController {
 
@@ -38,7 +38,7 @@ public class EmployeeSalaryController {
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy nhân viên với email: " + email));
     }
 
-    @GetMapping("/my-latest")
+    @GetMapping("/api/my-latest")
     @Operation(summary = "Get my latest salary")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Success"),
@@ -50,7 +50,7 @@ public class EmployeeSalaryController {
         return ResponseEntity.ok(Map.of("employeeId", employeeId, "latestSalary", latest));
     }
 
-    @GetMapping("/my-average")
+    @GetMapping("/api/my-average")
     @Operation(summary = "Get my average salary")
     public ResponseEntity<Map<String, Object>> getMyAverageSalary(Authentication authentication) {
         Long employeeId = getCurrentEmployeeId(authentication);
@@ -58,7 +58,7 @@ public class EmployeeSalaryController {
         return ResponseEntity.ok(Map.of("employeeId", employeeId, "averageSalary", average));
     }
 
-    @GetMapping("/my-total-income")
+    @GetMapping("/api/my-total-income")
     @Operation(summary = "Get my total income")
     public ResponseEntity<Map<String, Object>> getMyTotalIncome(Authentication authentication) {
         Long employeeId = getCurrentEmployeeId(authentication);
@@ -66,7 +66,7 @@ public class EmployeeSalaryController {
         return ResponseEntity.ok(Map.of("employeeId", employeeId, "totalIncome", total));
     }
 
-    @GetMapping("/my-summary")
+    @GetMapping("/api/my-summary")
     @Operation(summary = "Get my salary summary")
     public ResponseEntity<SalarySummaryResponse> getMySalarySummary(Authentication authentication) {
         Long employeeId = getCurrentEmployeeId(authentication);
