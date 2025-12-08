@@ -78,6 +78,8 @@ const PayrollList = () => {
   const [restoredFromCanceled, setRestoredFromCanceled] = useState(new Set()); // Track payrolls restored from CANCELED
 
   useEffect(() => {
+    // Reset payrollRecords khi đổi tháng/phòng ban để load data mới
+    setPayrollRecords([]);
     loadEmployees();
     loadMonthlyPayrollData();
   }, [selectedMonth, selectedDepartment]);
@@ -154,6 +156,9 @@ const PayrollList = () => {
     }
   };
 
+  // Lưu salary cache từ payroll history để dùng khi generate
+  const [salaryCache, setSalaryCache] = useState({});
+
   // Load monthly payroll from API
   const loadMonthlyPayrollData = async () => {
     try {
@@ -167,14 +172,17 @@ const PayrollList = () => {
       // API có thể trả về array trực tiếp hoặc { data: [...] }
       const payrollData = Array.isArray(response) ? response : response.data || [];
 
+      console.log('📋 Raw payroll data from API for month', formattedMonth, ':', payrollData);
+
       if (payrollData.length > 0) {
         // Map API data to component state format
-        const mappedPayrolls = payrollData.map(item => ({
-          id: item.id || item.employeeId || Math.random().toString(),
+        const mappedPayrolls = payrollData.map((item, index) => ({
+          id: item.id || item.employeeId || `payroll-${index}-${Date.now()}`,
           employeeId: item.employeeId || item.id,
           name: item.fullName || item.employeeName || item.name,
-          email: item.email,
-          department: item.department || item.departmentName,
+          fullName: item.fullName, // Giữ nguyên fullName từ API
+          email: item.email || '',
+          department: item.department || item.departmentName || 'N/A',
           basicSalary: item.baseSalary || item.basicSalary || 0,
           otHours: item.otHours || 0,
           otPay: item.otPay || 0,
@@ -186,8 +194,18 @@ const PayrollList = () => {
 
         console.log('✅ Loaded payroll from API:', mappedPayrolls);
         setPayrollRecords(mappedPayrolls);
+
+        // Cache salary theo email để dùng khi generate cho tháng khác
+        const newCache = { ...salaryCache };
+        mappedPayrolls.forEach(p => {
+          if (p.email && p.basicSalary > 0) {
+            newCache[p.email.toLowerCase()] = p.basicSalary;
+          }
+        });
+        setSalaryCache(newCache);
       } else {
-        console.log('📋 No payroll data from API, will generate from employees');
+        console.log('📋 No payroll data from API for month', formattedMonth, '- will generate from employees');
+        // Không có data cho tháng này, để useEffect generate từ employees
       }
     } catch (err) {
       console.error('Error loading monthly payroll:', err);
@@ -200,8 +218,11 @@ const PayrollList = () => {
 
 
   // Generate payroll record for an employee
-  const generatePayrollRecord = useCallback((employee) => {
-    const basicSalary = employee.salary || employee.basicSalary || 0;
+  // Nếu đã có payroll từ API, ưu tiên giữ lại baseSalary từ API
+  const generatePayrollRecord = useCallback((employee, existingPayroll = null) => {
+    // Ưu tiên: existingPayroll > employee.salary > salaryCache (theo email) > default
+    const cachedSalary = employee.email ? salaryCache[employee.email.toLowerCase()] : 0;
+    const basicSalary = existingPayroll?.basicSalary || existingPayroll?.baseSalary || employee.salary || employee.basicSalary || cachedSalary || 10000000; // Default 10M nếu không có data
     const allowances = 1000000; // Phụ cấp mặc định
     const bonuses = 0;
     const deductions = 0;
@@ -232,19 +253,27 @@ const PayrollList = () => {
       otPay: Math.round(otPay), // Tiền OT
       generalDeductions: Math.round(generalDeductions),
       month: selectedMonth,
-      status: 'PENDING', // Chưa save, trạng thái PENDING
-      paidDate: null
+      status: existingPayroll?.status || 'PENDING', // Giữ status từ API nếu có
+      paidDate: existingPayroll?.paidDate || null,
+      netSalary: existingPayroll?.netSalary || 0 // Giữ netSalary từ API nếu có
     };
-  }, [selectedMonth, getEmployeeOTData]);
+  }, [selectedMonth, getEmployeeOTData, salaryCache]);
 
   // Generate all payroll records (auto - no alert)
+  // Merge với existing data từ API để giữ lại baseSalary
   const generateAllPayrolls = useCallback(() => {
     if (employees.length === 0) {
       return;
     }
-    const payrolls = employees.map(employee => generatePayrollRecord(employee));
+    const payrolls = employees.map(employee => {
+      // Tìm payroll đã có từ API (nếu có)
+      const existingPayroll = payrollRecords.find(p =>
+        p.employeeId === employee.id || p.id === employee.id
+      );
+      return generatePayrollRecord(employee, existingPayroll);
+    });
     setPayrollRecords(payrolls);
-  }, [employees, generatePayrollRecord]);
+  }, [employees, generatePayrollRecord, payrollRecords]);
 
   // Generate payroll with feedback (button click)
   const handleGeneratePayroll = async () => {
@@ -259,7 +288,13 @@ const PayrollList = () => {
     // Simulate processing time for better UX
     await new Promise(resolve => setTimeout(resolve, 800));
 
-    const payrolls = employees.map(employee => generatePayrollRecord(employee));
+    // Merge với existing data từ API để giữ lại baseSalary
+    const payrolls = employees.map(employee => {
+      const existingPayroll = payrollRecords.find(p =>
+        p.employeeId === employee.id || p.id === employee.id
+      );
+      return generatePayrollRecord(employee, existingPayroll);
+    });
     setPayrollRecords(payrolls);
 
     setIsGenerating(false);
@@ -324,8 +359,15 @@ const PayrollList = () => {
   };
 
   // Navigate to payroll calculation page
-  const openPayrollModal = (employee) => {
-    navigate(`/payroll/calculate/${employee.id}`);
+  // Truyền employee data qua state để không cần gọi API nếu không có employeeId thật
+  const openPayrollModal = (employee, payrollData = null) => {
+    navigate(`/payroll/calculate/${employee.id}`, {
+      state: {
+        employee: employee,
+        payroll: payrollData,
+        month: selectedMonth // ⚠️ QUAN TRỌNG: Truyền selectedMonth để dùng khi lưu
+      }
+    });
   };
 
   // Rollback payroll record (đổi status thành Canceled, giữ data để chỉnh sửa)
@@ -439,8 +481,9 @@ const PayrollList = () => {
     { totalEmployees: 0, totalPayroll: 0, totalTax: 0, totalInsurance: 0, totalOTHours: 0, totalOTPay: 0 });
 
   // Generate payrolls when employees are loaded or OT data changes
+  // CHỈ generate khi chưa có data từ API payroll
   useEffect(() => {
-    if (employees.length > 0) {
+    if (employees.length > 0 && payrollRecords.length === 0) {
       generateAllPayrolls();
     }
   }, [employees, generateAllPayrolls, otRequests]);
@@ -500,12 +543,11 @@ const PayrollList = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Tháng lương</label>
-                <Input
+                <input
                   type="month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  icon={<Calendar className="h-4 w-4" />}
-                  className="w-full"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 />
               </div>
               {/* Chỉ Accountant mới có quyền tạo bảng lương */}
@@ -625,22 +667,54 @@ const PayrollList = () => {
                       return payroll.department === selectedDepartment;
                     })
                     .map((payroll) => {
-                      const employee = employees.find(e => e.id === payroll.employeeId);
+                      // Tìm employee bằng nhiều cách: employeeId, email, hoặc fullName
+                      let matchedEmployee = null;
+
+                      // 1. Thử tìm bằng employeeId nếu có
+                      if (payroll.employeeId) {
+                        matchedEmployee = employees.find(e =>
+                          e.id === payroll.employeeId || e.employeeId === payroll.employeeId
+                        );
+                      }
+
+                      // 2. Nếu không tìm được, thử tìm bằng email
+                      if (!matchedEmployee && payroll.email) {
+                        matchedEmployee = employees.find(e =>
+                          e.email?.toLowerCase() === payroll.email?.toLowerCase()
+                        );
+                      }
+
+                      // 3. Nếu vẫn không tìm được, thử tìm bằng fullName
+                      if (!matchedEmployee && (payroll.name || payroll.fullName)) {
+                        const payrollName = (payroll.name || payroll.fullName)?.toLowerCase();
+                        matchedEmployee = employees.find(e =>
+                          e.name?.toLowerCase() === payrollName
+                        );
+                      }
+
+                      // Lấy employeeId thật nếu match được
+                      const realEmployeeId = matchedEmployee?.id || matchedEmployee?.employeeId || payroll.employeeId;
+
+                      // Ưu tiên data từ payroll (API trả về), fallback employee
+                      const displayName = payroll.name || payroll.fullName || matchedEmployee?.name || 'Unknown';
+                      const displayEmail = payroll.email || matchedEmployee?.email || 'No email';
+                      const displayDepartment = payroll.department || matchedEmployee?.department || 'N/A';
+
                       return (
                         <tr key={payroll.id} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-3">
                               <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium">
-                                {employee?.name?.charAt(0) || '?'}
+                                {displayName?.charAt(0) || '?'}
                               </div>
                               <div>
-                                <div className="font-medium text-gray-900">{employee?.name || 'Unknown Employee'}</div>
-                                <div className="text-sm text-gray-500">{employee?.email || 'No email'}</div>
+                                <div className="font-medium text-gray-900">{displayName}</div>
+                                <div className="text-sm text-gray-500">{displayEmail}</div>
                               </div>
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="text-sm text-gray-700">{employee?.department || payroll.department || 'N/A'}</div>
+                            <div className="text-sm text-gray-700">{displayDepartment}</div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="font-medium text-gray-900">
@@ -671,97 +745,121 @@ const PayrollList = () => {
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${payroll.status === 'Paid'
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              (payroll.status === 'Paid' || payroll.status === 'SUCCESS')
                                 ? 'bg-green-100 text-green-800'
-                                : payroll.status === 'PENDING'
+                                : (payroll.status === 'PENDING' || payroll.status === 'AWAITING')
                                   ? 'bg-yellow-100 text-yellow-800'
-                                  : payroll.status === 'Canceled'
+                                  : (payroll.status === 'Canceled' || payroll.status === 'CANCELLED')
                                     ? 'bg-red-100 text-red-800'
-                                    : 'bg-gray-100 text-gray-800'
+                                    : payroll.status === 'FAILED'
+                                      ? 'bg-red-100 text-red-800'
+                                      : 'bg-gray-100 text-gray-800'
                               }`}>
-                              {payroll.status === 'PENDING' ? 'Chờ xử lý' :
-                                payroll.status === 'Paid' ? 'Đã thanh toán' :
-                                  payroll.status === 'Canceled' ? 'Đã hủy' :
-                                    payroll.status}
+                              {payroll.status === 'PENDING' || payroll.status === 'AWAITING' ? 'Chờ xử lý' :
+                                payroll.status === 'Paid' || payroll.status === 'SUCCESS' ? 'Đã thanh toán' :
+                                  payroll.status === 'Canceled' || payroll.status === 'CANCELLED' ? 'Đã hủy' :
+                                    payroll.status === 'FAILED' ? 'Thất bại' :
+                                      payroll.status}
                             </span>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex gap-2 relative z-10">
-                              {employee ? (
-                                <>
-                                  {/* Chỉ Accountant mới có quyền tính lương */}
-                                  {userRole === 'accountant' && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        console.log('Opening payroll modal for:', employee);
-                                        openPayrollModal(employee);
-                                      }}
-                                      className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer"
-                                      title="Tính toán lương"
-                                    >
-                                      🧮
-                                    </button>
-                                  )}
-                                  {/* Tất cả role đều được xem chi tiết */}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      console.log('Opening details modal for:', employee);
-                                      openPayrollDetailsModal(employee);
-                                    }}
-                                    className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
-                                    title="Xem chi tiết"
-                                  >
-                                    <Eye className="h-4 w-4" />
-                                  </button>
-                                  {/* Chỉ Accountant mới có quyền hủy, và chỉ khi status là Paid */}
-                                  {userRole === 'accountant' && payroll.status === 'Paid' && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRollbackPayroll(payroll.id);
-                                      }}
-                                      className="px-3 py-1.5 text-sm rounded-md bg-white text-red-600 border border-red-300 hover:bg-red-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
-                                      title="Hủy bảng lương"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </button>
-                                  )}
-                                  {/* Hiển thị nút xóa disabled khi status là PENDING */}
-                                  {userRole === 'accountant' && payroll.status === 'PENDING' && (
-                                    <button
-                                      disabled
-                                      className="px-3 py-1.5 text-sm rounded-md bg-gray-100 text-gray-400 border border-gray-200 font-medium transition-all duration-200 cursor-not-allowed flex items-center gap-1"
-                                      title="Không thể hủy khi chưa lưu"
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </button>
-                                  )}
-                                  {/* Hiển thị nút chỉnh sửa khi status là Canceled */}
-                                  {userRole === 'accountant' && payroll.status === 'Canceled' && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        // Đánh dấu payroll này đang được restore từ CANCELED
-                                        setRestoredFromCanceled(prev => new Set(prev).add(payroll.employeeId));
-                                        // Mở modal chỉnh sửa và đổi status về PENDING để có thể save lại
-                                        setPayrollRecords(payrollRecords.map(p =>
-                                          p.id === payroll.id
-                                            ? { ...p, status: 'PENDING' }
-                                            : p
-                                        ));
-                                        openPayrollModal(employee);
-                                      }}
-                                      className="px-3 py-1.5 text-sm rounded-md bg-white text-orange-600 border border-orange-300 hover:bg-orange-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
-                                      title="Chỉnh sửa bảng lương đã hủy"
-                                    >
-                                      ✏️
-                                    </button>
-                                  )}
-                                </>
-                              ) : (
-                                <span className="text-gray-400 text-sm">Không có dữ liệu</span>
+                              {/* Chỉ Accountant mới có quyền tính lương */}
+                              {userRole === 'accountant' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Dùng realEmployeeId nếu match được employee thật
+                                    const empData = {
+                                      id: realEmployeeId,
+                                      employeeId: realEmployeeId,
+                                      name: displayName,
+                                      email: displayEmail,
+                                      department: displayDepartment,
+                                      salary: payroll.basicSalary,
+                                      basicSalary: payroll.basicSalary
+                                    };
+                                    console.log('Opening payroll modal for:', empData, 'realEmployeeId:', realEmployeeId);
+                                    openPayrollModal(empData, payroll);
+                                  }}
+                                  className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer"
+                                  title="Tính toán lương"
+                                >
+                                  🧮
+                                </button>
+                              )}
+                              {/* Tất cả role đều được xem chi tiết */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const empData = {
+                                    id: realEmployeeId,
+                                    employeeId: realEmployeeId,
+                                    name: displayName,
+                                    email: displayEmail,
+                                    department: displayDepartment
+                                  };
+                                  console.log('Opening details modal for:', empData);
+                                  openPayrollDetailsModal(empData);
+                                }}
+                                className="px-3 py-1.5 text-sm rounded-md bg-white text-gray-900 border border-gray-300 hover:bg-gray-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
+                                title="Xem chi tiết"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </button>
+                              {/* Chỉ Accountant mới có quyền hủy, và chỉ khi status là Paid hoặc SUCCESS */}
+                              {userRole === 'accountant' && (payroll.status === 'Paid' || payroll.status === 'SUCCESS') && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRollbackPayroll(payroll.id);
+                                  }}
+                                  className="px-3 py-1.5 text-sm rounded-md bg-white text-red-600 border border-red-300 hover:bg-red-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
+                                  title="Hủy bảng lương"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              )}
+                              {/* Hiển thị nút xóa disabled khi status là PENDING */}
+                              {userRole === 'accountant' && payroll.status === 'PENDING' && (
+                                <button
+                                  disabled
+                                  className="px-3 py-1.5 text-sm rounded-md bg-gray-100 text-gray-400 border border-gray-200 font-medium transition-all duration-200 cursor-not-allowed flex items-center gap-1"
+                                  title="Không thể hủy khi chưa lưu"
+                                >
+                                  <X className="h-4 w-4" />
+                                </button>
+                              )}
+                              {/* Hiển thị nút chỉnh sửa khi status là Canceled hoặc CANCELLED */}
+                              {userRole === 'accountant' && (payroll.status === 'Canceled' || payroll.status === 'CANCELLED') && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Đánh dấu payroll này đang được restore từ CANCELED
+                                    setRestoredFromCanceled(prev => new Set(prev).add(realEmployeeId || payroll.id));
+                                    // Mở modal chỉnh sửa và đổi status về PENDING để có thể save lại
+                                    setPayrollRecords(payrollRecords.map(p =>
+                                      p.id === payroll.id
+                                        ? { ...p, status: 'PENDING' }
+                                        : p
+                                    ));
+                                    const empData = {
+                                      id: realEmployeeId,
+                                      employeeId: realEmployeeId,
+                                      name: displayName,
+                                      email: displayEmail,
+                                      department: displayDepartment,
+                                      salary: payroll.basicSalary,
+                                      basicSalary: payroll.basicSalary
+                                    };
+                                    openPayrollModal(empData, payroll);
+                                  }}
+                                  className="px-3 py-1.5 text-sm rounded-md bg-white text-orange-600 border border-orange-300 hover:bg-orange-50 font-medium transition-all duration-200 cursor-pointer flex items-center gap-1"
+                                  title="Chỉnh sửa bảng lương đã hủy"
+                                >
+                                  ✏️
+                                </button>
                               )}
                             </div>
                           </td>

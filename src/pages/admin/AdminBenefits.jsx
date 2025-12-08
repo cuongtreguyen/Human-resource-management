@@ -45,7 +45,6 @@ import {
   deleteEmployeeInsurance,
 } from '../../services/benefitsService';
 import { getAllEmployees, getEmployeeById } from '../../services/employeeService';
-import { getPendingBenefitRequests, approveBenefitRequest, rejectBenefitRequest } from '../../services/benefitRequestService';
 import { getRole } from '../../utils/auth';
 
 const AdminBenefits = () => {
@@ -85,8 +84,6 @@ const AdminBenefits = () => {
   const [loading, setLoading] = useState(true);
   const [welfarePrograms, setWelfarePrograms] = useState([]);
   const [insurancePolicies, setInsurancePolicies] = useState([]);
-  const [requests, setRequests] = useState([]);
-  const [selectedRequest, setSelectedRequest] = useState(null);
   const [employeeInsurance, setEmployeeInsurance] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -103,7 +100,7 @@ const AdminBenefits = () => {
     employeeRate: '',
     effective: '',
     expiry: '',
-    status: 'active'
+    status: 'ACTIVE'
   });
   const [isGrantWelfareModalOpen, setIsGrantWelfareModalOpen] = useState(false);
   const [grantedWelfares, setGrantedWelfares] = useState([{
@@ -113,7 +110,7 @@ const AdminBenefits = () => {
     allowance: '',
     welfareName: '',
     grantDate: '',
-    status: 'active'
+    status: 'ACTIVE'
   }]);
   const [isGrantInsuranceModalOpen, setIsGrantInsuranceModalOpen] = useState(false);
   const [grantedInsurances, setGrantedInsurances] = useState([{
@@ -124,14 +121,14 @@ const AdminBenefits = () => {
     employerRate: '',
     employeeRate: '',
     grantDate: '',
-    status: 'active'
+    status: 'ACTIVE'
   }]);
   const [addWelfareFormData, setAddWelfareFormData] = useState({
     name: '',
     monthlyValue: 0,
     owner: '',
     budget: 0,
-    status: 'active',
+    status: 'ACTIVE',
     description: '',
     nextReview: ''
   });
@@ -140,7 +137,7 @@ const AdminBenefits = () => {
     monthlyValue: 0,
     owner: '',
     budget: 0,
-    status: 'active',
+    status: 'ACTIVE',
     description: '',
     nextReview: ''
   });
@@ -155,7 +152,7 @@ const AdminBenefits = () => {
     allowance: '',
     welfareName: '',
     grantDate: '',
-    status: 'active'
+    status: 'ACTIVE'
   });
   const [welfareHistory, setWelfareHistory] = useState([]);
   const [insuranceTabActive, setInsuranceTabActive] = useState('policies'); // 'policies' hoặc 'history'
@@ -171,7 +168,7 @@ const AdminBenefits = () => {
     employerRate: '',
     employeeRate: '',
     grantDate: '',
-    status: 'active'
+    status: 'ACTIVE'
   });
   const [editInsuranceFormData, setEditInsuranceFormData] = useState({
     name: '',
@@ -181,7 +178,7 @@ const AdminBenefits = () => {
     employeeRate: '',
     effective: '',
     expiry: '',
-    status: 'active'
+    status: 'ACTIVE'
   });
 
   // Load data
@@ -206,7 +203,7 @@ const AdminBenefits = () => {
           employeeRate: insurance.employeeRate || '',
           effective: insurance.effective || '',
           expiry: insurance.expiry || '',
-          status: insurance.status || 'active'
+          status: insurance.status || 'ACTIVE'
         });
         setIsEditInsuranceModalOpen(true);
       }
@@ -219,7 +216,7 @@ const AdminBenefits = () => {
           monthlyValue: welfare.monthlyValue || 0,
           owner: welfare.owner || '',
           budget: welfare.budget || 0,
-          status: welfare.status || 'active',
+          status: welfare.status || 'ACTIVE',
           description: welfare.description || '',
           nextReview: welfare.nextReview || ''
         });
@@ -236,7 +233,7 @@ const AdminBenefits = () => {
           allowance: history.allowance || '',
           welfareName: history.welfareName || '',
           grantDate: history.grantDate || '',
-          status: history.status || 'active'
+          status: history.status || 'ACTIVE'
         });
         setIsEditWelfareHistoryModalOpen(true);
       }
@@ -252,7 +249,7 @@ const AdminBenefits = () => {
           employerRate: history.employerRate || '',
           employeeRate: history.employeeRate || '',
           grantDate: history.grantDate || '',
-          status: history.status || 'active'
+          status: history.status || 'ACTIVE'
         });
         setIsEditInsuranceHistoryModalOpen(true);
       }
@@ -276,26 +273,149 @@ const AdminBenefits = () => {
       setLoading(true);
 
       // Load benefits và insurance templates từ API
-      const [benefitsRes, insuranceRes] = await Promise.all([
-        getAllBenefits().catch(() => []),
-        getAllInsuranceContracts().catch(() => [])
-      ]);
+      let benefitsRes, insuranceRes;
+      try {
+        [benefitsRes, insuranceRes] = await Promise.all([
+          getAllBenefits(),
+          getAllInsuranceContracts()
+        ]);
+      } catch (error) {
+        console.error('❌ Error loading templates:', error);
+        toast.error('Không thể tải dữ liệu template. Vui lòng thử lại.');
+        // Không set về [] để giữ data cũ
+        setLoading(false);
+        return;
+      }
 
       // Map benefits data
-      const benefitsData = Array.isArray(benefitsRes) ? benefitsRes : benefitsRes.data || [];
-      const mappedBenefits = benefitsData.map(b => ({
-        id: b.benefitId || b.id,
-        name: b.benefitName || b.name,
+      const benefitsData = Array.isArray(benefitsRes) ? benefitsRes : (benefitsRes?.data || benefitsRes || []);
+      console.log('🔍 Raw benefits data from API:', benefitsData);
+      console.log('🔍 Benefits response type:', typeof benefitsRes, Array.isArray(benefitsRes));
+      console.log('🔍 Number of benefits from API:', benefitsData.length);
+      
+      if (benefitsData.length > 0) {
+        console.log('🔍 First benefit structure:', benefitsData[0]);
+        console.log('🔍 All fields in first benefit:', Object.keys(benefitsData[0]));
+        console.log('🔍 First benefit has benefitId?', 'benefitId' in benefitsData[0]);
+        console.log('🔍 First benefit has id?', 'id' in benefitsData[0]);
+        console.log('🔍 First benefit benefitId value:', benefitsData[0].benefitId);
+        console.log('🔍 First benefit id value:', benefitsData[0].id);
+        console.log('🔍 Full first benefit object:', JSON.stringify(benefitsData[0], null, 2));
+        
+        // ⚠️ VẤN ĐỀ: Response chỉ có id (Long), không có benefitId (String)
+        // Nhưng DELETE/PUT endpoint cần benefitId (String)
+        if (!benefitsData[0].benefitId) {
+          console.error('❌ CRITICAL: Response missing benefitId (String)!', {
+            hasId: !!benefitsData[0].id,
+            hasBenefitId: !!benefitsData[0].benefitId,
+            idValue: benefitsData[0].id,
+            idType: typeof benefitsData[0].id,
+            note: 'Backend DELETE/PUT endpoint needs benefitId (String), but response only has id (Long). Backend needs to add benefitId to AllBenefitResponseDTO.'
+          });
+        }
+      } else {
+        console.warn('⚠️ No benefits data from API - keeping existing data');
+        // Không clear data, giữ nguyên state cũ
+        setLoading(false);
+        return;
+      }
+      
+      const mappedBenefits = benefitsData.map(b => {
+        // Parse allowance_amount (snake_case từ backend) hoặc allowanceAmount (camelCase)
+        let monthlyValue = 0;
+        if (b.allowance_amount !== null && b.allowance_amount !== undefined) {
+          if (typeof b.allowance_amount === 'string') {
+            monthlyValue = parseFloat(b.allowance_amount) || 0;
+          } else if (typeof b.allowance_amount === 'number') {
+            monthlyValue = b.allowance_amount;
+          } else {
+            // BigDecimal từ Java
+            monthlyValue = parseFloat(b.allowance_amount) || 0;
+          }
+        } else if (b.allowanceAmount !== null && b.allowanceAmount !== undefined) {
+          if (typeof b.allowanceAmount === 'string') {
+            monthlyValue = parseFloat(b.allowanceAmount) || 0;
+          } else if (typeof b.allowanceAmount === 'number') {
+            monthlyValue = b.allowanceAmount;
+          } else {
+            monthlyValue = parseFloat(b.allowanceAmount) || 0;
+          }
+        }
+        
+        // Parse totalCost (BigDecimal từ Java)
+        let budget = 0;
+        if (b.totalCost !== null && b.totalCost !== undefined) {
+          if (typeof b.totalCost === 'string') {
+            budget = parseFloat(b.totalCost) || 0;
+          } else if (typeof b.totalCost === 'number') {
+            budget = b.totalCost;
+          } else {
+            budget = parseFloat(b.totalCost) || 0;
+          }
+        }
+        
+        // ⚠️ VẤN ĐỀ: Response từ GET /api/benefits/all chỉ có id (Long), KHÔNG có benefitId (String)
+        // Nhưng DELETE/PUT /api/benefits/{benefitId} cần benefitId (String)
+        // 
+        // Backend Entity Benefits có:
+        // - id (Long) = 11 (PRIMARY KEY)
+        // - benefitId (String) = "BEN001" (UNIQUE, business key)
+        //
+        // Response hiện tại: { id: 11, ... } - THIẾU benefitId
+        // Endpoint cần: DELETE /api/benefits/BEN001 - CẦN benefitId (String)
+        //
+        // Giải pháp tạm thời: Dùng id (Long) converted sang String
+        // Nhưng sẽ lỗi 404 vì backend tìm theo benefitId (String), không phải id (Long)
+        const idLong = b.id; // Long từ response (ví dụ: 11)
+        const benefitIdString = b.benefitId || b.benefit_id; // String - KHÔNG CÓ trong response hiện tại
+        
+        const benefitName = b.benefitName || b.name;
+        
+        // ⚠️ WARNING: Nếu không có benefitId (String), DELETE/PUT sẽ lỗi 404
+        // Backend cần thêm benefitId vào AllBenefitResponseDTO
+        const identifier = benefitIdString || (idLong ? String(idLong) : null) || benefitName;
+        
+        // Log warning nếu thiếu benefitId
+        if (!benefitIdString && idLong) {
+          console.warn('⚠️ Benefit missing benefitId (String) from response. DELETE/PUT will fail with 404:', {
+            id: idLong,
+            idType: typeof idLong,
+            benefitId: 'MISSING - Backend needs to add benefitId to AllBenefitResponseDTO',
+            benefitName: benefitName,
+            note: 'Backend DELETE/PUT endpoint needs benefitId (String), but response only has id (Long). This will cause 404 error.'
+          });
+        }
+        
+        return {
+          id: identifier, // Dùng id (Long) converted sang String (tạm thời)
+          benefitId: benefitIdString, // Giữ benefitId (String) - NULL nếu backend chưa thêm vào response
+          idLong: idLong, // Giữ id (Long) riêng
+          name: benefitName,
         description: b.description || '',
-        budget: b.totalCost || b.allowanceAmount || 0,
+          monthlyValue: monthlyValue, // Map từ allowance_amount
+          owner: b.owner || b.department || '', // Dùng department nếu không có owner
+          budget: budget,
         participants: b.numberOfEmployees || 0,
         type: b.type || 'welfare',
-        status: b.status || 'ACTIVE',
-      }));
+          status: normalizeStatus(b.status), // Chuẩn hóa status
+        };
+      });
+      
+      console.log('✅ Mapped benefits:', mappedBenefits);
+      console.log('✅ Number of mapped benefits:', mappedBenefits.length);
+      
+      // Chỉ set state nếu có data, không clear data cũ nếu mapping fail
+      if (mappedBenefits && mappedBenefits.length > 0) {
       setWelfarePrograms(mappedBenefits);
+      } else {
+        console.warn('⚠️ No benefits mapped. Keeping existing data.');
+      }
 
       // Map insurance data
-      const insuranceData = Array.isArray(insuranceRes) ? insuranceRes : insuranceRes.data || [];
+      const insuranceData = Array.isArray(insuranceRes) ? insuranceRes : (insuranceRes?.data || insuranceRes || []);
+      console.log('🔍 Raw insurance data from API:', insuranceData);
+      console.log('🔍 Insurance response type:', typeof insuranceRes, Array.isArray(insuranceRes));
+      
       const mappedInsurance = insuranceData.map(i => ({
         id: i.id,
         name: i.insurenceName || i.name,
@@ -305,34 +425,30 @@ const AdminBenefits = () => {
         employeeRate: i.employeeRate || 0,
         effective: i.effective,
         expiry: i.expiry,
-        status: i.status || 'ACTIVE',
+        status: normalizeStatus(i.status), // Chuẩn hóa status
       }));
+      console.log('✅ Mapped insurance:', mappedInsurance);
       setInsurancePolicies(mappedInsurance);
-
-      // Load yêu cầu phúc lợi chờ duyệt từ service (localStorage tạm thời)
-      // TODO: Thay bằng API thật khi có: GET /api/benefit-requests?status=pending
-      try {
-        const requestsRes = await getPendingBenefitRequests();
-        if (requestsRes.success) {
-          setRequests(requestsRes.data);
-          console.log('✅ Loaded pending benefit requests:', requestsRes.data);
-        }
-      } catch (err) {
-        console.error('Error loading benefit requests:', err);
-        setRequests([]);
-      }
 
       // Load employee benefits và insurance cho TẤT CẢ nhân viên
       try {
         const employeesRes = await getAllEmployees();
-        const employees = Array.isArray(employeesRes) ? employeesRes : employeesRes.data || [];
+        const employees = Array.isArray(employeesRes) ? employeesRes : (employeesRes?.data || employeesRes || []);
+        console.log('🔍 Total employees:', employees.length);
+        console.log('🔍 Employee IDs:', employees.map(emp => emp.employeeId || emp.id));
 
         // Load phúc lợi và bảo hiểm cho từng nhân viên
         const allBenefitsPromises = employees.map(emp =>
-          getEmployeeBenefits(emp.employeeId || emp.id).catch(() => [])
+          getEmployeeBenefits(emp.employeeId || emp.id).catch((err) => {
+            console.warn(`⚠️ Failed to load benefits for ${emp.employeeId || emp.id}:`, err);
+            return [];
+          })
         );
         const allInsurancePromises = employees.map(emp =>
-          getEmployeeInsurance(emp.employeeId || emp.id).catch(() => [])
+          getEmployeeInsurance(emp.employeeId || emp.id).catch((err) => {
+            console.warn(`⚠️ Failed to load insurance for ${emp.employeeId || emp.id}:`, err);
+            return [];
+          })
         );
 
         const [benefitsResults, insuranceResults] = await Promise.all([
@@ -341,35 +457,84 @@ const AdminBenefits = () => {
         ]);
 
         // Flatten và map benefits data
-        const allEmployeeBenefits = benefitsResults.flat().map((b, idx) => ({
-          id: b.id || idx + 1,
-          employeeId: b.employeeId,
-          employeeName: b.fullName || b.employeeName || 'N/A',
-          department: b.department || 'N/A',
-          benefitId: b.benefitId,
-          benefitName: b.benefitName || 'N/A',
-          amount: b.allowanceAmount || 0,
-          grantDate: b.grantDate,
-          status: b.status || 'ACTIVE',
-        }));
+        const allEmployeeBenefits = benefitsResults.flat().map((b, idx) => {
+          // Parse allowanceAmount: có thể là số, string (từ BigDecimal), hoặc null
+          let allowanceValue = 0;
+          if (b.allowanceAmount !== null && b.allowanceAmount !== undefined) {
+            if (typeof b.allowanceAmount === 'string') {
+              allowanceValue = parseFloat(b.allowanceAmount) || 0;
+            } else if (typeof b.allowanceAmount === 'number') {
+              allowanceValue = b.allowanceAmount;
+            } else {
+              allowanceValue = parseFloat(b.allowanceAmount) || 0;
+            }
+          }
+          
+          return {
+            id: b.id || idx + 1,
+            employeeId: b.employeeId,
+            employeeName: b.fullName || b.employeeName || 'N/A',
+            department: b.department || 'N/A',
+            benefitId: b.benefitId,
+            benefitName: b.benefitName || 'N/A',
+            welfareName: b.benefitName || b.welfareName || 'N/A', // Map benefitName → welfareName để render
+            allowance: allowanceValue, // Dùng 'allowance' để khớp với render
+            amount: allowanceValue, // Giữ cả 'amount' để tương thích
+            grantDate: b.grantDate,
+            status: normalizeStatus(b.status), // Chuẩn hóa status
+          };
+        });
         setWelfareHistory(allEmployeeBenefits);
         console.log('✅ Loaded employee benefits:', allEmployeeBenefits);
 
         // Flatten và map insurance data
-        const allEmployeeInsurance = insuranceResults.flat().map((ins, idx) => ({
-          id: ins.id || ins.contractId || idx + 1,
-          employeeId: ins.employeeId,
-          employeeName: ins.fullName || ins.employeeName || 'N/A',
-          department: ins.department || 'N/A',
-          contractId: ins.contractId,
-          insuranceName: ins.insurenceName || ins.insuranceName || 'N/A',
-          employerRate: ins.employerRate || 0,
-          employeeRate: ins.employeeRate || 0,
-          grantDate: ins.grantDate,
-          status: ins.status || 'ACTIVE',
-        }));
+        console.log('🔍 Raw insurance results (before flatten):', insuranceResults);
+        console.log('🔍 Number of employee insurance arrays:', insuranceResults.length);
+        
+        // Flatten và xử lý các trường hợp khác nhau của API response
+        const flattenedInsurance = insuranceResults.flatMap((result, empIdx) => {
+          // Handle các trường hợp: array, object với data property, hoặc null/undefined
+          if (!result) return [];
+          if (Array.isArray(result)) return result;
+          if (result.data && Array.isArray(result.data)) return result.data;
+          if (result.success && Array.isArray(result.data)) return result.data;
+          return [];
+        });
+        
+        console.log('🔍 Flattened insurance results:', flattenedInsurance);
+        console.log('🔍 Total flattened records:', flattenedInsurance.length);
+        
+        const allEmployeeInsurance = flattenedInsurance
+          .filter(ins => ins != null && ins !== undefined) // Loại bỏ null/undefined
+          .map((ins, idx) => {
+            // Debug 5 item đầu tiên
+            if (idx < 5) {
+              console.log(`🔍 Insurance item ${idx}:`, {
+                raw: ins,
+                employeeId: ins.employeeId || ins.employee?.employeeId,
+                insuranceName: ins.insurenceName || ins.insuranceName,
+                contractId: ins.contractId || ins.id
+              });
+            }
+            return {
+              id: ins.id || ins.contractId || `temp-${idx}`,
+              employeeId: ins.employeeId || ins.employee?.employeeId || ins.employeeId,
+              employeeName: ins.fullName || ins.employeeName || ins.employee?.fullName || 'N/A',
+              department: ins.department || ins.employee?.department || 'N/A',
+              contractId: ins.contractId || ins.id,
+              insuranceName: ins.insurenceName || ins.insuranceName || ins.contract?.insurenceName || 'N/A',
+              employerRate: ins.employerRate || ins.contract?.employerRate || 0,
+              employeeRate: ins.employeeRate || ins.contract?.employeeRate || 0,
+              grantDate: ins.grantDate || ins.effective,
+              status: normalizeStatus(ins.status || ins.contract?.status), // Chuẩn hóa status
+            };
+          })
+          .filter(ins => ins.employeeId && ins.employeeId !== 'N/A'); // Loại bỏ records không có employeeId
+        
+        console.log('✅ Loaded employee insurance (mapped):', allEmployeeInsurance);
+        console.log('✅ Total insurance records after mapping:', allEmployeeInsurance.length);
+        console.log('✅ Unique employee IDs:', [...new Set(allEmployeeInsurance.map(ins => ins.employeeId))]);
         setInsuranceHistory(allEmployeeInsurance);
-        console.log('✅ Loaded employee insurance:', allEmployeeInsurance);
 
       } catch (err) {
         console.error('Error loading employee benefits/insurance:', err);
@@ -385,70 +550,37 @@ const AdminBenefits = () => {
     }
   };
 
+  // Helper function để normalize status về UPPERCASE
+  // Backend hỗ trợ: ACTIVE, INACTIVE, EXPIRED
+  const normalizeStatus = (status) => {
+    if (!status) return 'ACTIVE';
+    const upper = status.toUpperCase();
+    // Chỉ chấp nhận các giá trị hợp lệ từ backend
+    if (['ACTIVE', 'INACTIVE', 'EXPIRED'].includes(upper)) {
+      return upper;
+    }
+    // Fallback về ACTIVE nếu không hợp lệ
+    return 'ACTIVE';
+  };
+
+  // Helper function để lấy label và màu cho status
+  // Backend hỗ trợ: ACTIVE, INACTIVE, EXPIRED
+  const getStatusDisplay = (status) => {
+    const normalized = status?.toUpperCase() || 'ACTIVE';
+    switch(normalized) {
+      case 'ACTIVE':
+        return { label: 'Đang áp dụng', className: 'bg-green-100 text-green-700' };
+      case 'INACTIVE':
+        return { label: 'Đã hủy', className: 'bg-red-100 text-red-700' };
+      case 'EXPIRED':
+        return { label: 'Hết hạn', className: 'bg-orange-100 text-orange-700' };
+      default:
+        return { label: 'Không xác định', className: 'bg-gray-100 text-gray-700' };
+    }
+  };
+
   const totalBudget = welfarePrograms.reduce((sum, p) => sum + p.budget, 0);
   const totalParticipants = welfarePrograms.reduce((sum, p) => sum + p.participants, 0);
-
-  const openDetail = async (req) => {
-    setSelectedRequest(req);
-    // Load employee insurance detail từ API
-    try {
-      const insRes = await getEmployeeInsurance(req.employeeId);
-      const insData = Array.isArray(insRes) ? insRes : insRes.data || [];
-      setEmployeeInsurance(insData);
-    } catch (error) {
-      console.error('Error loading employee insurance:', error);
-      setEmployeeInsurance([]);
-    }
-    setIsModalOpen(true);
-  };
-
-  const approveRequest = async (id) => {
-    if (!canApprove) {
-      toast.error('Bạn không có quyền phê duyệt yêu cầu này!');
-      return;
-    }
-
-    if (window.confirm('Bạn có chắc chắn muốn PHÊ DUYỆT yêu cầu này?')) {
-      try {
-        // Dùng service (localStorage) - TODO: Thay bằng API thật khi có
-        const result = await approveBenefitRequest(id);
-        if (result.success) {
-          setRequests(prev => prev.filter(r => r.id !== id));
-          toast.success('Đã phê duyệt yêu cầu thành công!');
-          setIsModalOpen(false);
-        } else {
-          toast.error(result.message || 'Có lỗi xảy ra');
-        }
-      } catch (error) {
-        console.error('Error approving request:', error);
-        toast.error('Có lỗi xảy ra khi phê duyệt');
-      }
-    }
-  };
-
-  const rejectRequest = async (id) => {
-    if (!canApprove) {
-      toast.error('Bạn không có quyền từ chối yêu cầu này!');
-      return;
-    }
-
-    if (window.confirm('Bạn có chắc chắn muốn TỪ CHỐI yêu cầu này?')) {
-      try {
-        // Dùng service (localStorage) - TODO: Thay bằng API thật khi có
-        const result = await rejectBenefitRequest(id);
-        if (result.success) {
-          setRequests(prev => prev.filter(r => r.id !== id));
-          toast.info('Đã từ chối yêu cầu');
-          setIsModalOpen(false);
-        } else {
-          toast.error(result.message || 'Có lỗi xảy ra');
-        }
-      } catch (error) {
-        console.error('Error rejecting request:', error);
-        toast.error('Có lỗi xảy ra khi từ chối');
-      }
-    }
-  };
 
   const getPriorityBadge = (priority) => {
     const styles = {
@@ -469,6 +601,30 @@ const AdminBenefits = () => {
   };
 
   const handleEditWelfare = (id) => {
+    console.log('🔍 handleEditWelfare called with id:', id);
+    const welfare = welfarePrograms.find(p => p.id === id || p.id === String(id) || p.id === Number(id));
+    console.log('🔍 Found welfare:', welfare);
+    
+    if (!welfare) {
+      toast.error('Không tìm thấy phúc lợi');
+      return;
+    }
+    
+    // Set editing welfare và form data
+    setEditingWelfare(welfare);
+    setEditFormData({
+      name: welfare.name || '',
+      monthlyValue: welfare.monthlyValue || 0,
+      owner: welfare.owner || '',
+      budget: welfare.budget || 0,
+      status: welfare.status || 'ACTIVE',
+      description: welfare.description || '',
+      nextReview: welfare.nextReview || ''
+    });
+    
+    // Open modal
+    setIsEditModalOpen(true);
+    
     // Navigate with search params to update URL
     setSearchParams({ edit: 'welfare', id: String(id) });
   };
@@ -483,13 +639,71 @@ const AdminBenefits = () => {
     }
 
     try {
-      // TODO: Gọi API cập nhật phúc lợi
-      // const result = await fakeApi.updateWelfareProgram(editingWelfare.id, editFormData);
+      // Theo API doc: PUT /api/benefits/{benefitId} cần UpdateBenefitRequestDTO
+      // Request body cần: benefitId, benefitName, description, numberOfEmployees, coverage, allowanceAmount, status
+      
+      // Lấy id (Long) để gọi API
+      // Endpoint DELETE/PUT /api/benefits/{benefitId} có thể chấp nhận id (Long) converted sang String
+      // Hoặc backend có thể thay đổi endpoint để dùng id (Long) trực tiếp
+      const idLong = editingWelfare.idLong || editingWelfare.id;
+      const benefitIdString = editingWelfare.benefitId;
+      
+      // Ưu tiên: benefitId (String) nếu có, nếu không thì dùng id (Long) converted sang String
+      const identifier = benefitIdString || (idLong ? String(idLong) : null);
+      
+      if (!identifier) {
+        toast.error('Lỗi: Không tìm thấy identifier để cập nhật');
+        console.error('❌ Missing identifier for update:', editingWelfare);
+        return;
+      }
+      
+      // Chuẩn bị data theo format API yêu cầu
+      // ⚠️ LƯU Ý: benefitId đã có trong path parameter, KHÔNG cần gửi trong body
+      // UpdateBenefitRequestDTO không có field benefitId
+      const updateData = {
+        // KHÔNG gửi benefitId - đã có trong path parameter
+        benefitName: editFormData.name,
+        description: editFormData.description || '',
+        numberOfEmployees: editFormData.participants || 0,
+        coverage: editFormData.coverage || '', // Có thể cần thêm field này
+        allowanceAmount: editFormData.monthlyValue || 0,
+        status: normalizeStatus(editFormData.status) // UPPERCASE: ACTIVE, INACTIVE, EXPIRED
+      };
+      
+      console.log('📤 Updating benefit:', {
+        identifier: identifier,
+        idLong: idLong,
+        benefitIdString: benefitIdString || 'Using id (Long) converted to String',
+        updateData: updateData,
+        name: editingWelfare.name
+      });
+      
+      // Gọi API cập nhật phúc lợi
+      // PUT /api/benefits/{benefitId}
+      // ⚠️ Backend endpoint tìm theo benefitId (String), không phải id (Long)
+      // Nếu gửi id (Long) = 11 → Backend tìm benefitId = "11" → Không tìm thấy → 404
+      try {
+        await updateBenefit(identifier, updateData);
+      } catch (error) {
+        // Nếu lỗi 404 và đang dùng id (Long) thay vì benefitId (String)
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+          if (!benefitIdString) {
+            toast.error(`Lỗi 404: Backend không tìm thấy benefit.\n\nNguyên nhân: Response chỉ có id (Long) = ${idLong}, nhưng endpoint cần benefitId (String).\n\nBackend cần thêm benefitId (String) vào AllBenefitResponseDTO.`);
+            console.error('❌ 404 Error - Backend needs benefitId (String), not id (Long):', {
+              idLong: idLong,
+              identifier: identifier,
+              error: error.message
+            });
+            return;
+          }
+        }
+        throw error; // Re-throw nếu không phải lỗi này
+      }
 
       // Cập nhật state
       setWelfarePrograms(prev => prev.map(p =>
         p.id === editingWelfare.id
-          ? { ...p, ...editFormData }
+          ? { ...p, ...updateData }
           : p
       ));
 
@@ -497,8 +711,14 @@ const AdminBenefits = () => {
       setIsEditModalOpen(false);
       setEditingWelfare(null);
       setSearchParams({});
+      
+      // Reload data để sync với server
+      setTimeout(async () => {
+        await loadData();
+      }, 500);
     } catch (error) {
-      toast.error('Không thể cập nhật phúc lợi');
+      console.error('Error updating benefit:', error);
+      toast.error(`Không thể cập nhật phúc lợi: ${error.message || 'Vui lòng thử lại'}`);
     }
   };
 
@@ -510,20 +730,100 @@ const AdminBenefits = () => {
       monthlyValue: 0,
       owner: '',
       budget: 0,
-      status: 'active',
+      status: 'ACTIVE',
       description: '',
       nextReview: ''
     });
     setSearchParams({});
   };
 
-  const handleDeleteWelfare = (id) => {
-    const welfare = welfarePrograms.find(p => p.id === id);
-    if (welfare) {
-      if (window.confirm(`Bạn có chắc chắn muốn xóa phúc lợi "${welfare.name}"?\n\nLưu ý: Hành động này không thể hoàn tác.`)) {
-        // TODO: Gọi API xóa phúc lợi
+  const handleDeleteWelfare = async (id) => {
+    console.log('🔍 handleDeleteWelfare called with id:', id);
+    const welfare = welfarePrograms.find(p => p.id === id || p.id === String(id) || p.id === Number(id));
+    console.log('🔍 Found welfare:', welfare);
+    
+    if (!welfare) {
+      toast.error('Không tìm thấy phúc lợi');
+      return;
+    }
+    
+    // Lấy id (Long) để gọi API
+    // Endpoint DELETE /api/benefits/{benefitId} có thể chấp nhận id (Long) converted sang String
+    // Hoặc backend có thể thay đổi endpoint để dùng id (Long) trực tiếp
+    const idLong = welfare.idLong || welfare.id;
+    const benefitIdString = welfare.benefitId;
+    
+    // Ưu tiên: benefitId (String) nếu có, nếu không thì dùng id (Long) converted sang String
+    const identifier = benefitIdString || (idLong ? String(idLong) : null);
+    
+    if (!identifier) {
+      toast.error(`Lỗi: Phúc lợi "${welfare.name}" không có identifier. Không thể xóa.`);
+      console.error('❌ Missing identifier for delete:', {
+        welfare: welfare,
+        allFields: Object.keys(welfare)
+      });
+      return;
+    }
+    
+    // Log để debug
+    console.log('📤 Deleting benefit:', {
+      identifier: identifier,
+      idLong: idLong,
+      benefitIdString: benefitIdString || 'Using id (Long) converted to String',
+      name: welfare.name,
+      welfare: welfare,
+      note: 'If backend endpoint accepts id (Long), this should work. If it needs benefitId (String), will get 404.'
+    });
+    
+    if (window.confirm(`Bạn có chắc chắn muốn XÓA phúc lợi "${welfare.name}"?\n\n⚠️ CẢNH BÁO: Hành động này sẽ XÓA VĨNH VIỄN phúc lợi khỏi hệ thống.\n\nLưu ý: Chỉ có thể xóa phúc lợi khi không còn nhân viên nào đang sử dụng (ACTIVE).`)) {
+      try {
+        // Gọi API DELETE để xóa hoàn toàn khỏi database
+        // DELETE /api/benefits/{benefitId}
+        // ⚠️ Backend endpoint tìm theo benefitId (String), không phải id (Long)
+        // Nếu gửi id (Long) = 11 → Backend tìm benefitId = "11" → Không tìm thấy → 404
+        // 
+        // Backend sẽ tự động:
+        // 1. Tìm tất cả EmployeeBenefits đang dùng benefit này
+        // 2. Phân loại: ACTIVE (không được xóa) vs EXPIRED/INACTIVE (được xóa)
+        // 3. Nếu có ACTIVE → THROW ERROR
+        // 4. Xóa các record EXPIRED/INACTIVE
+        // 5. Xóa Benefits template
+        try {
+          await deleteBenefit(identifier);
+        } catch (error) {
+          // Nếu lỗi 404 và đang dùng id (Long) thay vì benefitId (String)
+          if (error.message?.includes('404') || error.message?.includes('not found')) {
+            if (!benefitIdString) {
+              toast.error(`Lỗi 404: Backend không tìm thấy benefit.\n\nNguyên nhân: Response chỉ có id (Long) = ${idLong}, nhưng endpoint cần benefitId (String).\n\nBackend cần thêm benefitId (String) vào AllBenefitResponseDTO.`);
+              console.error('❌ 404 Error - Backend needs benefitId (String), not id (Long):', {
+                idLong: idLong,
+                identifier: identifier,
+                error: error.message
+              });
+              return;
+            }
+          }
+          throw error; // Re-throw nếu không phải lỗi này
+        }
+        
+        // Xóa khỏi state ngay lập tức
         setWelfarePrograms(prev => prev.filter(p => p.id !== id));
-        toast.success(`Đã xóa phúc lợi "${welfare.name}"`);
+        
+        toast.success(`Đã xóa phúc lợi "${welfare.name}" thành công`);
+        
+        // Reload data sau 500ms để đảm bảo sync với server
+        setTimeout(async () => {
+          await loadData();
+        }, 500);
+      } catch (error) {
+        console.error('Error deleting benefit:', error);
+        // Backend sẽ trả về error nếu còn nhân viên ACTIVE đang dùng
+        const errorMessage = error.message || error.response || 'Vui lòng thử lại';
+        if (errorMessage.includes('nhân viên') || errorMessage.includes('employee') || errorMessage.includes('đang sử dụng')) {
+          toast.error(`Không thể xóa phúc lợi "${welfare.name}": ${errorMessage}`);
+        } else {
+          toast.error(`Có lỗi xảy ra khi xóa phúc lợi: ${errorMessage}`);
+        }
       }
     }
   };
@@ -541,10 +841,6 @@ const AdminBenefits = () => {
       toast.error('Vui lòng nhập mã nhân viên');
       return;
     }
-    if (!editWelfareHistoryFormData.employeeName || !editWelfareHistoryFormData.employeeName.trim()) {
-      toast.error('Vui lòng nhập tên nhân viên');
-      return;
-    }
     if (!editWelfareHistoryFormData.welfareName || !editWelfareHistoryFormData.welfareName.trim()) {
       toast.error('Vui lòng chọn tên phúc lợi');
       return;
@@ -555,13 +851,101 @@ const AdminBenefits = () => {
     }
 
     try {
-      // TODO: Gọi API cập nhật lịch sử phúc lợi
-      // const result = await fakeApi.updateWelfareHistory(editingWelfareHistory.id, editWelfareHistoryFormData);
+      // Tìm benefitId từ welfareName
+      const selectedBenefit = welfarePrograms.find(w => w.name === editWelfareHistoryFormData.welfareName);
+      if (!selectedBenefit) {
+        toast.error('Không tìm thấy phúc lợi được chọn');
+        return;
+      }
 
-      // Cập nhật state
+      const employeeId = editWelfareHistoryFormData.employeeId.trim();
+      
+      // Lấy benefitId từ editingWelfareHistory (record hiện tại) hoặc từ selectedBenefit (template)
+      // Ưu tiên: benefitId từ record hiện tại (nếu có), nếu không thì dùng từ template
+      let benefitId = editingWelfareHistory?.benefitId;
+      
+      if (!benefitId) {
+        // Ưu tiên: benefitId (String) nếu có, nếu không thì dùng id (Long) converted sang String
+        benefitId = selectedBenefit.benefitId || String(selectedBenefit.idLong || selectedBenefit.id);
+      }
+      
+      if (!benefitId) {
+        toast.error('Không tìm thấy benefitId để cập nhật');
+        console.error('❌ Missing benefitId for employee benefit update:', {
+          editingWelfareHistory,
+          selectedBenefit,
+          welfareName: editWelfareHistoryFormData.welfareName
+        });
+        return;
+      }
+      
+      // Format date về yyyy-MM-dd
+      const formatDateToYYYYMMDD = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      // Gọi API cập nhật phúc lợi nhân viên
+      // PUT /api/employee-benefits/employee/{employeeId}/benefit/{benefitId}
+      // ⚠️ Backend UpdateEmployeeBenefitRequestDTO KHÔNG có field allowanceAmount
+      // Chỉ hỗ trợ: benefitId, grantDate, status
+      // 
+      // VẤN ĐỀ: Không thể update allowanceAmount qua API này
+      // Giải pháp: Backend cần thêm allowanceAmount vào UpdateEmployeeBenefitRequestDTO
+      // Hoặc cần API khác để update allowanceAmount
+      const updateData = {
+        benefitId: benefitId, // Có thể cần trong body
+        grantDate: formatDateToYYYYMMDD(editWelfareHistoryFormData.grantDate),
+        status: normalizeStatus(editWelfareHistoryFormData.status || 'ACTIVE')
+        // KHÔNG gửi allowanceAmount - Backend không hỗ trợ
+      };
+      
+      console.log('📤 Update data being sent:', {
+        updateData,
+        allowanceFromForm: editWelfareHistoryFormData.allowance,
+        note: '⚠️ Backend UpdateEmployeeBenefitRequestDTO does not support allowanceAmount. Frontend will update state but backend will not persist allowanceAmount change.'
+      });
+
+      console.log('📤 Updating employee benefit:', {
+        employeeId,
+        benefitId,
+        benefitIdType: typeof benefitId,
+        selectedBenefit: selectedBenefit,
+        updateData
+      });
+
+      await updateEmployeeBenefit(employeeId, benefitId, updateData);
+
+      // Cập nhật state ngay lập tức với data mới
+      // Lưu ý: allowanceAmount có thể không được update qua API này
+      // Nếu backend không hỗ trợ update allowanceAmount, cần thêm field này vào API
+      const updatedAllowance = editWelfareHistoryFormData.allowance || editingWelfareHistory.allowance;
+      
+      console.log('📝 Updating state with new data:', {
+        oldAllowance: editingWelfareHistory.allowance,
+        newAllowance: editWelfareHistoryFormData.allowance,
+        updatedAllowance: updatedAllowance
+      });
+      
       setWelfareHistory(prev => prev.map(h =>
         h.id === editingWelfareHistory.id
-          ? { ...h, ...editWelfareHistoryFormData }
+          ? { 
+              ...h, 
+              employeeId: editWelfareHistoryFormData.employeeId,
+              employeeName: editWelfareHistoryFormData.employeeName,
+              department: editWelfareHistoryFormData.department,
+              allowance: updatedAllowance, // Cập nhật allowance từ form
+              amount: updatedAllowance, // Cập nhật amount
+              benefitId: benefitId,
+              benefitName: editWelfareHistoryFormData.welfareName,
+              welfareName: editWelfareHistoryFormData.welfareName,
+              grantDate: editWelfareHistoryFormData.grantDate,
+              status: normalizeStatus(editWelfareHistoryFormData.status || 'ACTIVE')
+            }
           : h
       ));
 
@@ -569,8 +953,47 @@ const AdminBenefits = () => {
       setIsEditWelfareHistoryModalOpen(false);
       setEditingWelfareHistory(null);
       setSearchParams({});
+      
+      // ⚠️ VẤN ĐỀ: API PUT /api/employee-benefits/employee/{employeeId}/benefit/{benefitId}
+      // có thể không hỗ trợ update allowanceAmount (chỉ update benefitId, grantDate, status)
+      // 
+      // Nếu backend không hỗ trợ update allowanceAmount:
+      // - Reload sẽ lấy giá trị cũ từ DB → overwrite giá trị mới trong state
+      // - Cần backend thêm allowanceAmount vào UpdateEmployeeBenefitRequestDTO
+      // 
+      // Giải pháp tạm thời: Không reload ngay, giữ giá trị mới trong state
+      // Hoặc reload nhưng merge với giá trị mới nếu backend không trả về
+      const savedAllowance = updatedAllowance; // Lưu giá trị mới trước khi reload
+      
+      setTimeout(async () => {
+        await loadData();
+        
+        // Sau khi reload, kiểm tra và merge giá trị mới nếu backend không trả về
+        setTimeout(() => {
+          setWelfareHistory(prev => prev.map(h => {
+            // Nếu là record vừa update và allowance bị reset về giá trị cũ
+            if (h.id === editingWelfareHistory.id && h.allowance !== savedAllowance) {
+              console.warn('⚠️ Allowance was reset after reload. Backend may not support updating allowanceAmount. Keeping new value in state:', {
+                employeeId: h.employeeId,
+                benefitId: h.benefitId,
+                oldAllowance: h.allowance,
+                newAllowance: savedAllowance,
+                note: 'Backend API PUT /api/employee-benefits/employee/{employeeId}/benefit/{benefitId} may not support allowanceAmount field. Frontend keeping new value in state.'
+              });
+              // Giữ giá trị mới trong state
+              return {
+                ...h,
+                allowance: savedAllowance,
+                amount: savedAllowance
+              };
+            }
+            return h;
+          }));
+        }, 100);
+      }, 1000);
     } catch (error) {
-      toast.error('Không thể cập nhật phúc lợi nhân viên');
+      console.error('Error updating employee benefit:', error);
+      toast.error(`Không thể cập nhật phúc lợi nhân viên: ${error.message || 'Vui lòng thử lại'}`);
     }
   };
 
@@ -584,19 +1007,48 @@ const AdminBenefits = () => {
       allowance: '',
       welfareName: '',
       grantDate: '',
-      status: 'active'
+      status: 'ACTIVE'
     });
     setSearchParams({});
   };
 
-  const handleDeleteWelfareHistory = (id) => {
+  const handleDeleteWelfareHistory = async (id) => {
     const history = welfareHistory.find(h => h.id === id);
-    if (history) {
-      if (window.confirm(`Bạn có chắc chắn muốn xóa phúc lợi nhân viên "${history.employeeName}"?\n\nLưu ý: Hành động này không thể hoàn tác.`)) {
-        // TODO: Gọi API xóa phúc lợi nhân viên
-        // await fakeApi.deleteWelfareHistory(id);
+    if (!history) {
+      toast.error('Không tìm thấy phúc lợi nhân viên');
+      return;
+    }
+
+    if (window.confirm(`Bạn có chắc chắn muốn xóa phúc lợi "${history.welfareName || history.benefitName}" của nhân viên "${history.employeeName}"?\n\n⚠️ Lưu ý: Hành động này không thể hoàn tác.`)) {
+      try {
+        const employeeId = history.employeeId;
+        const benefitId = history.benefitId;
+
+        if (!employeeId || !benefitId) {
+          toast.error('Thiếu thông tin employeeId hoặc benefitId');
+          return;
+        }
+
+        console.log('🗑️ Deleting employee benefit:', {
+          employeeId,
+          benefitId
+        });
+
+        // Gọi API xóa phúc lợi nhân viên
+        // DELETE /api/employee-benefits/employee/{employeeId}/benefit/{benefitId}
+        await deleteEmployeeBenefit(employeeId, benefitId);
+
+        // Xóa khỏi state
         setWelfareHistory(prev => prev.filter(h => h.id !== id));
-        toast.success('Đã xóa phúc lợi nhân viên');
+        toast.success('Đã xóa phúc lợi nhân viên thành công');
+        
+        // Reload data để sync với server
+        setTimeout(async () => {
+          await loadData();
+        }, 500);
+      } catch (error) {
+        console.error('Error deleting employee benefit:', error);
+        toast.error(`Không thể xóa phúc lợi nhân viên: ${error.message || 'Vui lòng thử lại'}`);
       }
     }
   };
@@ -614,10 +1066,6 @@ const AdminBenefits = () => {
       toast.error('Vui lòng nhập mã nhân viên');
       return;
     }
-    if (!editInsuranceHistoryFormData.employeeName || !editInsuranceHistoryFormData.employeeName.trim()) {
-      toast.error('Vui lòng nhập tên nhân viên');
-      return;
-    }
     if (!editInsuranceHistoryFormData.insuranceName || !editInsuranceHistoryFormData.insuranceName.trim()) {
       toast.error('Vui lòng chọn tên bảo hiểm');
       return;
@@ -628,13 +1076,57 @@ const AdminBenefits = () => {
     }
 
     try {
-      // TODO: Gọi API cập nhật bảo hiểm nhân viên
-      // const result = await fakeApi.updateInsuranceHistory(editingInsuranceHistory.id, editInsuranceHistoryFormData);
+      // Tìm contractId từ insuranceName
+      const selectedInsurance = insurancePolicies.find(ins => ins.name === editInsuranceHistoryFormData.insuranceName);
+      if (!selectedInsurance) {
+        toast.error('Không tìm thấy bảo hiểm được chọn');
+        return;
+      }
+
+      const employeeId = editInsuranceHistoryFormData.employeeId.trim();
+      const contractId = selectedInsurance.id || selectedInsurance.contractId || editingInsuranceHistory.contractId;
+      
+      if (!contractId) {
+        toast.error('Không tìm thấy contractId');
+        return;
+      }
+
+      // Format date về yyyy-MM-dd
+      const formatDateToYYYYMMDD = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      // Gọi API cập nhật bảo hiểm nhân viên
+      // PUT /api/employee-insurance-contracts/employee/{employeeId}/contract/{contractId}
+      const updateData = {
+        contractId: contractId,
+        effective: formatDateToYYYYMMDD(editInsuranceHistoryFormData.grantDate), // effective = grantDate
+        expiry: formatDateToYYYYMMDD(editInsuranceHistoryFormData.expiry || editInsuranceHistoryFormData.grantDate), // Nếu không có expiry, dùng grantDate
+        grantDate: formatDateToYYYYMMDD(editInsuranceHistoryFormData.grantDate)
+      };
+
+      console.log('📤 Updating employee insurance:', {
+        employeeId,
+        contractId,
+        updateData
+      });
+
+      await updateEmployeeInsurance(employeeId, contractId, updateData);
 
       // Cập nhật state
       setInsuranceHistory(prev => prev.map(h =>
         h.id === editingInsuranceHistory.id
-          ? { ...h, ...editInsuranceHistoryFormData }
+          ? { 
+              ...h, 
+              ...editInsuranceHistoryFormData,
+              contractId: contractId,
+              insuranceName: editInsuranceHistoryFormData.insuranceName
+            }
           : h
       ));
 
@@ -642,8 +1134,14 @@ const AdminBenefits = () => {
       setIsEditInsuranceHistoryModalOpen(false);
       setEditingInsuranceHistory(null);
       setSearchParams({});
+      
+      // Reload data để sync với server
+      setTimeout(async () => {
+        await loadData();
+      }, 500);
     } catch (error) {
-      toast.error('Không thể cập nhật bảo hiểm nhân viên');
+      console.error('Error updating employee insurance:', error);
+      toast.error(`Không thể cập nhật bảo hiểm nhân viên: ${error.message || 'Vui lòng thử lại'}`);
     }
   };
 
@@ -658,19 +1156,48 @@ const AdminBenefits = () => {
       employerRate: '',
       employeeRate: '',
       grantDate: '',
-      status: 'active'
+      status: 'ACTIVE'
     });
     setSearchParams({});
   };
 
-  const handleDeleteInsuranceHistory = (id) => {
+  const handleDeleteInsuranceHistory = async (id) => {
     const history = insuranceHistory.find(h => h.id === id);
-    if (history) {
-      if (window.confirm(`Bạn có chắc chắn muốn xóa bảo hiểm nhân viên "${history.employeeName}"?\n\nLưu ý: Hành động này không thể hoàn tác.`)) {
-        // TODO: Gọi API xóa bảo hiểm nhân viên
-        // await fakeApi.deleteInsuranceHistory(id);
+    if (!history) {
+      toast.error('Không tìm thấy bảo hiểm nhân viên');
+      return;
+    }
+
+    if (window.confirm(`Bạn có chắc chắn muốn xóa bảo hiểm "${history.insuranceName}" của nhân viên "${history.employeeName}"?\n\n⚠️ Lưu ý: Hành động này không thể hoàn tác.`)) {
+      try {
+        const employeeId = history.employeeId;
+        const contractId = history.contractId;
+
+        if (!employeeId || !contractId) {
+          toast.error('Thiếu thông tin employeeId hoặc contractId');
+          return;
+        }
+
+        console.log('🗑️ Deleting employee insurance:', {
+          employeeId,
+          contractId
+        });
+
+        // Gọi API xóa bảo hiểm nhân viên
+        // DELETE /api/employee-insurance-contracts/employee/{employeeId}/contract/{contractId}
+        await deleteEmployeeInsurance(employeeId, contractId);
+
+        // Xóa khỏi state
         setInsuranceHistory(prev => prev.filter(h => h.id !== id));
-        toast.success('Đã xóa bảo hiểm nhân viên');
+        toast.success('Đã xóa bảo hiểm nhân viên thành công');
+        
+        // Reload data để sync với server
+        setTimeout(async () => {
+          await loadData();
+        }, 500);
+      } catch (error) {
+        console.error('Error deleting employee insurance:', error);
+        toast.error(`Không thể xóa bảo hiểm nhân viên: ${error.message || 'Vui lòng thử lại'}`);
       }
     }
   };
@@ -686,24 +1213,35 @@ const AdminBenefits = () => {
       return;
     }
     if (!addWelfareFormData.owner || !addWelfareFormData.owner.trim()) {
-      toast.error('Vui lòng nhập người phụ trách');
+      toast.error('Vui lòng nhập phòng ban');
       return;
     }
 
     try {
-      // TODO: Gọi API thêm phúc lợi
-      // const result = await fakeApi.createWelfareProgram(addWelfareFormData);
-
-      // Tạo ID tạm thời
-      const newId = `welfare-${Date.now()}`;
-      const newWelfare = {
-        id: newId,
-        ...addWelfareFormData,
-        participants: 0
+      // Theo API doc: POST /api/benefits/create cần CreateBenefitRequestDTO
+      // Request body: benefitId, benefitName, description, numberOfEmployees, coverage, allowanceAmount, status
+      
+      // Chuẩn bị data theo format API yêu cầu
+      const createData = {
+        benefitId: addWelfareFormData.benefitId || `BENEFIT_${Date.now()}`, // Tạo ID nếu chưa có
+        benefitName: addWelfareFormData.name,
+        description: addWelfareFormData.description || '',
+        numberOfEmployees: 0, // Mới tạo nên chưa có người hưởng
+        coverage: addWelfareFormData.coverage || '', // Có thể cần thêm field này
+        allowanceAmount: addWelfareFormData.monthlyValue || 0,
+        status: normalizeStatus(addWelfareFormData.status || 'ACTIVE') // UPPERCASE
       };
-
-      // Thêm vào state
-      setWelfarePrograms(prev => [...prev, newWelfare]);
+      
+      console.log('📤 Creating benefit:', createData);
+      
+      // Gọi API tạo phúc lợi mới
+      // POST /api/benefits/create
+      const result = await createBenefit(createData);
+      
+      console.log('✅ Created benefit response:', result);
+      
+      // Reload data để lấy benefitId từ backend
+      await loadData();
 
       toast.success(`Đã thêm phúc lợi "${addWelfareFormData.name}"`);
       setIsAddWelfareModalOpen(false);
@@ -712,7 +1250,7 @@ const AdminBenefits = () => {
         monthlyValue: 0,
         owner: '',
         budget: 0,
-        status: 'active',
+        status: 'ACTIVE',
         description: '',
         nextReview: ''
       });
@@ -729,7 +1267,7 @@ const AdminBenefits = () => {
       monthlyValue: 0,
       owner: '',
       budget: 0,
-      status: 'active',
+      status: 'ACTIVE',
       description: '',
       nextReview: ''
     });
@@ -771,7 +1309,7 @@ const AdminBenefits = () => {
         employeeRate: '',
         effective: '',
         expiry: '',
-        status: 'active'
+        status: 'ACTIVE'
       });
       setSearchParams({});
     } catch (error) {
@@ -789,7 +1327,7 @@ const AdminBenefits = () => {
       employeeRate: '',
       effective: '',
       expiry: '',
-      status: 'active'
+      status: 'ACTIVE'
     });
     setSearchParams({});
   };
@@ -802,7 +1340,7 @@ const AdminBenefits = () => {
       allowance: '',
       welfareName: '',
       grantDate: '',
-      status: 'active'
+      status: 'ACTIVE'
     }]);
   };
 
@@ -901,7 +1439,7 @@ const AdminBenefits = () => {
         allowance: '',
         welfareName: '',
         grantDate: '',
-        status: 'active'
+        status: 'ACTIVE'
       }]);
       setSearchParams({});
     } catch (error) {
@@ -918,7 +1456,7 @@ const AdminBenefits = () => {
       allowance: '',
       welfareName: '',
       grantDate: '',
-      status: 'active'
+      status: 'ACTIVE'
     }]);
     setSearchParams({});
   };
@@ -932,7 +1470,7 @@ const AdminBenefits = () => {
       employerRate: '',
       employeeRate: '',
       grantDate: '',
-      status: 'active'
+      status: 'ACTIVE'
     }]);
   };
 
@@ -1038,7 +1576,7 @@ const AdminBenefits = () => {
         employerRate: '',
         employeeRate: '',
         grantDate: '',
-        status: 'active'
+        status: 'ACTIVE'
       }]);
       setSearchParams({});
 
@@ -1059,7 +1597,7 @@ const AdminBenefits = () => {
       employerRate: '',
       employeeRate: '',
       grantDate: '',
-      status: 'active'
+      status: 'ACTIVE'
     }]);
     setSearchParams({});
   };
@@ -1079,10 +1617,40 @@ const AdminBenefits = () => {
     }
 
     try {
+      // Parse rates từ string sang number nếu cần
+      const parseRate = (rate) => {
+        if (typeof rate === 'string') {
+          // Xóa ký tự % nếu có
+          const cleaned = rate.replace('%', '').trim();
+          return parseFloat(cleaned) || 0;
+        }
+        return rate || 0;
+      };
+
+      // Backend yêu cầu TẤT CẢ các field bắt buộc với đúng format
+      // Không gửi id - Backend không cần field này trong request body
+      const updateData = {
+        insurenceName: editInsuranceFormData.name,
+        employerRate: parseRate(editInsuranceFormData.employerRate),
+        employeeRate: parseRate(editInsuranceFormData.employeeRate),
+        provider: editInsuranceFormData.provider || '',
+        effective: formatDateToYYYYMMDD(editInsuranceFormData.effective), // Format: yyyy-MM-dd
+        expiry: formatDateToYYYYMMDD(editInsuranceFormData.expiry),       // Format: yyyy-MM-dd
+        status: normalizeStatus(editInsuranceFormData.status) // UPPERCASE: ACTIVE, INACTIVE, EXPIRED
+      };
+
+      console.log('📤 Updating insurance contract:', {
+        url: `PUT /api/insurance-contracts/${encodeURIComponent(editingInsurance.name)}`,
+        data: updateData
+      });
+      
+      // Gọi API cập nhật bảo hiểm
+      await updateInsuranceContract(editingInsurance.name, updateData);
+
       // Cập nhật state
       setInsurancePolicies(prev => prev.map(p =>
         p.id === editingInsurance.id
-          ? { ...p, ...editInsuranceFormData }
+          ? { ...p, ...updateData }
           : p
       ));
 
@@ -1091,18 +1659,94 @@ const AdminBenefits = () => {
       setEditingInsurance(null);
       // Clear URL params
       setSearchParams({});
+      
+      // Reload data để sync với server
+      setTimeout(async () => {
+        await loadData();
+      }, 500);
     } catch (error) {
-      toast.error('Không thể cập nhật chính sách bảo hiểm');
+      console.error('Error updating insurance:', error);
+      toast.error(`Không thể cập nhật chính sách bảo hiểm: ${error.message || 'Vui lòng thử lại'}`);
     }
   };
 
-  const handleDeleteInsurancePolicy = (id) => {
+  // Helper function để format date về yyyy-MM-dd
+  const formatDateToYYYYMMDD = (dateStr) => {
+    if (!dateStr) return '';
+    
+    // Nếu đã là format yyyy-MM-dd
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      return dateStr;
+    }
+    
+    // Nếu là format dd/MM/yyyy hoặc dd-MM-yyyy
+    const dateMatch = dateStr.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+    if (dateMatch) {
+      const [, day, month, year] = dateMatch;
+      return `${year}-${month}-${day}`;
+    }
+    
+    // Thử parse với Date object
+    try {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+    } catch (e) {
+      console.warn('Cannot parse date:', dateStr);
+    }
+    
+    return dateStr; // Trả về nguyên bản nếu không parse được
+  };
+
+  const handleDeleteInsurancePolicy = async (id) => {
     const policy = insurancePolicies.find(p => p.id === id);
-    if (policy) {
-      if (window.confirm(`Bạn có chắc chắn muốn xóa chính sách bảo hiểm "${policy.name}"?\n\nLưu ý: Hành động này không thể hoàn tác.`)) {
-        // TODO: Gọi API xóa chính sách bảo hiểm
+    if (!policy) {
+      toast.error('Không tìm thấy chính sách bảo hiểm');
+      return;
+    }
+
+    if (window.confirm(`Bạn có chắc chắn muốn XÓA chính sách bảo hiểm "${policy.name}"?\n\n⚠️ CẢNH BÁO: Hành động này sẽ XÓA VĨNH VIỄN chính sách bảo hiểm khỏi hệ thống và không thể hoàn tác!`)) {
+      try {
+        console.log('🗑️ Deleting insurance contract:', policy.name);
+        console.log('📤 Policy ID:', policy.id);
+
+        // Gọi API DELETE để xóa hoàn toàn khỏi database
+        await deleteInsuranceContract(policy.name);
+
+        // Xóa khỏi state ngay lập tức
         setInsurancePolicies(prev => prev.filter(p => p.id !== id));
-        toast.success('Đã xóa chính sách bảo hiểm');
+
+        toast.success(`Đã xóa chính sách bảo hiểm "${policy.name}" thành công`);
+
+        // Reload data sau 500ms để đảm bảo sync với server
+        setTimeout(async () => {
+          await loadData();
+        }, 500);
+      } catch (error) {
+        console.error('Error deleting insurance policy:', error);
+        console.error('Policy data:', policy);
+        console.error('Error status:', error.status);
+        console.error('Error response:', error.response);
+        
+        // Error message đã được parse trong service, dùng trực tiếp
+        const errorMessage = error.message || 'Vui lòng thử lại';
+        
+        // Kiểm tra nếu lỗi 409 CONFLICT (có employee đang dùng)
+        if (error.status === 409 || errorMessage.includes('nhân viên sử dụng') || errorMessage.includes('CONFLICT')) {
+          toast.error(
+            errorMessage,
+            { autoClose: 8000 }
+          );
+        } else {
+          toast.error(
+            `Có lỗi xảy ra khi xóa chính sách bảo hiểm "${policy.name}":\n${errorMessage}`,
+            { autoClose: 6000 }
+          );
+        }
       }
     }
   };
@@ -1118,7 +1762,7 @@ const AdminBenefits = () => {
       employeeRate: '',
       effective: '',
       expiry: '',
-      status: 'active'
+      status: 'ACTIVE'
     });
     // Clear URL params
     setSearchParams({});
@@ -1195,7 +1839,7 @@ const AdminBenefits = () => {
               <div className="p-4 bg-purple-100 rounded-xl"><Heart className="text-purple-600" size={28} /></div>
               <div>
                 <p className="text-sm text-gray-500">Phúc lợi đang áp dụng</p>
-                <p className="text-3xl font-bold text-gray-900">{welfarePrograms.filter(p => p.status === 'active').length}</p>
+                <p className="text-3xl font-bold text-gray-900">{welfarePrograms.filter(p => normalizeStatus(p.status) === 'ACTIVE').length}</p>
               </div>
             </div>
           </div>
@@ -1257,54 +1901,62 @@ const AdminBenefits = () => {
           {/* Tab Content */}
           {welfareTabActive === 'programs' ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
                 <thead>
                   <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
-                    <th className="pb-3">Tên phúc lợi</th>
-                    <th className="pb-3 text-center">Trợ cấp hàng tháng</th>
-                    <th className="pb-3 text-center">Người phụ trách</th>
-                    <th className="pb-3 text-center">Số người hưởng</th>
-                    <th className="pb-3 text-center">Ngân sách năm</th>
-                    <th className="pb-3 text-center">Trạng thái</th>
-                    <th className="pb-3">Sửa/Xóa</th>
+                    <th className="px-4 py-3 text-left w-[20%]">Tên phúc lợi</th>
+                    <th className="px-4 py-3 text-center w-[15%]">Trợ cấp hàng tháng</th>
+                    <th className="px-4 py-3 text-center w-[12%]">Phòng ban</th>
+                    <th className="px-4 py-3 text-center w-[12%]">Số người hưởng</th>
+                    <th className="px-4 py-3 text-center w-[12%]">Ngân sách năm</th>
+                    <th className="px-4 py-3 text-center w-[12%]">Trạng thái</th>
+                    <th className="px-4 py-3 text-center w-[17%]">Sửa/Xóa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {welfarePrograms.map(p => (
                     <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 font-medium text-gray-900">{p.name}</td>
-                      <td className="py-4 text-gray-700 font-medium text-center">
+                      <td className="px-4 py-4 font-medium text-gray-900">{p.name}</td>
+                      <td className="px-4 py-4 text-gray-700 font-medium text-center whitespace-nowrap">
                         {p.monthlyValue ? `${(p.monthlyValue / 1000).toFixed(0)}.000 VNĐ` : '0 VNĐ'}
                       </td>
-                      <td className="py-4 text-gray-600 text-center">{p.owner}</td>
-                      <td className="py-4 text-gray-900 font-medium text-center">{p.participants}</td>
-                      <td className="py-4 text-gray-900 text-center">{(p.budget / 1_000_000).toFixed(0)} triệu</td>
-                      <td className="py-4 text-center">
-                        <span className={`px-3 py-1 text-xs rounded-full font-medium ${p.status === 'active'
-                          ? 'bg-green-100 text-green-700'
-                          : p.status === 'suspended'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-red-100 text-red-700'
-                          }`}>
-                          {p.status === 'active'
-                            ? 'Đang áp dụng'
-                            : p.status === 'suspended'
-                              ? 'Tạm ngưng'
-                              : 'Đã hủy'}
+                      <td className="px-4 py-4 text-gray-600 text-center whitespace-nowrap">{p.owner || '-'}</td>
+                      <td className="px-4 py-4 text-gray-900 font-medium text-center whitespace-nowrap">{p.participants || 0}</td>
+                      <td className="px-4 py-4 text-gray-900 text-center whitespace-nowrap">{(p.budget / 1_000_000).toFixed(0)} triệu</td>
+                      <td className="px-4 py-4 text-center">
+                        {(() => {
+                          const statusDisplay = getStatusDisplay(p.status);
+                          return (
+                            <span className={`px-3 py-1 text-xs rounded-full font-medium whitespace-nowrap ${statusDisplay.className}`}>
+                              {statusDisplay.label}
                         </span>
+                          );
+                        })()}
                       </td>
-                      <td className="py-4">
-                        <div className="flex items-center gap-2">
+                      <td className="px-4 py-4">
+                        <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => handleEditWelfare(p.id)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('🔍 Edit button clicked for welfare id:', p.id);
+                              handleEditWelfare(p.id);
+                            }}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                             title="Sửa phúc lợi"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteWelfare(p.id)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('🔍 Delete button clicked for welfare id:', p.id);
+                              handleDeleteWelfare(p.id);
+                            }}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
                             title="Xóa phúc lợi"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -1318,17 +1970,17 @@ const AdminBenefits = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-sm table-fixed">
                 <thead>
                   <tr className="text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b">
-                    <th className="px-4 py-3 whitespace-nowrap">Mã nhân viên</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Tên nhân viên</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Phòng ban</th>
-                    <th className="px-4 py-3 text-center whitespace-nowrap">Mức trợ cấp</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Tên phúc lợi</th>
-                    <th className="px-4 py-3 text-center whitespace-nowrap">Ngày cấp</th>
-                    <th className="px-4 py-3 text-center whitespace-nowrap">Trạng thái</th>
-                    <th className="px-4 py-3 whitespace-nowrap">Sửa/Xóa</th>
+                    <th className="px-4 py-3 text-left w-[10%]">Mã nhân viên</th>
+                    <th className="px-4 py-3 text-left w-[15%]">Tên nhân viên</th>
+                    <th className="px-4 py-3 text-left w-[12%]">Phòng ban</th>
+                    <th className="px-4 py-3 text-center w-[12%]">Mức trợ cấp</th>
+                    <th className="px-4 py-3 text-left w-[18%]">Tên phúc lợi</th>
+                    <th className="px-4 py-3 text-center w-[12%]">Ngày cấp</th>
+                    <th className="px-4 py-3 text-center w-[12%]">Trạng thái</th>
+                    <th className="px-4 py-3 text-center w-[9%]">Sửa/Xóa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -1365,17 +2017,18 @@ const AdminBenefits = () => {
                         <React.Fragment key={h.id}>
                           {/* Dòng đầu tiên của mỗi employeeId */}
                           <tr className="hover:bg-gray-50 transition-colors">
-                            <td className="py-4 font-medium text-gray-900">{h.employeeId}</td>
-                            <td className="py-4 text-gray-900">{h.employeeName}</td>
-                            <td className="py-4 text-gray-600">{h.department}</td>
-                            <td className="py-4 text-gray-700 font-medium text-center">
+                            <td className="px-4 py-4 font-medium text-gray-900 whitespace-nowrap">{h.employeeId}</td>
+                            <td className="px-4 py-4 text-gray-900 whitespace-nowrap">{h.employeeName}</td>
+                            <td className="px-4 py-4 text-gray-600 whitespace-nowrap">{h.department}</td>
+                            <td className="px-4 py-4 text-gray-700 font-medium text-center whitespace-nowrap">
                               {h.allowance ? `${Number(h.allowance).toLocaleString('vi-VN')} VNĐ` : '0 VNĐ'}
                             </td>
-                            <td className="py-4 text-gray-900">
+                            <td className="px-4 py-4 text-gray-900">
                               <div className="flex items-center gap-2">
-                                <span>{h.welfareName}</span>
+                                <span className="whitespace-nowrap">{h.welfareName || h.benefitName || 'N/A'}</span>
                                 {showExpandButton && (
                                   <button
+                                    type="button"
                                     onClick={() => {
                                       const newExpanded = new Set(expandedEmployees);
                                       if (isExpanded) {
@@ -1385,7 +2038,7 @@ const AdminBenefits = () => {
                                       }
                                       setExpandedEmployees(newExpanded);
                                     }}
-                                    className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
                                     title={`Xem tất cả ${h.totalCount} phúc lợi của nhân viên này`}
                                   >
                                     {isExpanded ? (
@@ -1396,35 +2049,37 @@ const AdminBenefits = () => {
                                     ) : (
                                       <>
                                         <ChevronDown className="w-3 h-3" />
-                                        <span>Show ({h.totalCount})</span>
+                                        <span>Ấn ({h.totalCount})</span>
                                       </>
                                     )}
                                   </button>
                                 )}
                               </div>
                             </td>
-                            <td className="py-4 text-gray-600 text-center">
+                            <td className="px-4 py-4 text-gray-600 text-center whitespace-nowrap">
                               {h.grantDate ? new Date(h.grantDate).toLocaleDateString('vi-VN') : '-'}
                             </td>
-                            <td className="py-4 text-center">
-                              <span className={`px-3 py-1 text-xs rounded-full font-medium ${h.status === 'active'
-                                ? 'bg-green-100 text-green-700'
-                                : h.status === 'suspended'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-red-100 text-red-700'
-                                }`}>
-                                {h.status === 'active'
-                                  ? 'Đang áp dụng'
-                                  : h.status === 'suspended'
-                                    ? 'Tạm ngưng'
-                                    : 'Đã hủy'}
+                            <td className="px-4 py-4 text-center">
+                              {(() => {
+                                const statusDisplay = getStatusDisplay(h.status);
+                                return (
+                                  <span className={`px-3 py-1 text-xs rounded-full font-medium whitespace-nowrap ${statusDisplay.className}`}>
+                                    {statusDisplay.label}
                               </span>
+                                );
+                              })()}
                             </td>
-                            <td className="py-4">
-                              <div className="flex items-center gap-2">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center justify-center gap-2">
                                 <button
-                                  onClick={() => handleEditWelfareHistory(h.id)}
-                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log('🔍 Edit button clicked for employee benefit id:', h.id);
+                                    handleEditWelfareHistory(h.id);
+                                  }}
+                                  className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                                   title="Sửa phúc lợi nhân viên"
                                 >
                                   <Edit className="w-4 h-4" />
@@ -1442,37 +2097,39 @@ const AdminBenefits = () => {
                           {/* Hiển thị các phúc lợi khác khi expand */}
                           {isExpanded && h.allWelfares.slice(1).map((otherWelfare) => (
                             <tr key={otherWelfare.id} className="hover:bg-gray-50 transition-colors bg-gray-50/50">
-                              <td className="py-4 font-medium text-gray-500 pl-8">
+                              <td className="px-4 py-4 font-medium text-gray-500 pl-8">
                                 <span className="text-xs text-gray-400">└─</span>
                               </td>
-                              <td className="py-4 text-gray-500"></td>
-                              <td className="py-4 text-gray-500"></td>
-                              <td className="py-4 text-gray-700 font-medium text-center">
+                              <td className="px-4 py-4 text-gray-500"></td>
+                              <td className="px-4 py-4 text-gray-500"></td>
+                              <td className="px-4 py-4 text-gray-700 font-medium text-center whitespace-nowrap">
                                 {otherWelfare.allowance ? `${Number(otherWelfare.allowance).toLocaleString('vi-VN')} VNĐ` : '0 VNĐ'}
                               </td>
-                              <td className="py-4 text-gray-900">{otherWelfare.welfareName}</td>
-                              <td className="py-4 text-gray-600 text-center">
+                              <td className="px-4 py-4 text-gray-900 whitespace-nowrap">{otherWelfare.welfareName || otherWelfare.benefitName || 'N/A'}</td>
+                              <td className="px-4 py-4 text-gray-600 text-center whitespace-nowrap">
                                 {otherWelfare.grantDate ? new Date(otherWelfare.grantDate).toLocaleDateString('vi-VN') : '-'}
                               </td>
-                              <td className="py-4 text-center">
-                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${otherWelfare.status === 'active'
-                                  ? 'bg-green-100 text-green-700'
-                                  : otherWelfare.status === 'suspended'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-red-100 text-red-700'
-                                  }`}>
-                                  {otherWelfare.status === 'active'
-                                    ? 'Đang áp dụng'
-                                    : otherWelfare.status === 'suspended'
-                                      ? 'Tạm ngưng'
-                                      : 'Đã hủy'}
+                              <td className="px-4 py-4 text-center">
+                                {(() => {
+                                  const statusDisplay = getStatusDisplay(otherWelfare.status);
+                                  return (
+                                    <span className={`px-3 py-1 text-xs rounded-full font-medium whitespace-nowrap ${statusDisplay.className}`}>
+                                      {statusDisplay.label}
                                 </span>
+                                  );
+                                })()}
                               </td>
-                              <td className="py-4">
-                                <div className="flex items-center gap-2">
+                              <td className="px-4 py-4">
+                                <div className="flex items-center justify-center gap-2">
                                   <button
-                                    onClick={() => handleEditWelfareHistory(otherWelfare.id)}
-                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      console.log('🔍 Edit button clicked for employee benefit id:', otherWelfare.id);
+                                      handleEditWelfareHistory(otherWelfare.id);
+                                    }}
+                                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                                     title="Sửa phúc lợi nhân viên"
                                   >
                                     <Edit className="w-4 h-4" />
@@ -1566,18 +2223,14 @@ const AdminBenefits = () => {
                       <div><p className="text-gray-500">Hết hạn</p><p className="font-medium">{policy.expiry}</p></div>
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                      <span className={`px-3 py-1 text-xs rounded-full font-medium ${policy.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : policy.status === 'suspended'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : 'bg-red-100 text-red-700'
-                        }`}>
-                        {policy.status === 'active'
-                          ? 'Đang áp dụng'
-                          : policy.status === 'suspended'
-                            ? 'Tạm ngưng'
-                            : 'Đã hủy'}
+                      {(() => {
+                        const statusDisplay = getStatusDisplay(policy.status);
+                        return (
+                          <span className={`px-3 py-1 text-xs rounded-full font-medium ${statusDisplay.className}`}>
+                            {statusDisplay.label}
                       </span>
+                        );
+                      })()}
                     </div>
                   </div>
                 ))}
@@ -1673,18 +2326,14 @@ const AdminBenefits = () => {
                                 {h.grantDate ? new Date(h.grantDate).toLocaleDateString('vi-VN') : '-'}
                               </td>
                               <td className="py-4 text-center">
-                                <span className={`px-3 py-1 text-xs rounded-full font-medium ${h.status === 'active'
-                                  ? 'bg-green-100 text-green-700'
-                                  : h.status === 'suspended'
-                                    ? 'bg-yellow-100 text-yellow-700'
-                                    : 'bg-red-100 text-red-700'
-                                  }`}>
-                                  {h.status === 'active'
-                                    ? 'Đang áp dụng'
-                                    : h.status === 'suspended'
-                                      ? 'Tạm ngưng'
-                                      : 'Đã hủy'}
+                                {(() => {
+                                  const statusDisplay = getStatusDisplay(h.status);
+                                  return (
+                                    <span className={`px-3 py-1 text-xs rounded-full font-medium ${statusDisplay.className}`}>
+                                      {statusDisplay.label}
                                 </span>
+                                  );
+                                })()}
                               </td>
                               <td className="py-4">
                                 <div className="flex items-center gap-2">
@@ -1720,18 +2369,14 @@ const AdminBenefits = () => {
                                   {otherInsurance.grantDate ? new Date(otherInsurance.grantDate).toLocaleDateString('vi-VN') : '-'}
                                 </td>
                                 <td className="py-4 text-center">
-                                  <span className={`px-3 py-1 text-xs rounded-full font-medium ${otherInsurance.status === 'active'
-                                    ? 'bg-green-100 text-green-700'
-                                    : otherInsurance.status === 'suspended'
-                                      ? 'bg-yellow-100 text-yellow-700'
-                                      : 'bg-red-100 text-red-700'
-                                    }`}>
-                                    {otherInsurance.status === 'active'
-                                      ? 'Đang áp dụng'
-                                      : otherInsurance.status === 'suspended'
-                                        ? 'Tạm ngưng'
-                                        : 'Đã hủy'}
+                                  {(() => {
+                                    const statusDisplay = getStatusDisplay(otherInsurance.status);
+                                    return (
+                                      <span className={`px-3 py-1 text-xs rounded-full font-medium ${statusDisplay.className}`}>
+                                        {statusDisplay.label}
                                   </span>
+                                    );
+                                  })()}
                                 </td>
                                 <td className="py-4">
                                   <div className="flex items-center gap-2">
@@ -1765,210 +2410,6 @@ const AdminBenefits = () => {
         </div>
       </div>
 
-      {/* YÊU CẦU CHỜ DUYỆT */}
-      <Card
-        title="Yêu cầu phúc lợi chờ duyệt"
-        subtitle={`${requests.length} yêu cầu đang chờ xử lý`}
-        icon={<Clock className="w-6 h-6 text-amber-600" />}
-        className="mt-6"
-      >
-        {requests.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-300" />
-            <p className="text-xl font-bold">Không có yêu cầu nào</p>
-            <p className="text-sm mt-2">Tất cả yêu cầu đã được xử lý</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {requests.map(req => (
-              <div
-                key={req.id}
-                className="flex items-center justify-between p-5 bg-amber-50 border border-amber-200 rounded-xl hover:shadow-md transition-all cursor-pointer"
-                onClick={() => openDetail(req)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-amber-200 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-amber-700" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-gray-900">{req.employee}</p>
-                    <p className="text-sm text-gray-600">{req.department}</p>
-                  </div>
-                </div>
-                <div className="flex-1 mx-6">
-                  <p className="font-medium text-amber-800">{req.typeLabel}</p>
-                  <p className="text-sm text-gray-500 truncate max-w-md">{req.reason}</p>
-                </div>
-                <div className="text-right">
-                  <span className="inline-block px-3 py-1 bg-amber-200 text-amber-800 rounded-full text-sm font-medium">
-                    Chờ duyệt
-                  </span>
-                  <p className="text-xs text-gray-500 mt-1">{req.createdAt}</p>
-                </div>
-                <div className="ml-4 flex gap-2">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); approveRequest(req.id); }}
-                    className="p-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition"
-                    title="Phê duyệt"
-                  >
-                    <CheckCircle className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); rejectRequest(req.id); }}
-                    className="p-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition"
-                    title="Từ chối"
-                  >
-                    <XCircle className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); openDetail(req); }}
-                    className="p-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition"
-                    title="Xem chi tiết"
-                  >
-                    <Eye className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-
-      {/* MODAL CHI TIẾT YÊU CẦU */}
-      {isModalOpen && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[92vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 flex justify-between items-center">
-              <div>
-                <h3 className="text-3xl font-bold text-gray-900">Chi tiết yêu cầu #{selectedRequest.id}</h3>
-                <p className="text-gray-500 mt-1">Yêu cầu thay đổi phúc lợi & bảo hiểm</p>
-              </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-700 p-3 hover:bg-gray-100 rounded-xl transition">
-                <XCircle className="w-9 h-9" />
-              </button>
-            </div>
-
-            <div className="p-8 space-y-10">
-
-              {/* Thông tin nhân viên */}
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-200">
-                <h4 className="font-bold text-xl text-blue-900 mb-6 flex items-center gap-3">
-                  <User className="w-7 h-7" /> Thông tin nhân viên
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div><p className="text-sm text-gray-600">Họ và tên</p><p className="text-2xl font-bold text-gray-900">{selectedRequest.employee}</p></div>
-                  <div><p className="text-sm text-gray-600">Phòng ban</p><p className="text-2xl font-bold text-blue-700">{selectedRequest.department}</p></div>
-                  <div><p className="text-sm text-gray-600">Mã yêu cầu</p><p className="text-2xl font-mono text-gray-800">{selectedRequest.id}</p></div>
-                </div>
-              </div>
-
-              {/* Loại yêu cầu */}
-              <div className="bg-amber-50 rounded-2xl p-8 border border-amber-300">
-                <h4 className="font-bold text-xl text-amber-900 mb-5">Loại yêu cầu</h4>
-                <div className="bg-white rounded-xl p-6 border-4 border-amber-400">
-                  <p className="text-2xl font-bold text-amber-800">{selectedRequest.typeLabel}</p>
-                </div>
-              </div>
-
-              {/* Lý do */}
-              <div>
-                <h4 className="font-bold text-xl mb-5 flex items-center gap-3">
-                  <FileText className="w-7 h-7" /> Lý do yêu cầu
-                </h4>
-                <div className="bg-gray-50 border-2 border-gray-300 rounded-xl p-8">
-                  <p className="text-gray-800 text-lg leading-relaxed">{selectedRequest.reason}</p>
-                </div>
-              </div>
-
-              {/* Tệp đính kèm */}
-              {selectedRequest.attachments > 0 && (
-                <div>
-                  <h4 className="font-bold text-xl mb-5 flex items-center gap-3">
-                    <Paperclip className="w-7 h-7" /> Tệp đính kèm ({selectedRequest.attachments})
-                  </h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    {[...Array(selectedRequest.attachments)].map((_, i) => (
-                      <div key={i} className="bg-gray-50 border-4 border-dashed border-gray-300 rounded-2xl p-10 text-center hover:border-blue-500 cursor-pointer group transition-all">
-                        <FileText className="w-16 h-16 mx-auto text-gray-400 group-hover:text-blue-600" />
-                        <p className="mt-4 text-sm font-bold text-gray-700">Tệp đính kèm {i + 1}</p>
-                        <p className="text-xs text-gray-500">Nhấp để xem</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* BẢO HIỂM HIỆN TẠI */}
-              <div className="border-t-8 border-blue-600 pt-10 bg-gradient-to-b from-blue-50 to-white rounded-2xl p-8">
-                <h4 className="font-bold text-3xl mb-8 text-center text-blue-900 flex items-center justify-center gap-4">
-                  <Shield className="w-10 h-10" />
-                  Bảo hiểm hiện tại của {selectedRequest.employee.split(' ').pop()}
-                </h4>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {employeeInsurance.map((ins, idx) => (
-                    <div key={idx} className="bg-white border-4 border-green-300 rounded-2xl p-8 shadow-lg">
-                      <div className="flex justify-between items-start mb-6">
-                        <div>
-                          <h5 className="text-2xl font-bold text-green-800">{ins.type}</h5>
-                          <span className="inline-block mt-3 px-5 py-2 text-sm font-bold rounded-full bg-green-600 text-white">
-                            Đang tham gia
-                          </span>
-                        </div>
-                        {ins.dependents > 0 && (
-                          <div className="text-right">
-                            <p className="text-5xl font-bold text-blue-600">{ins.dependents}</p>
-                            <p className="text-sm text-gray-600 font-medium">người phụ thuộc</p>
-                          </div>
-                        )}
-                      </div>
-                      <div className="space-y-4 text-lg">
-                        <div className="flex justify-between"><span className="text-gray-600">Từ ngày</span><span className="font-bold">{ins.start}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-600">Đến ngày</span><span className="font-bold">{ins.end || 'Vô thời hạn'}</span></div>
-                        {ins.hospitalName && (
-                          <div className="flex justify-between"><span className="text-gray-600">Nơi KCB</span><span className="font-bold text-blue-600">{ins.hospitalName}</span></div>
-                        )}
-                      </div>
-
-                      {ins.type === 'BHYT' && selectedRequest.type === 'add-dependent' && ins.dependents >= 4 && (
-                        <div className="mt-6 p-6 bg-red-100 border-4 border-red-500 rounded-xl">
-                          <p className="text-red-800 font-bold text-lg flex items-center gap-3">
-                            <AlertCircle className="w-8 h-8" />
-                            Không thể thêm người phụ thuộc! (Đã đạt tối đa 4 người)
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Nút hành động */}
-              <div className="flex flex-col sm:flex-row gap-6 justify-end pt-8 border-t-4 border-gray-300">
-                <Button variant="secondary" size="lg" onClick={() => setIsModalOpen(false)} className="px-10">
-                  Đóng
-                </Button>
-
-                {canApprove ? (
-                  <>
-                    <Button variant="danger" size="lg" icon={<XCircle className="w-6 h-6" />} onClick={() => rejectRequest(selectedRequest.id)} className="px-10">
-                      Từ chối yêu cầu
-                    </Button>
-                    <Button size="lg" icon={<CheckCircle className="w-6 h-6" />} onClick={() => approveRequest(selectedRequest.id)} className="px-12 bg-green-600 hover:bg-green-700">
-                      Phê duyệt ngay
-                    </Button>
-                  </>
-                ) : (
-                  <div className="flex items-center gap-3 px-6 py-4 bg-gray-100 rounded-xl text-gray-600">
-                    <Lock size={20} />
-                    <span>Chỉ Kế toán mới được phê duyệt</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL CHỈNH SỬA PHÚC LỢI */}
       {isEditModalOpen && editingWelfare && (
@@ -2021,10 +2462,10 @@ const AdminBenefits = () => {
                 )}
               </div>
 
-              {/* Người phụ trách */}
+              {/* Phòng ban */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Người phụ trách <span className="text-red-500">*</span>
+                  Phòng Ban <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -2059,9 +2500,9 @@ const AdminBenefits = () => {
                   onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="active">Đang áp dụng</option>
-                  <option value="suspended">Tạm ngưng</option>
-                  <option value="cancelled">Đã hủy</option>
+                  <option value="ACTIVE">Đang áp dụng</option>
+                  <option value="INACTIVE">Đã hủy</option>
+                  <option value="EXPIRED">Hết hạn</option>
                 </select>
               </div>
 
@@ -2216,9 +2657,9 @@ const AdminBenefits = () => {
                   onChange={(e) => setEditInsuranceFormData({ ...editInsuranceFormData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="active">Đang áp dụng</option>
-                  <option value="suspended">Tạm ngưng</option>
-                  <option value="cancelled">Đã hủy</option>
+                  <option value="ACTIVE">Đang áp dụng</option>
+                  <option value="INACTIVE">Đã hủy</option>
+                  <option value="EXPIRED">Hết hạn</option>
                 </select>
               </div>
 
@@ -2287,10 +2728,10 @@ const AdminBenefits = () => {
                 )}
               </div>
 
-              {/* Người phụ trách */}
+              {/* Phòng ban */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Người phụ trách <span className="text-red-500">*</span>
+                  Phòng Ban <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -2311,9 +2752,9 @@ const AdminBenefits = () => {
                   onChange={(e) => setAddWelfareFormData({ ...addWelfareFormData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="active">Đang áp dụng</option>
-                  <option value="suspended">Tạm ngưng</option>
-                  <option value="cancelled">Đã hủy</option>
+                  <option value="ACTIVE">Đang áp dụng</option>
+                  <option value="INACTIVE">Đã hủy</option>
+                  <option value="EXPIRED">Hết hạn</option>
                 </select>
               </div>
 
@@ -2454,9 +2895,9 @@ const AdminBenefits = () => {
                   onChange={(e) => setAddInsuranceFormData({ ...addInsuranceFormData, status: e.target.value })}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="active">Đang áp dụng</option>
-                  <option value="suspended">Tạm ngưng</option>
-                  <option value="cancelled">Đã hủy</option>
+                  <option value="ACTIVE">Đang áp dụng</option>
+                  <option value="INACTIVE">Đã hủy</option>
+                  <option value="EXPIRED">Hết hạn</option>
                 </select>
               </div>
 
@@ -2609,9 +3050,9 @@ const AdminBenefits = () => {
                         onChange={(e) => handleUpdateGrantWelfare(index, 'status', e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                       >
-                        <option value="active">Đang áp dụng</option>
-                        <option value="suspended">Tạm ngưng</option>
-                        <option value="cancelled">Đã hủy</option>
+                        <option value="ACTIVE">Đang áp dụng</option>
+                        <option value="INACTIVE">Đã hủy</option>
+                        <option value="EXPIRED">Hết hạn</option>
                       </select>
                     </div>
                   </div>
@@ -2786,9 +3227,9 @@ const AdminBenefits = () => {
                         onChange={(e) => handleUpdateGrantInsurance(index, 'status', e.target.value)}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                       >
-                        <option value="active">Đang áp dụng</option>
-                        <option value="suspended">Tạm ngưng</option>
-                        <option value="cancelled">Đã hủy</option>
+                        <option value="ACTIVE">Đang áp dụng</option>
+                        <option value="INACTIVE">Đã hủy</option>
+                        <option value="EXPIRED">Hết hạn</option>
                       </select>
                     </div>
                   </div>
@@ -2951,9 +3392,9 @@ const AdminBenefits = () => {
                     onChange={(e) => setEditWelfareHistoryFormData({ ...editWelfareHistoryFormData, status: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500"
                   >
-                    <option value="active">Đang áp dụng</option>
-                    <option value="suspended">Tạm ngưng</option>
-                    <option value="cancelled">Đã hủy</option>
+                    <option value="ACTIVE">Đang áp dụng</option>
+                    <option value="INACTIVE">Đã hủy</option>
+                    <option value="EXPIRED">Hết hạn</option>
                   </select>
                 </div>
               </div>
@@ -3108,9 +3549,9 @@ const AdminBenefits = () => {
                     onChange={(e) => setEditInsuranceHistoryFormData({ ...editInsuranceHistoryFormData, status: e.target.value })}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="active">Đang áp dụng</option>
-                    <option value="suspended">Tạm ngưng</option>
-                    <option value="cancelled">Đã hủy</option>
+                    <option value="ACTIVE">Đang áp dụng</option>
+                    <option value="INACTIVE">Đã hủy</option>
+                    <option value="EXPIRED">Hết hạn</option>
                   </select>
                 </div>
               </div>

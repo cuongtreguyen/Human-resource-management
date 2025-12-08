@@ -6,9 +6,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import fakeApi from '../../services/fakeApi';
-import { createBenefitRequest, getMyBenefitRequests } from '../../services/benefitRequestService';
-import { getUserInfo, getRole, getCurrentEmployeeId } from '../../utils/auth';
+import { getRole, getCurrentEmployeeId } from '../../utils/auth';
+import { getEmployeeBenefits, getEmployeeInsurance, getAllInsuranceContracts } from '../../services/benefitsService';
 
 const EmployeeBenefitsInsurance = () => {
   const userRole = getRole();
@@ -85,31 +84,117 @@ const EmployeeBenefitsInsurance = () => {
     try {
       setLoading(true);
       const employeeId = getCurrentEmployeeId();
-      // Gọi API lấy dữ liệu
-      const [benefitsRes, voluntaryRes, requestsRes] = await Promise.all([
-        fakeApi.getEmployeeBenefits(employeeId),
-        fakeApi.getVoluntaryInsurance(),
-        getMyBenefitRequests(employeeId)  // Dùng service mới
+      
+      // Gọi API thật từ backend
+      const [employeeBenefitsData, employeeInsuranceData, allInsuranceContractsData] = await Promise.all([
+        getEmployeeBenefits(employeeId).catch(err => {
+          console.error('Error loading employee benefits:', err);
+          return [];
+        }),
+        getEmployeeInsurance(employeeId).catch(err => {
+          console.error('Error loading employee insurance:', err);
+          return [];
+        }),
+        getAllInsuranceContracts().catch(err => {
+          console.error('Error loading insurance contracts:', err);
+          return [];
+        })
       ]);
 
-      if (benefitsRes.success) {
-        setBenefits(benefitsRes.data.benefits);
-        setMandatoryInsurance(benefitsRes.data.mandatoryInsurance);
-        setVoluntaryInsurance(benefitsRes.data.voluntaryInsurance);
-        setTotalBenefitValue(benefitsRes.data.totalBenefitValue);
-      }
+      // Map employee benefits từ API response
+      // API trả về: [{ employeeId, fullName, department, benefitId, benefitName, allowanceAmount, grantDate, status }]
+      // allowanceAmount có thể là BigDecimal (số hoặc string từ Java)
+      console.log('📋 Raw employee benefits data:', employeeBenefitsData);
+      
+      const mappedBenefits = Array.isArray(employeeBenefitsData) ? employeeBenefitsData.map(b => {
+        // Parse allowanceAmount: có thể là số, string, hoặc null
+        let allowanceValue = 0;
+        if (b.allowanceAmount !== null && b.allowanceAmount !== undefined) {
+          if (typeof b.allowanceAmount === 'string') {
+            allowanceValue = parseFloat(b.allowanceAmount) || 0;
+          } else if (typeof b.allowanceAmount === 'number') {
+            allowanceValue = b.allowanceAmount;
+          } else {
+            // Có thể là object với các field khác
+            allowanceValue = parseFloat(b.allowanceAmount) || 0;
+          }
+        }
+        
+        console.log(`💰 Benefit ${b.benefitName}: allowanceAmount = ${b.allowanceAmount} (type: ${typeof b.allowanceAmount}), parsed = ${allowanceValue}`);
+        
+        return {
+          id: b.benefitId || b.id,
+          name: b.benefitName || b.name,
+          amount: allowanceValue > 0 ? `${allowanceValue.toLocaleString('vi-VN')} VNĐ/tháng` : '0 VNĐ/tháng',
+          monthlyValue: allowanceValue,
+          status: b.status?.toLowerCase() || 'active',
+          startDate: b.grantDate || new Date().toISOString().split('T')[0],
+          description: b.benefitName || ''
+        };
+      }) : [];
+      
+      setBenefits(mappedBenefits);
+      setTotalBenefitValue(mappedBenefits.reduce((sum, b) => sum + (b.monthlyValue || 0), 0));
 
-      if (voluntaryRes.success) {
-        // Lọc ra các BH tự nguyện chưa đăng ký
-        const enrolled = benefitsRes.data.voluntaryInsurance.map(v => v.id);
-        setAvailableVoluntary(voluntaryRes.data.filter(v => !enrolled.includes(v.id)));
-      }
+      // Map employee insurance từ API response
+      // API trả về: [{ employeeId, fullName, department, contractId, insurenceName, employerRate, employeeRate, grantDate }]
+      const mappedEmployeeInsurance = Array.isArray(employeeInsuranceData) ? employeeInsuranceData : [];
+      
+      // Phân loại bảo hiểm: bắt buộc (BHXH, BHYT, BHTN) và tự nguyện
+      const mandatory = mappedEmployeeInsurance.filter(ins => 
+        ['BHXH', 'BHYT', 'BHTN', 'Bảo hiểm xã hội', 'Bảo hiểm y tế', 'Bảo hiểm thất nghiệp'].some(
+          name => ins.insurenceName?.includes(name)
+        )
+      );
+      const voluntary = mappedEmployeeInsurance.filter(ins => 
+        !['BHXH', 'BHYT', 'BHTN', 'Bảo hiểm xã hội', 'Bảo hiểm y tế', 'Bảo hiểm thất nghiệp'].some(
+          name => ins.insurenceName?.includes(name)
+        )
+      );
 
-      if (requestsRes.success) {
-        setMyRequests(requestsRes.data);
-      }
+      setMandatoryInsurance(mandatory.map(ins => ({
+        id: ins.contractId || ins.id,
+        policyNumber: `POL-${ins.contractId || ins.id}`,
+        name: ins.insurenceName || ins.name,
+        provider: 'Bảo hiểm xã hội Việt Nam',
+        startDate: ins.grantDate || new Date().toISOString().split('T')[0],
+        endDate: ins.expiry || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        employerPays: `${(ins.employerRate || 0) * 100}%`,
+        employeePays: `${(ins.employeeRate || 0) * 100}%`,
+        status: 'active',
+        dependents: 0
+      })));
+
+      setVoluntaryInsurance(voluntary.map(ins => ({
+        id: ins.contractId || ins.id,
+        name: ins.insurenceName || ins.name,
+        provider: 'Bảo hiểm xã hội Việt Nam',
+        monthlyPremium: 0,
+        status: 'enrolled',
+        startDate: ins.grantDate || new Date().toISOString().split('T')[0],
+        endDate: ins.expiry || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      })));
+
+      // Lấy danh sách bảo hiểm tự nguyện có sẵn (từ template)
+      const allInsurance = Array.isArray(allInsuranceContractsData) ? allInsuranceContractsData : [];
+      const enrolledIds = voluntary.map(v => v.contractId || v.id);
+      const availableVoluntary = allInsurance
+        .filter(ins => !enrolledIds.includes(ins.id))
+        .map(ins => ({
+          id: ins.id,
+          name: ins.insurenceName || ins.name,
+          provider: ins.provider || 'N/A',
+          monthlyPremium: 0,
+          coverage: 'N/A',
+          maxBenefit: 'N/A',
+          status: ins.status?.toLowerCase() || 'available',
+          description: ins.description || ''
+        }));
+      
+      setAvailableVoluntary(availableVoluntary);
     } catch (error) {
-      toast.error('Không thể tải dữ liệu');
+      console.error('Error loading data:', error);
+      toast.error('Không thể tải dữ liệu: ' + (error.message || 'Lỗi không xác định'));
     } finally {
       setLoading(false);
     }
