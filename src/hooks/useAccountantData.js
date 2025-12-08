@@ -76,10 +76,6 @@ export const usePayrollDashboard = () => {
           salary: item.netSalary || 0,
           status: item.status
         })),
-
-        // Placeholder cho phúc lợi
-        pendingBenefitRequests: 0,
-        pendingBenefits: []
       };
     },
     staleTime: 5 * 60 * 1000, // 5 phút

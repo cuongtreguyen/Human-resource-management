@@ -37,8 +37,25 @@ export const calculatePayroll = async (payrollData) => {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi tính lương'}`);
+    let errorMessage = 'Lỗi khi tính lương';
+    
+    try {
+      // Thử parse JSON error response từ backend
+      const errorData = await response.json();
+      if (errorData.message) {
+        errorMessage = errorData.message;
+      } else if (errorData.errorCode) {
+        errorMessage = `${errorData.errorCode}: ${errorData.message || errorMessage}`;
+      }
+    } catch (e) {
+      // Nếu không parse được JSON, dùng text
+      const errorText = await response.text();
+      errorMessage = errorText || errorMessage;
+    }
+    
+    const error = new Error(errorMessage);
+    error.response = response; // Lưu response để có thể parse thêm nếu cần
+    throw error;
   }
 
   return await response.json();
@@ -175,7 +192,16 @@ export const payPayroll = async (id) => {
     throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi thanh toán payroll'}`);
   }
 
-  return await response.json();
+  // ⚠️ FIX: Backend trả về void (empty response), không phải JSON
+  // Kiểm tra xem có content không trước khi parse JSON
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const text = await response.text();
+    return text ? JSON.parse(text) : { success: true };
+  }
+  
+  // Nếu không có content hoặc không phải JSON, trả về success
+  return { success: true };
 };
 
 /**
@@ -193,7 +219,16 @@ export const cancelPayroll = async (id) => {
     throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi hủy payroll'}`);
   }
 
-  return await response.json();
+  // ⚠️ FIX: Backend trả về void (empty response), không phải JSON
+  // Kiểm tra xem có content không trước khi parse JSON
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    const text = await response.text();
+    return text ? JSON.parse(text) : { success: true };
+  }
+  
+  // Nếu không có content hoặc không phải JSON, trả về success
+  return { success: true };
 };
 
 /**
@@ -346,6 +381,44 @@ export const getLeaveApplicationById = async (leaveId) => {
   return await response.json();
 };
 
+/**
+ * 19. Tạo bản ghi lương cho nhân viên
+ * POST /salary/record
+ */
+export const createSalaryRecord = async (salaryData) => {
+  const response = await http(`${JAVA_API}/salary/record`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(salaryData),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi lưu bảng lương'}`);
+  }
+
+  return await response.json();
+};
+
+/**
+ * 20. Cập nhật bản ghi lương
+ * PUT /salary/record/{id}
+ */
+export const updateSalaryRecord = async (id, salaryData) => {
+  const response = await http(`${JAVA_API}/salary/record/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(salaryData),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi cập nhật bảng lương'}`);
+  }
+
+  return await response.json();
+};
+
 export default {
   getMonthlyPayroll,
   calculatePayroll,
@@ -365,4 +438,6 @@ export default {
   createPolicy,
   getLeaveApplications,
   getLeaveApplicationById,
+  createSalaryRecord,
+  updateSalaryRecord,
 };
