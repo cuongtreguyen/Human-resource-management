@@ -13,12 +13,12 @@ import java.util.List;
 @Repository
 public interface SupportRequestRepository extends JpaRepository<SupportRequest, Long> {
 
-    // API Tìm kiếm tổng hợp (Keyword + Category + Status)
     @Query("SELECT s FROM SupportRequest s WHERE " +
-            "(:keyword IS NULL OR LOWER(s.title) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(s.requester.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+            "(:keyword IS NULL OR LOWER(s.title) LIKE :pattern OR LOWER(s.requester.fullName) LIKE :pattern) " +
             "AND (:category IS NULL OR s.category = :category) " +
             "AND (:status IS NULL OR s.status = :status)")
-    List<SupportRequest> searchRequests(@Param("keyword") String keyword,
+    List<SupportRequest> searchRequests(@Param("keyword") String keyword,   // Dùng để check null
+                                        @Param("pattern") String pattern,   // Dùng để so sánh LIKE
                                         @Param("category") SupportCategory category,
                                         @Param("status") SupportStatus status);
 

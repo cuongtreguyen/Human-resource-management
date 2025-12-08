@@ -462,6 +462,11 @@ public class OnLeaveService {
         return (long) pendingLeaves.size();
     }
 
+    public Long countAllPendingOnLeaveRequests() {
+        List<OnLeave> pendingLeaves = onLeaveRepository.findByOnLeaveStatus(OnLeaveStatus.PENDING);
+        return (long) pendingLeaves.size();
+    }
+
     public Map<String, Long> getLeaveSummary(Long id) {
         List<OnLeave> allLeaves = onLeaveRepository.findByEmployeeId(id);
         

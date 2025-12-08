@@ -143,6 +143,15 @@ public class OnLeaveController {
         return ResponseEntity.ok(service.countPendingOnLeaveRequestsById(id));
     }
 
+    @GetMapping("/countLeaveReq")
+    @Operation(summary = "Đếm tất cả đơn xin nghỉ chờ duyệt", description = "Count leave requests pending")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success")
+    })
+    public ResponseEntity<Long> countAllPendingOnLeaveRequests() {
+        return ResponseEntity.ok(service.countAllPendingOnLeaveRequests());
+    }
+
     @GetMapping("/onLeaveRequestWaiting/{id}")
     @Operation(summary = "Đếm tất cả loại đơn theo ID", description = "Count pending leave requests for an employee")
     @ApiResponses({

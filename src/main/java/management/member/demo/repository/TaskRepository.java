@@ -64,4 +64,19 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
             "WHERE t.board.id = :boardId " + // Điều kiện lọc theo Board ID
             "GROUP BY t.taskStatus")
     List<Object[]> countTasksByBoardId(@Param("boardId") Long boardId);
+
+    // Đếm số task quá hạn (deadline < hiện tại và status != COMPLETED)
+    @Query("SELECT COUNT(t) FROM Task t " +
+            "WHERE t.deadline < :currentDate " +
+            "AND t.taskStatus != :completedStatus")
+    long countOverdueTasks(@Param("currentDate") LocalDate currentDate,
+                          @Param("completedStatus") TaskStatus completedStatus);
+
+    // Lấy các task sắp đến hạn (deadline = tomorrow và status != COMPLETED)
+    @Query("SELECT DISTINCT t FROM Task t " +
+            "LEFT JOIN FETCH t.employees " +
+            "WHERE t.deadline = :tomorrow " +
+            "AND t.taskStatus != :completedStatus")
+    List<Task> findUpcomingTasks(@Param("tomorrow") LocalDate tomorrow,
+                                 @Param("completedStatus") TaskStatus completedStatus);
 }

@@ -38,19 +38,45 @@ public class SupportRequestService {
 
     // 2. API Tìm kiếm & Lọc (Keyword, Danh mục, Trạng thái)
     public List<SupportRequestResponse> getAllRequests(String keyword, String categoryStr, String statusStr) {
+        // 1. Xử lý Category
         SupportCategory category = null;
         if (categoryStr != null && !categoryStr.isEmpty()) {
-            try { category = SupportCategory.valueOf(categoryStr.toUpperCase()); } catch (Exception e) {}
+            try {
+                category = SupportCategory.valueOf(categoryStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Log error hoặc bỏ qua tùy nghiệp vụ
+            }
         }
 
+        // 2. Xử lý Status
         SupportStatus status = null;
         if (statusStr != null && !statusStr.isEmpty()) {
-            try { status = SupportStatus.valueOf(statusStr.toUpperCase()); } catch (Exception e) {}
+            try {
+                status = SupportStatus.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Log error hoặc bỏ qua
+            }
         }
 
-        List<SupportRequest> requests = supportRequestRepository.searchRequests(keyword, category, status);
+        // 3. Xử lý Keyword & Pattern (LOGIC FIX LỖI Ở ĐÂY)
+        String searchPattern = null;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            // Chuẩn hóa keyword: cắt khoảng trắng thừa
+            String trimmedKeyword = keyword.trim();
+            // Tạo pattern: %keyword_thường%
+            searchPattern = "%" + trimmedKeyword.toLowerCase() + "%";
+        } else {
+            // Nếu keyword rỗng hoặc chỉ toàn dấu cách, gán null để Query bỏ qua điều kiện tìm kiếm
+            keyword = null;
+        }
 
-        return requests.stream().map(this::toResponse).collect(Collectors.toList());
+        // 4. Gọi Repository với tham số mới
+        List<SupportRequest> requests = supportRequestRepository.searchRequests(keyword, searchPattern, category, status);
+
+        // 5. Map sang Response
+        return requests.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
     // 3. API Xem chi tiết
