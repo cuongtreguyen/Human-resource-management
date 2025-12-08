@@ -64,5 +64,6 @@ public class PayrollStatisticsController {
         Map<String, Object> filters = payrollStatisticsService.getFilterOptions();
         return ResponseEntity.ok(filters);
     }
+
 }
 

@@ -1,16 +1,23 @@
 package management.member.demo.service;
 
 import management.member.demo.dto.DashboardPayrollStatisticsDTO;
+import management.member.demo.dto.EmployeeByDepartmentStatisticsDTO;
+import management.member.demo.dto.EmployeeStatisticsDTO;
 import management.member.demo.dto.MonthlyPayrollDTO;
 import management.member.demo.dto.PayrollByDepartmentDTO;
 import management.member.demo.dto.PayrollStatisticsDTO;
 import management.member.demo.dto.WaitingPayrollListDTO;
+import management.member.demo.dto.WeeklyAttendanceStatisticsDTO;
+import management.member.demo.entity.Attendance;
 import management.member.demo.entity.Employee;
 import management.member.demo.entity.EmployeeBenefits;
+import management.member.demo.entity.OnLeave;
 import management.member.demo.entity.Payroll;
 import management.member.demo.entity.Salary;
+import management.member.demo.enums.AttendenceStatus;
 import management.member.demo.enums.BenefitsStatus;
 import management.member.demo.enums.EmployeeStatus;
+import management.member.demo.enums.OnLeaveStatus;
 import management.member.demo.enums.PayrollStatus;
 import management.member.demo.repository.*;
 import management.member.demo.repository.SalaryRepository;
@@ -42,6 +49,12 @@ public class PayrollStatisticsService {
 
     @Autowired
     private EmployeeBenefitsRepository employeeBenefitsRepository;
+
+    @Autowired
+    private OnLeaveRepository onLeaveRepository;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
 
     /**
      * Tổng lương thực lĩnh của tất cả nhân viên có trạng thái payroll là PAID (tháng hiện tại)
@@ -597,6 +610,407 @@ public class PayrollStatisticsService {
         filters.put("selectedMonth", months);
         
         return filters;
+    }
+
+    /**
+     * Đếm nhân viên có trạng thái hoạt động (ACTIVE)
+     * @return Số lượng nhân viên có status = ACTIVE
+     */
+    public Long countActiveEmployees() {
+        return employeeRepository.countByStatus(EmployeeStatus.ACTIVE);
+    }
+
+    /**
+     * Đếm nhân viên mới được add vào trong tháng (tháng hiện tại)
+     * @return Số lượng nhân viên có hireDate trong tháng hiện tại
+     */
+    public Long countNewEmployeesThisMonth() {
+        LocalDate now = LocalDate.now();
+        YearMonth currentMonth = YearMonth.from(now);
+        LocalDate firstDayOfMonth = currentMonth.atDay(1);
+        LocalDate lastDayOfMonth = currentMonth.atEndOfMonth();
+        
+        return employeeRepository.findAll().stream()
+                .filter(e -> e.getHireDate() != null &&
+                        !e.getHireDate().isBefore(firstDayOfMonth) &&
+                        !e.getHireDate().isAfter(lastDayOfMonth))
+                .count();
+    }
+
+    /**
+     * Đếm số đơn nghỉ phép (tổng số đơn) và số đơn chờ duyệt (status = PENDING)
+     * @return Map chứa totalLeaveRequests (tổng số đơn) và pendingLeaveRequests (số đơn chờ duyệt)
+     */
+    public Map<String, Long> countLeaveRequests() {
+        Map<String, Long> result = new HashMap<>();
+        
+        // Tổng số đơn nghỉ phép
+        long totalLeaveRequests = onLeaveRepository.count();
+        result.put("totalLeaveRequests", totalLeaveRequests);
+        
+        // Số đơn chờ duyệt (status = PENDING)
+        long pendingLeaveRequests = onLeaveRepository.countByOnLeaveStatus(OnLeaveStatus.PENDING);
+        result.put("pendingLeaveRequests", pendingLeaveRequests);
+        
+        return result;
+    }
+
+    /**
+     * Đếm tổng lương thực nhận (netSalary) của tất cả nhân viên trong tháng (tháng hiện tại)
+     * Lấy từ Salary entity có payroll với period trong tháng hiện tại
+     * @return Tổng netSalary của tất cả nhân viên trong tháng
+     */
+    public BigDecimal getTotalNetSalaryThisMonth() {
+        LocalDate now = LocalDate.now();
+        YearMonth currentMonth = YearMonth.from(now);
+        
+        // Lấy tất cả payroll có period (tháng lương) trong tháng hiện tại
+        List<Payroll> payrolls = payrollRepository.findAll().stream()
+                .filter(p -> p.getPeriod() != null &&
+                        YearMonth.from(p.getPeriod()).equals(currentMonth))
+                .collect(Collectors.toList());
+        
+        // Lấy tất cả salary từ các payroll này và tính tổng netSalary
+        return payrolls.stream()
+                .flatMap(payroll -> salaryRepository.findByPayrollId(payroll.getId()).stream())
+                .map(salary -> salary.getNetSalary() != null ? salary.getNetSalary() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Đếm nhân viên check in đúng giờ trong tháng hiện tại
+     * Check in đúng giờ: có checkIn và status = IN_WORK (không phải LATE)
+     * @return Số lượng nhân viên check in đúng giờ trong tháng
+     */
+    public Long countOnTimeCheckInsThisMonth() {
+        LocalDate now = LocalDate.now();
+        YearMonth currentMonth = YearMonth.from(now);
+        LocalDate firstDayOfMonth = currentMonth.atDay(1);
+        LocalDate lastDayOfMonth = currentMonth.atEndOfMonth();
+        
+        // Lấy tất cả attendance trong tháng
+        List<Attendance> attendances = attendanceRepository.findByDateRange(firstDayOfMonth, lastDayOfMonth);
+        
+        // Đếm số nhân viên có checkIn và status = IN_WORK (không phải LATE)
+        return attendances.stream()
+                .filter(a -> a.getCheckIn() != null &&
+                        a.getStatus() == AttendenceStatus.IN_WORK)
+                .map(a -> a.getEmployee() != null ? a.getEmployee().getId() : null)
+                .filter(id -> id != null)
+                .distinct()
+                .count();
+    }
+
+    /**
+     * Đếm nhân viên check in trễ trong tháng hiện tại
+     * Check in trễ: có checkIn và status = LATE
+     * @return Số lượng nhân viên check in trễ trong tháng
+     */
+    public Long countLateCheckInsThisMonth() {
+        LocalDate now = LocalDate.now();
+        YearMonth currentMonth = YearMonth.from(now);
+        LocalDate firstDayOfMonth = currentMonth.atDay(1);
+        LocalDate lastDayOfMonth = currentMonth.atEndOfMonth();
+        
+        // Lấy tất cả attendance trong tháng
+        List<Attendance> attendances = attendanceRepository.findByDateRange(firstDayOfMonth, lastDayOfMonth);
+        
+        // Đếm số nhân viên có checkIn và status = LATE
+        return attendances.stream()
+                .filter(a -> a.getCheckIn() != null &&
+                        a.getStatus() == AttendenceStatus.LATE)
+                .map(a -> a.getEmployee() != null ? a.getEmployee().getId() : null)
+                .filter(id -> id != null)
+                .distinct()
+                .count();
+    }
+
+    /**
+     * Đếm nhân viên vắng mặt trong tháng hiện tại
+     * Vắng mặt: status = NOT_CHECKED_IN hoặc không có attendance record trong ngày làm việc
+     * Tính theo số ngày làm việc trong tháng (trừ cuối tuần)
+     * @return Số lượng nhân viên vắng mặt (tổng số ngày vắng mặt của tất cả nhân viên)
+     */
+    public Long countAbsentEmployeesThisMonth() {
+        LocalDate now = LocalDate.now();
+        YearMonth currentMonth = YearMonth.from(now);
+        LocalDate firstDayOfMonth = currentMonth.atDay(1);
+        LocalDate lastDayOfMonth = currentMonth.atEndOfMonth();
+        
+        // Lấy tất cả nhân viên ACTIVE
+        List<Employee> activeEmployees = employeeRepository.findByStatus(EmployeeStatus.ACTIVE);
+        
+        // Lấy tất cả attendance trong tháng
+        List<Attendance> attendances = attendanceRepository.findByDateRange(firstDayOfMonth, lastDayOfMonth);
+        
+        // Tạo map: employeeId -> Set<LocalDate> (các ngày đã có attendance)
+        Map<Long, java.util.Set<LocalDate>> employeeAttendanceDates = attendances.stream()
+                .filter(a -> a.getEmployee() != null && a.getEmployee().getId() != null)
+                .collect(Collectors.groupingBy(
+                        a -> a.getEmployee().getId(),
+                        Collectors.mapping(
+                                Attendance::getAttendanceDate,
+                                Collectors.toSet()
+                        )
+                ));
+        
+        // Đếm số ngày vắng mặt
+        long totalAbsentDays = 0;
+        for (Employee employee : activeEmployees) {
+            Long employeeId = employee.getId();
+            java.util.Set<LocalDate> attendedDates = employeeAttendanceDates.getOrDefault(employeeId, java.util.Collections.emptySet());
+            
+            // Đếm số ngày làm việc trong tháng (trừ cuối tuần)
+            LocalDate dateToCheck = firstDayOfMonth;
+            while (!dateToCheck.isAfter(lastDayOfMonth)) {
+                // Chỉ tính các ngày trong tuần (Monday-Friday)
+                final LocalDate currentDate = dateToCheck; // Make effectively final for lambda
+                java.time.DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
+                if (dayOfWeek != java.time.DayOfWeek.SATURDAY && dayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                    // Nếu không có attendance record hoặc status = NOT_CHECKED_IN
+                    if (!attendedDates.contains(currentDate)) {
+                        totalAbsentDays++;
+                    } else {
+                        // Kiểm tra nếu có attendance nhưng status = NOT_CHECKED_IN
+                        Attendance attendance = attendances.stream()
+                                .filter(a -> a.getEmployee() != null &&
+                                        a.getEmployee().getId().equals(employeeId) &&
+                                        a.getAttendanceDate().equals(currentDate))
+                                .findFirst()
+                                .orElse(null);
+                        if (attendance != null && attendance.getStatus() == AttendenceStatus.NOT_CHECKED_IN) {
+                            totalAbsentDays++;
+                        }
+                    }
+                }
+                dateToCheck = dateToCheck.plusDays(1);
+            }
+        }
+        
+        return totalAbsentDays;
+    }
+
+    /**
+     * Tỷ lệ chấm công trung bình trong tháng hiện tại
+     * Tỷ lệ = (Số nhân viên đã check in / Tổng số nhân viên ACTIVE) * 100
+     * Tính theo số ngày làm việc trong tháng (trừ cuối tuần)
+     * @return Tỷ lệ chấm công trung bình (0-100)
+     */
+    public BigDecimal getAverageAttendanceRateThisMonth() {
+        LocalDate now = LocalDate.now();
+        YearMonth currentMonth = YearMonth.from(now);
+        LocalDate firstDayOfMonth = currentMonth.atDay(1);
+        LocalDate lastDayOfMonth = currentMonth.atEndOfMonth();
+        
+        // Lấy tất cả nhân viên ACTIVE
+        List<Employee> activeEmployees = employeeRepository.findByStatus(EmployeeStatus.ACTIVE);
+        long totalEmployees = activeEmployees.size();
+        
+        if (totalEmployees == 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        // Đếm số ngày làm việc trong tháng (trừ cuối tuần)
+        long workingDays = 0;
+        LocalDate currentDate = firstDayOfMonth;
+        while (!currentDate.isAfter(lastDayOfMonth)) {
+            java.time.DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
+            if (dayOfWeek != java.time.DayOfWeek.SATURDAY && dayOfWeek != java.time.DayOfWeek.SUNDAY) {
+                workingDays++;
+            }
+            currentDate = currentDate.plusDays(1);
+        }
+        
+        // Tổng số lượt chấm công lý tưởng = số nhân viên * số ngày làm việc
+        long totalExpectedCheckIns = totalEmployees * workingDays;
+        
+        // Lấy tất cả attendance trong tháng có checkIn (không phải NOT_CHECKED_IN)
+        List<Attendance> attendances = attendanceRepository.findByDateRange(firstDayOfMonth, lastDayOfMonth);
+        long totalActualCheckIns = attendances.stream()
+                .filter(a -> a.getCheckIn() != null &&
+                        a.getStatus() != AttendenceStatus.NOT_CHECKED_IN)
+                .count();
+        
+        // Tính tỷ lệ: (totalActualCheckIns / totalExpectedCheckIns) * 100
+        if (totalExpectedCheckIns == 0) {
+            return BigDecimal.ZERO;
+        }
+        
+        BigDecimal rate = new BigDecimal(totalActualCheckIns)
+                .divide(new BigDecimal(totalExpectedCheckIns), 4, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"));
+        
+        return rate.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Lấy tất cả thống kê nhân viên và chấm công (8 hàm thống kê)
+     * @return EmployeeStatisticsDTO chứa tất cả 8 thống kê
+     */
+    public EmployeeStatisticsDTO getEmployeeStatistics() {
+        EmployeeStatisticsDTO stats = new EmployeeStatisticsDTO();
+        
+        // 1. Đếm nhân viên có trạng thái hoạt động
+        stats.setActiveEmployees(countActiveEmployees());
+        
+        // 2. Đếm nhân viên mới được add vào trong tháng
+        stats.setNewEmployeesThisMonth(countNewEmployeesThisMonth());
+        
+        // 3. Đếm số đơn nghỉ phép và số đơn chờ duyệt
+        Map<String, Long> leaveRequestsMap = countLeaveRequests();
+        EmployeeStatisticsDTO.LeaveRequestsStatistics leaveRequests = new EmployeeStatisticsDTO.LeaveRequestsStatistics();
+        leaveRequests.setTotalLeaveRequests(leaveRequestsMap.get("totalLeaveRequests"));
+        leaveRequests.setPendingLeaveRequests(leaveRequestsMap.get("pendingLeaveRequests"));
+        stats.setLeaveRequests(leaveRequests);
+        
+        // 4. Đếm tổng lương thực nhận của tất cả nhân viên trong tháng
+        stats.setTotalNetSalaryThisMonth(getTotalNetSalaryThisMonth());
+        
+        // 5. Đếm nhân viên check in đúng giờ
+        stats.setOnTimeCheckInsThisMonth(countOnTimeCheckInsThisMonth());
+        
+        // 6. Đếm nhân viên check in trễ
+        stats.setLateCheckInsThisMonth(countLateCheckInsThisMonth());
+        
+        // 7. Đếm nhân viên vắng mặt
+        stats.setAbsentEmployeesThisMonth(countAbsentEmployeesThisMonth());
+        
+        // 8. Tỷ lệ chấm công trung bình
+        stats.setAverageAttendanceRateThisMonth(getAverageAttendanceRateThisMonth());
+        
+        return stats;
+    }
+
+    /**
+     * Lấy thống kê attendance (đúng giờ, trễ, vắng mặt) của tất cả nhân viên
+     * Chia theo từng ngày trong 1 tuần (7 ngày gần nhất)
+     * @return WeeklyAttendanceStatisticsDTO chứa thống kê theo từng ngày
+     */
+    public WeeklyAttendanceStatisticsDTO getWeeklyAttendanceStatistics() {
+        LocalDate today = LocalDate.now();
+        
+        // Lấy 7 ngày gần nhất (bao gồm hôm nay và 6 ngày trước)
+        List<WeeklyAttendanceStatisticsDTO.DailyAttendanceStatistics> dailyStats = new ArrayList<>();
+        
+        // Lấy tất cả nhân viên ACTIVE
+        List<Employee> activeEmployees = employeeRepository.findByStatus(EmployeeStatus.ACTIVE);
+        
+        // Lấy tất cả attendance trong 7 ngày gần nhất
+        LocalDate startDate = today.minusDays(6); // 7 ngày: từ 6 ngày trước đến hôm nay
+        LocalDate endDate = today;
+        List<Attendance> attendances = attendanceRepository.findByDateRange(startDate, endDate);
+        
+        // Tạo map: date -> List<Attendance> để dễ truy vấn
+        Map<LocalDate, List<Attendance>> attendanceByDate = attendances.stream()
+                .collect(Collectors.groupingBy(Attendance::getAttendanceDate));
+        
+        // Tạo map: employeeId -> Set<LocalDate> để biết nhân viên nào đã có attendance
+        Map<Long, java.util.Set<LocalDate>> employeeAttendanceDates = attendances.stream()
+                .filter(a -> a.getEmployee() != null && a.getEmployee().getId() != null)
+                .collect(Collectors.groupingBy(
+                        a -> a.getEmployee().getId(),
+                        Collectors.mapping(
+                                Attendance::getAttendanceDate,
+                                Collectors.toSet()
+                        )
+                ));
+        
+        // Tính toán cho từng ngày
+        for (int i = 0; i < 7; i++) {
+            LocalDate date = today.minusDays(6 - i); // Từ ngày xa nhất đến hôm nay
+            
+            WeeklyAttendanceStatisticsDTO.DailyAttendanceStatistics dailyStat = 
+                    new WeeklyAttendanceStatisticsDTO.DailyAttendanceStatistics();
+            dailyStat.setDate(date);
+            
+            // Lấy attendance của ngày này
+            List<Attendance> dayAttendances = attendanceByDate.getOrDefault(date, new ArrayList<>());
+            
+            // Đếm số nhân viên check in đúng giờ (status = IN_WORK)
+            long onTimeCount = dayAttendances.stream()
+                    .filter(a -> a.getCheckIn() != null &&
+                            a.getStatus() == AttendenceStatus.IN_WORK)
+                    .map(a -> a.getEmployee() != null ? a.getEmployee().getId() : null)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .count();
+            dailyStat.setOnTimeCount(onTimeCount);
+            
+            // Đếm số nhân viên check in trễ (status = LATE)
+            long lateCount = dayAttendances.stream()
+                    .filter(a -> a.getCheckIn() != null &&
+                            a.getStatus() == AttendenceStatus.LATE)
+                    .map(a -> a.getEmployee() != null ? a.getEmployee().getId() : null)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .count();
+            dailyStat.setLateCount(lateCount);
+            
+            // Đếm số nhân viên vắng mặt
+            // Vắng mặt = không có attendance record hoặc status = NOT_CHECKED_IN
+            long absentCount = 0;
+            for (Employee employee : activeEmployees) {
+                Long employeeId = employee.getId();
+                java.util.Set<LocalDate> attendedDates = employeeAttendanceDates.getOrDefault(employeeId, java.util.Collections.emptySet());
+                
+                if (!attendedDates.contains(date)) {
+                    // Không có attendance record = vắng mặt
+                    absentCount++;
+                } else {
+                    // Có attendance record nhưng kiểm tra status
+                    Attendance attendance = dayAttendances.stream()
+                            .filter(a -> a.getEmployee() != null &&
+                                    a.getEmployee().getId().equals(employeeId))
+                            .findFirst()
+                            .orElse(null);
+                    if (attendance != null && attendance.getStatus() == AttendenceStatus.NOT_CHECKED_IN) {
+                        absentCount++;
+                    }
+                }
+            }
+            dailyStat.setAbsentCount(absentCount);
+            
+            dailyStats.add(dailyStat);
+        }
+        
+        WeeklyAttendanceStatisticsDTO result = new WeeklyAttendanceStatisticsDTO();
+        result.setDailyStatistics(dailyStats);
+        
+        return result;
+    }
+
+    /**
+     * Đếm số lượng nhân viên theo phòng ban
+     * @return EmployeeByDepartmentStatisticsDTO chứa danh sách phòng ban và số lượng nhân viên
+     */
+    public EmployeeByDepartmentStatisticsDTO countEmployeesByDepartment() {
+        // Lấy tất cả nhân viên
+        List<Employee> allEmployees = employeeRepository.findAll();
+        
+        // Nhóm theo phòng ban và đếm số lượng
+        Map<String, Long> departmentCountMap = allEmployees.stream()
+                .filter(e -> e.getDepartment() != null && !e.getDepartment().isEmpty())
+                .collect(Collectors.groupingBy(
+                        Employee::getDepartment,
+                        Collectors.counting()
+                ));
+        
+        // Chuyển đổi sang DTO
+        List<EmployeeByDepartmentStatisticsDTO.DepartmentStatistics> departmentStats = departmentCountMap.entrySet().stream()
+                .map(entry -> {
+                    EmployeeByDepartmentStatisticsDTO.DepartmentStatistics stat = 
+                            new EmployeeByDepartmentStatisticsDTO.DepartmentStatistics();
+                    stat.setDepartment(entry.getKey());
+                    stat.setEmployeeCount(entry.getValue());
+                    return stat;
+                })
+                .sorted((a, b) -> a.getDepartment().compareTo(b.getDepartment())) // Sắp xếp theo tên phòng ban
+                .collect(Collectors.toList());
+        
+        EmployeeByDepartmentStatisticsDTO result = new EmployeeByDepartmentStatisticsDTO();
+        result.setDepartments(departmentStats);
+        
+        return result;
     }
 }
 
