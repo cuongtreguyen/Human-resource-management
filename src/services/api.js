@@ -604,6 +604,31 @@ export const createEvaluation = async (data) => {
 };
 
 
+// ===== ADMIN DASHBOARD STATISTICS =====
+export const getAdminStatistics = async () => {
+  const response = await http(`${JAVA_API}/admin-statistics`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const getWeeklyAttendanceStats = async () => {
+  const response = await http(`${JAVA_API}/admin-statistics/weekly-attendance`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+export const getEmployeesByDepartment = async () => {
+  const response = await http(`${JAVA_API}/admin-statistics/employees-by-department`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
 /* ===== EXPORT DEFAULT ===== */
 export default {
   getEmployees,
@@ -631,4 +656,7 @@ export default {
   getEvaluations,
   createEvaluation,
   getEvaluationById,
+  getAdminStatistics,
+  getWeeklyAttendanceStats,
+  getEmployeesByDepartment,
 };
