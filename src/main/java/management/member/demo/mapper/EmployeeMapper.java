@@ -113,8 +113,8 @@ public class EmployeeMapper {
         dto.setPhone(employee.getPhone());
         dto.setPosition(employee.getPosition());
         dto.setDepartment(employee.getDepartment());
-        // Convert status enum to lowercase string
-        dto.setStatus(employee.getStatus() != null ? employee.getStatus().name().toLowerCase() : null);
+        // Map status enum directly (no conversion to lowercase)
+        dto.setStatus(employee.getStatus());
         dto.setHireDate(employee.getHireDate());
         dto.setSalary(employee.getBaseSalary());
         dto.setPersonalEmail(employee.getPersonalEmail());
