@@ -13,7 +13,6 @@ import {
   CheckCheck,
   Filter
 } from 'lucide-react';
-
 import { getNotifications, markAsRead, markAllAsRead } from '../services/notificationService';
 import { isAdmin, getRole } from '../utils/auth';
 import { toast } from 'react-toastify';
@@ -63,13 +62,11 @@ const NotificationCenter = () => {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-
       // Load tất cả notifications, filter ở frontend
       const response = await getNotifications();
       // API trả về { data: [...], success: true }
       const notificationsData = response.data || response || [];
       setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
-
     } catch (err) {
       console.error('Error loading notifications:', err);
       
@@ -111,16 +108,6 @@ const NotificationCenter = () => {
       } else {
         toast.error(`Không thể đánh dấu thông báo đã đọc: ${err.message || 'Vui lòng thử lại'}`);
       }
-    }
-  };
-
-  // ===== Đánh dấu tất cả đã đọc =====
-  const markAllAsRead = async () => {
-    try {
-      await api.markAllNotificationsRead();
-      setNotifications(notifications.map(n => ({ ...n, read: true })));
-    } catch (err) {
-      console.error('Error marking all as read:', err);
     }
   };
 
@@ -190,7 +177,6 @@ const NotificationCenter = () => {
 
   const unreadCount = notifications.filter(n => !n.read || n.read === false).length;
 
-
   const handleMarkAllAsRead = async (e) => {
     // Prevent default và stop propagation
     if (e) {
@@ -259,7 +245,6 @@ const NotificationCenter = () => {
     return notifications;
   })();
 
-
   if (loading) {
     return (
       <Layout>
@@ -278,7 +263,6 @@ const NotificationCenter = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-xl shadow-lg`}>
-
           <div>
             <h1 className="text-3xl font-bold">Trung tâm thông báo</h1>
             <p className={`${getSubtitleColor()} mt-1`}>Quản lý tất cả thông báo của bạn</p>

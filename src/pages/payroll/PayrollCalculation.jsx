@@ -6,6 +6,9 @@ import { toast } from 'react-toastify';
 import { calculatePayroll as calculatePayrollAPI, getPayrollCalculation, createSalaryRecord } from '../../services/payrollService';
 import { getEmployeeById } from '../../services/employeeService';
 
+// OT Rate: 100,000 VND per hour
+const OT_HOURLY_RATE = 100000;
+
 const PayrollCalculation = () => {
   const { employeeId } = useParams();
   const navigate = useNavigate();
@@ -15,8 +18,7 @@ const PayrollCalculation = () => {
   // Lấy employee và payroll data từ navigation state (nếu có)
   const stateEmployee = location.state?.employee;
   const statePayroll = location.state?.payroll;
-  const stateMonth = location.state?.month; // ⚠️ QUAN TRỌNG: Lấy selectedMonth từ PayrollList
-
+  const selectedMonth = location.state?.selectedMonth; // ⚠️ QUAN TRỌNG: Tháng đã chọn từ PayrollList
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -161,12 +163,44 @@ const PayrollCalculation = () => {
   };
 
   const calculatePayroll = async () => {
-    // Ưu tiên employeeId từ state (đã được match từ PayrollList)
-    const realId = stateEmployee?.employeeId || stateEmployee?.id || employeeId;
+    // ⚠️ QUAN TRỌNG: Lấy employeeId thật (Number/Long) từ nhiều nguồn
+    // Ưu tiên: stateEmployee (đã được match từ PayrollList) > employee (từ API) > URL param
+    let realId = null;
 
-    // Kiểm tra nếu employeeId là fake, tính local
-    const isFakeId = String(realId)?.startsWith('payroll-');
-    const numericEmployeeId = isFakeId ? null : Number(realId);
+    // 1. Từ stateEmployee (PayrollList đã truyền sang)
+    if (stateEmployee?.employeeId != null) {
+      realId = Number(stateEmployee.employeeId);
+    } else if (stateEmployee?.id != null && !String(stateEmployee.id).startsWith('payroll-')) {
+      realId = Number(stateEmployee.id);
+    }
+
+    // 2. Từ employee object (đã load từ API)
+    if ((realId == null || isNaN(realId)) && employee) {
+      if (employee.employeeId != null) {
+        realId = Number(employee.employeeId);
+      } else if (employee.id != null) {
+        realId = Number(employee.id);
+      }
+    }
+
+    // 3. Từ URL param (fallback cuối cùng)
+    if ((realId == null || isNaN(realId)) && employeeId && !String(employeeId).startsWith('payroll-')) {
+      realId = Number(employeeId);
+    }
+
+    // Kiểm tra nếu employeeId là fake hoặc không hợp lệ, tính local
+    const isFakeId = realId == null || isNaN(realId);
+    const numericEmployeeId = isFakeId ? null : realId;
+
+    console.log('🔍 calculatePayroll - ID sources:', {
+      stateEmployeeId: stateEmployee?.id,
+      stateEmployeeEmployeeId: stateEmployee?.employeeId,
+      employeeId: employee?.id,
+      employeeEmployeeId: employee?.employeeId,
+      urlEmployeeId: employeeId,
+      resolvedId: numericEmployeeId
+    });
+
 
     // Nếu không có employeeId thật, tính local
     if (isFakeId || isNaN(numericEmployeeId)) {
@@ -177,61 +211,69 @@ const PayrollCalculation = () => {
     }
 
     try {
-      // Prepare request data theo API spec mới
-      // ⚠️ QUAN TRỌNG: API mới có thêm month và save
-      // save: false = chỉ tính (preview), save: true = tính VÀ LƯU
-      // ⚠️ QUAN TRỌNG: Dùng stateMonth (từ PayrollList) thay vì currentMonth
-      const monthToUse = stateMonth || new Date().toISOString().slice(0, 7); // YYYY-MM
-      
+
+      // Prepare request data theo Backend DTO: PayrollCalculationForAccountantRequestDTO
+      // Backend luôn tự động lưu vào database khi tính toán (không có preview mode)
       const requestData = {
-        employeeId: numericEmployeeId, // Long (required)
+        employeeId: numericEmployeeId, // Long (required) - ID của nhân viên
         fullName: employee?.name || employee?.fullName || '',
-        baseSalary: Number(formData.basicSalary) || 0, // required
-        otHours: Number(formData.overtimeHours) || 0,
-        allowance: Number(formData.allowances) || 0,
-        generalDeductions: Number(formData.deductions) || 0,
-        bonus: Number(formData.bonuses) || 0,
-        month: monthToUse, // NEW: Tháng lương (YYYY-MM) - dùng từ PayrollList
-        save: false // NEW: false = chỉ tính (preview), không lưu
+        baseSalary: Number(formData.basicSalary) || 0, // BigDecimal (required)
+        otHours: Number(formData.overtimeHours) || 0, // BigDecimal - Số giờ OT (tự nhập)
+        // dayOff và lateDay sẽ được backend tự động tính từ attendance, không cần gửi
+        allowance: Number(formData.allowances) || 0, // BigDecimal - Phụ cấp (tự nhập)
+        generalDeductions: Number(formData.deductions) || 0, // BigDecimal - Khấu trừ chung (tự nhập)
+        bonus: Number(formData.bonuses) || 0, // BigDecimal - Thưởng (tự nhập)
+        // payrollId: optional - Nếu có, sẽ gán Salary vào Payroll này
+        month: selectedMonth || null // ⚠️ QUAN TRỌNG: Truyền tháng đã chọn để backend lưu đúng tháng
       };
 
-      console.log('📤 Calling calculatePayroll API (preview) with:', requestData);
+      console.log('📤 Calling calculatePayroll API (will auto-save to DB):', requestData);
+
       const response = await calculatePayrollAPI(requestData);
       console.log('✅ CalculatePayroll API response:', response);
 
       // Map response to calculatedPayroll state
-      // Response mới có: id (Long), employeeId (String), salaryId (nếu save=true)
-      // ⚠️ QUAN TRỌNG: Luôn lưu numericEmployeeId (Long) vào calculatedPayroll.employeeId để dùng khi lưu
+      // Backend luôn lưu vào database, response có đầy đủ thông tin đã tính toán
       setCalculatedPayroll({
         ...response,
-        employeeId: numericEmployeeId, // ⚠️ LUÔN dùng numericEmployeeId (Long) từ request, không dùng response.id vì có thể không có khi save=false
-        employeeIdString: response.employeeId || response.employeeIdString, // Lưu employeeId (String) từ response
-        salaryId: response.salaryId, // ID của Salary đã lưu (nếu có)
+        employeeId: numericEmployeeId, // ⚠️ LUÔN dùng numericEmployeeId (Long) từ request
         basicSalary: response.baseSalary,
         workingDays: formData.workingDays,
-        lateDays: Number(response.lateDay) || formData.lateDays, // BE tự động tính từ attendance
-        overtimeHours: response.otHours,
-        allowances: response.allowance,
-        bonuses: response.bonus,
-        deductions: response.generalDeductions,
-        adjustedBasicSalary: response.baseSalary, // API không trả adjusted, dùng baseSalary
-        overtimePay: response.otPay || (response.otHours * OT_HOURLY_RATE), // BE tính: otHours × 100,000 VND (ưu tiên otPay từ response)
-        generalDeductions: response.generalDeductions,
-        socialInsurance: response.socialInsurance, // BHXH 8%
-        healthInsurance: response.healthInsurance, // BHYT 1.5%
-        unemploymentInsurance: response.unemploymentInsurance, // BHTN 1%
-        personalIncomeTax: response.personalIncomeTax, // Thuế TNCN
-        totalDeductions: response.totalDeductions,
-        grossIncome: response.grossIncome,
-        netSalary: response.netSalary
+        lateDays: Number(response.lateDay) || 0, // BE tự động tính từ attendance (String -> Number)
+        overtimeHours: response.otHours ? Number(response.otHours) : 0, // BigDecimal -> Number
+        allowances: response.allowance ? Number(response.allowance) : 0, // BigDecimal -> Number
+        bonuses: response.bonus ? Number(response.bonus) : 0, // BigDecimal -> Number
+        deductions: response.generalDeductions ? Number(response.generalDeductions) : 0, // BigDecimal -> Number
+        adjustedBasicSalary: response.baseSalary ? Number(response.baseSalary) : 0, // Dùng baseSalary từ response
+        overtimePay: response.otPay ? Number(response.otPay) : 0, // BE tính: otHours × 100,000 VND
+        generalDeductions: response.generalDeductions ? Number(response.generalDeductions) : 0,
+        socialInsurance: response.socialInsurance ? Number(response.socialInsurance) : 0, // BHXH 8%
+        healthInsurance: response.healthInsurance ? Number(response.healthInsurance) : 0, // BHYT 1.5%
+        unemploymentInsurance: response.unemploymentInsurance ? Number(response.unemploymentInsurance) : 0, // BHTN 1%
+        personalIncomeTax: response.personalIncomeTax ? Number(response.personalIncomeTax) : 0, // Thuế TNCN
+        totalDeductions: response.totalDeductions ? Number(response.totalDeductions) : 0,
+        grossIncome: response.grossIncome ? Number(response.grossIncome) : 0,
+        netSalary: response.netSalary ? Number(response.netSalary) : 0,
+        status: response.status || 'AWAITING' // Status từ response
+
       });
 
-      toast.success('Đã tính lương thành công!');
+      toast.success('Đã tính và lưu lương thành công!');
     } catch (err) {
       console.error('Error calculating payroll:', err);
-      toast.error(err.message || 'Không thể tính lương. Vui lòng thử lại!');
+      
+      // Error message đã được parse trong payrollService
+      let errorMessage = err.message || 'Không thể tính lương. Vui lòng thử lại!';
+      
+      // Kiểm tra nếu là lỗi database constraint (payment_date)
+      if (errorMessage.includes('payment_date') || errorMessage.includes('paymentDate') || 
+          errorMessage.includes('null value in column')) {
+        errorMessage = '⚠️ Lỗi hệ thống: Backend thiếu thông tin ngày thanh toán (payment_date). Vui lòng liên hệ quản trị viên để sửa lỗi này.';
+      }
+      
+      toast.error(errorMessage);
 
-      // Fallback to local calculation
+      // Fallback to local calculation (chỉ hiển thị, không lưu)
       calculatePayrollLocally();
     }
   };
@@ -269,79 +311,15 @@ const PayrollCalculation = () => {
   };
 
   const handleSubmit = async () => {
+    // ⚠️ LƯU Ý: Backend đã tự động lưu vào database khi tính lương (không có preview mode)
+    // Nút "Lưu bảng lương" chỉ để quay lại trang danh sách
     if (!calculatedPayroll) {
       toast.warning('Vui lòng tính lương trước');
       return;
     }
-
-    // ⚠️ QUAN TRỌNG: Ưu tiên employeeId từ calculatedPayroll (đã lưu khi tính lương)
-    // calculatedPayroll.employeeId đã được set = numericEmployeeId (Long) khi tính lương
-    let numericEmployeeId = calculatedPayroll.employeeId;
-    
-    // Nếu không có trong calculatedPayroll, thử lấy từ state hoặc URL
-    if (!numericEmployeeId || isNaN(Number(numericEmployeeId))) {
-      numericEmployeeId = stateEmployee?.id ? Number(stateEmployee.id) : null;
-    }
-    
-    if (!numericEmployeeId || isNaN(Number(numericEmployeeId))) {
-      numericEmployeeId = employeeId && !String(employeeId).startsWith('payroll-') ? Number(employeeId) : null;
-    }
-
-    // Validate employeeId
-    if (!numericEmployeeId || isNaN(Number(numericEmployeeId))) {
-      toast.error('Không thể lưu bảng lương vì thiếu mã nhân viên hợp lệ.');
-      console.error('Cannot save payroll - missing employeeId:', {
-        calculatedPayrollEmployeeId: calculatedPayroll.employeeId,
-        calculatedPayrollType: typeof calculatedPayroll.employeeId,
-        stateEmployeeId: stateEmployee?.id,
-        stateEmployeeIdType: typeof stateEmployee?.id,
-        urlEmployeeId: employeeId,
-        urlEmployeeIdType: typeof employeeId,
-        employee: employee?.id || employee?.employeeId
-      });
-      return;
-    }
-
-    try {
-      // ⚠️ QUAN TRỌNG: API mới - gọi lại calculatePayroll với save: true để lưu vào DB
-      // ⚠️ QUAN TRỌNG: Dùng stateMonth (từ PayrollList) thay vì currentMonth
-      const monthToUse = stateMonth || new Date().toISOString().slice(0, 7); // YYYY-MM
-      
-      const requestData = {
-        employeeId: numericEmployeeId, // Long (required)
-        fullName: employee?.name || employee?.fullName || calculatedPayroll.fullName || '',
-        // ⚠️ QUAN TRỌNG: baseSalary lấy từ EmployeeID (theo BE logic)
-        // BE sẽ tự động lấy từ Employee.baseSalary nếu request.baseSalary không hợp lệ
-        baseSalary: calculatedPayroll.basicSalary || formData.basicSalary || employee?.salary || employee?.basicSalary || 0, // required - lấy từ Employee
-        otHours: calculatedPayroll.overtimeHours || formData.overtimeHours || 0, // Giờ OT (có thể từ OT approved)
-        allowance: calculatedPayroll.allowances || formData.allowances || 0, // Phụ cấp nhập tay
-        generalDeductions: calculatedPayroll.deductions || formData.deductions || 0, // Khấu trừ chung nhập tay
-        bonus: calculatedPayroll.bonuses || formData.bonuses || 0, // Thưởng nhập tay
-        month: monthToUse, // Tháng lương (YYYY-MM) - dùng từ PayrollList
-        save: true // true = tính VÀ LƯU vào DB
-      };
-
-      console.log('💾 Saving payroll with API (save=true):', requestData);
-
-      // Call API to calculate AND save payroll
-      const response = await calculatePayrollAPI(requestData);
-      console.log('✅ Save payroll API response:', response);
-
-      // Kiểm tra salaryId trong response để xác nhận đã lưu thành công
-      if (response.salaryId) {
-        toast.success(`Đã lưu bảng lương thành công cho ${employee?.name || employee?.fullName || calculatedPayroll.fullName}!`);
-        // Reload data và quay lại trang danh sách
-        navigate('/payroll');
-      } else {
-        // Nếu không có salaryId, có thể đã lưu nhưng BE không trả về
-        toast.success(`Đã lưu bảng lương cho ${employee?.name || employee?.fullName || calculatedPayroll.fullName}!`);
-        navigate('/payroll');
-      }
-    } catch (error) {
-      console.error('Error saving payroll:', error);
-      const errorMessage = error.message || 'Không thể lưu bảng lương. Vui lòng thử lại.';
-      toast.error(errorMessage);
-    }
+    // Backend đã lưu rồi, chỉ cần quay lại trang danh sách
+    toast.success(`Đã lưu bảng lương cho ${employee?.name || employee?.fullName || calculatedPayroll.fullName || 'nhân viên'}!`);
+    navigate('/payroll');
   };
 
   if (loading) {
@@ -371,7 +349,9 @@ const PayrollCalculation = () => {
     );
   }
 
-  return (
+  // Safe render với try-catch
+  try {
+    return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Header */}
       <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-2xl shadow-xl mb-6`}>
@@ -526,19 +506,19 @@ const PayrollCalculation = () => {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>Lương cơ bản (điều chỉnh):</span>
-                    <span className="font-medium">{calculatedPayroll.adjustedBasicSalary.toLocaleString()} VND</span>
+                    <span className="font-medium">{((calculatedPayroll.adjustedBasicSalary || calculatedPayroll.basicSalary || 0)).toLocaleString()} VND</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Tiền tăng ca:</span>
-                    <span className="font-medium">{calculatedPayroll.overtimePay.toLocaleString()} VND</span>
+                    <span className="font-medium">{(calculatedPayroll.overtimePay || 0).toLocaleString()} VND</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Phụ cấp:</span>
-                    <span className="font-medium">{calculatedPayroll.allowances.toLocaleString()} VND</span>
+                    <span className="font-medium">{(calculatedPayroll.allowances || 0).toLocaleString()} VND</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Thưởng:</span>
-                    <span className="font-medium">{calculatedPayroll.bonuses.toLocaleString()} VND</span>
+                    <span className="font-medium">{(calculatedPayroll.bonuses || 0).toLocaleString()} VND</span>
                   </div>
                 </div>
               </div>
@@ -547,38 +527,47 @@ const PayrollCalculation = () => {
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <h3 className="font-semibold text-red-800 mb-3">Khấu trừ</h3>
                 <div className="space-y-2 text-sm">
-                  {calculatedPayroll.socialInsurance && (
-                    <div className="flex justify-between">
-                      <span>BHXH (8%):</span>
-                      <span className="font-medium">{calculatedPayroll.socialInsurance.toLocaleString()} VND</span>
-                    </div>
-                  )}
-                  {calculatedPayroll.healthInsurance && (
-                    <div className="flex justify-between">
-                      <span>BHYT (1.5%):</span>
-                      <span className="font-medium">{calculatedPayroll.healthInsurance.toLocaleString()} VND</span>
-                    </div>
-                  )}
-                  {calculatedPayroll.unemploymentInsurance && (
-                    <div className="flex justify-between">
-                      <span>BHTN (1%):</span>
-                      <span className="font-medium">{calculatedPayroll.unemploymentInsurance.toLocaleString()} VND</span>
-                    </div>
-                  )}
-                  {calculatedPayroll.personalIncomeTax && (
-                    <div className="flex justify-between">
-                      <span>Thuế TNCN:</span>
-                      <span className="font-medium">{calculatedPayroll.personalIncomeTax.toLocaleString()} VND</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Khấu trừ chung:</span>
-                    <span className="font-medium">{(calculatedPayroll.generalDeductions || 0).toLocaleString()} VND</span>
-                  </div>
-                  {!calculatedPayroll.socialInsurance && (
-                    <p className="text-xs text-gray-500 mt-2 italic">
-                      * BHXH, BHYT, BHTN và Thuế TNCN sẽ được hệ thống tính toán
+                  {/* Kiểm tra xem có dữ liệu từ API không (có grossIncome hoặc totalDeductions từ API response) */}
+                  {calculatedPayroll.grossIncome != null || calculatedPayroll.totalDeductions != null ? (
+                    // Có dữ liệu từ API - hiển thị tất cả các field (backend luôn trả về, kể cả = 0)
+                    <>
+                      <div className="flex justify-between">
+                        <span>BHXH (8%):</span>
+                        <span className="font-medium">
+                          {(calculatedPayroll.socialInsurance || 0).toLocaleString()} VND
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>BHYT (1.5%):</span>
+                        <span className="font-medium">
+                          {(calculatedPayroll.healthInsurance || 0).toLocaleString()} VND
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>BHTN (1%):</span>
+                        <span className="font-medium">
+                          {(calculatedPayroll.unemploymentInsurance || 0).toLocaleString()} VND
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Thuế TNCN:</span>
+                        <span className="font-medium">
+                          {(calculatedPayroll.personalIncomeTax || 0).toLocaleString()} VND
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    // Không có dữ liệu từ API (tính local) - chỉ hiển thị ghi chú
+                    <p className="text-xs text-gray-500 italic">
+                      * BHXH, BHYT, BHTN và Thuế TNCN sẽ được hệ thống tính toán tự động khi lưu bảng lương
                     </p>
+                  )}
+                  {/* Khấu trừ chung - luôn hiển thị nếu có giá trị */}
+                  {(calculatedPayroll.generalDeductions || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span>Khấu trừ chung:</span>
+                      <span className="font-medium">{(calculatedPayroll.generalDeductions || 0).toLocaleString()} VND</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -587,31 +576,44 @@ const PayrollCalculation = () => {
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
                 <h3 className="font-semibold text-emerald-800 mb-3">Tổng kết</h3>
                 <div className="space-y-2">
-                  {calculatedPayroll.grossIncome && (
-                    <div className="flex justify-between text-sm">
-                      <span>Tổng thu nhập:</span>
-                      <span className="font-medium text-emerald-700">
-                        {calculatedPayroll.grossIncome.toLocaleString()} VND
-                      </span>
-                    </div>
-                  )}
-                  {calculatedPayroll.totalDeductions && (
-                    <div className="flex justify-between text-sm">
-                      <span>Tổng khấu trừ:</span>
-                      <span className="font-medium text-red-600">
-                        -{calculatedPayroll.totalDeductions.toLocaleString()} VND
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex justify-between text-sm">
+                    <span>Tổng thu nhập:</span>
+                    <span className="font-medium text-emerald-700">
+                      {(calculatedPayroll.grossIncome || (
+                        (calculatedPayroll.adjustedBasicSalary || calculatedPayroll.basicSalary || 0) +
+                        (calculatedPayroll.overtimePay || 0) +
+                        (calculatedPayroll.allowances || 0) +
+                        (calculatedPayroll.bonuses || 0)
+                      )).toLocaleString()} VND
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span>Tổng khấu trừ:</span>
+                    <span className="font-medium text-red-600">
+                      -{(calculatedPayroll.totalDeductions != null ? calculatedPayroll.totalDeductions : (
+                        (calculatedPayroll.socialInsurance || 0) +
+                        (calculatedPayroll.healthInsurance || 0) +
+                        (calculatedPayroll.unemploymentInsurance || 0) +
+                        (calculatedPayroll.personalIncomeTax || 0) +
+                        (calculatedPayroll.generalDeductions || 0)
+                      )).toLocaleString()} VND
+                    </span>
+                  </div>
                   <div className="flex justify-between text-lg font-bold pt-2 border-t border-emerald-300">
                     <span>Lương thực lĩnh:</span>
                     <span className="text-emerald-600">
-                      {(calculatedPayroll.netSalary || (
-                        calculatedPayroll.adjustedBasicSalary +
-                        calculatedPayroll.overtimePay +
-                        calculatedPayroll.allowances +
-                        calculatedPayroll.bonuses -
-                        (calculatedPayroll.generalDeductions || 0)
+                      {(calculatedPayroll.netSalary != null ? calculatedPayroll.netSalary : (
+                        (calculatedPayroll.adjustedBasicSalary || calculatedPayroll.basicSalary || 0) +
+                        (calculatedPayroll.overtimePay || 0) +
+                        (calculatedPayroll.allowances || 0) +
+                        (calculatedPayroll.bonuses || 0) -
+                        (
+                          (calculatedPayroll.socialInsurance || 0) +
+                          (calculatedPayroll.healthInsurance || 0) +
+                          (calculatedPayroll.unemploymentInsurance || 0) +
+                          (calculatedPayroll.personalIncomeTax || 0) +
+                          (calculatedPayroll.generalDeductions || 0)
+                        )
                       )).toLocaleString()} VND
                     </span>
                   </div>
@@ -643,7 +645,24 @@ const PayrollCalculation = () => {
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (error) {
+    console.error('Error rendering PayrollCalculation:', error);
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Đã xảy ra lỗi khi tải trang</p>
+          <p className="text-gray-500 text-sm mb-4">{error.message}</p>
+          <button
+            onClick={() => navigate('/payroll')}
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+          >
+            Quay lại
+          </button>
+        </div>
+      </div>
+    );
+  }
 };
 
 export default PayrollCalculation;

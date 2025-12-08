@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Layout from '../../components/layout/Layout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { getRole } from '../../utils/auth';
 import { toast } from 'react-toastify';
-import { getPolicies } from '../../services/payrollService';
 import {
   FileText,
   DollarSign,
@@ -15,11 +14,7 @@ import {
   AlertCircle,
   TrendingUp,
   Calendar,
-  Award,
-  Shield,
-  Percent,
-  Gift,
-  RefreshCw
+  Award
 } from 'lucide-react';
 
 const PayrollPolicies = () => {
@@ -65,59 +60,9 @@ const PayrollPolicies = () => {
     }
   };
 
-  // State cho policies từ API
-  const [policies, setPolicies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  // Load policies từ API
-  useEffect(() => {
-    loadPolicies();
-  }, []);
-
-  const loadPolicies = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await getPolicies();
-      // API trả về { success: true, data: [...] }
-      setPolicies(response.data || response || []);
-    } catch (err) {
-      console.error('Error loading policies:', err);
-      setError('Không thể tải danh sách chính sách');
-      toast.error('Không thể tải danh sách chính sách');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDownloadPDF = () => {
     // TODO: Implement PDF export when backend API is available
     toast.info('Tính năng xuất PDF đang được phát triển');
-  };
-
-  // Helper function để lấy icon theo loại policy
-  const getPolicyIcon = (type) => {
-    switch (type) {
-      case 'INSURANCE':
-        return <Shield className="h-5 w-5 text-green-500" />;
-      case 'TAX':
-        return <Percent className="h-5 w-5 text-orange-500" />;
-      case 'ALLOWANCE':
-        return <Gift className="h-5 w-5 text-purple-500" />;
-      case 'SALARY':
-        return <DollarSign className="h-5 w-5 text-blue-500" />;
-      default:
-        return <FileText className="h-5 w-5 text-gray-500" />;
-    }
-  };
-
-  // Helper function để lấy màu badge theo status
-  const getStatusBadge = (status) => {
-    if (status === 'ACTIVE') {
-      return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">Đang áp dụng</span>;
-    }
-    return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Không hoạt động</span>;
   };
 
   return (
@@ -167,66 +112,6 @@ const PayrollPolicies = () => {
               </div>
             </Card>
           </div>
-
-          {/* Dynamic Policies from API */}
-          <Card
-            title="📋 Danh sách chính sách"
-            className="mb-8"
-            actions={
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={loadPolicies}
-                disabled={loading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
-                Làm mới
-              </Button>
-            }
-          >
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600"></div>
-                <span className="ml-3 text-gray-600">Đang tải...</span>
-              </div>
-            ) : error ? (
-              <div className="text-center py-8">
-                <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-                <p className="text-red-600">{error}</p>
-                <Button variant="secondary" size="sm" onClick={loadPolicies} className="mt-3">
-                  Thử lại
-                </Button>
-              </div>
-            ) : policies.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">Chưa có chính sách nào được thiết lập</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {policies.map((policy) => (
-                  <div
-                    key={policy.id}
-                    className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        {getPolicyIcon(policy.type)}
-                        <span className="text-xs font-medium text-gray-500 uppercase">{policy.type}</span>
-                      </div>
-                      {getStatusBadge(policy.status)}
-                    </div>
-                    <h4 className="font-semibold text-gray-900 mb-2">{policy.name}</h4>
-                    <p className="text-sm text-gray-600 mb-3">{policy.description}</p>
-                    <div className="flex items-center text-xs text-gray-500">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      Hiệu lực từ: {policy.effectiveDate}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
 
           {/* Policy Sections */}
           <div className="space-y-6">
