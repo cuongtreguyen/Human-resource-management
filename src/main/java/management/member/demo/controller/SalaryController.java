@@ -31,7 +31,7 @@ public class SalaryController {
 
     @GetMapping("/{employeeId}/latest")
     @Operation(
-            summary = "Get latest salary", 
+            summary = "Get latest salary",
             description = "Calculate and get the latest salary for an employee (Lương tháng gần nhất)"
     )
     @ApiResponses({
@@ -49,7 +49,7 @@ public class SalaryController {
 
     @GetMapping("/{employeeId}/average")
     @Operation(
-            summary = "Get average salary", 
+            summary = "Get average salary",
             description = "Calculate and get the average salary for an employee (Lương trung bình)"
     )
     @ApiResponses({
@@ -67,7 +67,7 @@ public class SalaryController {
 
     @GetMapping("/{employeeId}/total-income")
     @Operation(
-            summary = "Get total income", 
+            summary = "Get total income",
             description = "Calculate and get the total income for an employee (Tổng thu nhập)"
     )
     @ApiResponses({
@@ -85,7 +85,7 @@ public class SalaryController {
 
     @GetMapping("/{employeeId}/summary")
     @Operation(
-            summary = "Get salary summary", 
+            summary = "Get salary summary",
             description = "Get salary summary including latest salary, average salary, and total income for an employee"
     )
     @ApiResponses({
@@ -141,4 +141,3 @@ public class SalaryController {
         return ResponseEntity.ok(salaryService.updateSalary(id, request));
     }
 }
-

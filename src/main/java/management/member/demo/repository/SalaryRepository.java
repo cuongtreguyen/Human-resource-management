@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SalaryRepository extends JpaRepository<Salary, Long> {
@@ -56,4 +57,8 @@ public interface SalaryRepository extends JpaRepository<Salary, Long> {
      * Lấy tất cả salary records theo payroll ID
      */
     List<Salary> findByPayrollId(Long payrollId);
+
+    // Tìm tất cả salary theo employee.employeeId (employeeId là mã nhân viên dạng String trong Employee)
+    Optional<Salary> findTopByEmployeeIdOrderByIdDesc(Long employeeId);
+
 }
