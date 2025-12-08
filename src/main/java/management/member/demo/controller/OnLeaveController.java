@@ -56,6 +56,24 @@ public class OnLeaveController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    // tạo đơn xin nghỉ phép cho nhân viên bình thường
+    @PostMapping("/createForEmployee")
+    @Operation(summary = "Create leave request", description = "Create a new leave request")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Leave request created successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid request data")
+    })
+    public ResponseEntity<CreateLeaveResponseDTO> createLeaveRequest(
+            @Valid @RequestBody CreateLeaveRequestDTO request) {
+        // Normalize request từ FE format → BE format
+        // FE có thể gửi: tasks (objects) → normalizer sẽ extract task IDs
+        normalizer.normalize(request);
+
+        // Service chỉ nhận input đã normalize
+        CreateLeaveResponseDTO response = service.createLeaveRequest(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
     @PutMapping("/{id}/status")
     @Operation(summary = "Update leave request status", description = "Update leave request status (approved|rejected)")
     @ApiResponses({
@@ -94,19 +112,17 @@ public class OnLeaveController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/history/{employeeId}")
-    @Operation(summary = "Get leave history", description = "Get leave history for an employee")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Success"),
-            @ApiResponse(responseCode = "404", description = "Employee not found")
-    })
-    public ResponseEntity<LeaveHistoryResponseDTO> getLeaveHistory(
-            @PathVariable String employeeId,
-            @RequestParam(required = false) Integer year) {
-        LeaveHistoryResponseDTO response = service.getLeaveHistory(employeeId, year);
-        return ResponseEntity.ok(response);
-    }
-
+//
+//@GetMapping("/history/{employeeId}")
+//    @Operation(summary = "Get leave history", description = "Get leave history for an employee")
+//    @ApiResponses({
+//            @ApiResponse(responseCode = "200", description = "Success"),
+//            @ApiResponse(responseCode = "404", description = "Employee not found")
+//    })
+//    public ResponseEntity<LeaveHistoryResponseDTO> getLeaveHistory(@PathVariable String employeeId) {
+//        LeaveHistoryResponseDTO response = service.getLeaveHistory(employeeId);
+//        return ResponseEntity.ok(response);
+//    }
     @GetMapping("/getLeaveListByID/{id}")
     @Operation(summary = "Lấy danh sách đơn xin nghỉ theo ID", description = "Get leave requests for an employee by ID")
     @ApiResponses({
@@ -156,6 +172,16 @@ public class OnLeaveController {
         // Gọi hàm service vừa viết ở bước trước
         return ResponseEntity.ok(service.countLeaveReq());
     }
+
+    @GetMapping("/getAllLeaveByEmployeeId/{employeeId}")
+    public ResponseEntity<List<OnLeaveListResponse>> getAllLeaveReqByEmployeeId(
+            @PathVariable Long employeeId) {
+
+        return ResponseEntity.ok(service.getAllLeaveByEmployeeId(employeeId));
+    }
+
+
+
 
     @GetMapping("/getLeaveReqByID/{id}")
     @Operation(summary = "Lấy đơn xin nghỉ theo ID đơn", description = "Get leave requests for an employee by ID")

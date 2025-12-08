@@ -573,5 +573,14 @@ public class EmployeeService {
 
         return responseBody;
     }
+
+    @Autowired
+    public EmployeeService(EmployeeRepository employeeRepository) {
+        this.employeeRepository = employeeRepository;
+    }
+
+    public Optional<Employee> findByEmail(String email) {
+        return employeeRepository.findByEmail(email);
+    }
 }
 

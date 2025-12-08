@@ -30,4 +30,13 @@ public interface OnLeaveRepository extends JpaRepository<OnLeave, Long> {
     // Trong interface OnLeaveRepository
     @Query("SELECT r.onLeaveStatus, COUNT(r) FROM OnLeave r GROUP BY r.onLeaveStatus")
     List<Object[]> countRequestGroupedByStatus();
+
+    // Lấy tất cả đơn nghỉ phép của 1 employee
+    @Query("SELECT o FROM OnLeave o WHERE o.employee.id = :employeeId")
+    List<OnLeave> findByEmployee_Id(Long employeeId);
+
+    // Kiểm tra employee có dữ liệu nghỉ phép không
+    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM OnLeave o WHERE o.employee.id = :employeeId")
+    boolean existsByEmployee_Id(Long employeeId);
+
 }

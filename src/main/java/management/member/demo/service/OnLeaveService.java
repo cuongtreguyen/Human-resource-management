@@ -208,6 +208,110 @@ public class OnLeaveService {
         return response;
     }
 
+    //tạo đơn nghỉ phép cho nhân viên
+    public CreateLeaveResponseDTO createLeaveRequest(CreateLeaveRequestDTO request) {
+        // 1. Lấy thông tin user hiện tại
+        User currentUser = authService.getCurrentUser();
+        Employee employee = currentUser.getEmployee();
+        if (employee == null) {
+            throw new ResourceNotFoundException("Employee not found for current user");
+        }
+
+        OnLeave onLeave = new OnLeave();
+        onLeave.setEmployee(employee);
+
+        // 2. Xử lý Loại nghỉ phép (Logic mapping thông minh)
+        String typeInput = request.getType() != null ? request.getType().trim().toUpperCase() : "CASUAL";
+        OnLeaveType leaveType;
+
+        switch (typeInput) {
+            case "ANNUAL":
+            case "ANNUAL_LEAVE":
+            case "NGHỈ PHÉP NĂM":
+            case "PHÉP NĂM":
+                leaveType = OnLeaveType.ANNUAL_LEAVE;
+                break;
+            case "SICK":
+            case "SICK_LEAVE":
+            case "NGHỈ ỐM":
+                leaveType = OnLeaveType.SICK_LEAVE;
+                break;
+            // ... (Các trường hợp khác tương tự như trên)
+            case "CASUAL":
+            case "CASUAL_LEAVE":
+            case "SPECIAL":
+            case "VIỆC RIÊNG":
+            default:
+                try {
+                    leaveType = OnLeaveType.valueOf(typeInput);
+                } catch (IllegalArgumentException e) {
+                    try {
+                        leaveType = OnLeaveType.valueOf(typeInput + "_LEAVE");
+                    } catch (IllegalArgumentException ex) {
+                        leaveType = OnLeaveType.CASUAL_LEAVE;
+                    }
+                }
+        }
+        onLeave.setOnLeaveType(leaveType);
+
+        // 3. Gán dữ liệu từ Request
+        onLeave.setStartDate(request.getStartDate());
+        onLeave.setEndDate(request.getEndDate());
+        onLeave.setReason(request.getReason());
+
+        // 4. Gán dữ liệu hệ thống (Mặc định)
+        onLeave.setOnLeaveStatus(OnLeaveStatus.PENDING); // Chờ duyệt
+        onLeave.setSubmittedDate(LocalDate.now());       // Ngày nộp là hôm nay
+
+        // 5. Tính toán tổng số ngày
+        calculateAndSetTotalDaysOnleave(onLeave);
+
+        // 6. Lưu xuống
+        OnLeave saved = onLeaveRepository.save(onLeave);
+        // 7. Tạo Response (Sử dụng hàm Mapper để tái sử dụng code)
+        CreateLeaveResponseDTO response = new CreateLeaveResponseDTO();
+        // --- GỌI HÀM MAPPER Ở ĐÂY ---
+        response.setData(toLeaveListItemDTO(saved));
+        // -----------------------------
+        response.setSuccess(true);
+        response.setMessage("Tạo đơn nghỉ phép thành công!");
+        return response;
+    }
+
+
+
+//    ///  ///////////////////////////////
+//    public LeaveHistoryResponseDTO getLeaveHistory(String employeeId) {
+//
+//        Long empId = Long.parseLong(employeeId);
+//
+//        // 1. Lấy employee hoặc ném lỗi
+//        Employee employee = employeeRepository.findById(empId)
+//                .orElseThrow(() ->
+//                        new ResourceNotFoundException(
+//                                ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId
+//                        )
+//                );
+//
+//        // 2. Lấy danh sách nghỉ phép
+//        List<OnLeave> leaves = onLeaveRepository.findByEmployeeId(empId);
+//
+//        // 3. Map sang DTO (sạch, rõ ràng)
+//        List<LeaveHistoryResponseDTO.LeaveHistoryItemDTO> items = leaves.stream()
+//                .map(this::toLeaveListItemDTO)
+//                .collect(Collectors.toList());
+//
+//        // 4. Tạo response
+//        LeaveHistoryResponseDTO response = new LeaveHistoryResponseDTO();
+//        response.setData(items);
+//        response.setSuccess(true);
+//
+//        return response;
+//    }
+
+
+
+
     /**
      * Update leave request status
      */
@@ -338,43 +442,14 @@ public class OnLeaveService {
     /**
      * Get leave history for an employee
      */
-    public LeaveHistoryResponseDTO getLeaveHistory(String employeeId, Integer year) {
-        Long empId = Long.parseLong(employeeId);
-        Employee employee = employeeRepository.findById(empId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
-        
-        int targetYear = year != null ? year : LocalDate.now().getYear();
-        List<OnLeave> leaves = onLeaveRepository.findByEmployeeId(empId);
-        
-        // Filter by year if specified
-        if (year != null) {
-            leaves = leaves.stream()
-                    .filter(leave -> leave.getStartDate().getYear() == targetYear || 
-                            leave.getEndDate().getYear() == targetYear)
-                    .collect(Collectors.toList());
-        }
-        
-        List<LeaveHistoryResponseDTO.LeaveHistoryItemDTO> items = leaves.stream()
-                .map(leave -> {
-                    LeaveHistoryResponseDTO.LeaveHistoryItemDTO item = new LeaveHistoryResponseDTO.LeaveHistoryItemDTO();
-                    item.setId(leave.getId().toString());
-                    item.setType(leave.getOnLeaveType().name().toLowerCase());
-                    item.setStartDate(leave.getStartDate().toString());
-                    item.setEndDate(leave.getEndDate().toString());
-                    item.setDays((int) getTotalDays(leave));
-                    item.setStatus(leave.getOnLeaveStatus().name().toLowerCase());
-                    return item;
-                })
-                .collect(Collectors.toList());
-        
-        LeaveHistoryResponseDTO response = new LeaveHistoryResponseDTO();
-        response.setData(items);
-        response.setSuccess(true);
-        
-        return response;
-    }
 
+
+    //-------------------------------------------------
+   public OnLeaveResponse getLeaveRequestById(Long id) {
+        OnLeave onLeave = onLeaveRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
+        return onLeaveMapper.toOnLeaveResponse(onLeave);
+    }
     // Legacy methods for backward compatibility
 
     public List<OnLeaveListResponse> getLeaveListByID(Long id) {
@@ -477,6 +552,16 @@ public class OnLeaveService {
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
         return onLeaveMapper.toOnLeaveResponse(onleave);
     }
+
+    public List<OnLeaveListResponse> getAllLeaveByEmployeeId(Long employeeId) {
+
+        List<OnLeave> leaves = onLeaveRepository.findByEmployee_Id(employeeId);
+
+        return onLeaveMapper.toOnLeaveListResponseList(leaves);
+    }
+
+
+
 
     public void setLeaveStatusByID(String id, OnLeaveStatus status) {
         OnLeave onleave = onLeaveRepository.findById(Long.parseLong(id))
