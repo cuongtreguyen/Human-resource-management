@@ -346,6 +346,44 @@ export const getLeaveApplicationById = async (leaveId) => {
   return await response.json();
 };
 
+/**
+ * 19. Tạo bản ghi lương cho nhân viên
+ * POST /salary/record
+ */
+export const createSalaryRecord = async (salaryData) => {
+  const response = await http(`${JAVA_API}/salary/record`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(salaryData),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi lưu bảng lương'}`);
+  }
+
+  return await response.json();
+};
+
+/**
+ * 20. Cập nhật bản ghi lương
+ * PUT /salary/record/{id}
+ */
+export const updateSalaryRecord = async (id, salaryData) => {
+  const response = await http(`${JAVA_API}/salary/record/${id}`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(salaryData),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi cập nhật bảng lương'}`);
+  }
+
+  return await response.json();
+};
+
 export default {
   getMonthlyPayroll,
   calculatePayroll,
@@ -365,4 +403,6 @@ export default {
   createPolicy,
   getLeaveApplications,
   getLeaveApplicationById,
+  createSalaryRecord,
+  updateSalaryRecord,
 };

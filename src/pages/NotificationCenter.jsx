@@ -12,8 +12,10 @@ import {
   CheckCheck,
   Filter
 } from 'lucide-react';
-import fakeApi from '../services/fakeApi';
+import { getNotifications, markAsRead, markAllAsRead } from '../services/notificationService';
 import { isAdmin, getRole } from '../utils/auth';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const NotificationCenter = () => {
   const userRole = getRole();
@@ -56,36 +58,74 @@ const NotificationCenter = () => {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getNotifications();
-      setNotifications(response.data);
+      // Load tất cả notifications, filter ở frontend
+      const response = await getNotifications();
+      // API trả về { data: [...], success: true }
+      const notificationsData = response.data || response || [];
+      setNotifications(Array.isArray(notificationsData) ? notificationsData : []);
     } catch (err) {
       console.error('Error loading notifications:', err);
+      
+      // Xử lý lỗi 403 Forbidden
+      if (err.status === 403) {
+        toast.error(`Không có quyền truy cập thông báo.\n\nVui lòng kiểm tra:\n1. Token có hợp lệ không?\n2. Role "${userRole}" có quyền truy cập endpoint này không?\n3. Backend có cho phép role của bạn truy cập không?`);
+      } else {
+        toast.error(`Không thể tải danh sách thông báo: ${err.message || 'Vui lòng thử lại'}`);
+      }
+      
+      setNotifications([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const markAsRead = async (notificationId) => {
+  const handleMarkAsRead = async (notificationId) => {
     try {
-      await fakeApi.markNotificationRead(notificationId);
-      setNotifications(notifications.map(notif =>
+      console.log('🔄 Marking notification as read:', notificationId);
+      const result = await markAsRead(notificationId);
+      console.log('✅ Mark as read result:', result);
+      
+      // Cập nhật state
+      setNotifications(prev => prev.map(notif =>
         notif.id === notificationId
           ? { ...notif, read: true }
           : notif
       ));
+      
+      toast.success('Đã đánh dấu thông báo đã đọc');
     } catch (err) {
-      console.error('Error marking notification as read:', err);
+      console.error('❌ Error marking notification as read:', err);
+      
+      // Hiển thị error message chi tiết
+      if (err.status === 403) {
+        toast.error('Không có quyền đánh dấu thông báo đã đọc. Vui lòng kiểm tra quyền truy cập.');
+      } else {
+        toast.error(`Không thể đánh dấu thông báo đã đọc: ${err.message || 'Vui lòng thử lại'}`);
+      }
     }
   };
 
   const getNotificationIcon = (type) => {
+    // Map theo backend notification types: reminder, alert, info, success, warning, error
     switch (type) {
-      case 'task_assigned': return <User className="h-5 w-5 text-blue-500" />;
-      case 'leave_approved': return <CheckCircle className="h-5 w-5 text-green-500" />;
-      case 'leave_rejected': return <AlertCircle className="h-5 w-5 text-red-500" />;
-      case 'task_delegation': return <Users className="h-5 w-5 text-purple-500" />;
-      case 'deadline_approaching': return <Clock className="h-5 w-5 text-orange-500" />;
-      default: return <Bell className="h-5 w-5 text-gray-500" />;
+      case 'reminder':
+      case 'task_assigned': 
+        return <Clock className="h-5 w-5 text-blue-500" />;
+      case 'success':
+      case 'leave_approved': 
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
+      case 'error':
+      case 'leave_rejected': 
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
+      case 'alert':
+      case 'task_delegation': 
+        return <Users className="h-5 w-5 text-purple-500" />;
+      case 'warning':
+      case 'deadline_approaching': 
+        return <AlertCircle className="h-5 w-5 text-orange-500" />;
+      case 'info':
+      default: 
+        return <Bell className="h-5 w-5 text-gray-500" />;
     }
   };
 
@@ -96,8 +136,19 @@ const NotificationCenter = () => {
     return 'border-l-gray-500 bg-gray-50';
   };
 
-  const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
+  const handleNotificationClick = async (notification) => {
+    console.log('🖱️ Notification clicked:', { id: notification.id, read: notification.read });
+    
+    // Đánh dấu đã đọc nếu chưa đọc
+    if (!notification.read || notification.read === false) {
+      try {
+        await handleMarkAsRead(notification.id);
+      } catch (err) {
+        console.error('❌ Failed to mark as read on click:', err);
+        // Không navigate nếu đánh dấu đã đọc thất bại
+        return;
+      }
+    }
 
     // Navigate based on notification type
     switch (notification.type) {
@@ -116,17 +167,75 @@ const NotificationCenter = () => {
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.read || n.read === false).length;
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const handleMarkAllAsRead = async (e) => {
+    // Prevent default và stop propagation
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('🔄 [MARK ALL AS READ] Button clicked!', {
+      unreadCount,
+      totalNotifications: notifications.length,
+      notifications: notifications.map(n => ({ id: n.id, read: n.read, title: n.title }))
+    });
+    
+    // Nếu không có notification nào, không làm gì
+    if (notifications.length === 0) {
+      console.warn('⚠️ No notifications to mark as read');
+      toast.info('Không có thông báo nào để đánh dấu');
+      return;
+    }
+    
+    try {
+      console.log('📤 [MARK ALL AS READ] Calling API...');
+      const result = await markAllAsRead();
+      console.log('✅ [MARK ALL AS READ] API success:', result);
+      
+      // Cập nhật state
+      setNotifications(prev => {
+        const updated = prev.map(n => ({ ...n, read: true }));
+        console.log('✅ [MARK ALL AS READ] State updated:', updated);
+        return updated;
+      });
+      
+      toast.success('Đã đánh dấu tất cả thông báo đã đọc');
+    } catch (err) {
+      console.error('❌ [MARK ALL AS READ] Error:', err);
+      console.error('❌ [MARK ALL AS READ] Error details:', {
+        message: err.message,
+        status: err.status,
+        stack: err.stack
+      });
+      
+      // Hiển thị error message chi tiết
+      if (err.status === 403) {
+        toast.error('Không có quyền đánh dấu tất cả thông báo đã đọc. Vui lòng kiểm tra quyền truy cập.');
+      } else {
+        toast.error(`Không thể đánh dấu tất cả thông báo đã đọc: ${err.message || 'Vui lòng thử lại'}`);
+      }
+      
+      // Fallback: Cập nhật state local nếu API fail (để test UI)
+      console.warn('⚠️ [MARK ALL AS READ] Fallback: Updating local state only');
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    }
   };
 
-  const filteredNotifications = filter === 'all'
-    ? notifications
-    : filter === 'unread'
-      ? notifications.filter(n => !n.read)
-      : notifications.filter(n => n.type.includes(filter));
+  // Filter notifications
+  const filteredNotifications = (() => {
+    if (filter === 'all') {
+      return notifications;
+    } else if (filter === 'unread') {
+      return notifications.filter(n => !n.read);
+    } else if (filter === 'task') {
+      return notifications.filter(n => n.type && n.type.includes('task'));
+    } else if (filter === 'leave') {
+      return notifications.filter(n => n.type && n.type.includes('leave'));
+    }
+    return notifications;
+  })();
 
   if (loading) {
     return (
@@ -146,21 +255,9 @@ const NotificationCenter = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className={`bg-gradient-to-r ${getBannerColor()} text-white p-6 rounded-xl shadow-lg`}>
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">Trung tâm thông báo</h1>
-              <p className={`${getSubtitleColor()} mt-1`}>Quản lý tất cả thông báo của bạn</p>
-            </div>
-            {/* Ẩn badge chuông cho Admin */}
-            {!isAdmin() && (
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl px-5 py-3 flex items-center gap-3">
-                <Bell className="h-7 w-7" />
-                <div>
-                  <div className="text-2xl font-bold">{unreadCount}</div>
-                  <div className={`${getSubtitleColor()} text-sm`}>Chưa đọc</div>
-                </div>
-              </div>
-            )}
+          <div>
+            <h1 className="text-3xl font-bold">Trung tâm thông báo</h1>
+            <p className={`${getSubtitleColor()} mt-1`}>Quản lý tất cả thông báo của bạn</p>
           </div>
         </div>
 
@@ -247,8 +344,13 @@ const NotificationCenter = () => {
 
             <div className="flex gap-2">
               <button
-                onClick={markAllAsRead}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                type="button"
+                onClick={handleMarkAllAsRead}
+                disabled={notifications.length === 0}
+                className={`flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors ${
+                  notifications.length === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                }`}
+                title={notifications.length === 0 ? 'Không có thông báo nào' : 'Đánh dấu tất cả thông báo đã đọc'}
               >
                 <CheckCheck className="h-4 w-4" />
                 Đánh dấu tất cả đã đọc

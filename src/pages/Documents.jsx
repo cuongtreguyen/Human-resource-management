@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Layout from '../components/layout/Layout';
 import { getRole } from '../utils/auth';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { X, Eye, Download } from 'lucide-react';
 
 const Documents = () => {
   const userRole = getRole();
@@ -140,9 +143,190 @@ const Documents = () => {
     }, 2000);
   };
 
+  // Tạo mẫu document content (fix cứng)
+  const generateDocumentContent = (docName) => {
+    const content = {
+      'Mẫu Hợp Đồng Nhân Viên.pdf': `
+HỢP ĐỒNG LAO ĐỘNG
+
+Căn cứ Bộ luật Lao động Việt Nam;
+Căn cứ nhu cầu và khả năng của các bên;
+
+BÊN A: Công ty ABC
+Địa chỉ: [Địa chỉ công ty]
+Mã số thuế: [MST]
+
+BÊN B: [Họ và tên nhân viên]
+CMND/CCCD: [Số CMND]
+Địa chỉ: [Địa chỉ]
+
+Hai bên thỏa thuận ký kết hợp đồng lao động với các điều khoản sau:
+
+Điều 1: Vị trí công việc
+Bên B được nhận vào làm việc tại vị trí: [Vị trí]
+Phòng ban: [Phòng ban]
+
+Điều 2: Thời hạn hợp đồng
+Từ ngày: [DD/MM/YYYY]
+Đến ngày: [DD/MM/YYYY]
+
+Điều 3: Mức lương
+Lương cơ bản: [Số tiền] VNĐ/tháng
+Các khoản phụ cấp: Theo quy định công ty
+
+Điều 4: Quyền lợi và nghĩa vụ
+- Tuân thủ nội quy công ty
+- Được hưởng bảo hiểm đầy đủ
+- Nghỉ phép theo quy định
+
+Hai bên đã đọc, hiểu và đồng ý ký tên dưới đây.
+
+Ngày [DD/MM/YYYY]
+
+BÊN A                          BÊN B
+[Chữ ký]                      [Chữ ký]
+      `,
+      'Sổ Tay Chính Sách Công Ty.pdf': `
+SỔ TAY CHÍNH SÁCH CÔNG TY
+Công ty ABC
+
+PHẦN 1: GIỚI THIỆU
+Công ty ABC là một tổ chức chuyên nghiệp, cam kết tạo môi trường làm việc tốt nhất cho nhân viên.
+
+PHẦN 2: QUY ĐỊNH CHUNG
+1. Giờ làm việc: 8:00 - 17:00 (Nghỉ trưa 12:00 - 13:00)
+2. Nghỉ phép: 12 ngày/năm
+3. Nghỉ ốm: Theo quy định pháp luật
+4. Nghỉ thai sản: 6 tháng
+
+PHẦN 3: QUYỀN LỢI
+- Lương thưởng cạnh tranh
+- Bảo hiểm đầy đủ (BHXH, BHYT, BHTN)
+- Phúc lợi: Ăn trưa, xăng xe, gym
+- Đào tạo và phát triển
+
+PHẦN 4: NGHĨA VỤ
+- Tuân thủ nội quy
+- Hoàn thành công việc đúng hạn
+- Bảo mật thông tin công ty
+
+Ban hành: 10/01/2024
+      `,
+      'Đơn Xin Nghỉ Phép.docx': `
+ĐƠN XIN NGHỈ PHÉP
+
+Kính gửi: Ban Giám đốc / Quản lý trực tiếp
+
+Tôi tên là: [Họ và tên]
+Mã nhân viên: [Mã NV]
+Phòng ban: [Phòng ban]
+Chức vụ: [Chức vụ]
+
+Tôi viết đơn này để xin nghỉ phép từ ngày [DD/MM/YYYY] đến ngày [DD/MM/YYYY]
+Tổng số ngày nghỉ: [Số ngày] ngày
+Lý do: [Lý do nghỉ phép]
+
+Tôi cam kết:
+- Hoàn thành công việc trước khi nghỉ
+- Bàn giao công việc cho đồng nghiệp
+- Quay lại làm việc đúng hạn
+
+Xin cảm ơn!
+
+Ngày [DD/MM/YYYY]
+Người làm đơn
+[Chữ ký]
+      `,
+      'Chứng Chỉ Đào Tạo.pdf': `
+CHỨNG CHỈ ĐÀO TẠO
+
+Công ty ABC xác nhận:
+
+Ông/Bà: [Họ và tên]
+Mã nhân viên: [Mã NV]
+Phòng ban: [Phòng ban]
+
+Đã hoàn thành khóa đào tạo:
+Tên khóa học: [Tên khóa học]
+Thời gian: Từ [DD/MM/YYYY] đến [DD/MM/YYYY]
+Số giờ: [Số giờ] giờ
+Kết quả: [Đạt/Không đạt]
+
+Chứng chỉ này có giá trị trong hệ thống đào tạo nội bộ của công ty.
+
+Ngày cấp: [DD/MM/YYYY]
+
+Giám đốc Đào tạo
+[Chữ ký]
+      `,
+      'Báo Cáo Tháng 01-2024.pdf': `
+BÁO CÁO THÁNG 01/2024
+Phòng ban: [Phòng ban]
+
+I. TỔNG QUAN
+- Tổng số nhân viên: [Số lượng]
+- Nhân viên mới: [Số lượng]
+- Nhân viên nghỉ việc: [Số lượng]
+
+II. HOẠT ĐỘNG
+1. Dự án hoàn thành: [Số lượng]
+2. Dự án đang thực hiện: [Số lượng]
+3. Tỷ lệ hoàn thành: [%]
+
+III. TÀI CHÍNH
+- Ngân sách: [Số tiền] VNĐ
+- Chi phí: [Số tiền] VNĐ
+- Còn lại: [Số tiền] VNĐ
+
+IV. ĐÁNH GIÁ
+- Điểm mạnh: [Nội dung]
+- Điểm cần cải thiện: [Nội dung]
+
+Ngày báo cáo: 01/02/2024
+Người báo cáo: [Họ và tên]
+      `
+    };
+    return content[docName] || 'Nội dung tài liệu';
+  };
+
+  // Tạo file download
+  const createDownloadFile = (content, fileName, mimeType) => {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const [previewDoc, setPreviewDoc] = useState(null);
+
   const downloadDocument = (document) => {
-    // Simulate download
-    alert(`Đang tải ${document.name}...`);
+    try {
+      const content = generateDocumentContent(document.name);
+      const extension = document.name.split('.').pop().toLowerCase();
+      const mimeType = extension === 'pdf' 
+        ? 'application/pdf' 
+        : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      
+      createDownloadFile(content, document.name, mimeType);
+      toast.success(`Đang tải xuống ${document.name}`);
+    } catch (error) {
+      console.error('Error downloading:', error);
+      toast.error('Không thể tải xuống tài liệu');
+    }
+  };
+
+  const handleView = (document) => {
+    const content = generateDocumentContent(document.name);
+    setPreviewDoc({ ...document, content });
+  };
+
+  const closePreview = () => {
+    setPreviewDoc(null);
   };
 
   const deleteDocument = (documentId) => {
@@ -317,14 +501,16 @@ const Documents = () => {
                 <div className="mt-4 flex space-x-2">
                   <button
                     onClick={() => downloadDocument(document)}
-                    className={`flex-1 px-3 py-2 ${accentColor.bg} text-white rounded-lg ${accentColor.hover} transition-all duration-200 text-sm`}
+                    className={`flex-1 px-3 py-2 ${accentColor.bg} text-white rounded-lg ${accentColor.hover} transition-all duration-200 text-sm flex items-center justify-center gap-2`}
                   >
+                    <Download size={16} />
                     Tải xuống
                   </button>
                   <button
-                    onClick={() => {/* View details */}}
-                    className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm"
+                    onClick={() => handleView(document)}
+                    className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-all duration-200 text-sm flex items-center justify-center gap-2"
                   >
+                    <Eye size={16} />
                     Xem
                   </button>
                 </div>
@@ -387,6 +573,48 @@ const Documents = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* Preview Modal */}
+          {previewDoc && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{getFileIcon(previewDoc.name)}</div>
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900">{previewDoc.name}</h2>
+                      <p className="text-sm text-gray-500">{previewDoc.category} • {previewDoc.size}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => downloadDocument(previewDoc)}
+                      className={`px-4 py-2 ${accentColor.bg} text-white rounded-lg ${accentColor.hover} transition-colors flex items-center gap-2`}
+                    >
+                      <Download size={18} />
+                      Tải xuống
+                    </button>
+                    <button
+                      onClick={closePreview}
+                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <pre className="whitespace-pre-wrap font-sans text-sm text-gray-800 leading-relaxed">
+                      {previewDoc.content}
+                    </pre>
+                  </div>
+                </div>
               </div>
             </div>
           )}

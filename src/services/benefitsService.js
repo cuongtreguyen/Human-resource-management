@@ -77,8 +77,27 @@ export const deleteBenefit = async (benefitId) => {
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi xóa phúc lợi'}`);
+    let errorMessage = 'Lỗi khi xóa phúc lợi';
+    let errorText = '';
+    try {
+      errorText = await response.text();
+      if (errorText) {
+        // Cố gắng parse JSON error response từ backend
+        try {
+          const errorObj = JSON.parse(errorText);
+          errorMessage = errorObj.message || errorObj.errorCode || errorMessage;
+        } catch {
+          // Nếu không phải JSON, dùng text gốc
+          errorMessage = errorText;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing error response:', e);
+    }
+    const error = new Error(`HTTP ${response.status}: ${errorMessage}`);
+    error.status = response.status;
+    error.message = errorMessage;
+    throw error;
   }
 
   return await response.json();
@@ -208,7 +227,14 @@ export const createInsuranceContract = async (insuranceData) => {
  * PUT /api/insurance-contracts/{insurenceName}
  */
 export const updateInsuranceContract = async (insurenceName, insuranceData) => {
-  const response = await http(`${JAVA_API}/insurance-contracts/${insurenceName}`, {
+  // Encode tên bảo hiểm cho URL (hỗ trợ tiếng Việt)
+  const encodedName = encodeURIComponent(insurenceName);
+  console.log('📤 API updateInsuranceContract:', {
+    url: `${JAVA_API}/insurance-contracts/${encodedName}`,
+    data: insuranceData
+  });
+
+  const response = await http(`${JAVA_API}/insurance-contracts/${encodedName}`, {
     method: 'PUT',
     headers: getAuthHeaders(),
     body: JSON.stringify(insuranceData),
@@ -216,10 +242,13 @@ export const updateInsuranceContract = async (insurenceName, insuranceData) => {
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('❌ API updateInsuranceContract error:', response.status, errorText);
     throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi cập nhật bảo hiểm'}`);
   }
 
-  return await response.json();
+  const result = await response.json();
+  console.log('✅ API updateInsuranceContract success:', result);
+  return result;
 };
 
 /**
@@ -227,17 +256,40 @@ export const updateInsuranceContract = async (insurenceName, insuranceData) => {
  * DELETE /api/insurance-contracts/{insurenceName}
  */
 export const deleteInsuranceContract = async (insurenceName) => {
-  const response = await http(`${JAVA_API}/insurance-contracts/${insurenceName}`, {
+  // Encode tên bảo hiểm cho URL (hỗ trợ tiếng Việt)
+  const encodedName = encodeURIComponent(insurenceName);
+
+  const response = await http(`${JAVA_API}/insurance-contracts/${encodedName}`, {
     method: 'DELETE',
     headers: getAuthHeaders(),
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP ${response.status}: ${errorText || 'Lỗi khi xóa bảo hiểm'}`);
+    let errorMessage = 'Lỗi khi xóa bảo hiểm';
+    let errorText = '';
+    try {
+      errorText = await response.text();
+      if (errorText) {
+        // Cố gắng parse JSON error response từ backend
+        try {
+          const errorObj = JSON.parse(errorText);
+          errorMessage = errorObj.message || errorObj.errorCode || errorMessage;
+        } catch {
+          // Nếu không phải JSON, dùng text gốc
+          errorMessage = errorText;
+        }
+      }
+    } catch (e) {
+      console.error('Error parsing error response:', e);
+    }
+    const error = new Error(errorMessage);
+    error.status = response.status;
+    error.response = errorText;
+    throw error;
   }
 
-  return await response.json();
+  // DELETE trả về 200 OK với body rỗng (ResponseEntity<Void>), không cần parse JSON
+  return { success: true };
 };
 
 // ============================================

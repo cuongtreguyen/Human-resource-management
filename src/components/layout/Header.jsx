@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Menu, Bell, User, LogOut, X, Trash2 } from 'lucide-react';
 import { getRole } from '../../utils/auth';
-import fakeApi from '../../services/fakeApi';
+import { getNotifications, markAsRead } from '../../services/notificationService';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const Header = ({ onLogout, onMenuClick }) => {
   const navigate = useNavigate();
@@ -12,9 +14,16 @@ const Header = ({ onLogout, onMenuClick }) => {
   const [loading, setLoading] = useState(true);
   const notificationRef = useRef(null);
 
-  // Load notifications
+  // Load notifications on mount and auto-refresh every 30 seconds
   useEffect(() => {
     loadNotifications();
+    
+    // Auto-refresh notifications every 30 seconds
+    const interval = setInterval(() => {
+      loadNotifications();
+    }, 30000); // 30 seconds
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Close dropdown when clicking outside
@@ -34,38 +43,90 @@ const Header = ({ onLogout, onMenuClick }) => {
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const response = await fakeApi.getNotifications();
-      setNotifications(response.data || []);
+      const response = await getNotifications();
+      // API trả về { data: [...], success: true }
+      const notificationsData = response.data || response || [];
+      const notificationsArray = Array.isArray(notificationsData) ? notificationsData : [];
+      
+      setNotifications(notificationsArray);
+      
+      // Debug: Log unread count
+      const unread = notificationsArray.filter(n => !n.read || n.read === false).length;
+      console.log('🔔 Header Notifications:', {
+        total: notificationsArray.length,
+        unread: unread,
+        notifications: notificationsArray.map(n => ({
+          id: n.id,
+          title: n.title,
+          read: n.read
+        }))
+      });
     } catch (error) {
-      console.error('Error loading notifications:', error);
-      setNotifications([]);
+      console.error('❌ Error loading notifications in Header:', error);
+      // Không set notifications = [] để giữ data cũ nếu có
+      // Chỉ log error để không làm mất thông báo đã load trước đó
+      if (error.status === 403) {
+        console.warn('⚠️ 403 Forbidden: Backend không cho phép role này truy cập notifications');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Tính unread count: chỉ tính những notification CHƯA ĐỌC (read = false)
+  // Không tính notification đã đọc, kể cả priority = 'high'
+  const unreadCount = notifications.filter(n => {
+    return n.read === false || n.read === undefined || !n.read;
+  }).length;
+  
+  // Debug unread count
+  useEffect(() => {
+    if (unreadCount > 0) {
+      console.log(`🔔 Có ${unreadCount} thông báo chưa đọc/quan trọng - Badge sẽ hiển thị`, {
+        unread: notifications.filter(n => !n.read || n.read === false).length,
+        important: notifications.filter(n => n.priority === 'high' || n.priority === 'HIGH').length,
+        total: notifications.length
+      });
+    } else {
+      console.log('🔔 Không có thông báo chưa đọc/quan trọng - Badge sẽ ẩn');
+    }
+  }, [unreadCount, notifications]);
 
-  const markAsRead = async (notificationId) => {
+  const handleMarkAsRead = async (notificationId) => {
     try {
-      await fakeApi.markNotificationRead(notificationId);
-      setNotifications(notifications.map(notif =>
+      console.log('🔄 Header: Marking notification as read:', notificationId);
+      const result = await markAsRead(notificationId);
+      console.log('✅ Header: Mark as read result:', result);
+      
+      // Cập nhật state
+      setNotifications(prev => prev.map(notif =>
         notif.id === notificationId
           ? { ...notif, read: true }
           : notif
       ));
+      
+      toast.success('Đã đánh dấu thông báo đã đọc');
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('❌ Header: Error marking notification as read:', error);
+      
+      // Hiển thị error message chi tiết
+      if (error.status === 403) {
+        toast.error('Không có quyền đánh dấu thông báo đã đọc. Vui lòng kiểm tra quyền truy cập.');
+      } else {
+        toast.error(`Không thể đánh dấu thông báo đã đọc: ${error.message || 'Vui lòng thử lại'}`);
+      }
     }
   };
 
   const deleteNotification = async (notificationId, e) => {
     e.stopPropagation(); // Ngăn chặn click event bubble lên parent
     try {
-      await fakeApi.deleteNotification(notificationId);
+      // Backend không có API delete, chỉ xóa khỏi state
       setNotifications(notifications.filter(notif => notif.id !== notificationId));
+      toast.success('Đã xóa thông báo');
     } catch (error) {
       console.error('Error deleting notification:', error);
+      toast.error('Không thể xóa thông báo');
     }
   };
 
@@ -130,13 +191,22 @@ const Header = ({ onLogout, onMenuClick }) => {
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 relative cursor-pointer z-10"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 relative cursor-pointer z-10 transition-colors"
               title="Thông báo"
               type="button"
             >
-              <Bell className="h-6 w-6 pointer-events-none" />
+              <div className="relative">
+                <Bell className="h-5 w-5 pointer-events-none" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white pointer-events-none animate-pulse shadow-lg">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full pointer-events-none"></span>
+                <span className="text-sm font-medium hidden sm:inline text-red-600 font-semibold">
+                  {unreadCount} Chưa đọc
+                </span>
               )}
             </button>
 
@@ -169,7 +239,7 @@ const Header = ({ onLogout, onMenuClick }) => {
                         key={notification.id}
                         onClick={() => {
                           if (!notification.read) {
-                            markAsRead(notification.id);
+                            handleMarkAsRead(notification.id);
                           }
                         }}
                         className={`px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors group ${
