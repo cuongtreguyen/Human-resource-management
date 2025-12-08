@@ -729,6 +729,7 @@ public class PayrollStatisticsService {
      * Đếm nhân viên vắng mặt trong tháng hiện tại
      * Vắng mặt: status = NOT_CHECKED_IN hoặc không có attendance record trong ngày làm việc
      * Tính theo số ngày làm việc trong tháng (trừ cuối tuần)
+     * ⚠️ FIX: Loại trừ nhân viên có OnLeave APPROVED, nhân viên chưa được thuê, và exclude NOT_CHECKED_IN
      * @return Số lượng nhân viên vắng mặt (tổng số ngày vắng mặt của tất cả nhân viên)
      */
     public Long countAbsentEmployeesThisMonth() {
@@ -743,9 +744,46 @@ public class PayrollStatisticsService {
         // Lấy tất cả attendance trong tháng
         List<Attendance> attendances = attendanceRepository.findByDateRange(firstDayOfMonth, lastDayOfMonth);
         
-        // Tạo map: employeeId -> Set<LocalDate> (các ngày đã có attendance)
+        // ⚠️ FIX 1: Lấy tất cả OnLeave APPROVED trong tháng để loại trừ khỏi vắng mặt
+        List<OnLeave> approvedLeaves = onLeaveRepository.findAll().stream()
+                .filter(leave -> leave.getOnLeaveStatus() == OnLeaveStatus.APPROVED &&
+                        leave.getStartDate() != null &&
+                        leave.getEndDate() != null &&
+                        !leave.getStartDate().isAfter(lastDayOfMonth) &&
+                        !leave.getEndDate().isBefore(firstDayOfMonth))
+                .collect(Collectors.toList());
+        
+        // Tạo map: employeeId -> Set<LocalDate> (các ngày có OnLeave APPROVED)
+        Map<Long, java.util.Set<LocalDate>> employeeApprovedLeaveDates = new HashMap<>();
+        for (OnLeave leave : approvedLeaves) {
+            if (leave.getEmployee() == null || leave.getEmployee().getId() == null ||
+                    leave.getStartDate() == null || leave.getEndDate() == null) {
+                continue; // Skip invalid leave records
+            }
+            
+            Long employeeId = leave.getEmployee().getId();
+            LocalDate leaveStart = leave.getStartDate();
+            LocalDate leaveEnd = leave.getEndDate();
+            
+            // Chỉ lấy các ngày trong khoảng tháng (firstDayOfMonth đến lastDayOfMonth)
+            LocalDate current = leaveStart.isBefore(firstDayOfMonth) ? firstDayOfMonth : leaveStart;
+            LocalDate end = leaveEnd.isAfter(lastDayOfMonth) ? lastDayOfMonth : leaveEnd;
+            
+            employeeApprovedLeaveDates.putIfAbsent(employeeId, new java.util.HashSet<>());
+            java.util.Set<LocalDate> dates = employeeApprovedLeaveDates.get(employeeId);
+            
+            while (!current.isAfter(end)) {
+                dates.add(current);
+                current = current.plusDays(1);
+            }
+        }
+        
+        // ⚠️ FIX 1: Tạo map: employeeId -> Set<LocalDate> (các ngày đã có attendance)
+        // Exclude NOT_CHECKED_IN để không làm giảm absentCount sai
         Map<Long, java.util.Set<LocalDate>> employeeAttendanceDates = attendances.stream()
-                .filter(a -> a.getEmployee() != null && a.getEmployee().getId() != null)
+                .filter(a -> a.getEmployee() != null && 
+                        a.getEmployee().getId() != null &&
+                        a.getStatus() != AttendenceStatus.NOT_CHECKED_IN) // Exclude NOT_CHECKED_IN
                 .collect(Collectors.groupingBy(
                         a -> a.getEmployee().getId(),
                         Collectors.mapping(
@@ -759,6 +797,7 @@ public class PayrollStatisticsService {
         for (Employee employee : activeEmployees) {
             Long employeeId = employee.getId();
             java.util.Set<LocalDate> attendedDates = employeeAttendanceDates.getOrDefault(employeeId, java.util.Collections.emptySet());
+            java.util.Set<LocalDate> approvedLeaveDates = employeeApprovedLeaveDates.getOrDefault(employeeId, java.util.Collections.emptySet());
             
             // Đếm số ngày làm việc trong tháng (trừ cuối tuần)
             LocalDate dateToCheck = firstDayOfMonth;
@@ -767,15 +806,29 @@ public class PayrollStatisticsService {
                 final LocalDate currentDate = dateToCheck; // Make effectively final for lambda
                 java.time.DayOfWeek dayOfWeek = currentDate.getDayOfWeek();
                 if (dayOfWeek != java.time.DayOfWeek.SATURDAY && dayOfWeek != java.time.DayOfWeek.SUNDAY) {
-                    // Nếu không có attendance record hoặc status = NOT_CHECKED_IN
+                    // ⚠️ FIX 3: Chỉ đếm nhân viên đã được thuê (hireDate <= currentDate)
+                    if (employee.getHireDate() != null && employee.getHireDate().isAfter(currentDate)) {
+                        dateToCheck = dateToCheck.plusDays(1);
+                        continue; // Nhân viên chưa được thuê vào ngày này, bỏ qua
+                    }
+                    
+                    // ⚠️ FIX 2: Nếu có OnLeave APPROVED trong ngày này → không tính là vắng mặt
+                    if (approvedLeaveDates.contains(currentDate)) {
+                        dateToCheck = dateToCheck.plusDays(1);
+                        continue; // Nhân viên có phép, không tính vắng mặt
+                    }
+                    
+                    // Nếu không có attendance record = vắng mặt
                     if (!attendedDates.contains(currentDate)) {
                         totalAbsentDays++;
                     } else {
-                        // Kiểm tra nếu có attendance nhưng status = NOT_CHECKED_IN
+                        // Có attendance record nhưng kiểm tra status
+                        // ⚠️ FIX: Filter checkIn != null để tránh lấy record sai
                         Attendance attendance = attendances.stream()
                                 .filter(a -> a.getEmployee() != null &&
                                         a.getEmployee().getId().equals(employeeId) &&
-                                        a.getAttendanceDate().equals(currentDate))
+                                        a.getAttendanceDate().equals(currentDate) &&
+                                        a.getCheckIn() != null) // Filter checkIn != null
                                 .findFirst()
                                 .orElse(null);
                         if (attendance != null && attendance.getStatus() == AttendenceStatus.NOT_CHECKED_IN) {
