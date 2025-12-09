@@ -629,6 +629,115 @@ export const getEmployeesByDepartment = async () => {
   return handleResponse(response);
 };
 
+
+// trong src/services/api.js (ở phần LEAVE MANAGEMENT)
+
+export const getLeaveBalance = async (employeeId) => {
+  const response = await http(`${JAVA_API}/leaves/balance/${employeeId}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  // handleResponse sẽ trả về object balance hoặc bọc data
+  return handleResponse(response);
+};
+
+export const getLeaveHistory = async (employeeId, year) => {
+  // lấy từ 1 Jan đến 31 Dec của year
+  const startDate = `${year}-01-01`;
+  const endDate = `${year}-12-31`;
+  const response = await http(`${JAVA_API}/leaves?employeeId=${encodeURIComponent(employeeId)}&startDate=${startDate}&endDate=${endDate}`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  // backend có thể trả {data: [...] } hoặc [...] -> bình thường hóa
+  return Array.isArray(result) ? result : (result.data || []);
+};
+
+export const createLeaveForEmployee = async (payload) => {
+  // payload phải theo schema backend (employeeId, type, startDate, endDate, reason, days, ...)
+  const response = await http(`${JAVA_API}/leaves/createForEmployee`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  return handleResponse(response);
+};
+
+// Lấy summary ngày phép của CHÍNH nhân viên hiện tại
+export const getMyLeaveSummary = async () => {
+  const response = await http(`${JAVA_API}/employee/leave/summary`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  // Swagger trả: { "remaining": 12, "used": 0, "pending": 0 }
+  return handleResponse(response);
+};
+
+// Lấy lịch sử nghỉ phép của CHÍNH nhân viên hiện tại
+export const getMyLeaveHistory = async () => {
+  const response = await http(`${JAVA_API}/employee/leave/history`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  const result = await handleResponse(response);
+  // Swagger trả về 1 array
+  return Array.isArray(result) ? result : (result.data || []);
+};
+
+
+
+/* ===== SALARY / PAYROLL ===== */
+
+// Get my latest salary
+export const getMyLatestSalary = async () => {
+  const response = await http(`${JAVA_API}/employee/salary/api/my-latest`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// Get my average salary
+export const getMyAverageSalary = async () => {
+  const response = await http(`${JAVA_API}/employee/salary/api/my-average`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// Get my total income
+export const getMyTotalIncome = async () => {
+  const response = await http(`${JAVA_API}/employee/salary/api/my-total-income`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// Get my salary summary (may return aggregated numbers or an object)
+export const getMySalarySummary = async () => {
+  const response = await http(`${JAVA_API}/employee/salary/api/my-summary`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+// Optional: history / records (if backend provides)
+export const getPayrollRecords = async (params = {}) => {
+  // params: { page, size, year } -> build query string if needed
+  const qs = new URLSearchParams(params).toString();
+  const url = `${JAVA_API}/employee/salary/history${qs ? `?${qs}` : ''}`; // adjust path if backend uses another
+  const response = await http(url, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+
 /* ===== EXPORT DEFAULT ===== */
 export default {
   getEmployees,
@@ -659,4 +768,14 @@ export default {
   getAdminStatistics,
   getWeeklyAttendanceStats,
   getEmployeesByDepartment,
+  getLeaveBalance,
+  getLeaveHistory,
+  createLeaveForEmployee,
+  getMyLatestSalary,
+  getMyAverageSalary,
+  getMyTotalIncome,
+  getMySalarySummary,
+  getPayrollRecords,
+  getMyLeaveSummary,
+  getMyLeaveHistory,
 };
