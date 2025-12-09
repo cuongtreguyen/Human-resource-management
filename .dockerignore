@@ -31,7 +31,7 @@ Thumbs.db
 .git/
 .gitignore
 .gitattributes
-
+.node module
 # Documentation
 *.md
 !README.md
