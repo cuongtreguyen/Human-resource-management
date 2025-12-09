@@ -417,7 +417,7 @@ const EmployeeCardDetailModal = ({ isOpen, onClose, card, board, list }) => {
 // Main Component
 const EmployeeKanbanView = () => {
   const navigate = useNavigate();
-  const { boards, moveCard, updateCard } = useKanbanContext();
+  const { boards, moveCard, updateCard, loading, employees } = useKanbanContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedBoard, setSelectedBoard] = useState(null);
@@ -429,6 +429,36 @@ const EmployeeKanbanView = () => {
   // Get current user info
   const userInfo = getUserInfo();
   const employeeName = userInfo?.name || userInfo?.email?.split('@')[0] || 'employee';
+  
+  // Get current employee ID for matching assignees
+  // Try to get Long ID (Employee.id) from userInfo or employees list
+  const currentEmployeeId = useMemo(() => {
+    // First try: userInfo.id (Long - primary key)
+    if (userInfo?.id) {
+      return Number(userInfo.id);
+    }
+    
+    // Second try: find employee in employees list by employeeId (String) and get their id (Long)
+    if (userInfo?.employeeId && employees && Array.isArray(employees)) {
+      const emp = employees.find(e => 
+        e.employeeId === userInfo.employeeId || 
+        String(e.employeeId) === String(userInfo.employeeId)
+      );
+      if (emp?.id) {
+        return Number(emp.id);
+      }
+    }
+    
+    // Fallback: try userInfo.employeeId as number (if it's already a Long)
+    if (userInfo?.employeeId) {
+      const numId = Number(userInfo.employeeId);
+      if (!isNaN(numId)) {
+        return numId;
+      }
+    }
+    
+    return null;
+  }, [userInfo, employees]);
 
   // Columns definition
   const columns = [
@@ -440,15 +470,34 @@ const EmployeeKanbanView = () => {
 
   // Get all cards assigned to current employee
   const myCards = useMemo(() => {
+    if (!boards || !Array.isArray(boards)) return [];
+    
     const cards = [];
     boards.forEach(board => {
+      if (!board?.lists || !Array.isArray(board.lists)) return;
+      
       board.lists.forEach(list => {
+        if (!list?.cards || !Array.isArray(list.cards)) return;
+        
         list.cards.forEach(card => {
           // Check if employee is assigned to this card
-          const isAssigned = card.assignees?.some(a =>
-            a.name?.toLowerCase().includes(employeeName.toLowerCase()) ||
-            a.email?.toLowerCase().includes(employeeName.toLowerCase())
-          );
+          // First try to match by employee ID (Long) - more reliable
+          let isAssigned = false;
+          
+          if (currentEmployeeId && card.assigneeIds && Array.isArray(card.assigneeIds)) {
+            const empIdNum = Number(currentEmployeeId);
+            isAssigned = card.assigneeIds.includes(empIdNum);
+          }
+          
+          // Fallback: match by name or email if ID matching fails
+          if (!isAssigned && card.assignees && Array.isArray(card.assignees)) {
+            isAssigned = card.assignees.some(a =>
+              a.name?.toLowerCase().includes(employeeName.toLowerCase()) ||
+              a.email?.toLowerCase().includes(employeeName.toLowerCase()) ||
+              (currentEmployeeId && (Number(a.id) === Number(currentEmployeeId) || Number(a.employeeId) === Number(currentEmployeeId)))
+            );
+          }
+          
           if (isAssigned) {
             cards.push({ card, board, list });
           }
@@ -456,7 +505,7 @@ const EmployeeKanbanView = () => {
       });
     });
     return cards;
-  }, [boards, employeeName]);
+  }, [boards, employeeName, currentEmployeeId]);
 
   // Group cards by status
   const cardsByStatus = useMemo(() => {
@@ -505,8 +554,14 @@ const EmployeeKanbanView = () => {
 
   // Find card data by id
   const findCardData = (cardId) => {
+    if (!boards || !Array.isArray(boards)) return null;
+    
     for (const board of boards) {
+      if (!board?.lists || !Array.isArray(board.lists)) continue;
+      
       for (const list of board.lists) {
+        if (!list?.cards || !Array.isArray(list.cards)) continue;
+        
         const card = list.cards.find(c => c.id === cardId);
         if (card) return { card, board, list };
       }
@@ -636,50 +691,73 @@ const EmployeeKanbanView = () => {
         </div>
       </div>
 
-      {/* Board */}
-      <div className="p-6 overflow-x-auto">
-        {myCards.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-              <CheckSquare className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có task nào</h3>
-            <p className="text-gray-500">Bạn chưa được giao task nào. Liên hệ quản lý để được phân công công việc.</p>
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Đang tải công việc...</p>
           </div>
-        ) : (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={collisionDetectionStrategy}
-            onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex gap-4">
-              {columns.map(column => (
-                <EmployeeColumn
-                  key={column.id}
-                  column={column}
-                  cards={cardsByStatus[column.status]}
-                  onCardClick={handleCardClick}
-                />
-              ))}
-            </div>
+        </div>
+      )}
 
-            <DragOverlay>
-              {activeCard && activeSourceData ? (
-                <div className="rotate-3 w-80">
-                  <EmployeeCard
-                    card={activeCard}
-                    board={activeSourceData.board}
-                    list={activeSourceData.list}
-                    isOverlay
+      {/* Empty State - No boards */}
+      {!loading && (!boards || !Array.isArray(boards) || boards.length === 0) && (
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <Kanban className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-600 text-lg font-medium">Chưa có board nào</p>
+            <p className="text-gray-500 text-sm mt-2">Vui lòng liên hệ quản lý để được giao công việc</p>
+          </div>
+        </div>
+      )}
+
+      {/* Board */}
+      {!loading && boards && Array.isArray(boards) && boards.length > 0 && (
+        <div className="p-6 overflow-x-auto">
+          {myCards.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <CheckSquare className="w-8 h-8 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Chưa có task nào</h3>
+              <p className="text-gray-500">Bạn chưa được giao task nào. Liên hệ quản lý để được phân công công việc.</p>
+            </div>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={collisionDetectionStrategy}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="flex gap-4">
+                {columns.map(column => (
+                  <EmployeeColumn
+                    key={column.id}
+                    column={column}
+                    cards={cardsByStatus[column.status]}
+                    onCardClick={handleCardClick}
                   />
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        )}
-      </div>
+                ))}
+              </div>
+
+              <DragOverlay>
+                {activeCard && activeSourceData ? (
+                  <div className="rotate-3 w-80">
+                    <EmployeeCard
+                      card={activeCard}
+                      board={activeSourceData.board}
+                      list={activeSourceData.list}
+                      isOverlay
+                    />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          )}
+        </div>
+      )}
 
       {/* Card Detail Modal */}
       <EmployeeCardDetailModal

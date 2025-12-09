@@ -1,8 +1,10 @@
 // src/context/KanbanContext.jsx
 // Kanban Board State Management with Context API
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'react-toastify';
+import kanbanService from '../services/kanbanService';
+import { getCurrentEmployeeId } from '../utils/auth';
 
 const KanbanContext = createContext();
 
@@ -352,245 +354,717 @@ const defaultEmployees = [
 ];
 
 export const KanbanProvider = ({ children }) => {
-  // Initialize state from localStorage or use default
-  const [boards, setBoards] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : defaultBoards;
-    } catch {
-      return defaultBoards;
-    }
-  });
-
-  const [comments, setComments] = useState(defaultComments);
-  const [activities, setActivities] = useState(defaultActivities);
-  const [employees] = useState(defaultEmployees);
-  const [departments] = useState(defaultDepartments);
+  const [boards, setBoards] = useState([]);
+  const [comments, setComments] = useState({});
+  const [activities, setActivities] = useState({});
+  const [employees, setEmployees] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [currentBoard, setCurrentBoard] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const loadingBoardsRef = useRef(new Set()); // Track which boards are being loaded (use ref to avoid re-renders)
 
-  // Save to localStorage
+  // Load initial data from API
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(boards));
-  }, [boards]);
-
-  // Listen for changes from other tabs
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
+    const loadInitialData = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading Kanban data from API...');
+        
+        // Load boards from API
         try {
-          setBoards(JSON.parse(e.newValue));
-        } catch {
-          // Ignore parse errors
+          console.log('📋 Fetching boards...');
+          const boardsRes = await kanbanService.board.getAll();
+          console.log('✅ Boards response:', boardsRes);
+          const boardsData = Array.isArray(boardsRes?.data) ? boardsRes.data : 
+                           Array.isArray(boardsRes) ? boardsRes : [];
+          console.log('📊 Boards data:', boardsData);
+          setBoards(boardsData);
+        } catch (boardsError) {
+          console.error('❌ Error loading boards:', boardsError);
+          setBoards([]);
         }
+        
+        // Load employees from API
+        try {
+          console.log('👥 Fetching employees...');
+          const employeesRes = await kanbanService.employee.getAll();
+          console.log('✅ Employees response:', employeesRes);
+          const employeesData = Array.isArray(employeesRes?.data) ? employeesRes.data : 
+                               Array.isArray(employeesRes) ? employeesRes : [];
+          setEmployees(employeesData);
+        } catch (employeesError) {
+          console.error('❌ Error loading employees:', employeesError);
+          setEmployees([]);
+        }
+        
+        // Load departments from API
+        try {
+          console.log('🏢 Fetching departments...');
+          const departmentsRes = await kanbanService.employee.getDepartments();
+          console.log('✅ Departments response:', departmentsRes);
+          const departmentsData = Array.isArray(departmentsRes?.data) ? departmentsRes.data : 
+                                 Array.isArray(departmentsRes) ? departmentsRes : [];
+          setDepartments(departmentsData);
+        } catch (departmentsError) {
+          console.error('❌ Error loading departments:', departmentsError);
+          setDepartments([]);
+        }
+        
+        console.log('✅ All Kanban data loaded successfully!');
+      } catch (error) {
+        console.error('❌ Error loading initial data:', error);
+        // Fallback to empty arrays on error
+        setBoards([]);
+        setEmployees([]);
+        setDepartments([]);
+      } finally {
+        setLoading(false);
       }
     };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    
+    loadInitialData();
   }, []);
 
   // ============== BOARD OPERATIONS ==============
 
-  const createBoard = useCallback((data) => {
-    const newBoard = {
-      id: generateId(),
-      name: data.name,
-      ownerId: data.ownerId || 'current-user',
-      ownerName: data.ownerName || 'Current User',
-      ownerEmail: data.ownerEmail || 'user@company.com',
-      status: data.status || 'ACTIVE',
-      closed: false,
-      members: [
-        {
-          id: generateId(),
-          boardId: null, // Will be set below
-          accountId: data.ownerId || 'current-user',
-          name: data.ownerName || 'Current User',
-          email: data.ownerEmail || 'user@company.com',
-          role: 'OWNER',
-        },
-      ],
-      labels: [
-        { id: generateId(), boardId: null, name: 'Bug', color: 'red' },
-        { id: generateId(), boardId: null, name: 'Feature', color: 'green' },
-        { id: generateId(), boardId: null, name: 'Improvement', color: 'blue' },
-      ],
-      lists: [
-        { id: generateId(), boardId: null, name: 'TODO', position: 1.0, cards: [] },
-        { id: generateId(), boardId: null, name: 'In Progress', position: 2.0, cards: [] },
-        { id: generateId(), boardId: null, name: 'Review', position: 3.0, cards: [] },
-        { id: generateId(), boardId: null, name: 'Done', position: 4.0, cards: [] },
-      ],
-    };
-
-    // Set boardId references
-    newBoard.members = newBoard.members.map(m => ({ ...m, boardId: newBoard.id }));
-    newBoard.labels = newBoard.labels.map(l => ({ ...l, boardId: newBoard.id }));
-    newBoard.lists = newBoard.lists.map(l => ({ ...l, boardId: newBoard.id }));
-
-    setBoards(prev => [...prev, newBoard]);
-    toast.success('Tạo board thành công!');
-    return newBoard;
+  const createBoard = useCallback(async (data) => {
+    try {
+      // BE chỉ cần name, ownerId/employeeId tự lấy từ token
+      const createData = { name: data.name };
+      
+      console.log('📤 Creating board with data:', createData);
+      const response = await kanbanService.board.create(createData);
+      const newBoard = response.data || response;
+      console.log('✅ Board created:', newBoard);
+      
+      // Reload all boards to get updated list
+      try {
+        const boardsRes = await kanbanService.board.getAll();
+        const boardsData = Array.isArray(boardsRes?.data) ? boardsRes.data : 
+                         Array.isArray(boardsRes) ? boardsRes : [];
+        setBoards(boardsData);
+        console.log('✅ Boards reloaded:', boardsData);
+      } catch (reloadError) {
+        console.warn('⚠️ Failed to reload boards, adding new board to state:', reloadError);
+        // Fallback: add the new board to state even if reload fails
+        setBoards(prev => [...prev, newBoard]);
+      }
+      
+      toast.success('Tạo board thành công!');
+      return newBoard;
+    } catch (error) {
+      console.error('Error creating board:', error);
+      // Try to get error message from response
+      let errorMessage = 'Có lỗi xảy ra khi tạo board';
+      try {
+        if (error.response) {
+          const errorData = await error.response.json();
+          errorMessage = errorData.message || errorMessage;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+      toast.error(errorMessage);
+      throw error;
+    }
   }, []);
 
-  const updateBoard = useCallback((boardId, data) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? { ...board, ...data } : board
-    ));
-    toast.success('Cập nhật board thành công!');
+  const updateBoard = useCallback(async (boardId, data) => {
+    try {
+      // NOTE: API PUT /api/boards/{id} có thể chưa có, cần kiểm tra với BE
+      // Tạm thời chỉ update local state
+      setBoards(prev => prev.map(board =>
+        board.id === boardId ? { ...board, ...data } : board
+      ));
+      toast.success('Cập nhật board thành công!');
+    } catch (error) {
+      console.error('Error updating board:', error);
+      toast.error('Có lỗi xảy ra khi cập nhật board');
+      throw error;
+    }
   }, []);
 
-  const deleteBoard = useCallback((boardId) => {
-    setBoards(prev => prev.filter(board => board.id !== boardId));
-    toast.success('Xóa board thành công!');
+  const deleteBoard = useCallback(async (boardId) => {
+    try {
+      await kanbanService.board.delete(boardId);
+      setBoards(prev => prev.filter(board => board.id !== boardId));
+      toast.success('Xóa board thành công!');
+    } catch (error) {
+      console.error('Error deleting board:', error);
+      toast.error('Có lỗi xảy ra khi xóa board');
+      throw error;
+    }
   }, []);
 
-  const getBoardById = useCallback((boardId) => {
-    return boards.find(board => board.id === boardId);
-  }, [boards]);
+  const getBoardById = useCallback(async (boardId) => {
+    if (!boardId || boardId === 'undefined') {
+      return { id: boardId, name: 'Unknown Board', lists: [] };
+    }
+    
+    const boardIdStr = String(boardId);
+    
+    // Quick check: if already loading, return cached board if available
+    if (loadingBoardsRef.current.has(boardIdStr)) {
+      const cached = boards.find(b => String(b.id) === boardIdStr);
+      if (cached?.lists?.length > 0) {
+        return cached;
+      }
+    }
+    
+    // Find board in local state
+    let localBoard = boards.find(b => String(b.id) === boardIdStr);
+    
+    // If not found, reload boards list once
+    if (!localBoard) {
+      try {
+        const boardsRes = await kanbanService.board.getAll();
+        const boardsData = Array.isArray(boardsRes?.data) ? boardsRes.data : Array.isArray(boardsRes) ? boardsRes : [];
+        setBoards(boardsData);
+        localBoard = boardsData.find(b => String(b.id) === boardIdStr);
+        if (!localBoard) {
+          return { id: boardId, name: 'Unknown Board', lists: [] };
+        }
+      } catch {
+        return { id: boardId, name: 'Unknown Board', lists: [] };
+      }
+    }
+    
+    // If board already has valid lists with cards, return immediately
+    if (localBoard.lists?.length > 0 && localBoard.lists.every(l => l.cards !== undefined)) {
+      return localBoard;
+    }
+    
+    // Mark as loading
+    loadingBoardsRef.current.add(boardIdStr);
+    
+    try {
+      // Load lists and labels in parallel
+      const [listsRes, labelsRes] = await Promise.all([
+        kanbanService.list.getByBoard(boardId),
+        kanbanService.label.getByBoard(boardId).catch(() => ({ data: [] })), // Fallback to empty if labels fail
+      ]);
+      
+      let listsData = Array.isArray(listsRes?.data) ? listsRes.data : Array.isArray(listsRes) ? listsRes : [];
+      const labelsData = Array.isArray(labelsRes?.data) ? labelsRes.data : Array.isArray(labelsRes) ? labelsRes : [];
+      
+      // Create default lists if needed (parallel)
+      if (listsData.length === 0) {
+        const defaultListNames = ['TODO', 'In Progress', 'Review', 'Done'];
+        const createdLists = await Promise.all(
+          defaultListNames.map((name, index) =>
+            kanbanService.list.create(boardId, { name, position: index + 1 })
+              .then(res => res.data || res)
+              .catch(() => null)
+          )
+        );
+        const validLists = createdLists.filter(Boolean);
+        if (validLists.length > 0) {
+          const reloadedRes = await kanbanService.list.getByBoard(boardId);
+          listsData = Array.isArray(reloadedRes?.data) ? reloadedRes.data : Array.isArray(reloadedRes) ? reloadedRes : [];
+        }
+      }
+      
+      // Return board with lists and labels immediately (progressive loading)
+      const boardWithLists = { 
+        ...localBoard, 
+        lists: listsData.map(l => ({ ...l, cards: [] })),
+        labels: labelsData,
+      };
+      
+      // Update state immediately with lists and labels (without cards)
+      setBoards(prev => prev.map(b => String(b.id) === boardIdStr ? boardWithLists : b));
+      
+      // Load cards in parallel (non-blocking)
+      Promise.all(
+        listsData.map(async (list) => {
+          try {
+            const cardsRes = await kanbanService.card.getByList(list.id);
+            const cards = Array.isArray(cardsRes?.data) ? cardsRes.data : Array.isArray(cardsRes) ? cardsRes : [];
+            
+            // Map assigneeIds (Long) to assignees objects from employees list
+            // BE trả về assigneeIds là mảng Long (id của Employee entity), không phải employeeId string
+            const cardsWithAssignees = cards.map(card => {
+              if (card.assigneeIds && Array.isArray(card.assigneeIds) && card.assigneeIds.length > 0) {
+                const assignees = employees
+                  .filter(emp => {
+                    // Employee.id là Long (primary key), đây là field BE dùng trong assigneeIds
+                    const empId = emp.id != null ? Number(emp.id) : null;
+                    return empId != null && !isNaN(empId) && card.assigneeIds.includes(empId);
+                  })
+                  .map(emp => ({
+                    id: Number(emp.id), // Long ID từ Employee entity
+                    employeeId: emp.employeeId || emp.id, // String employeeId hoặc fallback
+                    name: emp.fullName || emp.name || 'Unknown',
+                    email: emp.email || '',
+                    department: emp.department || '',
+                    position: emp.position || '',
+                  }))
+                  .filter(a => a.id != null);
+                
+                return { ...card, assignees };
+              }
+              return { ...card, assignees: [] };
+            });
+            
+            return { listId: list.id, cards: cardsWithAssignees };
+          } catch {
+            return { listId: list.id, cards: [] };
+          }
+        })
+      ).then(cardsResults => {
+        // Update state with cards after they load
+        setBoards(prev => prev.map(b => {
+          if (String(b.id) === boardIdStr) {
+            return {
+              ...b,
+              lists: b.lists.map(list => {
+                const cardsResult = cardsResults.find(cr => String(cr.listId) === String(list.id));
+                return cardsResult ? { ...list, cards: cardsResult.cards } : list;
+              })
+            };
+          }
+          return b;
+        }));
+      });
+      
+      loadingBoardsRef.current.delete(boardIdStr);
+      return boardWithLists;
+    } catch (error) {
+      loadingBoardsRef.current.delete(boardIdStr);
+      return { ...localBoard, lists: [] };
+    }
+  }, [boards, employees]); // Add employees to dependencies for assignee mapping
 
   // ============== LIST OPERATIONS ==============
 
-  const createList = useCallback((boardId, data) => {
-    const board = boards.find(b => b.id === boardId);
-    if (!board) return null;
-
-    const maxPosition = Math.max(...board.lists.map(l => l.position), 0);
-    const newList = {
-      id: generateId(),
-      boardId,
-      name: data.name,
-      position: data.position || maxPosition + 1.0,
-      cards: [],
-    };
-
-    setBoards(prev => prev.map(b =>
-      b.id === boardId ? { ...b, lists: [...b.lists, newList] } : b
-    ));
-    toast.success('Tạo danh sách thành công!');
-    return newList;
-  }, [boards]);
-
-  const updateList = useCallback((boardId, listId, data) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        lists: board.lists.map(list =>
-          list.id === listId ? { ...list, ...data } : list
-        ),
-      } : board
-    ));
+  const createList = useCallback(async (boardId, data) => {
+    if (!boardId || boardId === 'undefined') {
+      console.error('Invalid boardId for createList:', boardId);
+      toast.error('Board ID không hợp lệ');
+      return null;
+    }
+    
+    try {
+      const response = await kanbanService.list.create(boardId, { name: data.name });
+      const newList = response.data || response;
+      
+      // Update local state - add new list to board
+      setBoards(prev => prev.map(b => {
+        if (b.id === boardId || String(b.id) === String(boardId)) {
+          const currentLists = b.lists || [];
+          return {
+            ...b,
+            lists: [...currentLists, newList]
+          };
+        }
+        return b;
+      }));
+      
+      toast.success('Tạo danh sách thành công!');
+      return newList;
+    } catch (error) {
+      console.error('Error creating list:', error);
+      toast.error('Có lỗi xảy ra khi tạo danh sách');
+      throw error;
+    }
   }, []);
 
-  const deleteList = useCallback((boardId, listId) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        lists: board.lists.filter(list => list.id !== listId),
-      } : board
-    ));
-    toast.success('Xóa danh sách thành công!');
+  const updateList = useCallback(async (boardId, listId, data) => {
+    try {
+      await kanbanService.list.update(listId, data);
+      
+      // Update local state
+      setBoards(prev => prev.map(board =>
+        board.id === boardId ? {
+          ...board,
+          lists: board.lists.map(list =>
+            list.id === listId ? { ...list, ...data } : list
+          ),
+        } : board
+      ));
+    } catch (error) {
+      console.error('Error updating list:', error);
+      toast.error('Có lỗi xảy ra khi cập nhật danh sách');
+      throw error;
+    }
+  }, []);
+
+  const deleteList = useCallback(async (boardId, listId) => {
+    try {
+      await kanbanService.list.delete(listId);
+      
+      // Update local state - remove list from board
+      setBoards(prev => prev.map(board => {
+        if (board.id === boardId || String(board.id) === String(boardId)) {
+          return {
+            ...board,
+            lists: (board.lists || []).filter(list => list.id !== listId)
+          };
+        }
+        return board;
+      }));
+      
+      toast.success('Xóa danh sách thành công!');
+    } catch (error) {
+      console.error('Error deleting list:', error);
+      toast.error('Có lỗi xảy ra khi xóa danh sách');
+      throw error;
+    }
   }, []);
 
   // ============== CARD OPERATIONS ==============
 
-  const createCard = useCallback((boardId, listId, data) => {
-    const board = boards.find(b => b.id === boardId);
-    if (!board) return null;
-
-    const list = board.lists.find(l => l.id === listId);
-    if (!list) return null;
-
-    const maxPosition = Math.max(...list.cards.map(c => c.position), 0);
-    const newCard = {
-      id: generateId(),
-      listId,
-      title: data.title,
-      description: data.description || '',
-      position: data.position || maxPosition + 1.0,
-      priority: data.priority || 'MEDIUM',
-      dueDate: data.dueDate || null,
-      assignees: data.assignees || [],
-      labels: data.labels || [],
-      attachmentCount: 0,
-      commentCount: 0,
-      checkListProgress: null,
-    };
-
-    setBoards(prev => prev.map(b =>
-      b.id === boardId ? {
-        ...b,
-        lists: b.lists.map(l =>
-          l.id === listId ? { ...l, cards: [...l.cards, newCard] } : l
-        ),
-      } : b
-    ));
-    toast.success('Tạo thẻ thành công!');
-    return newCard;
-  }, [boards]);
-
-  const updateCard = useCallback((boardId, listId, cardId, data) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        lists: board.lists.map(list =>
-          list.id === listId ? {
-            ...list,
-            cards: list.cards.map(card =>
-              card.id === cardId ? { ...card, ...data } : card
-            ),
-          } : list
-        ),
-      } : board
-    ));
-  }, []);
-
-  const deleteCard = useCallback((boardId, listId, cardId) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        lists: board.lists.map(list =>
-          list.id === listId ? {
-            ...list,
-            cards: list.cards.filter(card => card.id !== cardId),
-          } : list
-        ),
-      } : board
-    ));
-    toast.success('Xóa thẻ thành công!');
-  }, []);
-
-  const moveCard = useCallback((boardId, sourceListId, targetListId, cardId, targetPosition) => {
-    setBoards(prev => prev.map(board => {
-      if (board.id !== boardId) return board;
-
-      let movedCard = null;
-      const newLists = board.lists.map(list => {
-        if (list.id === sourceListId) {
-          const card = list.cards.find(c => c.id === cardId);
-          if (card) {
-            movedCard = { ...card, listId: targetListId, position: targetPosition };
+  const createCard = useCallback(async (boardId, listId, data) => {
+    try {
+      // Validate listId - must be a number (Long), not a temporary string ID
+      if (typeof listId === 'string' && (listId.startsWith('list-todo') || listId.startsWith('list-in-progress') || listId.startsWith('list-review') || listId.startsWith('list-done'))) {
+        console.error('❌ Invalid listId:', listId, '- Cannot use temporary IDs. List must be created via API first.');
+        toast.error('Danh sách chưa được tạo. Vui lòng tải lại trang.');
+        throw new Error('Invalid listId: temporary ID not allowed');
+      }
+      
+      console.log('📤 Creating card with listId:', listId, 'data:', data);
+      // BE chỉ nhận 'title', không nhận 'description' khi tạo card
+      const response = await kanbanService.card.create(listId, {
+        title: data.title
+      });
+      const newCard = response.data || response;
+      console.log('✅ Card created:', newCard);
+      
+      // Reload cards for the list to get updated data from BE
+      try {
+        const cardsRes = await kanbanService.card.getByList(listId);
+        const cards = Array.isArray(cardsRes?.data) ? cardsRes.data : Array.isArray(cardsRes) ? cardsRes : [];
+        
+            // Map assigneeIds (Long) to assignees objects
+            // BE trả về assigneeIds là mảng Long (id của Employee entity)
+            const cardsWithAssignees = cards.map(card => {
+              if (card.assigneeIds && Array.isArray(card.assigneeIds) && card.assigneeIds.length > 0) {
+                const assignees = employees
+                  .filter(emp => {
+                    // Employee.id là Long (primary key)
+                    const empId = emp.id != null ? Number(emp.id) : null;
+                    return empId != null && !isNaN(empId) && card.assigneeIds.includes(empId);
+                  })
+                  .map(emp => ({
+                    id: Number(emp.id), // Long ID từ Employee entity
+                    employeeId: emp.employeeId || emp.id, // String employeeId hoặc fallback
+                    name: emp.fullName || emp.name || 'Unknown',
+                    email: emp.email || '',
+                    department: emp.department || '',
+                    position: emp.position || '',
+                  }))
+                  .filter(a => a.id != null);
+                
+                return { ...card, assignees };
+              }
+              return { ...card, assignees: [] };
+            });
+        
+        // Update local state - replace cards for the list
+        setBoards(prev => prev.map(b => {
+          if (b.id === boardId || String(b.id) === String(boardId)) {
+            return {
+              ...b,
+              lists: (b.lists || []).map(list => {
+                if (list.id === listId || String(list.id) === String(listId)) {
+                  return {
+                    ...list,
+                    cards: cardsWithAssignees
+                  };
+                }
+                return list;
+              })
+            };
           }
-          return { ...list, cards: list.cards.filter(c => c.id !== cardId) };
+          return b;
+        }));
+      } catch (reloadError) {
+        console.warn('⚠️ Failed to reload cards, updating local state only:', reloadError);
+        // Fallback: update local state directly
+        setBoards(prev => prev.map(b => {
+          if (b.id === boardId || String(b.id) === String(boardId)) {
+            return {
+              ...b,
+              lists: (b.lists || []).map(list => {
+                if (list.id === listId || String(list.id) === String(listId)) {
+                  return {
+                    ...list,
+                    cards: [...(list.cards || []), { ...newCard, assignees: [] }]
+                  };
+                }
+                return list;
+              })
+            };
+          }
+          return b;
+        }));
+      }
+      
+      toast.success('Tạo thẻ thành công!');
+      return newCard;
+    } catch (error) {
+      console.error('Error creating card:', error);
+      let errorMessage = 'Có lỗi xảy ra khi tạo thẻ';
+      try {
+        if (error.response) {
+          const errorData = await error.response.json();
+          errorMessage = errorData.message || errorMessage;
+        } else if (error.message) {
+          errorMessage = error.message;
         }
-        return list;
-      });
+      } catch (e) {
+        // Ignore parse errors
+      }
+      toast.error(errorMessage);
+      throw error;
+    }
+  }, []);
 
-      if (!movedCard) return board;
-
-      const finalLists = newLists.map(list => {
-        if (list.id === targetListId) {
-          const cards = [...list.cards, movedCard].sort((a, b) => a.position - b.position);
-          return { ...list, cards };
+  const updateCard = useCallback(async (boardId, listId, cardId, data) => {
+    try {
+      // Transform data to match BE API format
+      const updateData = { ...data };
+      
+      // If assignees is provided, convert to assigneeIds (must be numbers/Long)
+      // assigneeIds phải là Employee.id (Long), không phải employeeId (String)
+      if (data.assignees && Array.isArray(data.assignees)) {
+        updateData.assigneeIds = data.assignees.map(a => {
+          // a.id là Long (Employee.id), không phải employeeId string
+          const id = a.id != null ? Number(a.id) : null;
+          if (id == null || isNaN(id)) {
+            console.warn('⚠️ Invalid assignee ID:', a);
+            return null;
+          }
+          return id;
+        }).filter(id => id != null);
+        delete updateData.assignees;
+      }
+      
+      // Ensure assigneeIds are numbers (not strings) - Employee.id (Long)
+      if (data.assigneeIds && Array.isArray(data.assigneeIds)) {
+        updateData.assigneeIds = data.assigneeIds.map(id => {
+          const numId = typeof id === 'string' ? Number(id) : id;
+          if (isNaN(numId)) {
+            console.warn('⚠️ Invalid assigneeId (not a number):', id);
+            return null;
+          }
+          return numId;
+        }).filter(id => id != null);
+      }
+      
+      // If labels is provided, convert to labelIds
+      if (data.labels && Array.isArray(data.labels)) {
+        updateData.labelIds = data.labels.map(l => l.id || l);
+        delete updateData.labels;
+      }
+      
+      // Only send fields that BE accepts: title, description, priority, dueDate, assigneeIds, labelIds, reminderDate
+      const allowedFields = ['title', 'description', 'priority', 'dueDate', 'assigneeIds', 'labelIds', 'reminderDate'];
+      const filteredData = Object.keys(updateData).reduce((acc, key) => {
+        if (allowedFields.includes(key) && updateData[key] !== undefined) {
+          acc[key] = updateData[key];
         }
-        return list;
-      });
+        return acc;
+      }, {});
+      
+      console.log('📤 Updating card:', cardId, 'with data:', filteredData);
+      await kanbanService.card.update(cardId, filteredData);
+      
+      // Reload card from BE to get updated data (including assigneeIds)
+      try {
+        const updatedCardRes = await kanbanService.card.getById(cardId);
+        const updatedCard = updatedCardRes.data || updatedCardRes;
+        
+        // Map assigneeIds (Long) to assignees objects
+        // BE trả về assigneeIds là mảng Long (id của Employee entity)
+        if (updatedCard.assigneeIds && Array.isArray(updatedCard.assigneeIds) && updatedCard.assigneeIds.length > 0) {
+          updatedCard.assignees = employees
+            .filter(emp => {
+              // Employee.id là Long (primary key)
+              const empId = emp.id != null ? Number(emp.id) : null;
+              return empId != null && !isNaN(empId) && updatedCard.assigneeIds.includes(empId);
+            })
+            .map(emp => ({
+              id: Number(emp.id), // Long ID từ Employee entity
+              employeeId: emp.employeeId || emp.id, // String employeeId hoặc fallback
+              name: emp.fullName || emp.name || 'Unknown',
+              email: emp.email || '',
+              department: emp.department || '',
+              position: emp.position || '',
+            }))
+            .filter(a => a.id != null);
+        } else {
+          updatedCard.assignees = [];
+        }
+        
+        // Update local state with full card data
+        setBoards(prev => prev.map(board =>
+          board.id === boardId ? {
+            ...board,
+            lists: board.lists.map(list =>
+              list.id === listId ? {
+                ...list,
+                cards: list.cards.map(card =>
+                  card.id === cardId ? updatedCard : card
+                ),
+              } : list
+            ),
+          } : board
+        ));
+      } catch (reloadError) {
+        console.warn('⚠️ Failed to reload card, updating local state only:', reloadError);
+        // Fallback: update local state with assigneeIds mapped to assignees
+        setBoards(prev => prev.map(board =>
+          board.id === boardId ? {
+            ...board,
+            lists: board.lists.map(list =>
+              list.id === listId ? {
+                ...list,
+                cards: list.cards.map(card => {
+                  if (card.id === cardId) {
+                    const updatedCard = { ...card, ...data };
+                    // If assigneeIds was sent, map to assignees
+                    // assigneeIds là Employee.id (Long)
+                    if (data.assigneeIds && Array.isArray(data.assigneeIds)) {
+                      updatedCard.assigneeIds = data.assigneeIds;
+                      updatedCard.assignees = employees
+                        .filter(emp => {
+                          // Employee.id là Long (primary key)
+                          const empId = emp.id != null ? Number(emp.id) : null;
+                          return empId != null && !isNaN(empId) && data.assigneeIds.includes(empId);
+                        })
+                        .map(emp => ({
+                          id: Number(emp.id), // Long ID từ Employee entity
+                          employeeId: emp.employeeId || emp.id, // String employeeId hoặc fallback
+                          name: emp.fullName || emp.name || 'Unknown',
+                          email: emp.email || '',
+                          department: emp.department || '',
+                          position: emp.position || '',
+                        }))
+                        .filter(a => a.id != null);
+                    }
+                    return updatedCard;
+                  }
+                  return card;
+                }),
+              } : list
+            ),
+          } : board
+        ));
+      }
+      
+      toast.success('Cập nhật thẻ thành công!');
+    } catch (error) {
+      console.error('Error updating card:', error);
+      let errorMessage = 'Có lỗi xảy ra khi cập nhật thẻ';
+      try {
+        if (error.response) {
+          const errorData = await error.response.json();
+          errorMessage = errorData.message || errorMessage;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      } catch (e) {
+        // Ignore parse errors
+      }
+      toast.error(errorMessage);
+      throw error;
+    }
+  }, [employees]);
 
-      return { ...board, lists: finalLists };
-    }));
+  const deleteCard = useCallback(async (boardId, listId, cardId) => {
+    if (!boardId || boardId === 'undefined') {
+      console.error('Invalid boardId for deleteCard:', boardId);
+      toast.error('Board ID không hợp lệ');
+      return;
+    }
+    
+    try {
+      await kanbanService.card.delete(cardId);
+      
+      // Update local state - remove card from list
+      setBoards(prev => prev.map(board => {
+        if (board.id === boardId || String(board.id) === String(boardId)) {
+          return {
+            ...board,
+            lists: (board.lists || []).map(list => {
+              if (list.id === listId) {
+                return {
+                  ...list,
+                  cards: (list.cards || []).filter(card => card.id !== cardId)
+                };
+              }
+              return list;
+            })
+          };
+        }
+        return board;
+      }));
+      
+      toast.success('Xóa thẻ thành công!');
+    } catch (error) {
+      console.error('Error deleting card:', error);
+      toast.error('Có lỗi xảy ra khi xóa thẻ');
+      throw error;
+    }
+  }, []);
 
-    if (sourceListId !== targetListId) {
-      toast.success('Di chuyển thẻ thành công!');
+  const moveCard = useCallback(async (boardId, sourceListId, targetListId, cardId, targetPosition) => {
+    if (!boardId || boardId === 'undefined') {
+      console.error('Invalid boardId for moveCard:', boardId);
+      toast.error('Board ID không hợp lệ');
+      return;
+    }
+    
+    try {
+      // Call API to move card
+      await kanbanService.card.move(cardId, targetListId, targetPosition);
+      
+      // Update local state - move card from source list to target list
+      setBoards(prev => prev.map(board => {
+        if (board.id === boardId || String(board.id) === String(boardId)) {
+          let movedCard = null;
+          const updatedLists = (board.lists || []).map(list => {
+            if (list.id === sourceListId) {
+              // Remove card from source list
+              const cards = (list.cards || []).filter(card => {
+                if (card.id === cardId) {
+                  movedCard = { ...card, listId: targetListId, position: targetPosition };
+                  return false;
+                }
+                return true;
+              });
+              return { ...list, cards };
+            }
+            return list;
+          });
+          
+          // Add card to target list
+          const finalLists = updatedLists.map(list => {
+            if (list.id === targetListId && movedCard) {
+              return {
+                ...list,
+                cards: [...(list.cards || []), movedCard].sort((a, b) => (a.position || 0) - (b.position || 0))
+              };
+            }
+            return list;
+          });
+          
+          return { ...board, lists: finalLists };
+        }
+        return board;
+      }));
+      
+      if (sourceListId !== targetListId) {
+        toast.success('Di chuyển thẻ thành công!');
+      }
+    } catch (error) {
+      console.error('Error moving card:', error);
+      toast.error('Có lỗi xảy ra khi di chuyển thẻ');
+      throw error;
     }
   }, []);
 
@@ -607,185 +1081,328 @@ export const KanbanProvider = ({ children }) => {
 
   // ============== MEMBER OPERATIONS ==============
 
-  const addMember = useCallback((boardId, data) => {
-    const newMember = {
-      id: generateId(),
-      boardId,
-      accountId: data.accountId,
-      name: data.name,
-      email: data.email,
-      role: data.role || 'MEMBER',
-    };
-
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        members: [...board.members, newMember],
-      } : board
-    ));
-    toast.success('Thêm thành viên thành công!');
-    return newMember;
+  const addMember = useCallback(async (boardId, data) => {
+    try {
+      const response = await kanbanService.member.add(boardId, {
+        employeeId: data.accountId || data.employeeId,
+        role: data.role || 'MEMBER'
+      });
+      const newMember = response.data || response;
+      
+      // Update local state - add member to board
+      setBoards(prev => prev.map(board => {
+        if (board.id === boardId || String(board.id) === String(boardId)) {
+          const currentMembers = board.members || [];
+          return {
+            ...board,
+            members: [...currentMembers, newMember],
+            memberCount: (board.memberCount || 0) + 1
+          };
+        }
+        return board;
+      }));
+      
+      toast.success('Thêm thành viên thành công!');
+      return newMember;
+    } catch (error) {
+      console.error('Error adding member:', error);
+      toast.error('Có lỗi xảy ra khi thêm thành viên');
+      throw error;
+    }
   }, []);
 
-  const removeMember = useCallback((boardId, memberId) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        members: board.members.filter(m => m.id !== memberId),
-      } : board
-    ));
-    toast.success('Xóa thành viên thành công!');
+  const removeMember = useCallback(async (boardId, memberId) => {
+    try {
+      await kanbanService.member.remove(boardId, memberId);
+      
+      // Update local state - remove member from board
+      setBoards(prev => prev.map(board => {
+        if (board.id === boardId || String(board.id) === String(boardId)) {
+          return {
+            ...board,
+            members: (board.members || []).filter(m => m.id !== memberId),
+            memberCount: Math.max(0, (board.memberCount || 0) - 1)
+          };
+        }
+        return board;
+      }));
+      
+      toast.success('Xóa thành viên thành công!');
+    } catch (error) {
+      console.error('Error removing member:', error);
+      toast.error('Có lỗi xảy ra khi xóa thành viên');
+      throw error;
+    }
   }, []);
 
   // ============== LABEL OPERATIONS ==============
 
-  const createLabel = useCallback((boardId, data) => {
-    const newLabel = {
-      id: generateId(),
-      boardId,
-      name: data.name,
-      color: data.color,
-    };
-
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        labels: [...board.labels, newLabel],
-      } : board
-    ));
-    return newLabel;
+  const createLabel = useCallback(async (boardId, data) => {
+    try {
+      const response = await kanbanService.label.create(boardId, {
+        name: data.name,
+        color: data.color,
+      });
+      const newLabel = response.data || response;
+      
+      // Reload labels for the board
+      const labelsRes = await kanbanService.label.getByBoard(boardId);
+      const labelsData = Array.isArray(labelsRes?.data) ? labelsRes.data : Array.isArray(labelsRes) ? labelsRes : [];
+      
+      // Update local state
+      setBoards(prev => prev.map(board =>
+        board.id === boardId ? {
+          ...board,
+          labels: labelsData,
+        } : board
+      ));
+      
+      toast.success('Tạo label thành công!');
+      return newLabel;
+    } catch (error) {
+      console.error('Error creating label:', error);
+      toast.error('Có lỗi xảy ra khi tạo label');
+      throw error;
+    }
   }, []);
 
-  const updateLabel = useCallback((boardId, labelId, data) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        labels: board.labels.map(label =>
-          label.id === labelId ? { ...label, ...data } : label
-        ),
-      } : board
-    ));
+  const updateLabel = useCallback(async (boardId, labelId, data) => {
+    try {
+      const response = await kanbanService.label.update(labelId, {
+        name: data.name,
+        color: data.color,
+      });
+      const updatedLabel = response.data || response;
+      
+      // Reload labels for the board
+      const labelsRes = await kanbanService.label.getByBoard(boardId);
+      const labelsData = Array.isArray(labelsRes?.data) ? labelsRes.data : Array.isArray(labelsRes) ? labelsRes : [];
+      
+      // Update local state
+      setBoards(prev => prev.map(board =>
+        board.id === boardId ? {
+          ...board,
+          labels: labelsData,
+        } : board
+      ));
+      
+      toast.success('Cập nhật label thành công!');
+      return updatedLabel;
+    } catch (error) {
+      console.error('Error updating label:', error);
+      toast.error('Có lỗi xảy ra khi cập nhật label');
+      throw error;
+    }
   }, []);
 
-  const deleteLabel = useCallback((boardId, labelId) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        labels: board.labels.filter(l => l.id !== labelId),
-        lists: board.lists.map(list => ({
-          ...list,
-          cards: list.cards.map(card => ({
-            ...card,
-            labels: card.labels.filter(l => l.id !== labelId),
+  const deleteLabel = useCallback(async (boardId, labelId) => {
+    try {
+      await kanbanService.label.delete(labelId);
+      
+      // Reload labels for the board
+      const labelsRes = await kanbanService.label.getByBoard(boardId);
+      const labelsData = Array.isArray(labelsRes?.data) ? labelsRes.data : Array.isArray(labelsRes) ? labelsRes : [];
+      
+      // Update local state
+      setBoards(prev => prev.map(board =>
+        board.id === boardId ? {
+          ...board,
+          labels: labelsData,
+          lists: board.lists.map(list => ({
+            ...list,
+            cards: list.cards.map(card => ({
+              ...card,
+              labels: (card.labels || []).filter(l => l.id !== labelId),
+            })),
           })),
-        })),
-      } : board
-    ));
+        } : board
+      ));
+      
+      toast.success('Xóa label thành công!');
+    } catch (error) {
+      console.error('Error deleting label:', error);
+      toast.error('Có lỗi xảy ra khi xóa label');
+      throw error;
+    }
   }, []);
 
-  const assignLabelToCard = useCallback((boardId, listId, cardId, label) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        lists: board.lists.map(list =>
-          list.id === listId ? {
-            ...list,
-            cards: list.cards.map(card =>
-              card.id === cardId && !card.labels.find(l => l.id === label.id)
-                ? { ...card, labels: [...card.labels, label] }
-                : card
-            ),
-          } : list
-        ),
-      } : board
-    ));
+  const assignLabelToCard = useCallback(async (boardId, listId, cardId, labelId) => {
+    try {
+      await kanbanService.label.assignToCard(cardId, labelId);
+      
+      // Reload card labels
+      const labelsRes = await kanbanService.label.getByCard(cardId);
+      const cardLabels = Array.isArray(labelsRes?.data) ? labelsRes.data : Array.isArray(labelsRes) ? labelsRes : [];
+      
+      // Update local state
+      setBoards(prev => prev.map(board =>
+        board.id === boardId ? {
+          ...board,
+          lists: board.lists.map(list =>
+            list.id === listId ? {
+              ...list,
+              cards: list.cards.map(card =>
+                card.id === cardId
+                  ? { ...card, labels: cardLabels }
+                  : card
+              ),
+            } : list
+          ),
+        } : board
+      ));
+      
+      toast.success('Thêm label vào card thành công!');
+    } catch (error) {
+      console.error('Error assigning label to card:', error);
+      toast.error('Có lỗi xảy ra khi thêm label');
+      throw error;
+    }
   }, []);
 
-  const removeLabelFromCard = useCallback((boardId, listId, cardId, labelId) => {
-    setBoards(prev => prev.map(board =>
-      board.id === boardId ? {
-        ...board,
-        lists: board.lists.map(list =>
-          list.id === listId ? {
-            ...list,
-            cards: list.cards.map(card =>
-              card.id === cardId
-                ? { ...card, labels: card.labels.filter(l => l.id !== labelId) }
-                : card
-            ),
-          } : list
-        ),
-      } : board
-    ));
+  const removeLabelFromCard = useCallback(async (boardId, listId, cardId, labelId) => {
+    try {
+      await kanbanService.label.removeFromCard(cardId, labelId);
+      
+      // Reload card labels
+      const labelsRes = await kanbanService.label.getByCard(cardId);
+      const cardLabels = Array.isArray(labelsRes?.data) ? labelsRes.data : Array.isArray(labelsRes) ? labelsRes : [];
+      
+      // Update local state
+      setBoards(prev => prev.map(board =>
+        board.id === boardId ? {
+          ...board,
+          lists: board.lists.map(list =>
+            list.id === listId ? {
+              ...list,
+              cards: list.cards.map(card =>
+                card.id === cardId
+                  ? { ...card, labels: cardLabels }
+                  : card
+              ),
+            } : list
+          ),
+        } : board
+      ));
+      
+      toast.success('Xóa label khỏi card thành công!');
+    } catch (error) {
+      console.error('Error removing label from card:', error);
+      toast.error('Có lỗi xảy ra khi xóa label');
+      throw error;
+    }
   }, []);
 
   // ============== COMMENT OPERATIONS ==============
 
-  const addComment = useCallback((cardId, data) => {
-    const newComment = {
-      id: generateId(),
-      cardId,
-      authorId: data.authorId || 'current-user',
-      authorName: data.authorName || 'Current User',
-      content: data.content,
-      createdAt: new Date().toISOString(),
-      updatedAt: null,
-    };
+  const addComment = useCallback(async (cardId, data) => {
+    try {
+      const response = await kanbanService.comment.create(cardId, {
+        content: data.content
+      });
+      const newComment = response.data || response;
+      
+      // Reload comments for this card
+      const commentsRes = await kanbanService.comment.getByCard(cardId);
+      const commentsData = commentsRes.data || commentsRes || [];
+      
+      setComments(prev => ({
+        ...prev,
+        [cardId]: commentsData
+      }));
 
-    setComments(prev => ({
-      ...prev,
-      [cardId]: [...(prev[cardId] || []), newComment],
-    }));
+      // Update local state - increment comment count on card
+      setBoards(prev => prev.map(b => ({
+        ...b,
+        lists: (b.lists || []).map(list => ({
+          ...list,
+          cards: (list.cards || []).map(card => 
+            card.id === cardId 
+              ? { ...card, commentCount: (card.commentCount || 0) + 1 }
+              : card
+          )
+        }))
+      })));
 
-    // Update comment count on card
-    setBoards(prev => prev.map(board => ({
-      ...board,
-      lists: board.lists.map(list => ({
-        ...list,
-        cards: list.cards.map(card =>
-          card.id === cardId
-            ? { ...card, commentCount: card.commentCount + 1 }
-            : card
-        ),
-      })),
-    })));
+      return newComment;
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      toast.error('Có lỗi xảy ra khi thêm comment');
+      throw error;
+    }
+  }, [boards]);
 
-    return newComment;
+  const updateComment = useCallback(async (cardId, commentId, content) => {
+    try {
+      await kanbanService.comment.update(commentId, { content });
+      
+      // Reload comments
+      const commentsRes = await kanbanService.comment.getByCard(cardId);
+      const commentsData = commentsRes.data || commentsRes || [];
+      
+      setComments(prev => ({
+        ...prev,
+        [cardId]: commentsData
+      }));
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      toast.error('Có lỗi xảy ra khi cập nhật comment');
+      throw error;
+    }
   }, []);
 
-  const updateComment = useCallback((cardId, commentId, content) => {
-    setComments(prev => ({
-      ...prev,
-      [cardId]: (prev[cardId] || []).map(comment =>
-        comment.id === commentId
-          ? { ...comment, content, updatedAt: new Date().toISOString() }
-          : comment
-      ),
-    }));
-  }, []);
+  const deleteComment = useCallback(async (cardId, commentId) => {
+    try {
+      await kanbanService.comment.delete(commentId);
+      
+      // Reload comments
+      const commentsRes = await kanbanService.comment.getByCard(cardId);
+      const commentsData = commentsRes.data || commentsRes || [];
+      
+      setComments(prev => ({
+        ...prev,
+        [cardId]: commentsData
+      }));
+      
+      // Update local state - decrement comment count on card
+      setBoards(prev => prev.map(b => ({
+        ...b,
+        lists: (b.lists || []).map(list => ({
+          ...list,
+          cards: (list.cards || []).map(card => 
+            card.id === cardId 
+              ? { ...card, commentCount: Math.max(0, (card.commentCount || 0) - 1) }
+              : card
+          )
+        }))
+      })));
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      toast.error('Có lỗi xảy ra khi xóa comment');
+      throw error;
+    }
+  }, [boards]);
 
-  const deleteComment = useCallback((cardId, commentId) => {
-    setComments(prev => ({
-      ...prev,
-      [cardId]: (prev[cardId] || []).filter(c => c.id !== commentId),
-    }));
-
-    // Update comment count on card
-    setBoards(prev => prev.map(board => ({
-      ...board,
-      lists: board.lists.map(list => ({
-        ...list,
-        cards: list.cards.map(card =>
-          card.id === cardId
-            ? { ...card, commentCount: Math.max(0, card.commentCount - 1) }
-            : card
-        ),
-      })),
-    })));
-  }, []);
-
-  const getCommentsByCard = useCallback((cardId) => {
-    return comments[cardId] || [];
+  const getCommentsByCard = useCallback(async (cardId) => {
+    // Check cache first
+    if (comments[cardId]) {
+      return comments[cardId];
+    }
+    
+    // Load from API
+    try {
+      const response = await kanbanService.comment.getByCard(cardId);
+      const commentsData = response.data || response || [];
+      
+      setComments(prev => ({
+        ...prev,
+        [cardId]: commentsData
+      }));
+      
+      return commentsData;
+    } catch (error) {
+      console.error('Error loading comments:', error);
+      return [];
+    }
   }, [comments]);
 
   // ============== ACTIVITY OPERATIONS ==============
@@ -810,10 +1427,31 @@ export const KanbanProvider = ({ children }) => {
     return newActivity;
   }, []);
 
-  const getActivitiesByCard = useCallback((cardId) => {
-    return (activities[cardId] || []).sort((a, b) =>
-      new Date(b.createdAt) - new Date(a.createdAt)
-    );
+  const getActivitiesByCard = useCallback(async (cardId) => {
+    // Check cache first
+    if (activities[cardId]) {
+      return (activities[cardId] || []).sort((a, b) =>
+        new Date(b.createdAt) - new Date(a.createdAt)
+      );
+    }
+    
+    // Load from API
+    try {
+      const response = await kanbanService.activity.getByCard(cardId);
+      const activitiesData = response.data || response || [];
+      
+      setActivities(prev => ({
+        ...prev,
+        [cardId]: activitiesData
+      }));
+      
+      return activitiesData.sort((a, b) =>
+        new Date(b.createdAt || b.createdAt) - new Date(a.createdAt || a.createdAt)
+      );
+    } catch (error) {
+      console.error('Error loading activities:', error);
+      return [];
+    }
   }, [activities]);
 
   // ============== EMPLOYEE OPERATIONS ==============
@@ -826,7 +1464,7 @@ export const KanbanProvider = ({ children }) => {
     if (!departmentId || departmentId === 'all') {
       return employees;
     }
-    return employees.filter(emp => emp.departmentId === departmentId);
+    return employees.filter(emp => emp.departmentId === departmentId || emp.department === departmentId);
   }, [employees]);
 
   const getAllDepartments = useCallback(() => {
@@ -837,15 +1475,15 @@ export const KanbanProvider = ({ children }) => {
     let result = employees;
 
     if (departmentId && departmentId !== 'all') {
-      result = result.filter(emp => emp.departmentId === departmentId);
+      result = result.filter(emp => emp.departmentId === departmentId || emp.department === departmentId);
     }
 
     if (query && query.trim()) {
       const searchLower = query.toLowerCase().trim();
       result = result.filter(emp =>
-        emp.name.toLowerCase().includes(searchLower) ||
-        emp.email.toLowerCase().includes(searchLower) ||
-        emp.department.toLowerCase().includes(searchLower)
+        emp.name?.toLowerCase().includes(searchLower) ||
+        emp.email?.toLowerCase().includes(searchLower) ||
+        emp.department?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -866,9 +1504,15 @@ export const KanbanProvider = ({ children }) => {
       done: 0,
     };
 
+    // Safety check: ensure lists exists and is an array
+    if (!board.lists || !Array.isArray(board.lists)) {
+      return stats;
+    }
+
     board.lists.forEach(list => {
+      if (!list) return;
       const listStatus = LIST_STATUS_MAP[list.name] || 'TODO';
-      const cardCount = list.cards.length;
+      const cardCount = (list.cards && Array.isArray(list.cards)) ? list.cards.length : 0;
       stats.totalCards += cardCount;
 
       switch (listStatus) {

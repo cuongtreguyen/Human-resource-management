@@ -9,23 +9,12 @@ import {
   getPerformanceRating,
   generateRecommendations
 } from '../../utils/taskMetrics';
+import kanbanService from '../../services/kanbanService';
 
 const TaskPerformanceTab = ({ formData, setFormData, selectedEmployee, onLoadTaskKPIs }) => {
   const [taskData, setTaskData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState(null);
-
-  // Mock data for demonstration - in real app, this would come from API
-  const mockEmployeeTasks = [
-    { id: 't1', columnId: 'done', title: 'Thiết kế giao diện dashboard', dueDate: '2024-12-10', completedDate: '2024-12-09' },
-    { id: 't2', columnId: 'done', title: 'Viết API documentation', dueDate: '2024-12-12', completedDate: '2024-12-11' },
-    { id: 't3', columnId: 'done', title: 'Fix responsive issues', dueDate: '2024-12-08', completedDate: '2024-12-10' },
-    { id: 't4', columnId: 'inProgress', title: 'Implement authentication', dueDate: '2024-12-20' },
-    { id: 't5', columnId: 'review', title: 'Database optimization', dueDate: '2024-12-18' },
-    { id: 't6', columnId: 'todo', title: 'Setup CI/CD pipeline', dueDate: '2024-12-25' },
-    { id: 't7', columnId: 'done', title: 'Code review PR #123', dueDate: '2024-12-05', completedDate: '2024-12-05' },
-    { id: 't8', columnId: 'done', title: 'Unit tests for auth module', dueDate: '2024-12-07', completedDate: '2024-12-06' },
-  ];
 
   useEffect(() => {
     loadTaskData();
@@ -33,16 +22,38 @@ const TaskPerformanceTab = ({ formData, setFormData, selectedEmployee, onLoadTas
   }, [selectedEmployee?.id]);
 
   const loadTaskData = async () => {
+    if (!selectedEmployee?.id) {
+      setTaskData([]);
+      setMetrics(null);
+      return;
+    }
+
     setLoading(true);
     try {
-      // Simulate API call - in real app, fetch from backend
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Fetch tasks for the selected employee
+      const response = await kanbanService.task.getAll({ assigneeId: selectedEmployee.id });
+      const tasks = response.data || response || [];
+      
+      // Transform API tasks to match the format expected by calculateComprehensiveMetrics
+      // API returns: status = "in-progress", "new", "pending", "complete" (lowercase with hyphen)
+      const transformedTasks = tasks.map(task => ({
+        id: task.id,
+        columnId: task.status === 'complete' ? 'done' : 
+                  task.status === 'in-progress' ? 'inProgress' : 
+                  task.status === 'pending' ? 'review' : 'todo',
+        title: task.title,
+        dueDate: task.endDate || task.deadline,
+        completedDate: task.status === 'complete' ? task.updatedAt : null,
+        priority: task.priority?.toLowerCase() || 'medium'
+      }));
 
-      setTaskData(mockEmployeeTasks);
-      const calculatedMetrics = calculateComprehensiveMetrics(mockEmployeeTasks);
+      setTaskData(transformedTasks);
+      const calculatedMetrics = calculateComprehensiveMetrics(transformedTasks);
       setMetrics(calculatedMetrics);
     } catch (error) {
       console.error('Error loading task data:', error);
+      setTaskData([]);
+      setMetrics(null);
     }
     setLoading(false);
   };

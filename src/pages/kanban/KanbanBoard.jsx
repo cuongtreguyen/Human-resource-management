@@ -42,6 +42,7 @@ const KanbanBoard = () => {
   const navigate = useNavigate();
   const {
     boards,
+    loading,
     getBoardById,
     getBoardStats,
     createList,
@@ -65,18 +66,48 @@ const KanbanBoard = () => {
   const [showCardModal, setShowCardModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [isLoadingBoard, setIsLoadingBoard] = useState(true);
 
-  // Load and refresh board data when boards change in context
+  // Load board data when boardId changes
   useEffect(() => {
-    if (boardId) {
-      const boardData = getBoardById(boardId);
-      if (boardData) {
-        setBoard(boardData);
-      } else {
-        navigate('/kanban');
+    if (!boardId || loading) return;
+    
+    let isMounted = true;
+    setIsLoadingBoard(true);
+    
+    const loadBoard = async () => {
+      try {
+        const boardData = await getBoardById(boardId);
+        if (isMounted && boardData?.id) {
+          setBoard(boardData);
+          setIsLoadingBoard(false);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setIsLoadingBoard(false);
+          toast.error('Không thể tải board. Vui lòng thử lại.');
+        }
       }
+    };
+    
+    loadBoard();
+    return () => { isMounted = false; };
+  }, [boardId, loading, getBoardById]);
+  
+  // Update board when boards context changes (for progressive card loading)
+  useEffect(() => {
+    if (!boardId || !boards?.length) return;
+    const updatedBoard = boards.find(b => String(b.id) === String(boardId));
+    if (updatedBoard && updatedBoard.lists?.length > 0) {
+      setBoard(prev => {
+        // Only update if cards have changed
+        if (!prev || JSON.stringify(prev.lists?.map(l => l.cards?.length)) !== JSON.stringify(updatedBoard.lists?.map(l => l.cards?.length))) {
+          return updatedBoard;
+        }
+        return prev;
+      });
     }
-  }, [boardId, boards, getBoardById, navigate]);
+  }, [boards, boardId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -102,20 +133,44 @@ const KanbanBoard = () => {
     return rectIntersection(args);
   };
 
-  if (!board) {
+  if (!board || isLoadingBoard) {
     return (
       <Layout>
-        <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center justify-center h-full gap-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="text-gray-500">Đang tải board...</p>
+          {!board && !isLoadingBoard && (
+            <button
+              onClick={() => navigate('/kanban')}
+              className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            >
+              Quay lại danh sách board
+            </button>
+          )}
         </div>
       </Layout>
     );
   }
 
-  const stats = getBoardStats(boardId);
+  // NOTE: Không tạo default lists với temporary IDs ở đây nữa!
+  // getBoardById trong KanbanContext đã tự động tạo default lists qua API nếu board chưa có lists
+  // Tất cả lists phải có real IDs từ BE (Long), không phải temporary string IDs
 
-  // Sort lists by position
-  const sortedLists = [...board.lists].sort((a, b) => a.position - b.position);
+  // Safely get board stats
+  let stats = null;
+  try {
+    if (boardId) {
+      stats = getBoardStats(boardId);
+    }
+  } catch (error) {
+    console.warn('Error getting board stats:', error);
+    stats = null;
+  }
+
+  // Sort lists by position (safely) - don't mutate board object
+  const sortedLists = Array.isArray(board?.lists) 
+    ? [...board.lists].sort((a, b) => (a.position || 0) - (b.position || 0))
+    : [];
 
   // Filter cards by search
   const getFilteredCards = (cards) => {
@@ -128,8 +183,9 @@ const KanbanBoard = () => {
 
   // Find card by id across all lists
   const findCardById = (cardId) => {
+    if (!board?.lists) return { card: null, list: null };
     for (const list of board.lists) {
-      const card = list.cards.find(c => c.id === cardId);
+      const card = (list.cards || []).find(c => c.id === cardId);
       if (card) return { card, list };
     }
     return { card: null, list: null };
@@ -168,12 +224,12 @@ const KanbanBoard = () => {
     if (draggedCardId === overId) return;
 
     // Check if dropping over a list (column)
-    const overList = board.lists.find(l => l.id === overId);
+    const overList = (board?.lists || []).find(l => l.id === overId);
     if (overList) {
       if (sourceListId !== overList.id) {
         // Move card to the new list at the end
-        const targetPosition = overList.cards.length > 0
-          ? Math.max(...overList.cards.map(c => c.position)) + 1
+        const targetPosition = (overList.cards || []).length > 0
+          ? Math.max(...(overList.cards || []).map(c => c.position || 0)) + 1
           : 1;
         moveCard(boardId, sourceListId, overList.id, draggedCardId, targetPosition);
       }
@@ -186,13 +242,13 @@ const KanbanBoard = () => {
 
     if (sourceListId !== targetList.id) {
       // Move card to different list at the position of the over card
-      moveCard(boardId, sourceListId, targetList.id, draggedCardId, overCard.position);
+      moveCard(boardId, sourceListId, targetList.id, draggedCardId, overCard.position || 0);
     } else {
       // Reorder within the same list
-      const sourceList = board.lists.find(l => l.id === sourceListId);
+      const sourceList = (board?.lists || []).find(l => l.id === sourceListId);
       if (!sourceList) return;
 
-      const cards = [...sourceList.cards].sort((a, b) => a.position - b.position);
+      const cards = [...(sourceList.cards || [])].sort((a, b) => (a.position || 0) - (b.position || 0));
       const oldIndex = cards.findIndex(c => c.id === draggedCardId);
       const newIndex = cards.findIndex(c => c.id === overId);
 
@@ -226,7 +282,7 @@ const KanbanBoard = () => {
   };
 
   const handleCardClick = (card) => {
-    const list = board.lists.find(l => l.cards.some(c => c.id === card.id));
+    const list = (board?.lists || []).find(l => (l.cards || []).some(c => c.id === card.id));
     setSelectedCard(card);
     setSelectedList(list);
     setShowCardModal(true);
@@ -377,7 +433,7 @@ const KanbanBoard = () => {
                   list={{
                     ...list,
                     cards: getFilteredCards(
-                      [...list.cards].sort((a, b) => a.position - b.position)
+                      [...(list.cards || [])].sort((a, b) => (a.position || 0) - (b.position || 0))
                     ),
                   }}
                   onAddCard={handleAddCard}

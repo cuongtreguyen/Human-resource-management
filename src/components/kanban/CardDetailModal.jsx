@@ -56,6 +56,10 @@ const CardDetailModal = ({
   const [activeTab, setActiveTab] = useState('details');
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [comments, setComments] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [isLoadingActivities, setIsLoadingActivities] = useState(false);
 
   useEffect(() => {
     if (card) {
@@ -66,10 +70,49 @@ const CardDetailModal = ({
     }
   }, [card]);
 
-  if (!isOpen || !card) return null;
+  // Load comments and activities when card changes
+  useEffect(() => {
+    if (!isOpen || !card) {
+      setComments([]);
+      setActivities([]);
+      return;
+    }
 
-  const comments = getCommentsByCard(card.id);
-  const activities = getActivitiesByCard(card.id);
+    // Load comments (async)
+    setIsLoadingComments(true);
+    getCommentsByCard(card.id)
+      .then(data => {
+        setComments(Array.isArray(data) ? data : []);
+        setIsLoadingComments(false);
+      })
+      .catch(error => {
+        console.warn('Failed to load comments:', error);
+        setComments([]);
+        setIsLoadingComments(false);
+      });
+
+    // Load activities (async)
+    setIsLoadingActivities(true);
+    getActivitiesByCard(card.id)
+      .then(data => {
+        setActivities(Array.isArray(data) ? data : []);
+        setIsLoadingActivities(false);
+      })
+      .catch(error => {
+        console.warn('Failed to load activities:', error);
+        setActivities([]);
+        setIsLoadingActivities(false);
+      });
+  }, [isOpen, card, getCommentsByCard, getActivitiesByCard]);
+
+  if (!isOpen || !card) return null;
+  
+  // Safety checks
+  if (!board || !list) {
+    console.warn('CardDetailModal: Missing board or list data');
+    return null;
+  }
+  
   const currentPriority = PRIORITIES[priority] || PRIORITIES.MEDIUM;
   const isOverdue = dueDate && new Date(dueDate) < new Date();
 
@@ -97,37 +140,60 @@ const CardDetailModal = ({
     onUpdateCard({ dueDate: newDate || null });
   };
 
-  const handleAddComment = () => {
+  const handleAddComment = async () => {
     if (newComment.trim()) {
-      addComment(card.id, {
-        content: newComment.trim(),
-        authorName: 'Current User',
-      });
-      setNewComment('');
+      try {
+        await addComment(card.id, {
+          content: newComment.trim(),
+          authorName: 'Current User',
+        });
+        setNewComment('');
+        // Reload comments after adding
+        const updatedComments = await getCommentsByCard(card.id);
+        setComments(Array.isArray(updatedComments) ? updatedComments : []);
+      } catch (error) {
+        console.warn('Failed to add comment:', error);
+        // Comment API chưa có trong BE, nhưng không crash app
+      }
     }
   };
 
-  const handleToggleLabel = (label) => {
-    const hasLabel = card.labels?.some(l => l.id === label.id);
-    if (hasLabel) {
-      removeLabelFromCard(board.id, list.id, card.id, label.id);
-    } else {
-      assignLabelToCard(board.id, list.id, card.id, label);
+  const handleToggleLabel = async (label) => {
+    try {
+      const hasLabel = card.labels?.some(l => l.id === label.id);
+      if (hasLabel) {
+        await removeLabelFromCard(board.id, list.id, card.id, label.id);
+      } else {
+        await assignLabelToCard(board.id, list.id, card.id, label.id);
+      }
+    } catch (error) {
+      console.error('Failed to toggle label:', error);
+      toast.error('Có lỗi xảy ra khi thay đổi label');
     }
   };
 
   const handleToggleAssignee = (employee) => {
-    const isAssigned = card.assignees?.some(a => a.id === employee.id);
-    const newAssignees = isAssigned
-      ? card.assignees.filter(a => a.id !== employee.id)
-      : [...(card.assignees || []), {
-          id: employee.id,
-          name: employee.name,
-          email: employee.email,
-          department: employee.department,
-          position: employee.position,
-        }];
-    onUpdateCard({ assignees: newAssignees });
+    // BE cần assigneeIds là mảng Long (number) - đây là Employee.id (primary key)
+    // Employee.id là Long, employeeId là String (mã nhân viên như "EMP003")
+    const employeeId = employee.id != null ? Number(employee.id) : null;
+    
+    if (!employeeId || isNaN(employeeId)) {
+      console.error('❌ Invalid employee ID:', employee);
+      toast.error('ID nhân viên không hợp lệ');
+      return;
+    }
+    
+    // Get current assigneeIds from card (Long IDs)
+    const currentAssigneeIds = (card.assigneeIds || []).map(id => Number(id)).filter(id => !isNaN(id));
+    
+    const isAssigned = currentAssigneeIds.includes(employeeId);
+    
+    const newAssigneeIds = isAssigned
+      ? currentAssigneeIds.filter(id => id !== employeeId)
+      : [...currentAssigneeIds, employeeId];
+    
+    // BE chỉ nhận assigneeIds (mảng Long/number) - Employee.id
+    onUpdateCard({ assigneeIds: newAssigneeIds });
   };
 
   // Get filtered employees list
@@ -412,7 +478,17 @@ const CardDetailModal = ({
                         </div>
                         <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{comment.content}</p>
                         <button
-                          onClick={() => deleteComment(card.id, comment.id)}
+                          onClick={async () => {
+                            try {
+                              await deleteComment(card.id, comment.id);
+                              // Reload comments after deleting
+                              const updatedComments = await getCommentsByCard(card.id);
+                              setComments(Array.isArray(updatedComments) ? updatedComments : []);
+                            } catch (error) {
+                              console.warn('Failed to delete comment:', error);
+                              // Comment API chưa có trong BE, nhưng không crash app
+                            }
+                          }}
                           className="text-xs text-gray-400 hover:text-red-500 mt-1"
                         >
                           Xóa

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -17,10 +17,12 @@ import {
   Kanban, Building2, Users, TrendingUp, Briefcase, Search,
   ArrowLeft, CheckSquare, Clock, AlertCircle, Filter
 } from 'lucide-react';
-import { useTaskContext } from '../../context/TaskContext';
+import kanbanService from '../../services/kanbanService';
+import { getCurrentDepartment } from '../../utils/auth';
 
 const TaskManagement = () => {
-  const { departments, setDepartments } = useTaskContext();
+  const [departments, setDepartments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState(null);
   const [taskModalOpen, setTaskModalOpen] = useState(false);
   const [currentTask, setCurrentTask] = useState(null);
@@ -55,6 +57,80 @@ const TaskManagement = () => {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  // Load departments and tasks from API
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        
+        // Load departments
+        const departmentsRes = await kanbanService.employee.getDepartments();
+        const departmentsList = departmentsRes.data || departmentsRes || [];
+        
+        // Load tasks for each department
+        const departmentsWithTasks = await Promise.all(
+          departmentsList.map(async (dept) => {
+            try {
+              // Get tasks for this department
+              const tasksRes = await kanbanService.task.getAll({ department: dept.name });
+              const tasks = tasksRes.data || tasksRes || [];
+              
+              // Transform tasks to match component format
+              const transformedTasks = tasks.map(task => ({
+                id: task.id,
+                title: task.title,
+                description: task.description || '',
+                columnId: task.status === 'complete' ? 'done' :
+                          task.status === 'in-progress' ? 'inProgress' :
+                          task.status === 'pending' ? 'review' : 'todo',
+                priority: task.priority?.toLowerCase() || 'medium',
+                dueDate: task.endDate || task.deadline,
+                startDate: task.startDate,
+                assignees: task.assignees || [],
+                tags: task.tag ? [task.tag] : [],
+                comments: task.commentCount || 0,
+                attachments: 0,
+                difficulty: 50
+              }));
+              
+              return {
+                id: dept.id?.toString() || dept.name?.toLowerCase().replace(/\s+/g, '-'),
+                name: dept.name,
+                code: dept.code || dept.name?.substring(0, 3).toUpperCase(),
+                description: dept.description || '',
+                icon: 'Building2',
+                color: 'blue',
+                members: dept.memberCount || dept.employees?.length || 0,
+                tasks: transformedTasks
+              };
+            } catch (error) {
+              console.error(`Error loading tasks for department ${dept.name}:`, error);
+              return {
+                id: dept.id?.toString() || dept.name?.toLowerCase().replace(/\s+/g, '-'),
+                name: dept.name,
+                code: dept.code || dept.name?.substring(0, 3).toUpperCase(),
+                description: dept.description || '',
+                icon: 'Building2',
+                color: 'blue',
+                members: dept.memberCount || dept.employees?.length || 0,
+                tasks: []
+              };
+            }
+          })
+        );
+        
+        setDepartments(departmentsWithTasks);
+      } catch (error) {
+        console.error('Error loading departments and tasks:', error);
+        setDepartments([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, []);
+
   // Get current department
   const currentDepartment = selectedDepartment
     ? departments.find(d => d.id === selectedDepartment.id)
@@ -77,52 +153,121 @@ const TaskManagement = () => {
   };
 
   // Add or Edit Task
-  const handleSaveTask = (taskData) => {
-    if (currentTask) {
-      // Edit existing task
-      setDepartments(prev => prev.map(dept => {
-        if (dept.id === selectedDepartment.id) {
-          return {
-            ...dept,
-            tasks: dept.tasks.map(t => t.id === taskData.id ? taskData : t)
-          };
+  const handleSaveTask = async (taskData) => {
+    try {
+      if (currentTask) {
+        // Edit existing task
+        const apiStatus = taskData.columnId === 'done' ? 'DONE' :
+                         taskData.columnId === 'inProgress' ? 'IN_PROGRESS' :
+                         taskData.columnId === 'review' ? 'PENDING' : 'NEW';
+        
+        const updateData = {
+          title: taskData.title,
+          description: taskData.description,
+          status: apiStatus,
+          priority: taskData.priority?.toUpperCase() || 'MEDIUM',
+          deadline: taskData.dueDate,
+          assigneeIds: taskData.assignees?.map(a => a.id || a) || []
+        };
+        
+        await kanbanService.task.update(currentTask.id, updateData);
+        
+        // Update local state
+        setDepartments(prev => prev.map(dept => {
+          if (dept.id === selectedDepartment.id) {
+            return {
+              ...dept,
+              tasks: dept.tasks.map(t => t.id === taskData.id ? taskData : t)
+            };
+          }
+          return dept;
+        }));
+      } else {
+        // Add new task
+        const createData = {
+          title: taskData.title,
+          boardId: null // Optional - can be set if needed
+        };
+        
+        const response = await kanbanService.task.create(createData);
+        const newTaskId = response.data?.id || response.id;
+        
+        // Update the task with full details
+        if (newTaskId) {
+          const apiStatus = currentColumnId === 'done' ? 'DONE' :
+                           currentColumnId === 'inProgress' ? 'IN_PROGRESS' :
+                           currentColumnId === 'review' ? 'PENDING' : 'NEW';
+          
+          await kanbanService.task.update(newTaskId, {
+            description: taskData.description,
+            status: apiStatus,
+            priority: taskData.priority?.toUpperCase() || 'MEDIUM',
+            deadline: taskData.dueDate,
+            assigneeIds: taskData.assignees?.map(a => a.id || a) || []
+          });
         }
-        return dept;
-      }));
-    } else {
-      // Add new task
-      const newTask = {
-        ...taskData,
-        id: `t${Date.now()}`,
-        columnId: currentColumnId || 'todo'
-      };
-      setDepartments(prev => prev.map(dept => {
-        if (dept.id === selectedDepartment.id) {
-          return {
-            ...dept,
-            tasks: [...dept.tasks, newTask]
-          };
-        }
-        return dept;
-      }));
+        
+        // Reload tasks for the department
+        const tasksRes = await kanbanService.task.getAll({ department: selectedDepartment.name });
+        const tasks = tasksRes.data || tasksRes || [];
+        const transformedTasks = tasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          description: task.description || '',
+          columnId: task.status === 'complete' ? 'done' :
+                    task.status === 'in-progress' ? 'inProgress' :
+                    task.status === 'pending' ? 'review' : 'todo',
+          priority: task.priority?.toLowerCase() || 'medium',
+          dueDate: task.endDate || task.deadline,
+          startDate: task.startDate,
+          assignees: task.assignees || [],
+          tags: task.tag ? [task.tag] : [],
+          comments: task.commentCount || 0,
+          attachments: 0,
+          difficulty: 50
+        }));
+        
+        setDepartments(prev => prev.map(dept => {
+          if (dept.id === selectedDepartment.id) {
+            return {
+              ...dept,
+              tasks: transformedTasks
+            };
+          }
+          return dept;
+        }));
+      }
+      
+      setTaskModalOpen(false);
+      setCurrentTask(null);
+      setCurrentColumnId(null);
+    } catch (error) {
+      console.error('Error saving task:', error);
+      alert('Có lỗi xảy ra khi lưu task: ' + (error.message || 'Unknown error'));
     }
-    setTaskModalOpen(false);
-    setCurrentTask(null);
-    setCurrentColumnId(null);
   };
 
   // Delete Task
-  const handleDeleteTask = (taskId) => {
+  const handleDeleteTask = async (taskId) => {
     if (!window.confirm('Bạn có chắc muốn xóa task này?')) return;
-    setDepartments(prev => prev.map(dept => {
-      if (dept.id === selectedDepartment.id) {
-        return {
-          ...dept,
-          tasks: dept.tasks.filter(t => t.id !== taskId)
-        };
-      }
-      return dept;
-    }));
+    
+    try {
+      await kanbanService.task.delete(taskId);
+      
+      // Update local state
+      setDepartments(prev => prev.map(dept => {
+        if (dept.id === selectedDepartment.id) {
+          return {
+            ...dept,
+            tasks: dept.tasks.filter(t => t.id !== taskId)
+          };
+        }
+        return dept;
+      }));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      alert('Có lỗi xảy ra khi xóa task: ' + (error.message || 'Unknown error'));
+    }
   };
 
   // Edit Task
@@ -189,7 +334,7 @@ const TaskManagement = () => {
     }
   };
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = async (event) => {
     const { active, over } = event;
     if (!over || !currentDepartment) {
       setActiveId(null);
@@ -208,7 +353,53 @@ const TaskManagement = () => {
       return;
     }
 
-    if (activeTask.columnId === overTask?.columnId) {
+    // Determine new column/status
+    let newColumnId = activeTask.columnId;
+    const overColumn = columns.find(col => col.id === overId);
+    if (overColumn) {
+      newColumnId = overColumn.id;
+    } else if (overTask) {
+      newColumnId = overTask.columnId;
+    }
+
+    // If status changed, update via API
+    if (newColumnId !== activeTask.columnId) {
+      try {
+        const apiStatus = newColumnId === 'done' ? 'DONE' :
+                         newColumnId === 'inProgress' ? 'IN_PROGRESS' :
+                         newColumnId === 'review' ? 'PENDING' : 'NEW';
+        
+        await kanbanService.task.update(activeTaskId, { status: apiStatus });
+        
+        // Update local state
+        setDepartments(prev => prev.map(dept => {
+          if (dept.id === selectedDepartment.id) {
+            return {
+              ...dept,
+              tasks: dept.tasks.map(task =>
+                task.id === activeTaskId ? { ...task, columnId: newColumnId } : task
+              )
+            };
+          }
+          return dept;
+        }));
+      } catch (error) {
+        console.error('Error updating task status:', error);
+        // Revert local state on error
+        setDepartments(prev => prev.map(dept => {
+          if (dept.id === selectedDepartment.id) {
+            return {
+              ...dept,
+              tasks: dept.tasks.map(task =>
+                task.id === activeTaskId ? { ...task, columnId: activeTask.columnId } : task
+              )
+            };
+          }
+          return dept;
+        }));
+      }
+    } else if (activeTask.columnId === overTask?.columnId) {
+      // Same column, just reorder (no API call needed for now)
       const columnTasks = tasks.filter(task => task.columnId === activeTask.columnId);
       const oldIndex = columnTasks.findIndex(task => task.id === activeTaskId);
       const newIndex = columnTasks.findIndex(task => task.id === overId);
@@ -235,6 +426,19 @@ const TaskManagement = () => {
 
   // Department Selection View
   if (!selectedDepartment) {
+    if (loading) {
+      return (
+        <Layout>
+          <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-gray-600">Đang tải dữ liệu...</p>
+            </div>
+          </div>
+        </Layout>
+      );
+    }
+    
     return (
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">

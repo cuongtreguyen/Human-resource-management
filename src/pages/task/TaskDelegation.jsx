@@ -23,7 +23,7 @@ import {
   Plus,
   X
 } from 'lucide-react';
-import fakeApi from '../../services/fakeApi';
+import kanbanService from '../../services/kanbanService';
 import { LEAVE_TYPES, LEAVE_TYPE_OPTIONS } from '../../constants/leaveTypes';
 
 const TaskDelegation = () => {
@@ -56,70 +56,40 @@ const TaskDelegation = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [employeesRes, tasksRes] = await Promise.all([
-        fakeApi.getEmployees(),
-        fakeApi.getTasks()
+      
+      // Load employees and tasks from API
+      const [employeesRes, tasksRes, delegationsRes] = await Promise.all([
+        kanbanService.employee.getAll(),
+        kanbanService.task.getAll(),
+        kanbanService.taskDelegation.getAll()
       ]);
       
-      setEmployees(employeesRes.data);
-      setTasks(tasksRes.data);
+      setEmployees(employeesRes.data || employeesRes || []);
+      setTasks(tasksRes.data || tasksRes || []);
       
-      // Mock delegation data
-      setDelegations([
-        {
-          id: 1,
-          originalAssignee: { id: 1, name: 'Nguyễn Văn An', position: 'Senior Developer' },
-          delegatedTo: { id: 2, name: 'Trần Thị Bình', position: 'Developer' },
-          task: { id: 1, title: 'Hero Section Design', priority: 'high' },
-          leaveRequest: {
-            type: 'maternity',
-            startDate: '2024-02-01',
-            endDate: '2024-11-10',
-            days: 280,
-            reason: 'Nghỉ thai sản'
-          },
-          status: 'active',
-          delegatedAt: '2024-01-15',
-          handoverNotes: 'Cần hoàn thành design theo brand guidelines mới',
-          progress: 75
+      // Transform API delegation data to match component format
+      const transformedDelegations = (delegationsRes.data || delegationsRes || []).map(delegation => ({
+        id: delegation.id,
+        originalAssignee: delegation.fromEmployee || { id: delegation.fromEmployeeId, name: 'Unknown', position: '' },
+        delegatedTo: delegation.toEmployee || { id: delegation.toEmployeeId, name: 'Unknown', position: '' },
+        task: delegation.tasks?.[0] || { id: delegation.taskIds?.[0], title: 'Task', priority: 'medium' },
+        leaveRequest: {
+          type: delegation.reason || 'annual',
+          startDate: delegation.startDate,
+          endDate: delegation.endDate,
+          days: delegation.days || 0,
+          reason: delegation.reason || ''
         },
-        {
-          id: 2,
-          originalAssignee: { id: 3, name: 'Lê Minh Chính', position: 'Marketing Specialist' },
-          delegatedTo: { id: 4, name: 'Phạm Thu Cúc', position: 'Marketing Coordinator' },
-          task: { id: 2, title: 'Website Design', priority: 'medium' },
-          leaveRequest: {
-            type: 'annual',
-            startDate: '2024-01-20',
-            endDate: '2024-01-25',
-            days: 6,
-            reason: 'Nghỉ phép thường'
-          },
-          status: 'completed',
-          delegatedAt: '2024-01-18',
-          handoverNotes: 'Design đã hoàn thành, cần review và feedback',
-          progress: 100
-        },
-        {
-          id: 3,
-          originalAssignee: { id: 5, name: 'Hoàng Đức Dũng', position: 'Sales Executive' },
-          delegatedTo: { id: 1, name: 'Nguyễn Văn An', position: 'Senior Developer' },
-          task: { id: 3, title: 'Banner Design', priority: 'low' },
-          leaveRequest: {
-            type: 'emergency',
-            startDate: '2024-01-22',
-            endDate: '2024-01-24',
-            days: 3,
-            reason: 'Nghỉ khẩn cấp'
-          },
-          status: 'pending',
-          delegatedAt: '2024-01-22',
-          handoverNotes: 'Cần thiết kế banner cho campaign mới',
-          progress: 0
-        }
-      ]);
-    } catch {
-      console.error('Error loading data');
+        status: delegation.status === 'approved' ? 'active' : delegation.status === 'rejected' ? 'overdue' : 'pending',
+        delegatedAt: delegation.createdAt || new Date().toISOString().split('T')[0],
+        handoverNotes: delegation.reason || '',
+        progress: 0
+      }));
+      
+      setDelegations(transformedDelegations);
+    } catch (error) {
+      console.error('Error loading data:', error);
+      setDelegations([]);
     } finally {
       setLoading(false);
     }
@@ -233,36 +203,29 @@ const TaskDelegation = () => {
     e.preventDefault();
 
     try {
-      // Calculate days between dates
-      const start = new Date(newDelegation.startDate);
-      const end = new Date(newDelegation.endDate);
-      const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
-
-      // Create new delegation
-      const delegation = {
-        id: delegations.length + 1,
-        originalAssignee: { id: newDelegation.originalAssigneeId, name: 'Nhân viên A', position: 'Chức vụ' },
-        delegatedTo: { id: newDelegation.delegatedToId, name: 'Nhân viên B', position: 'Chức vụ' },
-        task: { id: delegations.length + 1, title: newDelegation.taskTitle, priority: newDelegation.priority },
-        leaveRequest: {
-          type: newDelegation.leaveType,
-          startDate: newDelegation.startDate,
-          endDate: newDelegation.endDate,
-          days: days,
-          reason: newDelegation.reason
-        },
-        status: 'pending',
-        delegatedAt: new Date().toISOString().split('T')[0],
-        handoverNotes: newDelegation.handoverNotes,
-        progress: 0
+      // Create delegation via API
+      const delegationData = {
+        fromEmployeeId: newDelegation.originalAssigneeId,
+        toEmployeeId: newDelegation.delegatedToId,
+        taskIds: [newDelegation.taskTitle], // You may need to get actual task IDs
+        startDate: newDelegation.startDate,
+        endDate: newDelegation.endDate,
+        reason: newDelegation.reason || newDelegation.handoverNotes
       };
 
-      setDelegations([...delegations, delegation]);
-      handleCloseAddTaskModal();
-      alert('Tạo bàn giao công việc thành công!');
+      const response = await kanbanService.taskDelegation.create(delegationData);
+      
+      if (response.success) {
+        // Reload delegations
+        await loadData();
+        handleCloseAddTaskModal();
+        alert('Tạo bàn giao công việc thành công!');
+      } else {
+        throw new Error(response.message || 'Failed to create delegation');
+      }
     } catch (error) {
       console.error('Error creating delegation:', error);
-      alert('Có lỗi xảy ra khi tạo bàn giao công việc');
+      alert('Có lỗi xảy ra khi tạo bàn giao công việc: ' + (error.message || 'Unknown error'));
     }
   };
 
