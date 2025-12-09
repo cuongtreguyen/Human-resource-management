@@ -3,7 +3,9 @@ package management.member.demo.service;
 import management.member.demo.dto.AddMemberRequest;
 import management.member.demo.dto.BoardRequest;
 import management.member.demo.dto.BoardResponse;
-import management.member.demo.dto.UpdateBoardStatusRequest;
+import management.member.demo.dto.EmployeeResponse;
+import management.member.demo.dto.UpdateBoardNameRequest;
+import management.member.demo.mapper.EmployeeMapper;
 import management.member.demo.entity.Board;
 import management.member.demo.entity.Employee;
 import management.member.demo.enums.BoardStatus;
@@ -34,6 +36,9 @@ public class BoardService {
     @Autowired
     BoardMapper boardMapper;
 
+    @Autowired
+    EmployeeMapper employeeMapper;
+
     // 1. Tạo Board mới
     public BoardResponse createBoard(BoardRequest request) {
         // Lấy email người đang đăng nhập từ Token
@@ -56,10 +61,27 @@ public class BoardService {
         return boardMapper.toResponse(boardRepository.save(board));
     }
 
-    public BoardResponse addMemberToBoard(Long boardId, AddMemberRequest request) {
-        // Tìm Board
-        Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại"));
+    public BoardResponse addMemberToBoard(AddMemberRequest request) {
+        // Lấy email người đang đăng nhập từ Token
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        
+        // Tìm thông tin Employee của người đang đăng nhập
+        Employee currentUser = employeeRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
+
+        // Tìm Board mà user hiện tại là member (lấy board đầu tiên)
+        List<Board> userBoards = boardRepository.findByStatus(BoardStatus.ACTIVE).stream()
+                .filter(board -> board.getMembers() != null && 
+                        board.getMembers().stream()
+                                .anyMatch(emp -> emp.getId().equals(currentUser.getId())))
+                .collect(Collectors.toList());
+
+        if (userBoards.isEmpty()) {
+            throw new ResourceNotFoundException("Không tìm thấy Board mà bạn là thành viên");
+        }
+
+        // Lấy board đầu tiên
+        Board board = userBoards.get(0);
 
         // Tìm Nhân viên theo Email
         Employee newMember = employeeRepository.findByEmail(request.getEmail())
@@ -73,7 +95,6 @@ public class BoardService {
             board.getMembers().add(newMember);
             board = boardRepository.save(board);
         } else {
-            // Có thể throw lỗi hoặc chỉ đơn giản là return board cũ nếu muốn
             throw new IllegalArgumentException("Nhân viên này đã là thành viên của Board");
         }
 
@@ -102,19 +123,13 @@ public class BoardService {
         boardRepository.deleteById(id);
     }
 
-    public BoardResponse updateBoardStatus(Long boardId, UpdateBoardStatusRequest request) {
+    public BoardResponse updateBoardName(Long boardId, UpdateBoardNameRequest request) {
         // 1. Tìm Board
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại"));
 
-        // 2. Validate và Convert Enum
-        try {
-            // Chuyển chuỗi sang Enum (tự động uppercase để tránh lỗi active vs ACTIVE)
-            BoardStatus newStatus = BoardStatus.valueOf(request.getStatus().trim().toUpperCase());
-            board.setStatus(newStatus);
-        } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Trạng thái không hợp lệ. Các giá trị cho phép: ACTIVE, ARCHIVED, COMPLETED");
-        }
+        // 2. Cập nhật tên board
+        board.setName(request.getName());
 
         // 3. Lưu và trả về
         return boardMapper.toResponse(boardRepository.save(board));
@@ -122,5 +137,18 @@ public class BoardService {
 
     public int getTotalBoards() {
         return (int) boardRepository.count();
+    }
+
+    public List<EmployeeResponse> getBoardMembers(Long boardId) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại"));
+
+        if (board.getMembers() == null) {
+            return new ArrayList<>();
+        }
+
+        return board.getMembers().stream()
+                .map(employeeMapper::toResponse)
+                .collect(Collectors.toList());
     }
 }

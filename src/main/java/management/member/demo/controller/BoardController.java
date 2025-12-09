@@ -7,7 +7,8 @@ import jakarta.validation.Valid;
 import management.member.demo.dto.AddMemberRequest;
 import management.member.demo.dto.BoardRequest;
 import management.member.demo.dto.BoardResponse;
-import management.member.demo.dto.UpdateBoardStatusRequest;
+import management.member.demo.dto.EmployeeResponse;
+import management.member.demo.dto.UpdateBoardNameRequest;
 import management.member.demo.service.BoardService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -52,28 +53,28 @@ public class BoardController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/members")
-    @Operation(summary = "Thêm thành viên vào Board", description = "Add a member to a board by email")
+    @PostMapping("/members")
+    @Operation(summary = "Thêm thành viên vào Board", description = "Add a member to a board by email. Board sẽ được tự động xác định dựa trên user hiện tại")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Member added successfully"),
             @ApiResponse(responseCode = "404", description = "Board or Employee not found"),
             @ApiResponse(responseCode = "400", description = "Employee is already a member of the board")
     })
-    public ResponseEntity<BoardResponse> addMember(@PathVariable Long id, @RequestBody @Valid AddMemberRequest request) {
-        return ResponseEntity.ok(boardService.addMemberToBoard(id, request));
+    public ResponseEntity<BoardResponse> addMember(@RequestBody @Valid AddMemberRequest request) {
+        return ResponseEntity.ok(boardService.addMemberToBoard(request));
     }
 
     @PutMapping("/{id}/status")
-    @Operation(summary = "Cập nhật trạng thái Board", description = "Update the status of a board")
+    @Operation(summary = "Cập nhật tên Board", description = "Update the name of a board")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Board status updated successfully"),
+            @ApiResponse(responseCode = "200", description = "Board name updated successfully"),
             @ApiResponse(responseCode = "404", description = "Board not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid status value")
+            @ApiResponse(responseCode = "400", description = "Invalid request")
     })
-    public ResponseEntity<BoardResponse> updateBoardStatus(
+    public ResponseEntity<BoardResponse> updateBoardName(
             @PathVariable Long id,
-            @RequestBody @Valid UpdateBoardStatusRequest request) {
-        return ResponseEntity.ok(boardService.updateBoardStatus(id, request));
+            @RequestBody @Valid UpdateBoardNameRequest request) {
+        return ResponseEntity.ok(boardService.updateBoardName(id, request));
     }
 
     @GetMapping("/total")
@@ -83,5 +84,15 @@ public class BoardController {
     })
     public ResponseEntity<Integer> getTotalBoards() {
         return ResponseEntity.ok(boardService.getTotalBoards());
+    }
+
+    @GetMapping("/{id}/members")
+    @Operation(summary = "Lấy danh sách thành viên của Board", description = "Get all members of a board")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Members retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Board not found")
+    })
+    public ResponseEntity<List<EmployeeResponse>> getBoardMembers(@PathVariable Long id) {
+        return ResponseEntity.ok(boardService.getBoardMembers(id));
     }
 }
