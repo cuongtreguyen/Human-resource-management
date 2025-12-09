@@ -31,7 +31,6 @@ public interface OnLeaveRepository extends JpaRepository<OnLeave, Long> {
     @Query("SELECT r.onLeaveStatus, COUNT(r) FROM OnLeave r GROUP BY r.onLeaveStatus")
     List<Object[]> countRequestGroupedByStatus();
 
-<<<<<<< Updated upstream
     // Lấy tất cả đơn nghỉ phép của 1 employee
     @Query("SELECT o FROM OnLeave o WHERE o.employee.id = :employeeId")
     List<OnLeave> findByEmployee_Id(Long employeeId);
@@ -40,7 +39,6 @@ public interface OnLeaveRepository extends JpaRepository<OnLeave, Long> {
     @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM OnLeave o WHERE o.employee.id = :employeeId")
     boolean existsByEmployee_Id(Long employeeId);
 
-=======
     // Đếm nhân viên đang nghỉ phép hôm nay (status = APPROVED và startDate <= today <= endDate)
     @Query("SELECT COUNT(DISTINCT ol.employee.id) FROM OnLeave ol " +
             "WHERE ol.onLeaveStatus = :status " +
@@ -51,5 +49,4 @@ public interface OnLeaveRepository extends JpaRepository<OnLeave, Long> {
             "AND ol.endDate >= :today")
     long countEmployeesOnLeaveToday(@Param("status") OnLeaveStatus status,
                                     @Param("today") LocalDate today);
->>>>>>> Stashed changes
 }
