@@ -738,6 +738,18 @@ export const getPayrollRecords = async (params = {}) => {
 };
 
 
+
+// Thống kê tổng hợp cho Manager
+export const getManagerStatisticsSummary = async () => {
+  const response = await http(`${JAVA_API}/dashboard/statistics-summary-for-manager`, {
+    method: 'GET',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse(response);
+};
+
+
+
 /* ===== EXPORT DEFAULT ===== */
 export default {
   getEmployees,
@@ -778,4 +790,5 @@ export default {
   getPayrollRecords,
   getMyLeaveSummary,
   getMyLeaveHistory,
+  getManagerStatisticsSummary,
 };
