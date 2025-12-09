@@ -3,6 +3,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import Layout from '../../components/layout/Layout';
 import { useKanbanContext } from '../../context/KanbanContext';
 import {
@@ -31,42 +32,82 @@ const BoardList = () => {
   const [menuOpenId, setMenuOpenId] = useState(null);
 
   // Filter boards by search
-  const filteredBoards = boards.filter(board =>
-    board.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    board.ownerName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredBoards = (boards || []).filter(board =>
+    board?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    board?.ownerName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Calculate overall stats
+  // Calculate overall stats (safely)
   const overallStats = {
-    totalBoards: boards.length,
-    totalTasks: boards.reduce((sum, board) => {
-      const stats = getBoardStats(board.id);
-      return sum + (stats?.totalCards || 0);
+    totalBoards: (boards || []).length,
+    totalTasks: (boards || []).reduce((sum, board) => {
+      if (!board?.id) return sum;
+      try {
+        const stats = getBoardStats(board.id);
+        return sum + (stats?.totalCards || 0);
+      } catch (error) {
+        console.warn('Error getting stats for board', board.id, error);
+        return sum;
+      }
     }, 0),
-    todo: boards.reduce((sum, board) => {
-      const stats = getBoardStats(board.id);
-      return sum + (stats?.todo || 0);
+    todo: (boards || []).reduce((sum, board) => {
+      if (!board?.id) return sum;
+      try {
+        const stats = getBoardStats(board.id);
+        return sum + (stats?.todo || 0);
+      } catch (error) {
+        console.warn('Error getting stats for board', board.id, error);
+        return sum;
+      }
     }, 0),
-    inProgress: boards.reduce((sum, board) => {
-      const stats = getBoardStats(board.id);
-      return sum + (stats?.inProgress || 0);
+    inProgress: (boards || []).reduce((sum, board) => {
+      if (!board?.id) return sum;
+      try {
+        const stats = getBoardStats(board.id);
+        return sum + (stats?.inProgress || 0);
+      } catch (error) {
+        console.warn('Error getting stats for board', board.id, error);
+        return sum;
+      }
     }, 0),
-    review: boards.reduce((sum, board) => {
-      const stats = getBoardStats(board.id);
-      return sum + (stats?.review || 0);
+    review: (boards || []).reduce((sum, board) => {
+      if (!board?.id) return sum;
+      try {
+        const stats = getBoardStats(board.id);
+        return sum + (stats?.review || 0);
+      } catch (error) {
+        console.warn('Error getting stats for board', board.id, error);
+        return sum;
+      }
     }, 0),
-    done: boards.reduce((sum, board) => {
-      const stats = getBoardStats(board.id);
-      return sum + (stats?.done || 0);
+    done: (boards || []).reduce((sum, board) => {
+      if (!board?.id) return sum;
+      try {
+        const stats = getBoardStats(board.id);
+        return sum + (stats?.done || 0);
+      } catch (error) {
+        console.warn('Error getting stats for board', board.id, error);
+        return sum;
+      }
     }, 0),
   };
 
-  const handleCreateBoard = () => {
+  const handleCreateBoard = async () => {
     if (!newBoardName.trim()) return;
-    const newBoard = createBoard({ name: newBoardName.trim() });
-    setNewBoardName('');
-    setShowCreateModal(false);
-    navigate(`/kanban/${newBoard.id}`);
+    try {
+      const newBoard = await createBoard({ name: newBoardName.trim() });
+      setNewBoardName('');
+      setShowCreateModal(false);
+      if (newBoard && newBoard.id) {
+        navigate(`/kanban/${newBoard.id}`);
+      } else {
+        console.error('Created board does not have an id:', newBoard);
+        toast.error('Tạo board thành công nhưng không thể chuyển trang');
+      }
+    } catch (error) {
+      console.error('Error creating board:', error);
+      // Error toast is already shown in createBoard
+    }
   };
 
   const handleDeleteBoard = (boardId, e) => {

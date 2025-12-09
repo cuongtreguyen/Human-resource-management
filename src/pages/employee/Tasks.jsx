@@ -3,7 +3,8 @@ import { ArrowLeft, CheckCircle, Clock, AlertCircle, ListTodo, TrendingUp, Calen
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Button from '../../components/ui/Button';
-import fakeApi from '../../services/fakeApi';
+import kanbanService from '../../services/kanbanService';
+import { getCurrentDepartment, getCurrentEmployeeId } from '../../utils/auth';
 
 const EmployeeTasks = () => {
   const navigate = useNavigate();
@@ -22,21 +23,54 @@ const EmployeeTasks = () => {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await fakeApi.getTasks();
-        const loadedTasks = res.data;
-        setTasks(loadedTasks);
+        // Get current employee ID and department
+        const currentEmployeeId = getCurrentEmployeeId() || localStorage.getItem('employeeId') || '';
+        const currentDepartment = getCurrentDepartment() || '';
+        
+        // Fetch tasks: filter by assigneeId AND department
+        // Employee chỉ thấy tasks của phòng ban mà họ thuộc về
+        const filters = { assigneeId: currentEmployeeId };
+        if (currentDepartment) {
+          filters.department = currentDepartment;
+        }
+        
+        const res = await kanbanService.task.getAll(filters);
+        const loadedTasks = res.data || res || [];
+        
+        // Transform API tasks to match component format
+        // API returns: status = "in-progress", "new", "pending", "complete" (lowercase with hyphen)
+        const transformedTasks = loadedTasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          description: task.description || '',
+          status: task.status === 'complete' ? 'complete' : 
+                  task.status === 'in-progress' ? 'in-progress' : 
+                  task.status === 'pending' ? 'pending' : 
+                  task.status === 'new' ? 'new' : task.status,
+          priority: task.priority?.toLowerCase() || 'medium',
+          startDate: task.startDate,
+          endDate: task.endDate || task.deadline,
+          assignee: task.assignees?.[0] || null
+        }));
+        
+        setTasks(transformedTasks);
         
         // Load progress for each task
-        loadedTasks.forEach(task => {
-          fakeApi.getTaskProgress(task.id).then(progressRes => {
+        transformedTasks.forEach(task => {
+          kanbanService.task.getProgress(task.id).then(progressRes => {
+            const progressData = progressRes.data || progressRes;
             setTaskProgress(prev => ({
               ...prev,
-              [task.id]: progressRes.data
+              [task.id]: {
+                currentProgress: progressData.currentProgress || 0,
+                milestones: progressData.milestones || []
+              }
             }));
           }).catch(err => console.error('Error loading task progress:', err));
         });
       } catch (error) {
         console.error('Error loading tasks:', error);
+        setTasks([]);
       } finally {
         setLoading(false);
       }
@@ -49,16 +83,22 @@ const EmployeeTasks = () => {
     if (!selectedTask) return;
     
     try {
+      // Map status to API format
+      // API expects: "NEW", "IN_PROGRESS", "PENDING", "DONE" (uppercase with underscore)
+      const apiStatus = updateStatus === 'complete' ? 'DONE' :
+                       updateStatus === 'in-progress' ? 'IN_PROGRESS' :
+                       updateStatus === 'pending' ? 'PENDING' : 'NEW';
+      
       // Update task status
-      await fakeApi.updateTask(selectedTask.id, { 
-        status: updateStatus
+      await kanbanService.task.update(selectedTask.id, { 
+        status: apiStatus
       });
       
       // Update progress if changed
       if (updateProgress !== (taskProgress[selectedTask.id]?.currentProgress || 0)) {
-        await fakeApi.updateTaskProgress(selectedTask.id, {
+        await kanbanService.task.updateProgress(selectedTask.id, {
           currentProgress: updateProgress,
-          note: updateNote
+          comments: updateNote
         });
       }
       
@@ -74,8 +114,7 @@ const EmployeeTasks = () => {
         ...prev,
         [selectedTask.id]: {
           ...prev[selectedTask.id],
-          currentProgress: updateProgress,
-          note: updateNote
+          currentProgress: updateProgress
         }
       }));
       
@@ -84,7 +123,7 @@ const EmployeeTasks = () => {
       alert('Cập nhật nhiệm vụ thành công!');
     } catch (error) {
       console.error('Error updating task:', error);
-      alert('Có lỗi xảy ra khi cập nhật nhiệm vụ');
+      alert('Có lỗi xảy ra khi cập nhật nhiệm vụ: ' + (error.message || 'Unknown error'));
     }
   };
 
