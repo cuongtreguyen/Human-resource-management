@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Entity
+@Table(name = "board")
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -18,11 +19,13 @@ import java.util.List;
 public class Board {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id")
     Long id;
 
+    @Column(name = "name", nullable = false)
     String name; // Ví dụ: "Dự án Website Công ty"
-    String description;
 
+    @Column(name = "created_at", nullable = false)
     LocalDate createdAt;
 
     // Quan hệ 1 Board - Nhiều Task
@@ -41,5 +44,7 @@ public class Board {
     List<Employee> members;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    @Builder.Default
     BoardStatus status = BoardStatus.ACTIVE;
 }

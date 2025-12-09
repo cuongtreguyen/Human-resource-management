@@ -12,7 +12,14 @@ import java.util.List;
 public class BoardMapper {
 
     public BoardResponse toResponse(Board board) {
-        List<Task> tasks = board.getTasks();
+        List<Task> tasks = null;
+        try {
+            tasks = board.getTasks();
+        } catch (Exception e) {
+            // Nếu có lỗi lazy loading, set tasks = null
+            tasks = null;
+        }
+        
         int total = tasks != null ? tasks.size() : 0;
 
         // Đếm số lượng task theo trạng thái
@@ -27,10 +34,8 @@ public class BoardMapper {
         return BoardResponse.builder()
                 .id(board.getId())
                 .name(board.getName())
-                .description(board.getDescription())
                 .createdAt(board.getCreatedAt())
                 .memberCount(board.getMembers() != null ? board.getMembers().size() : 0)
-                .totalTasks(total)
                 .progress(Math.round(progress * 10.0) / 10.0) // Làm tròn 1 chữ số thập phân
                 .todoCount(todo)
                 .inProgressCount(inProgress)
