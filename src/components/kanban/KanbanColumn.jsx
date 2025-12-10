@@ -58,6 +58,7 @@ const KanbanColumn = ({
   onCardClick,
   onUpdateList,
   onDeleteList,
+  canManage = true, // Mặc định true, Employee sẽ truyền false
 }) => {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [newCardTitle, setNewCardTitle] = useState('');
@@ -157,58 +158,60 @@ const KanbanColumn = ({
             </span>
           </div>
 
-          {/* Column Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-1 hover:bg-white/50 rounded transition-colors"
-            >
-              <MoreHorizontal className="w-4 h-4 text-gray-600" />
-            </button>
-            {showMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowMenu(false)}
-                />
-                <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg py-1 min-w-36 z-20">
-                  <button
-                    onClick={() => {
-                      setIsEditingName(true);
-                      setShowMenu(false);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    <span>Đổi tên</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      setIsAddingCard(true);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Thêm thẻ</span>
-                  </button>
-                  <hr className="my-1" />
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      if (window.confirm(`Xóa danh sách "${list.name}" và tất cả thẻ trong đó?`)) {
-                        onDeleteList(list.id);
-                      }
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Xóa danh sách</span>
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+          {/* Column Menu - Chỉ hiện cho Manager/Admin */}
+          {canManage && (
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-1 hover:bg-white/50 rounded transition-colors"
+              >
+                <MoreHorizontal className="w-4 h-4 text-gray-600" />
+              </button>
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg py-1 min-w-36 z-20">
+                    <button
+                      onClick={() => {
+                        setIsEditingName(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                      <span>Đổi tên</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        setIsAddingCard(true);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Thêm thẻ</span>
+                    </button>
+                    <hr className="my-1" />
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        if (window.confirm(`Xóa danh sách "${list.name}" và tất cả thẻ trong đó?`)) {
+                          onDeleteList && onDeleteList(list.id);
+                        }
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      <span>Xóa danh sách</span>
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -239,48 +242,50 @@ const KanbanColumn = ({
         )}
       </div>
 
-      {/* Add Card Section */}
-      <div className="p-2 border-t border-gray-200">
-        {isAddingCard ? (
-          <div className="space-y-2">
-            <textarea
-              ref={inputRef}
-              value={newCardTitle}
-              onChange={(e) => setNewCardTitle(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Nhập tiêu đề cho thẻ này..."
-              className="w-full p-2 text-sm border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={2}
-            />
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleAddCard}
-                disabled={!newCardTitle.trim()}
-                className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Thêm thẻ
-              </button>
-              <button
-                onClick={() => {
-                  setIsAddingCard(false);
-                  setNewCardTitle('');
-                }}
-                className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
+      {/* Add Card Section - Chỉ hiện cho Manager/Admin */}
+      {canManage && (
+        <div className="p-2 border-t border-gray-200">
+          {isAddingCard ? (
+            <div className="space-y-2">
+              <textarea
+                ref={inputRef}
+                value={newCardTitle}
+                onChange={(e) => setNewCardTitle(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Nhập tiêu đề cho thẻ này..."
+                className="w-full p-2 text-sm border rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows={2}
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleAddCard}
+                  disabled={!newCardTitle.trim()}
+                  className="px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Thêm thẻ
+                </button>
+                <button
+                  onClick={() => {
+                    setIsAddingCard(false);
+                    setNewCardTitle('');
+                  }}
+                  className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
-          <button
-            onClick={() => setIsAddingCard(true)}
-            className="w-full flex items-center gap-2 p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors text-sm"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Thêm thẻ</span>
-          </button>
-        )}
-      </div>
+          ) : (
+            <button
+              onClick={() => setIsAddingCard(true)}
+              className="w-full flex items-center gap-2 p-2 text-gray-600 hover:bg-gray-200 rounded-lg transition-colors text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Thêm thẻ</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
