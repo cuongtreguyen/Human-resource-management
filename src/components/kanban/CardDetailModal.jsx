@@ -828,11 +828,21 @@ const CardDetailModal = ({
                             <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{comment.content}</p>
                             <button
                               onClick={async () => {
+                                if (!window.confirm('Bạn có chắc muốn xóa comment này?')) return;
                                 try {
                                   await deleteComment(card.id, comment.id);
+                                  alert('Đã xóa comment thành công!');
                                   await loadComments();
                                 } catch (error) {
                                   console.warn('Failed to delete comment:', error);
+                                  if (error.message?.includes('không có quyền') || error.message?.includes('403')) {
+                                    alert('Bạn không có quyền xóa comment này. Chỉ người tạo comment mới có quyền xóa.');
+                                  } else if (error.message?.includes('không tồn tại') || error.message?.includes('404')) {
+                                    alert('Comment không tồn tại hoặc đã bị xóa.');
+                                    await loadComments();
+                                  } else {
+                                    alert('Xóa comment thất bại: ' + (error.message || 'Lỗi không xác định'));
+                                  }
                                 }
                               }}
                               className="text-xs text-gray-400 hover:text-red-500 mt-1"

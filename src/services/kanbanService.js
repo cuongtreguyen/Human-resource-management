@@ -383,9 +383,12 @@ export const commentService = {
 
     if (!res.ok) {
       if (res.status === 403) {
-        throw new Error('Bạn không có quyền xóa comment này');
+        throw new Error('Bạn không có quyền xóa comment này. Chỉ người tạo comment mới có quyền xóa.');
       }
-      throw new Error('Failed to delete comment');
+      if (res.status === 404) {
+        throw new Error('Comment không tồn tại hoặc đã bị xóa.');
+      }
+      throw new Error('Xóa comment thất bại');
     }
 
     return true;
