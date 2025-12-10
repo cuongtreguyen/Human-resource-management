@@ -109,6 +109,9 @@ public class CommentService {
         return commentMapper.toResponse(updatedComment);
     }
 
+    @Autowired
+    private management.member.demo.repository.UserRepository userRepository;
+
     /**
      * Xóa comment
      * Chỉ nhân viên đã tạo comment mới có quyền xóa
@@ -118,11 +121,15 @@ public class CommentService {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment không tồn tại với ID: " + commentId));
 
-        // 2. Lấy thông tin nhân viên hiện tại
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String currentEmail = authentication.getName();
-        Employee currentEmployee = employeeRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
+        // 2. Lấy thông tin nhân viên hiện tại qua User (tránh lỗi email khác nhau)
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Employee currentEmployee = userRepository.findByEmail(currentEmail)
+                .map(user -> user.getEmployee())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với email: " + currentEmail));
+
+        if (currentEmployee == null) {
+            throw new ResourceNotFoundException("User chưa được liên kết với Employee");
+        }
 
         // 3. Kiểm tra quyền: chỉ author mới được xóa
         if (comment.getAuthor() == null || !comment.getAuthor().getId().equals(currentEmployee.getId())) {
