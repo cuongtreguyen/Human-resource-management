@@ -66,7 +66,9 @@ public class EmployeeMapper {
      */
     public EmployeeListItemDTO toListItemDTO(Employee employee) {
         EmployeeListItemDTO dto = new EmployeeListItemDTO();
-        // Use employeeId if available, otherwise use id as string
+        // numericId: DB ID (Long) - dùng cho Kanban assignee
+        dto.setNumericId(employee.getId());
+        // id: Mã nhân viên (VD: EMP001) - dùng cho UI hiển thị
         dto.setId(employee.getEmployeeId() != null ? employee.getEmployeeId() : String.valueOf(employee.getId()));
         dto.setName(employee.getFullName());
         dto.setEmail(employee.getEmail());

@@ -5,6 +5,7 @@ import management.member.demo.mapper.HttpStatusMapper;
 import management.member.demo.exception.base.BusinessException;
 import management.member.demo.exception.model.ErrorResponse;
 import management.member.demo.exception.specifiic.FlaskApiException;
+import management.member.demo.exception.specifiic.ForbiddenException;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.exception.util.ErrorResponseBuilder;
 import management.member.demo.exception.util.ExceptionLogger;
@@ -181,12 +182,29 @@ public class GlobalExceptionHandler {
                 ErrorCode.ACCESS_DENIED.getCode(),
                 ErrorCode.ACCESS_DENIED.getMessage(),
                 request);
-        
+
         exceptionLogger.logAuthorizationException(error.getTraceId(), ErrorCode.ACCESS_DENIED.getCode(), ex.getMessage());
-        
+
         return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
-    
+
+    /**
+     * Xử lý ForbiddenException (Custom Forbidden)
+     */
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbiddenException(
+            ForbiddenException ex, WebRequest request) {
+        ErrorResponse error = errorResponseBuilder.build(
+                HttpStatus.FORBIDDEN.value(),
+                ErrorCode.ACCESS_DENIED.getCode(),
+                ex.getMessage(),
+                request);
+
+        exceptionLogger.logAuthorizationException(error.getTraceId(), ErrorCode.ACCESS_DENIED.getCode(), ex.getMessage());
+
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
+    }
+
     /**
      * Xử lý FlaskApiException
      */

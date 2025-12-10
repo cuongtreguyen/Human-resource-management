@@ -53,28 +53,57 @@ public class BoardController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/members")
-    @Operation(summary = "Thêm thành viên vào Board", description = "Add a member to a board by email. Board sẽ được tự động xác định dựa trên user hiện tại")
+    // GET /api/boards/{id} - Lấy chi tiết board
+    @GetMapping("/{id}")
+    @Operation(summary = "Lấy chi tiết Board theo ID", description = "Get board details by ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Board retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Board not found")
+    })
+    public ResponseEntity<BoardResponse> getBoardById(@PathVariable Long id) {
+        return ResponseEntity.ok(boardService.getBoardById(id));
+    }
+
+    // PUT /api/boards/{id} - Cập nhật board
+    @PutMapping("/{id}")
+    @Operation(summary = "Cập nhật tên Board", description = "Update the name of a board")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Board name updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Board not found")
+    })
+    public ResponseEntity<BoardResponse> updateBoard(
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateBoardNameRequest request) {
+        return ResponseEntity.ok(boardService.updateBoardName(id, request));
+    }
+
+    // POST /api/boards/{id}/members - Thêm member (RESTful)
+    @PostMapping("/{id}/members")
+    @Operation(summary = "Thêm thành viên vào Board", description = "Add a member to a board by email")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Member added successfully"),
             @ApiResponse(responseCode = "404", description = "Board or Employee not found"),
             @ApiResponse(responseCode = "400", description = "Employee is already a member of the board")
     })
-    public ResponseEntity<BoardResponse> addMember(@RequestBody @Valid AddMemberRequest request) {
+    public ResponseEntity<BoardResponse> addMember(
+            @PathVariable Long id,
+            @RequestBody @Valid AddMemberRequest request) {
+        request.setBoardId(id); // Set boardId từ path
         return ResponseEntity.ok(boardService.addMemberToBoard(request));
     }
 
-    @PutMapping("/{id}/status")
-    @Operation(summary = "Cập nhật tên Board", description = "Update the name of a board")
+    // DELETE /api/boards/{boardId}/members/{memberId} - Xóa member
+    @DeleteMapping("/{boardId}/members/{memberId}")
+    @Operation(summary = "Xóa thành viên khỏi Board", description = "Remove a member from a board")
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Board name updated successfully"),
-            @ApiResponse(responseCode = "404", description = "Board not found"),
-            @ApiResponse(responseCode = "400", description = "Invalid request")
+            @ApiResponse(responseCode = "204", description = "Member removed successfully"),
+            @ApiResponse(responseCode = "404", description = "Board or Member not found")
     })
-    public ResponseEntity<BoardResponse> updateBoardName(
-            @PathVariable Long id,
-            @RequestBody @Valid UpdateBoardNameRequest request) {
-        return ResponseEntity.ok(boardService.updateBoardName(id, request));
+    public ResponseEntity<Void> removeMember(
+            @PathVariable Long boardId,
+            @PathVariable Long memberId) {
+        boardService.removeMemberFromBoard(boardId, memberId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/total")

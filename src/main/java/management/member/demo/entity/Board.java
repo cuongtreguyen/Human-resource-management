@@ -35,7 +35,7 @@ public class Board {
 
     // Quan hệ Board - Member (Thành viên thuộc dự án này)
     // Để hiển thị số "3 thành viên" như trong ảnh
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "board_members",
             joinColumns = @JoinColumn(name = "board_id"),
@@ -47,4 +47,8 @@ public class Board {
     @Column(name = "status", nullable = false)
     @Builder.Default
     BoardStatus status = BoardStatus.ACTIVE;
+
+    // Quan hệ Board - Labels (Nhãn của board)
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    List<KanbanLabel> labels;
 }

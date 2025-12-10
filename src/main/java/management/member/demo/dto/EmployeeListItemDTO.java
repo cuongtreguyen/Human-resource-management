@@ -12,7 +12,8 @@ import java.time.LocalDate;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EmployeeListItemDTO {
     // 1. Các trường hiển thị trên UI
-    private String id;          // Dùng để làm ID thao tác (nút con mắt)
+    private Long numericId;     // DB ID (Long) - dùng cho Kanban assignee
+    private String id;          // Mã nhân viên (VD: EMP001) - dùng cho nút con mắt
     private String name;        // Cột "TÊN NHÂN VIÊN"
     private String email;       // Dòng dưới tên nhân viên
     private String department;  // Cột "PHÒNG BAN"

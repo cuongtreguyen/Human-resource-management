@@ -5,13 +5,17 @@ import management.member.demo.dto.CommentResponse;
 import management.member.demo.dto.CommentUpdateRequest;
 import management.member.demo.entity.Comment;
 import management.member.demo.entity.Employee;
+import management.member.demo.entity.KanbanCard;
 import management.member.demo.entity.Task;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.CommentMapper;
 import management.member.demo.repository.CommentRepository;
 import management.member.demo.repository.EmployeeRepository;
+import management.member.demo.repository.KanbanCardRepository;
 import management.member.demo.repository.TaskRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,6 +29,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class CommentService {
+    private static final Logger log = LoggerFactory.getLogger(CommentService.class);
     @Autowired
     CommentRepository commentRepository;
 
@@ -34,6 +39,8 @@ public class CommentService {
     @Autowired
     TaskRepository taskRepository;
 
+    @Autowired
+    KanbanCardRepository cardRepository;
 
     @Autowired
     private CommentMapper commentMapper;
@@ -124,5 +131,62 @@ public class CommentService {
 
         // 4. Xóa comment
         commentRepository.delete(comment);
+    }
+
+    // ============== KANBAN CARD COMMENTS ==============
+
+    /**
+     * Lấy danh sách comment của Kanban Card
+     */
+    public List<CommentResponse> getCommentsByCardId(Long cardId) {
+        if (!cardRepository.existsById(cardId)) {
+            throw new ResourceNotFoundException("Card không tồn tại với ID: " + cardId);
+        }
+
+        List<Comment> comments = commentRepository.findByCardIdOrderByCreatedAtDesc(cardId);
+
+        return comments.stream()
+                .map(commentMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Tạo comment cho Kanban Card
+     */
+    public CommentResponse createCardComment(Long cardId, String content) {
+        log.info("=== createCardComment START ===");
+        log.info("CardId: {}, Content: {}", cardId, content);
+
+        KanbanCard card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
+        log.info("Found card: {} - {}", card.getId(), card.getTitle());
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentEmail = authentication.getName();
+        log.info("Current user email: {}", currentEmail);
+
+        Employee author = employeeRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
+        log.info("Found author: {} - {}", author.getId(), author.getFullName());
+
+        Comment comment = Comment.builder()
+                .content(content)
+                .createdAt(LocalDateTime.now())
+                .card(card)
+                .author(author)
+                .build();
+
+        Comment savedComment = commentRepository.save(comment);
+        log.info("Saved comment with ID: {}", savedComment.getId());
+
+        // Update comment count on card
+        int oldCount = card.getCommentCount();
+        card.setCommentCount(oldCount + 1);
+        cardRepository.save(card);
+        log.info("Updated card comment count: {} -> {}", oldCount, oldCount + 1);
+
+        CommentResponse response = commentMapper.toResponse(savedComment);
+        log.info("=== createCardComment END - Response ID: {} ===", response.getId());
+        return response;
     }
 }

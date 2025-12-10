@@ -8,12 +8,18 @@ import management.member.demo.dto.UpdateBoardNameRequest;
 import management.member.demo.mapper.EmployeeMapper;
 import management.member.demo.entity.Board;
 import management.member.demo.entity.Employee;
+import management.member.demo.entity.User;
 import management.member.demo.enums.BoardStatus;
+import management.member.demo.enums.Role;
 import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.exception.specifiic.ForbiddenException;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.BoardMapper;
 import management.member.demo.repository.BoardRepository;
 import management.member.demo.repository.EmployeeRepository;
+import management.member.demo.repository.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -27,6 +33,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class BoardService {
+    private static final Logger log = LoggerFactory.getLogger(BoardService.class);
     @Autowired
     BoardRepository boardRepository;
 
@@ -34,26 +41,54 @@ public class BoardService {
     EmployeeRepository employeeRepository;
 
     @Autowired
+    UserRepository userRepository;
+
+    @Autowired
     BoardMapper boardMapper;
 
     @Autowired
     EmployeeMapper employeeMapper;
 
-    // 1. Tạo Board mới
-    public BoardResponse createBoard(BoardRequest request) {
-        // Lấy email người đang đăng nhập từ Token
+    // Helper: Lấy User và Employee hiện tại
+    private User getCurrentUser() {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với email: " + currentEmail));
+    }
 
-        // Tìm thông tin Employee của người tạo
-        Employee creator = employeeRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
+    private Employee getCurrentEmployee() {
+        User user = getCurrentUser();
+        log.info("getCurrentEmployee - User ID: {}, Email: {}, employees_id FK: {}",
+                user.getId(), user.getEmail(), user.getEmployeeId());
+
+        Employee employee = user.getEmployee();
+        if (employee == null) {
+            log.error("User {} không có Employee liên kết!", user.getEmail());
+            throw new ResourceNotFoundException("User chưa được liên kết với Employee");
+        }
+        log.info("getCurrentEmployee - Found Employee ID: {}, Name: {}", employee.getId(), employee.getFullName());
+        return employee;
+    }
+
+    // Helper: Kiểm tra user có phải Manager/Admin không
+    private boolean isManagerOrAdmin() {
+        Role role = getCurrentUser().getRole();
+        return role == Role.MANAGER || role == Role.ADMIN;
+    }
+
+    // 1. Tạo Board mới - CHỈ MANAGER/ADMIN
+    public BoardResponse createBoard(BoardRequest request) {
+        if (!isManagerOrAdmin()) {
+            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền tạo Board");
+        }
+        Employee creator = getCurrentEmployee();
 
         Board board = new Board();
         board.setName(request.getName());
         board.setCreatedAt(LocalDate.now());
-        board.setStatus(BoardStatus.ACTIVE); // Mặc định Active
+        board.setStatus(BoardStatus.ACTIVE);
 
-        // QUAN TRỌNG: Khởi tạo danh sách và thêm người tạo vào làm thành viên đầu tiên
+        // Thêm người tạo vào làm thành viên đầu tiên
         List<Employee> members = new ArrayList<>();
         members.add(creator);
         board.setMembers(members);
@@ -61,33 +96,26 @@ public class BoardService {
         return boardMapper.toResponse(boardRepository.save(board));
     }
 
+    // Thêm member vào board - CHỈ MANAGER/ADMIN
     public BoardResponse addMemberToBoard(AddMemberRequest request) {
-        // Lấy email người đang đăng nhập từ Token
-        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        
-        // Tìm thông tin Employee của người đang đăng nhập
-        Employee currentUser = employeeRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
-
-        // Tìm Board mà user hiện tại là member (lấy board đầu tiên)
-        List<Board> userBoards = boardRepository.findByStatus(BoardStatus.ACTIVE).stream()
-                .filter(board -> board.getMembers() != null && 
-                        board.getMembers().stream()
-                                .anyMatch(emp -> emp.getId().equals(currentUser.getId())))
-                .collect(Collectors.toList());
-
-        if (userBoards.isEmpty()) {
-            throw new ResourceNotFoundException("Không tìm thấy Board mà bạn là thành viên");
+        if (!isManagerOrAdmin()) {
+            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền thêm thành viên");
         }
 
-        // Lấy board đầu tiên
-        Board board = userBoards.get(0);
+        // Tìm Board theo boardId từ request
+        Board board = boardRepository.findById(request.getBoardId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Board với ID: " + request.getBoardId()));
 
         // Tìm Nhân viên theo Email
         Employee newMember = employeeRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên với email: " + request.getEmail()));
 
-        // Kiểm tra xem đã có trong board chưa để tránh trùng lặp
+        // Khởi tạo danh sách members nếu null
+        if (board.getMembers() == null) {
+            board.setMembers(new ArrayList<>());
+        }
+
+        // Kiểm tra xem đã có trong board chưa
         boolean isAlreadyMember = board.getMembers().stream()
                 .anyMatch(emp -> emp.getId().equals(newMember.getId()));
 
@@ -101,42 +129,106 @@ public class BoardService {
         return boardMapper.toResponse(board);
     }
 
-    // 2. Lấy danh sách Board (có hỗ trợ tìm kiếm)
+    // 2. Lấy danh sách Board - LỌC THEO ROLE
     public List<BoardResponse> getAllBoards(String search) {
-        List<Board> boards;
+        User currentUser = getCurrentUser();
+        Employee currentEmployee = getCurrentEmployee();
+        Role userRole = currentUser.getRole();
+        Long currentEmployeeId = currentEmployee.getId();
 
+        log.info("=== getAllBoards DEBUG ===");
+        log.info("Current User: {} (Role: {})", currentUser.getEmail(), userRole);
+        log.info("Current Employee ID: {}, Name: {}", currentEmployeeId, currentEmployee.getFullName());
+
+        // Dùng JOIN FETCH để đảm bảo members được load từ DB
+        List<Board> boards;
         if (search != null && !search.isEmpty()) {
-            // Tìm kiếm nhưng chỉ trong các board ACTIVE
-            boards = boardRepository.findByNameContainingIgnoreCaseAndStatus(search, BoardStatus.ACTIVE);
+            boards = boardRepository.findByNameContainingAndStatusWithMembers(search, BoardStatus.ACTIVE);
         } else {
-            // Lấy tất cả board ACTIVE
-            boards = boardRepository.findByStatus(BoardStatus.ACTIVE);
+            boards = boardRepository.findByStatusWithMembers(BoardStatus.ACTIVE);
         }
 
-        return boards.stream()
+        log.info("Total boards from DB: {}", boards.size());
+        for (Board b : boards) {
+            List<Long> memberIds = b.getMembers() != null
+                ? b.getMembers().stream().map(Employee::getId).collect(Collectors.toList())
+                : List.of();
+            log.info("Board [{}] '{}' - Members: {}", b.getId(), b.getName(), memberIds);
+        }
+
+        // Lọc boards - CHỈ trả về boards mà user là member
+        List<BoardResponse> result = boards.stream()
+                .filter(board -> {
+                    if (board.getMembers() == null || board.getMembers().isEmpty()) {
+                        log.info("Board [{}] - NO MEMBERS, skipping", board.getId());
+                        return false;
+                    }
+                    // Kiểm tra user có trong danh sách members không
+                    boolean isMember = board.getMembers().stream()
+                            .anyMatch(emp -> emp.getId().equals(currentEmployeeId));
+                    log.info("Board [{}] - isMember for Employee {}: {}", board.getId(), currentEmployeeId, isMember);
+                    return isMember;
+                })
                 .map(boardMapper::toResponse)
                 .collect(Collectors.toList());
+
+        log.info("Filtered boards count: {}", result.size());
+        return result;
     }
 
-    // 3. Xóa Board
+    // 3. Xóa Board - CHỈ MANAGER/ADMIN
     public void deleteBoard(Long id) {
+        if (!isManagerOrAdmin()) {
+            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền xóa Board");
+        }
         boardRepository.deleteById(id);
     }
 
+    // Cập nhật board - CHỈ MANAGER/ADMIN
     public BoardResponse updateBoardName(Long boardId, UpdateBoardNameRequest request) {
-        // 1. Tìm Board
+        if (!isManagerOrAdmin()) {
+            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền cập nhật Board");
+        }
+
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại"));
 
-        // 2. Cập nhật tên board
         board.setName(request.getName());
 
-        // 3. Lưu và trả về
         return boardMapper.toResponse(boardRepository.save(board));
+    }
+
+    // Xóa member khỏi board - CHỈ MANAGER/ADMIN
+    public void removeMemberFromBoard(Long boardId, Long memberId) {
+        if (!isManagerOrAdmin()) {
+            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền xóa thành viên");
+        }
+
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Board với ID: " + boardId));
+
+        if (board.getMembers() == null || board.getMembers().isEmpty()) {
+            throw new ResourceNotFoundException("Board không có thành viên nào");
+        }
+
+        boolean removed = board.getMembers().removeIf(emp -> emp.getId().equals(memberId));
+
+        if (!removed) {
+            throw new ResourceNotFoundException("Nhân viên không phải là thành viên của Board này");
+        }
+
+        boardRepository.save(board);
     }
 
     public int getTotalBoards() {
         return (int) boardRepository.count();
+    }
+
+    // Lấy chi tiết board theo ID
+    public BoardResponse getBoardById(Long boardId) {
+        Board board = boardRepository.findById(boardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Board với ID: " + boardId));
+        return boardMapper.toResponse(board);
     }
 
     public List<EmployeeResponse> getBoardMembers(Long boardId) {

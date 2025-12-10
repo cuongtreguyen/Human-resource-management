@@ -3,44 +3,59 @@ package management.member.demo.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import management.member.demo.dto.CommentRequest;
 import management.member.demo.dto.CommentResponse;
 import management.member.demo.dto.CommentUpdateRequest;
 import management.member.demo.service.CommentService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
-@RequestMapping("/api/comment")
+@RequestMapping("/api")
 @RequiredArgsConstructor
+@Tag(name = "Comments", description = "Comment management for Task and Kanban Card")
 public class CommentController {
     private final CommentService commentService;
 
-    @PostMapping("/create")
-    @Operation(summary = "Tạo comment mới", description = "Create a new comment")
+    // ============== KANBAN CARD COMMENTS (RESTful) ==============
+
+    @GetMapping("/cards/{cardId}/comments")
+    @Operation(summary = "Lấy danh sách comment của Kanban Card")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success"),
+            @ApiResponse(responseCode = "404", description = "Card not found")
+    })
+    public ResponseEntity<List<CommentResponse>> getCommentsByCard(@PathVariable Long cardId) {
+        List<CommentResponse> comments = commentService.getCommentsByCardId(cardId);
+        return ResponseEntity.ok(comments);
+    }
+
+    @PostMapping("/cards/{cardId}/comments")
+    @Operation(summary = "Tạo comment cho Kanban Card")
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "Comment created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request")
+            @ApiResponse(responseCode = "404", description = "Card not found")
     })
-    public ResponseEntity<CommentResponse> createComment(@Valid @RequestBody CommentRequest request) {
-        CommentResponse response = commentService.createComment(request);
-        return ResponseEntity.ok().body(response);
+    public ResponseEntity<CommentResponse> createCardComment(
+            @PathVariable Long cardId,
+            @RequestBody Map<String, String> body) {
+        String content = body.get("content");
+        if (content == null || content.trim().isEmpty()) {
+            throw new IllegalArgumentException("Nội dung comment không được để trống");
+        }
+        CommentResponse response = commentService.createCardComment(cardId, content.trim());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @GetMapping("/get-cmt/{taskId}")
-    @Operation(summary = "Lấy danh sách comment theo Task ID", description = "Get comments by Task ID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Comments retrieved successfully"),
-            @ApiResponse(responseCode = "404", description = "Task not found")
-    })
-    public ResponseEntity<java.util.List<CommentResponse>> getCommentsByTaskID(@PathVariable Long taskId) {
-        java.util.List<CommentResponse> responses = commentService.getCommentsByTaskID(taskId);
-        return ResponseEntity.ok().body(responses);
-    }
+    // ============== COMMON COMMENT OPERATIONS ==============
 
-    @PutMapping("/{id}")
+    @PutMapping("/comments/{id}")
     @Operation(summary = "Cập nhật comment", description = "Update a comment. Chỉ nhân viên đã tạo comment mới có quyền cập nhật")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Comment updated successfully"),
@@ -54,7 +69,7 @@ public class CommentController {
         return ResponseEntity.ok().body(response);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/comments/{id}")
     @Operation(summary = "Xóa comment", description = "Delete a comment. Chỉ nhân viên đã tạo comment mới có quyền xóa")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "Comment deleted successfully"),
