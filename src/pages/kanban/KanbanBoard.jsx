@@ -1,8 +1,8 @@
 // src/pages/kanban/KanbanBoard.jsx
-// Main Kanban Board Page with drag & drop
+// Main Kanban Board Page with drag & drop - Trello-style
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   DndContext,
   DragOverlay,
@@ -21,6 +21,7 @@ import KanbanCard from '../../components/kanban/KanbanCard';
 import CardDetailModal from '../../components/kanban/CardDetailModal';
 import AddListWidget from '../../components/kanban/AddListWidget';
 import { useKanbanContext } from '../../context/KanbanContext';
+import kanbanService from '../../services/kanbanService';
 import {
   ArrowLeft,
   Search,
@@ -34,12 +35,24 @@ import {
   MoreHorizontal,
   UserPlus,
   Trash2,
+  X,
+  Check,
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { isManager, isAdmin } from '../../utils/auth';
 
 const KanbanBoard = () => {
   const { boardId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Check if we're in employee route (already wrapped in EmployeeLayout)
+  const isEmployeeRoute = location.pathname.startsWith('/employee/kanban');
+
+  // Check if user can manage board (only Manager/Admin)
+  // Employee chỉ được xem, không được tạo list/card/member
+  const canManageBoard = isManager() || isAdmin();
+
   const {
     boards,
     loading,
@@ -65,12 +78,25 @@ const KanbanBoard = () => {
   const [selectedList, setSelectedList] = useState(null);
   const [showCardModal, setShowCardModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
-  const [newMemberEmail, setNewMemberEmail] = useState('');
   const [isLoadingBoard, setIsLoadingBoard] = useState(true);
 
-  // Load board data when boardId changes
+  // State cho danh sách nhân viên và tìm kiếm
+  const [allEmployees, setAllEmployees] = useState([]);
+  const [employeeSearchQuery, setEmployeeSearchQuery] = useState('');
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [addingMember, setAddingMember] = useState(false);
+
+  // Load board data when boardId changes - only once per boardId
   useEffect(() => {
     if (!boardId || loading) return;
+    
+    // Check if we already have this board loaded with complete data
+    const existingBoard = boards.find(b => String(b.id) === String(boardId));
+    if (existingBoard?.lists?.length > 0 && existingBoard.lists.every(l => l.cards !== undefined && Array.isArray(l.cards))) {
+      setBoard(existingBoard);
+      setIsLoadingBoard(false);
+      return;
+    }
     
     let isMounted = true;
     setIsLoadingBoard(true);
@@ -92,22 +118,75 @@ const KanbanBoard = () => {
     
     loadBoard();
     return () => { isMounted = false; };
-  }, [boardId, loading, getBoardById]);
+  }, [boardId, loading]); // Removed getBoardById and boards from dependencies to prevent infinite loops
   
   // Update board when boards context changes (for progressive card loading)
   useEffect(() => {
     if (!boardId || !boards?.length) return;
+    
     const updatedBoard = boards.find(b => String(b.id) === String(boardId));
-    if (updatedBoard && updatedBoard.lists?.length > 0) {
-      setBoard(prev => {
-        // Only update if cards have changed
-        if (!prev || JSON.stringify(prev.lists?.map(l => l.cards?.length)) !== JSON.stringify(updatedBoard.lists?.map(l => l.cards?.length))) {
-          return updatedBoard;
-        }
-        return prev;
-      });
-    }
+    if (!updatedBoard) return;
+    
+    // Simple update - just check if board data changed
+    setBoard(prev => {
+      if (!prev) return updatedBoard;
+      
+      // Check if lists count changed
+      if (prev.lists?.length !== updatedBoard.lists?.length) {
+        return updatedBoard;
+      }
+      
+      // Check if any list's card count changed
+      const prevCardCounts = prev.lists?.map(l => l.cards?.length || 0) || [];
+      const newCardCounts = updatedBoard.lists?.map(l => l.cards?.length || 0) || [];
+      if (JSON.stringify(prevCardCounts) !== JSON.stringify(newCardCounts)) {
+        return updatedBoard;
+      }
+      
+      // No changes, keep previous board
+      return prev;
+    });
   }, [boards, boardId]);
+
+  // Load danh sách nhân viên khi mở Members Modal
+  useEffect(() => {
+    if (showMembersModal && canManageBoard && allEmployees.length === 0) {
+      loadAllEmployees();
+    }
+  }, [showMembersModal, canManageBoard]);
+
+  const loadAllEmployees = async () => {
+    setLoadingEmployees(true);
+    try {
+      const response = await kanbanService.employee.getAll();
+      const employees = Array.isArray(response) ? response : (response?.data || []);
+      setAllEmployees(employees);
+    } catch (error) {
+      console.error('Error loading employees:', error);
+      toast.error('Không thể tải danh sách nhân viên');
+    } finally {
+      setLoadingEmployees(false);
+    }
+  };
+
+  // Lọc nhân viên chưa có trong board và theo search query
+  const availableEmployees = useMemo(() => {
+    const memberIds = (board?.members || []).map(m => m.id);
+    return allEmployees.filter(emp => {
+      // Loại bỏ những người đã là member
+      if (memberIds.includes(emp.id)) return false;
+      // Lọc theo search query
+      if (employeeSearchQuery) {
+        const query = employeeSearchQuery.toLowerCase();
+        return (
+          emp.fullName?.toLowerCase().includes(query) ||
+          emp.email?.toLowerCase().includes(query) ||
+          emp.employeeId?.toLowerCase().includes(query)
+        );
+      }
+      return true;
+    });
+  }, [allEmployees, board?.members, employeeSearchQuery]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -134,37 +213,56 @@ const KanbanBoard = () => {
   };
 
   if (!board || isLoadingBoard) {
-    return (
-      <Layout>
-        <div className="flex flex-col items-center justify-center h-full gap-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <p className="text-gray-500">Đang tải board...</p>
-          {!board && !isLoadingBoard && (
-            <button
-              onClick={() => navigate('/kanban')}
-              className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              Quay lại danh sách board
-            </button>
-          )}
-        </div>
-      </Layout>
+    const loadingContent = (
+      <div className="flex flex-col items-center justify-center h-full gap-4 min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <p className="text-gray-500">Đang tải board...</p>
+        {!board && !isLoadingBoard && (
+          <button
+            onClick={() => navigate(isEmployeeRoute ? '/employee/kanban' : '/kanban')}
+            className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            Quay lại danh sách board
+          </button>
+        )}
+      </div>
     );
+    
+    // If employee route, don't wrap in Layout (already in EmployeeLayout)
+    if (isEmployeeRoute) {
+      return loadingContent;
+    }
+    
+    return <Layout>{loadingContent}</Layout>;
   }
 
   // NOTE: Không tạo default lists với temporary IDs ở đây nữa!
   // getBoardById trong KanbanContext đã tự động tạo default lists qua API nếu board chưa có lists
   // Tất cả lists phải có real IDs từ BE (Long), không phải temporary string IDs
 
-  // Safely get board stats
+  // Calculate board stats - recalculate when board or boards change
+  // Calculate board stats - recalculate when board or boards change
+  // Calculate board stats - recalculate when board or boards change
   let stats = null;
   try {
-    if (boardId) {
+    if (boardId && getBoardStats) {
       stats = getBoardStats(boardId);
     }
   } catch (error) {
     console.warn('Error getting board stats:', error);
     stats = null;
+  }
+  
+  // Default stats if null
+  if (!stats) {
+    stats = {
+      totalCards: 0,
+      todo: 0,
+      inProgress: 0,
+      review: 0,
+      done: 0,
+      progress: 0,
+    };
   }
 
   // Sort lists by position (safely) - don't mutate board object
@@ -282,7 +380,19 @@ const KanbanBoard = () => {
   };
 
   const handleCardClick = (card) => {
+    if (!card || !board) {
+      console.warn('handleCardClick: Missing card or board', { card, board });
+      return;
+    }
+    
     const list = (board?.lists || []).find(l => (l.cards || []).some(c => c.id === card.id));
+    
+    if (!list) {
+      console.warn('handleCardClick: Could not find list for card', { cardId: card.id, boardId: board.id, lists: board.lists });
+      toast.error('Không tìm thấy danh sách chứa task này');
+      return;
+    }
+    
     setSelectedCard(card);
     setSelectedList(list);
     setShowCardModal(true);
@@ -317,16 +427,24 @@ const KanbanBoard = () => {
     deleteList(boardId, listId);
   };
 
-  const handleAddMember = () => {
-    if (newMemberEmail.trim()) {
-      // In a real app, you'd validate the email and get user info
-      addMember(boardId, {
-        accountId: `user-${Date.now()}`,
-        name: newMemberEmail.split('@')[0],
-        email: newMemberEmail.trim(),
-        role: 'MEMBER',
+  // Thêm member vào board từ danh sách nhân viên
+  const handleAddMember = async (employee) => {
+    if (!employee?.email) {
+      toast.error('Không tìm thấy email nhân viên');
+      return;
+    }
+
+    setAddingMember(true);
+    try {
+      await addMember(boardId, {
+        email: employee.email,
       });
-      setNewMemberEmail('');
+      // Reload employees list để cập nhật danh sách available
+      // (employee vừa thêm sẽ bị lọc ra khỏi availableEmployees tự động)
+    } catch (error) {
+      console.error('Error adding member:', error);
+    } finally {
+      setAddingMember(false);
     }
   };
 
@@ -336,15 +454,14 @@ const KanbanBoard = () => {
     }
   };
 
-  return (
-    <Layout>
-      <div className="h-full flex flex-col bg-gradient-to-br from-slate-100 to-blue-100">
+  const boardContent = (
+    <div className="h-full flex flex-col bg-gradient-to-br from-slate-100 to-blue-100">
         {/* Header */}
         <div className="bg-white/80 backdrop-blur-sm border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
-                onClick={() => navigate('/kanban')}
+                onClick={() => navigate(isEmployeeRoute ? '/employee/kanban' : '/kanban')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5 text-gray-600" />
@@ -377,15 +494,18 @@ const KanbanBoard = () => {
               >
                 <Users className="w-4 h-4 text-gray-600" />
                 <div className="flex -space-x-2">
-                  {board.members?.slice(0, 3).map((member) => (
-                    <div
-                      key={member.id}
-                      className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium border-2 border-white"
-                      title={member.name}
-                    >
-                      {member.name?.charAt(0)?.toUpperCase()}
-                    </div>
-                  ))}
+                  {board.members?.slice(0, 3).map((member) => {
+                    const memberName = member.fullName || member.name || 'Unknown';
+                    return (
+                      <div
+                        key={member.id}
+                        className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium border-2 border-white"
+                        title={memberName}
+                      >
+                        {memberName.charAt(0)?.toUpperCase()}
+                      </div>
+                    );
+                  })}
                   {board.members?.length > 3 && (
                     <div className="w-6 h-6 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xs font-medium border-2 border-white">
                       +{board.members.length - 3}
@@ -436,15 +556,16 @@ const KanbanBoard = () => {
                       [...(list.cards || [])].sort((a, b) => (a.position || 0) - (b.position || 0))
                     ),
                   }}
-                  onAddCard={handleAddCard}
+                  onAddCard={canManageBoard ? handleAddCard : null}
                   onCardClick={handleCardClick}
-                  onUpdateList={handleUpdateList}
-                  onDeleteList={handleDeleteList}
+                  onUpdateList={canManageBoard ? handleUpdateList : null}
+                  onDeleteList={canManageBoard ? handleDeleteList : null}
+                  canManage={canManageBoard}
                 />
               ))}
 
-              {/* Add List Widget */}
-              <AddListWidget onAddList={handleAddList} />
+              {/* Add List Widget - Chỉ Manager/Admin mới thấy */}
+              {canManageBoard && <AddListWidget onAddList={handleAddList} />}
             </div>
 
             <DragOverlay>
@@ -472,81 +593,157 @@ const KanbanBoard = () => {
           onDeleteCard={handleDeleteCard}
         />
 
-        {/* Members Modal */}
+        {/* Members Modal - Trello Style */}
         {showMembersModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-xl w-full max-w-lg mx-4 max-h-[90vh] flex flex-col">
+              {/* Header */}
+              <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="text-xl font-bold text-gray-900">Thành viên Board</h2>
                 <button
-                  onClick={() => setShowMembersModal(false)}
+                  onClick={() => {
+                    setShowMembersModal(false);
+                    setEmployeeSearchQuery('');
+                  }}
                   className="p-1 hover:bg-gray-100 rounded-lg"
                 >
-                  <ArrowLeft className="w-5 h-5 text-gray-500 rotate-180" />
+                  <X className="w-5 h-5 text-gray-500" />
                 </button>
               </div>
 
-              {/* Add Member */}
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="email"
-                  placeholder="Email thành viên mới..."
-                  value={newMemberEmail}
-                  onChange={(e) => setNewMemberEmail(e.target.value)}
-                  className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAddMember();
-                  }}
-                />
-                <button
-                  onClick={handleAddMember}
-                  disabled={!newMemberEmail.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <UserPlus className="w-5 h-5" />
-                </button>
-              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                {/* Current Members Section */}
+                <div className="mb-6">
+                  <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                    Thành viên hiện tại ({board.members?.length || 0})
+                  </h3>
+                  <div className="space-y-2">
+                    {board.members?.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
+                            {(member.fullName || member.name)?.charAt(0)?.toUpperCase() || '?'}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900">{member.fullName || member.name}</p>
+                            <p className="text-sm text-gray-500">{member.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {/* Remove button - only for Manager/Admin */}
+                          {canManageBoard && (
+                            <button
+                              onClick={() => handleRemoveMember(member.id)}
+                              className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Xóa khỏi board"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                    {(!board.members || board.members.length === 0) && (
+                      <p className="text-gray-500 text-sm italic">Chưa có thành viên nào</p>
+                    )}
+                  </div>
+                </div>
 
-              {/* Members List */}
-              <div className="space-y-2 max-h-80 overflow-y-auto">
-                {board.members?.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-medium">
-                        {member.name?.charAt(0)?.toUpperCase()}
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900">{member.name}</p>
-                        <p className="text-sm text-gray-500">{member.email}</p>
-                      </div>
+                {/* Add Member Section - only for Manager/Admin */}
+                {canManageBoard && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                      Thêm thành viên
+                    </h3>
+
+                    {/* Search Input */}
+                    <div className="relative mb-3">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Tìm kiếm nhân viên theo tên, email..."
+                        value={employeeSearchQuery}
+                        onChange={(e) => setEmployeeSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded ${
-                        member.role === 'OWNER' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
-                      }`}>
-                        {member.role === 'OWNER' ? 'Chủ sở hữu' : 'Thành viên'}
-                      </span>
-                      {member.role !== 'OWNER' && (
-                        <button
-                          onClick={() => handleRemoveMember(member.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+
+                    {/* Employee List */}
+                    <div className="border rounded-lg max-h-64 overflow-y-auto">
+                      {loadingEmployees ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                          <span className="ml-2 text-gray-500">Đang tải...</span>
+                        </div>
+                      ) : availableEmployees.length > 0 ? (
+                        <div className="divide-y">
+                          {availableEmployees.map((employee) => (
+                            <div
+                              key={employee.id}
+                              className="flex items-center justify-between p-3 hover:bg-blue-50 transition-colors cursor-pointer"
+                              onClick={() => !addingMember && handleAddMember(employee)}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center text-white font-medium">
+                                  {employee.fullName?.charAt(0)?.toUpperCase() || '?'}
+                                </div>
+                                <div>
+                                  <p className="font-medium text-gray-900">{employee.fullName}</p>
+                                  <p className="text-sm text-gray-500">{employee.email}</p>
+                                  {employee.position && (
+                                    <p className="text-xs text-gray-400">{employee.position}</p>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddMember(employee);
+                                }}
+                                disabled={addingMember}
+                                className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                              >
+                                <UserPlus className="w-4 h-4" />
+                                <span>Thêm</span>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center text-gray-500">
+                          {employeeSearchQuery ? (
+                            <p>Không tìm thấy nhân viên phù hợp</p>
+                          ) : (
+                            <p>Tất cả nhân viên đã được thêm vào board</p>
+                          )}
+                        </div>
                       )}
                     </div>
+
+                    {/* Total count */}
+                    {!loadingEmployees && (
+                      <p className="text-xs text-gray-500 mt-2">
+                        Có {availableEmployees.length} nhân viên có thể thêm
+                      </p>
+                    )}
                   </div>
-                ))}
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
-    </Layout>
   );
+  
+  // If employee route, don't wrap in Layout (already in EmployeeLayout)
+  if (isEmployeeRoute) {
+    return boardContent;
+  }
+  
+  return <Layout>{boardContent}</Layout>;
 };
 
 export default KanbanBoard;

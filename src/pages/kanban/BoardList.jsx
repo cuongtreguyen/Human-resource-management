@@ -2,10 +2,11 @@
 // Board List Page - Grid of boards with search, progress bars
 
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import Layout from '../../components/layout/Layout';
 import { useKanbanContext } from '../../context/KanbanContext';
+import { getRole, isManager, isAdmin } from '../../utils/auth';
 import {
   Kanban,
   Search,
@@ -23,7 +24,14 @@ import {
 
 const BoardList = () => {
   const navigate = useNavigate();
-  const { boards, createBoard, deleteBoard, updateBoard, getBoardStats } = useKanbanContext();
+  const location = useLocation();
+  const { boards, createBoard, deleteBoard, updateBoard, getBoardStats, loading } = useKanbanContext();
+
+  // Check if we're in employee route (already wrapped in EmployeeLayout)
+  const isEmployeeRoute = location.pathname.startsWith('/employee/kanban');
+
+  // Check if user can manage boards (only Manager/Admin can create/edit/delete)
+  const canManageBoards = isManager() || isAdmin();
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -99,7 +107,7 @@ const BoardList = () => {
       setNewBoardName('');
       setShowCreateModal(false);
       if (newBoard && newBoard.id) {
-        navigate(`/kanban/${newBoard.id}`);
+        navigate(isEmployeeRoute ? `/employee/kanban/${newBoard.id}` : `/kanban/${newBoard.id}`);
       } else {
         console.error('Created board does not have an id:', newBoard);
         toast.error('Tạo board thành công nhưng không thể chuyển trang');
@@ -147,8 +155,25 @@ const BoardList = () => {
 
   const getBoardColor = (index) => boardColors[index % boardColors.length];
 
-  return (
-    <Layout>
+  // Show loading state
+  if (loading) {
+    const loadingContent = (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Đang tải boards...</p>
+        </div>
+      </div>
+    );
+    
+    if (isEmployeeRoute) {
+      return loadingContent;
+    }
+    return <Layout>{loadingContent}</Layout>;
+  }
+
+  const boardListContent = (
+    <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -163,13 +188,15 @@ const BoardList = () => {
                   <p className="text-gray-500">Chọn board để xem và quản lý công việc</p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Tạo Board mới</span>
-              </button>
+              {canManageBoards && (
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Tạo Board mới</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -258,14 +285,20 @@ const BoardList = () => {
           {/* Board Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredBoards.map((board, index) => {
-              const stats = getBoardStats(board.id);
+              let stats = null;
+              try {
+                stats = getBoardStats ? getBoardStats(board.id) : null;
+              } catch (error) {
+                console.error('Error getting board stats for board', board.id, error);
+                stats = null;
+              }
               const progress = stats?.progress || 0;
               const gradient = getBoardColor(index);
 
               return (
                 <div
                   key={board.id}
-                  onClick={() => navigate(`/kanban/${board.id}`)}
+                  onClick={() => navigate(isEmployeeRoute ? `/employee/kanban/${board.id}` : `/kanban/${board.id}`)}
                   className="bg-white rounded-xl border shadow-sm overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 hover:-translate-y-1 group"
                 >
                   {/* Board Header with gradient */}
@@ -274,36 +307,38 @@ const BoardList = () => {
                     <div className="absolute bottom-3 left-4 right-4">
                       <h3 className="font-bold text-white text-lg truncate">{board.name}</h3>
                     </div>
-                    {/* Menu button */}
-                    <div className="absolute top-2 right-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setMenuOpenId(menuOpenId === board.id ? null : board.id);
-                        }}
-                        className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <MoreHorizontal className="w-4 h-4 text-white" />
-                      </button>
-                      {menuOpenId === board.id && (
-                        <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg py-1 min-w-32 z-10">
-                          <button
-                            onClick={(e) => handleEditBoard(board, e)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            <span>Sửa tên</span>
-                          </button>
-                          <button
-                            onClick={(e) => handleDeleteBoard(board.id, e)}
-                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>Xóa board</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    {/* Menu button - only for Manager/Admin */}
+                    {canManageBoards && (
+                      <div className="absolute top-2 right-2">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setMenuOpenId(menuOpenId === board.id ? null : board.id);
+                          }}
+                          className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        >
+                          <MoreHorizontal className="w-4 h-4 text-white" />
+                        </button>
+                        {menuOpenId === board.id && (
+                          <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg py-1 min-w-32 z-10">
+                            <button
+                              onClick={(e) => handleEditBoard(board, e)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              <span>Sửa tên</span>
+                            </button>
+                            <button
+                              onClick={(e) => handleDeleteBoard(board.id, e)}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span>Xóa board</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4">
@@ -311,7 +346,7 @@ const BoardList = () => {
                     <div className="flex items-center gap-2 mb-4">
                       <div className="flex items-center gap-1.5 text-sm text-gray-500">
                         <Users className="w-4 h-4" />
-                        <span>{board.members?.length || 1} thành viên</span>
+                        <span>{board.members?.length || 0} thành viên</span>
                       </div>
                       <span className="text-gray-300">•</span>
                       <span className="text-sm text-gray-500">{stats?.totalCards || 0} tasks</span>
@@ -365,17 +400,19 @@ const BoardList = () => {
               );
             })}
 
-            {/* Create New Board Card */}
-            <div
-              onClick={() => setShowCreateModal(true)}
-              className="bg-white/50 border-2 border-dashed border-gray-300 rounded-xl p-6 cursor-pointer hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-200 flex flex-col items-center justify-center min-h-[280px]"
-            >
-              <div className="p-4 bg-gray-100 rounded-full mb-4">
-                <Plus className="w-8 h-8 text-gray-500" />
+            {/* Create New Board Card - only for Manager/Admin */}
+            {canManageBoards && (
+              <div
+                onClick={() => setShowCreateModal(true)}
+                className="bg-white/50 border-2 border-dashed border-gray-300 rounded-xl p-6 cursor-pointer hover:border-blue-500 hover:bg-blue-50/50 transition-all duration-200 flex flex-col items-center justify-center min-h-[280px]"
+              >
+                <div className="p-4 bg-gray-100 rounded-full mb-4">
+                  <Plus className="w-8 h-8 text-gray-500" />
+                </div>
+                <p className="text-gray-600 font-medium">Tạo board mới</p>
+                <p className="text-gray-400 text-sm mt-1">Bắt đầu quản lý công việc</p>
               </div>
-              <p className="text-gray-600 font-medium">Tạo board mới</p>
-              <p className="text-gray-400 text-sm mt-1">Bắt đầu quản lý công việc</p>
-            </div>
+            )}
           </div>
 
           {filteredBoards.length === 0 && searchQuery && (
@@ -385,7 +422,7 @@ const BoardList = () => {
           )}
         </div>
       </div>
-
+      
       {/* Create Board Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -495,8 +532,15 @@ const BoardList = () => {
           </div>
         </div>
       )}
-    </Layout>
+    </>
   );
+  
+  // If employee route, don't wrap in Layout (already in EmployeeLayout)
+  if (isEmployeeRoute) {
+    return boardListContent;
+  }
+  
+  return <Layout>{boardListContent}</Layout>;
 };
 
 export default BoardList;

@@ -35,6 +35,7 @@ import {
   LayoutGrid,
   List,
   Filter,
+  ExternalLink,
 } from 'lucide-react';
 import { useKanbanContext, PRIORITIES, LIST_STATUS_MAP } from '../../context/KanbanContext';
 import { getUserInfo } from '../../utils/auth';
@@ -200,6 +201,7 @@ const EmployeeColumn = ({ column, cards, onCardClick }) => {
 
 // Card Detail Modal for Employee
 const EmployeeCardDetailModal = ({ isOpen, onClose, card, board, list }) => {
+  const navigate = useNavigate();
   const { getCommentsByCard, addComment, moveCard, updateCard } = useKanbanContext();
   const [newComment, setNewComment] = useState('');
   const [activeTab, setActiveTab] = useState('details');
@@ -324,17 +326,20 @@ const EmployeeCardDetailModal = ({ isOpen, onClose, card, board, list }) => {
             <div>
               <span className="text-sm text-gray-500 block mb-2">Người thực hiện:</span>
               <div className="flex flex-wrap gap-2">
-                {card.assignees.map((assignee) => (
-                  <div
-                    key={assignee.id}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full"
-                  >
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
-                      {assignee.name?.charAt(0)?.toUpperCase()}
+                {card.assignees.map((assignee) => {
+                  const assigneeName = assignee.fullName || assignee.name || 'Unknown';
+                  return (
+                    <div
+                      key={assignee.id}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full"
+                    >
+                      <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-medium">
+                        {assigneeName.charAt(0)?.toUpperCase()}
+                      </div>
+                      <span className="text-sm text-gray-700">{assigneeName}</span>
                     </div>
-                    <span className="text-sm text-gray-700">{assignee.name}</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -402,12 +407,25 @@ const EmployeeCardDetailModal = ({ isOpen, onClose, card, board, list }) => {
 
         {/* Footer */}
         <div className="p-4 border-t">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-          >
-            Đóng
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                if (board?.id) {
+                  navigate(`/employee/kanban/${board.id}`);
+                }
+              }}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 transition-colors"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Xem board
+            </button>
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Đóng
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -417,7 +435,7 @@ const EmployeeCardDetailModal = ({ isOpen, onClose, card, board, list }) => {
 // Main Component
 const EmployeeKanbanView = () => {
   const navigate = useNavigate();
-  const { boards, moveCard, updateCard, loading, employees } = useKanbanContext();
+  const { boards, moveCard, updateCard, loading, employees, getBoardById } = useKanbanContext();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedBoard, setSelectedBoard] = useState(null);
@@ -425,6 +443,7 @@ const EmployeeKanbanView = () => {
   const [activeId, setActiveId] = useState(null);
   const [activeCard, setActiveCard] = useState(null);
   const [activeSourceData, setActiveSourceData] = useState(null);
+  const [loadedBoards, setLoadedBoards] = useState([]);
 
   // Get current user info
   const userInfo = getUserInfo();
@@ -468,12 +487,96 @@ const EmployeeKanbanView = () => {
     { id: 'DONE', status: 'DONE', title: 'Hoàn thành' },
   ];
 
-  // Get all cards assigned to current employee
+  // ⚠️ ĐÃ SỬA: BE API GET /api/boards đã tự động filter boards mà user là member HOẶC có cards được assign
+  // Không cần filter ở FE nữa, chỉ cần dùng boards trực tiếp
+  // Tuy nhiên vẫn log để debug
+  const myBoards = useMemo(() => {
+    if (!boards || !Array.isArray(boards)) {
+      console.log('⚠️ [EmployeeKanbanView] No boards available');
+      return [];
+    }
+    
+    console.log('📊 [EmployeeKanbanView] Boards from BE (already filtered):', {
+      totalBoards: boards.length,
+      boardIds: boards.map(b => b.id),
+      boardNames: boards.map(b => b.name),
+      note: 'BE đã filter: boards mà user là member HOẶC có cards được assign'
+    });
+    
+    // BE đã trả về boards mà user là member HOẶC có cards được assign
+    // Nên không cần filter nữa, chỉ cần log để debug
+    boards.forEach(board => {
+      console.log('📋 [EmployeeKanbanView] Board:', {
+        boardId: board.id,
+        boardName: board.name,
+        hasMembers: !!board.members,
+        membersCount: board.members?.length || 0,
+        hasLists: !!board.lists,
+        listsCount: board.lists?.length || 0
+      });
+    });
+    
+    return boards;
+  }, [boards]);
+
+  // Load full board data (lists + cards) for filtered boards
+  useEffect(() => {
+    if (!myBoards || myBoards.length === 0) {
+      setLoadedBoards([]);
+      return;
+    }
+    
+    // Load full data for each board that doesn't have lists/cards yet
+    const loadBoardData = async () => {
+      const boardsToLoad = myBoards.filter(board => {
+        // Check if board needs loading (no lists or lists without cards)
+        if (!board.lists || board.lists.length === 0) return true;
+        return board.lists.some(list => !list.cards || !Array.isArray(list.cards));
+      });
+      
+      if (boardsToLoad.length === 0) {
+        // All boards already have full data
+        setLoadedBoards(myBoards);
+        return;
+      }
+      
+      console.log('🔄 [EmployeeKanbanView] Loading full data for boards:', boardsToLoad.map(b => b.id));
+      
+      // Load full data for each board
+      const loaded = await Promise.all(
+        boardsToLoad.map(async (board) => {
+          try {
+            const fullBoard = await getBoardById(board.id);
+            return fullBoard || board;
+          } catch (error) {
+            console.warn('⚠️ [EmployeeKanbanView] Failed to load board:', board.id, error);
+            return board;
+          }
+        })
+      );
+      
+      // Combine with boards that already have full data
+      const boardsWithFullData = myBoards.filter(board => {
+        if (board.lists && board.lists.length > 0) {
+          return board.lists.every(list => list.cards && Array.isArray(list.cards));
+        }
+        return false;
+      });
+      
+      setLoadedBoards([...boardsWithFullData, ...loaded]);
+    };
+    
+    loadBoardData();
+  }, [myBoards, getBoardById]);
+
+  // Get all cards assigned to current employee from boards they are members of
+  // Use loadedBoards instead of myBoards to ensure we have full card data
   const myCards = useMemo(() => {
-    if (!boards || !Array.isArray(boards)) return [];
+    const boardsToUse = loadedBoards.length > 0 ? loadedBoards : myBoards;
+    if (!boardsToUse || !Array.isArray(boardsToUse)) return [];
     
     const cards = [];
-    boards.forEach(board => {
+    boardsToUse.forEach(board => {
       if (!board?.lists || !Array.isArray(board.lists)) return;
       
       board.lists.forEach(list => {
@@ -505,7 +608,7 @@ const EmployeeKanbanView = () => {
       });
     });
     return cards;
-  }, [boards, employeeName, currentEmployeeId]);
+  }, [loadedBoards, myBoards, employeeName, currentEmployeeId]);
 
   // Group cards by status
   const cardsByStatus = useMemo(() => {

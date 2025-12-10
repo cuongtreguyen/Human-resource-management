@@ -166,7 +166,8 @@ const AppRoutes = () => {
         <Route path="leave" element={<EmployeeLeave />} />
         <Route path="payroll" element={<EmployeePayroll />} />
         <Route path="tasks" element={<EmployeeTaskBoard />} />
-        <Route path="kanban" element={<EmployeeKanbanView />} />
+        <Route path="kanban" element={<BoardList />} />
+        <Route path="kanban/:boardId" element={<KanbanBoard />} />
         <Route path="documents" element={<EmployeeDocuments />} />
         <Route path="benefits" element={<EmployeeBenefitsInsurance />} />
         <Route path="support" element={<EmployeeSupportHelp />} />

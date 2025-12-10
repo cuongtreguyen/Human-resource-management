@@ -27,16 +27,32 @@ export const PRIORITIES = {
 };
 
 // List status mapping
+// Maps list names to TaskStatus enum values
 export const LIST_STATUS_MAP = {
+  // NEW / TODO
   'TODO': 'TODO',
   'To Do': 'TODO',
   'Cần làm': 'TODO',
+  'NEW': 'TODO',
+  'Task mới': 'TODO',
+  
+  // IN_PROGRESS
   'In Progress': 'IN_PROGRESS',
   'Đang làm': 'IN_PROGRESS',
+  'IN_PROGRESS': 'IN_PROGRESS',
+  'Đang thực hiện': 'IN_PROGRESS',
+  
+  // REVIEW
   'Review': 'REVIEW',
   'Đang review': 'REVIEW',
+  'REVIEW': 'REVIEW',
+  
+  // COMPLETED / DONE
   'Done': 'DONE',
   'Hoàn thành': 'DONE',
+  'COMPLETED': 'DONE',
+  'COMPLETE': 'DONE',
+  'Completed': 'DONE',
 };
 
 // Default labels colors
@@ -493,7 +509,8 @@ export const KanbanProvider = ({ children }) => {
       toast.success('Xóa board thành công!');
     } catch (error) {
       console.error('Error deleting board:', error);
-      toast.error('Có lỗi xảy ra khi xóa board');
+      const errorMessage = error?.message || 'Có lỗi xảy ra khi xóa board';
+      toast.error(errorMessage);
       throw error;
     }
   }, []);
@@ -505,34 +522,25 @@ export const KanbanProvider = ({ children }) => {
     
     const boardIdStr = String(boardId);
     
-    // Quick check: if already loading, return cached board if available
+    // Quick check: if already loading, wait a bit and return cached board if available
     if (loadingBoardsRef.current.has(boardIdStr)) {
       const cached = boards.find(b => String(b.id) === boardIdStr);
-      if (cached?.lists?.length > 0) {
+      if (cached?.lists?.length > 0 && cached.lists.every(l => l.cards !== undefined)) {
         return cached;
+      }
+      // If still loading, wait 100ms and check again
+      await new Promise(resolve => setTimeout(resolve, 100));
+      const cachedAfterWait = boards.find(b => String(b.id) === boardIdStr);
+      if (cachedAfterWait?.lists?.length > 0 && cachedAfterWait.lists.every(l => l.cards !== undefined)) {
+        return cachedAfterWait;
       }
     }
     
     // Find board in local state
     let localBoard = boards.find(b => String(b.id) === boardIdStr);
     
-    // If not found, reload boards list once
-    if (!localBoard) {
-      try {
-        const boardsRes = await kanbanService.board.getAll();
-        const boardsData = Array.isArray(boardsRes?.data) ? boardsRes.data : Array.isArray(boardsRes) ? boardsRes : [];
-        setBoards(boardsData);
-        localBoard = boardsData.find(b => String(b.id) === boardIdStr);
-        if (!localBoard) {
-          return { id: boardId, name: 'Unknown Board', lists: [] };
-        }
-      } catch {
-        return { id: boardId, name: 'Unknown Board', lists: [] };
-      }
-    }
-    
-    // If board already has valid lists with cards, return immediately
-    if (localBoard.lists?.length > 0 && localBoard.lists.every(l => l.cards !== undefined)) {
+    // If board already has valid lists with cards loaded, return immediately (no need to reload)
+    if (localBoard?.lists?.length > 0 && localBoard.lists.every(l => l.cards !== undefined && Array.isArray(l.cards))) {
       return localBoard;
     }
     
@@ -540,102 +548,57 @@ export const KanbanProvider = ({ children }) => {
     loadingBoardsRef.current.add(boardIdStr);
     
     try {
-      // Load lists and labels in parallel
-      const [listsRes, labelsRes] = await Promise.all([
-        kanbanService.list.getByBoard(boardId),
-        kanbanService.label.getByBoard(boardId).catch(() => ({ data: [] })), // Fallback to empty if labels fail
-      ]);
+      // ✅ SỬ DỤNG API MỚI: GET /api/boards/{id}/detail
+      // API này trả về board với lists và cards đầy đủ
+      console.log('📥 [getBoardById] Loading board detail:', boardId);
+      const boardDetail = await kanbanService.board.getById(boardId);
       
-      let listsData = Array.isArray(listsRes?.data) ? listsRes.data : Array.isArray(listsRes) ? listsRes : [];
-      const labelsData = Array.isArray(labelsRes?.data) ? labelsRes.data : Array.isArray(labelsRes) ? labelsRes : [];
-      
-      // Create default lists if needed (parallel)
-      if (listsData.length === 0) {
-        const defaultListNames = ['TODO', 'In Progress', 'Review', 'Done'];
-        const createdLists = await Promise.all(
-          defaultListNames.map((name, index) =>
-            kanbanService.list.create(boardId, { name, position: index + 1 })
-              .then(res => res.data || res)
-              .catch(() => null)
-          )
-        );
-        const validLists = createdLists.filter(Boolean);
-        if (validLists.length > 0) {
-          const reloadedRes = await kanbanService.list.getByBoard(boardId);
-          listsData = Array.isArray(reloadedRes?.data) ? reloadedRes.data : Array.isArray(reloadedRes) ? reloadedRes : [];
-        }
-      }
-      
-      // Return board with lists and labels immediately (progressive loading)
-      const boardWithLists = { 
-        ...localBoard, 
-        lists: listsData.map(l => ({ ...l, cards: [] })),
-        labels: labelsData,
+      // Map assigneeIds to assignees objects from employees list
+      const boardWithAssignees = {
+        ...boardDetail,
+        lists: (boardDetail.lists || []).map(list => ({
+          ...list,
+          cards: (list.cards || []).map(card => {
+            if (card.assigneeIds && Array.isArray(card.assigneeIds) && card.assigneeIds.length > 0) {
+              const assignees = employees
+                .filter(emp => {
+                  const empId = emp.id != null ? Number(emp.id) : null;
+                  return empId != null && !isNaN(empId) && card.assigneeIds.includes(empId);
+                })
+                .map(emp => ({
+                  id: Number(emp.id),
+                  employeeId: emp.employeeId || emp.id,
+                  name: emp.fullName || emp.name || 'Unknown',
+                  email: emp.email || '',
+                  department: emp.department || '',
+                  position: emp.position || '',
+                }))
+                .filter(a => a.id != null);
+              
+              return { ...card, assignees };
+            }
+            return { ...card, assignees: [] };
+          })
+        }))
       };
       
-      // Update state immediately with lists and labels (without cards)
-      setBoards(prev => prev.map(b => String(b.id) === boardIdStr ? boardWithLists : b));
-      
-      // Load cards in parallel (non-blocking)
-      Promise.all(
-        listsData.map(async (list) => {
-          try {
-            const cardsRes = await kanbanService.card.getByList(list.id);
-            const cards = Array.isArray(cardsRes?.data) ? cardsRes.data : Array.isArray(cardsRes) ? cardsRes : [];
-            
-            // Map assigneeIds (Long) to assignees objects from employees list
-            // BE trả về assigneeIds là mảng Long (id của Employee entity), không phải employeeId string
-            const cardsWithAssignees = cards.map(card => {
-              if (card.assigneeIds && Array.isArray(card.assigneeIds) && card.assigneeIds.length > 0) {
-                const assignees = employees
-                  .filter(emp => {
-                    // Employee.id là Long (primary key), đây là field BE dùng trong assigneeIds
-                    const empId = emp.id != null ? Number(emp.id) : null;
-                    return empId != null && !isNaN(empId) && card.assigneeIds.includes(empId);
-                  })
-                  .map(emp => ({
-                    id: Number(emp.id), // Long ID từ Employee entity
-                    employeeId: emp.employeeId || emp.id, // String employeeId hoặc fallback
-                    name: emp.fullName || emp.name || 'Unknown',
-                    email: emp.email || '',
-                    department: emp.department || '',
-                    position: emp.position || '',
-                  }))
-                  .filter(a => a.id != null);
-                
-                return { ...card, assignees };
-              }
-              return { ...card, assignees: [] };
-            });
-            
-            return { listId: list.id, cards: cardsWithAssignees };
-          } catch {
-            return { listId: list.id, cards: [] };
-          }
-        })
-      ).then(cardsResults => {
-        // Update state with cards after they load
-        setBoards(prev => prev.map(b => {
-          if (String(b.id) === boardIdStr) {
-            return {
-              ...b,
-              lists: b.lists.map(list => {
-                const cardsResult = cardsResults.find(cr => String(cr.listId) === String(list.id));
-                return cardsResult ? { ...list, cards: cardsResult.cards } : list;
-              })
-            };
-          }
-          return b;
-        }));
-      });
+      // Update state with full board data
+      setBoards(prev => prev.map(b => String(b.id) === boardIdStr ? boardWithAssignees : b));
       
       loadingBoardsRef.current.delete(boardIdStr);
-      return boardWithLists;
+      return boardWithAssignees;
     } catch (error) {
       loadingBoardsRef.current.delete(boardIdStr);
-      return { ...localBoard, lists: [] };
+      console.error('❌ [getBoardById] Error loading board:', error);
+      
+      // Fallback: return local board if available
+      if (localBoard) {
+        return { ...localBoard, lists: localBoard.lists || [] };
+      }
+      
+      return { id: boardId, name: 'Unknown Board', lists: [] };
     }
-  }, [boards, employees]); // Add employees to dependencies for assignee mapping
+  }, [boards, employees]);
 
   // ============== LIST OPERATIONS ==============
 
@@ -651,16 +614,17 @@ export const KanbanProvider = ({ children }) => {
       const newList = response.data || response;
       
       // Update local state - add new list to board
-      setBoards(prev => prev.map(b => {
-        if (b.id === boardId || String(b.id) === String(boardId)) {
+      setBoards((prev) => {
+        return prev.map((b) => {
+          const isMatch = b.id === boardId || String(b.id) === String(boardId);
+          if (!isMatch) {
+            return b;
+          }
           const currentLists = b.lists || [];
-          return {
-            ...b,
-            lists: [...currentLists, newList]
-          };
-        }
-        return b;
-      }));
+          const updatedLists = currentLists.concat([newList]);
+          return Object.assign({}, b, { lists: updatedLists });
+        });
+      });
       
       toast.success('Tạo danh sách thành công!');
       return newList;
@@ -1083,30 +1047,53 @@ export const KanbanProvider = ({ children }) => {
 
   const addMember = useCallback(async (boardId, data) => {
     try {
-      const response = await kanbanService.member.add(boardId, {
-        employeeId: data.accountId || data.employeeId,
-        role: data.role || 'MEMBER'
-      });
+      // BE API POST /api/boards/members chỉ nhận email và boardId
+      // Không cần role, employeeId, chỉ cần email
+      if (!data.email) {
+        throw new Error('Email is required to add member');
+      }
+      
+      const requestData = {
+        email: data.email.trim(),
+        // role không cần thiết vì BE không nhận
+        // employeeId không cần thiết vì BE tìm employee theo email
+      };
+      
+      const response = await kanbanService.member.add(boardId, requestData);
       const newMember = response.data || response;
       
-      // Update local state - add member to board
-      setBoards(prev => prev.map(board => {
-        if (board.id === boardId || String(board.id) === String(boardId)) {
-          const currentMembers = board.members || [];
-          return {
-            ...board,
-            members: [...currentMembers, newMember],
-            memberCount: (board.memberCount || 0) + 1
-          };
-        }
-        return board;
-      }));
+      // Reload all boards to get updated member lists from BE
+      // This ensures the boards data is fresh and includes the new member
+      // The new member will now see the board in their "Công việc của tôi" page
+      try {
+        console.log('🔄 [addMember] Reloading all boards after adding member...');
+        const boardsRes = await kanbanService.board.getAll();
+        const boardsData = Array.isArray(boardsRes?.data) ? boardsRes.data : 
+                         Array.isArray(boardsRes) ? boardsRes : [];
+        console.log('✅ [addMember] Reloaded boards:', boardsData.length);
+        setBoards(boardsData);
+      } catch (reloadError) {
+        console.warn('⚠️ [addMember] Failed to reload boards after adding member, using local update:', reloadError);
+        // Fallback: update local state
+        setBoards(prev => prev.map(board => {
+          if (board.id === boardId || String(board.id) === String(boardId)) {
+            const currentMembers = board.members || [];
+            return {
+              ...board,
+              members: [...currentMembers, newMember],
+              memberCount: (board.memberCount || 0) + 1
+            };
+          }
+          return board;
+        }));
+      }
       
       toast.success('Thêm thành viên thành công!');
       return newMember;
     } catch (error) {
       console.error('Error adding member:', error);
-      toast.error('Có lỗi xảy ra khi thêm thành viên');
+      const errorMessage = error?.message || 'Có lỗi xảy ra khi thêm thành viên';
+      toast.error(errorMessage);
       throw error;
     }
   }, []);
@@ -1323,10 +1310,12 @@ export const KanbanProvider = ({ children }) => {
         }))
       })));
 
+      toast.success('Thêm comment thành công!');
       return newComment;
     } catch (error) {
       console.error('Error adding comment:', error);
-      toast.error('Có lỗi xảy ra khi thêm comment');
+      const errorMessage = error?.message || 'Có lỗi xảy ra khi thêm comment';
+      toast.error(errorMessage);
       throw error;
     }
   }, [boards]);
@@ -1345,7 +1334,8 @@ export const KanbanProvider = ({ children }) => {
       }));
     } catch (error) {
       console.error('Error updating comment:', error);
-      toast.error('Có lỗi xảy ra khi cập nhật comment');
+      const errorMessage = error?.message || 'Có lỗi xảy ra khi cập nhật comment';
+      toast.error(errorMessage);
       throw error;
     }
   }, []);
@@ -1377,7 +1367,8 @@ export const KanbanProvider = ({ children }) => {
       })));
     } catch (error) {
       console.error('Error deleting comment:', error);
-      toast.error('Có lỗi xảy ra khi xóa comment');
+      const errorMessage = error?.message || 'Có lỗi xảy ra khi xóa comment';
+      toast.error(errorMessage);
       throw error;
     }
   }, [boards]);
@@ -1481,6 +1472,8 @@ export const KanbanProvider = ({ children }) => {
     if (query && query.trim()) {
       const searchLower = query.toLowerCase().trim();
       result = result.filter(emp =>
+        // BE returns fullName, support both fullName and name
+        emp.fullName?.toLowerCase().includes(searchLower) ||
         emp.name?.toLowerCase().includes(searchLower) ||
         emp.email?.toLowerCase().includes(searchLower) ||
         emp.department?.toLowerCase().includes(searchLower)
@@ -1493,8 +1486,17 @@ export const KanbanProvider = ({ children }) => {
   // ============== UTILITY FUNCTIONS ==============
 
   const getBoardStats = useCallback((boardId) => {
-    const board = boards.find(b => b.id === boardId);
-    if (!board) return null;
+    const board = boards.find(b => b.id === boardId || String(b.id) === String(boardId));
+    if (!board) {
+      return {
+        totalCards: 0,
+        todo: 0,
+        inProgress: 0,
+        review: 0,
+        done: 0,
+        progress: 0,
+      };
+    }
 
     const stats = {
       totalCards: 0,
@@ -1511,12 +1513,41 @@ export const KanbanProvider = ({ children }) => {
 
     board.lists.forEach(list => {
       if (!list) return;
-      const listStatus = LIST_STATUS_MAP[list.name] || 'TODO';
+      
+      // Get card count
       const cardCount = (list.cards && Array.isArray(list.cards)) ? list.cards.length : 0;
       stats.totalCards += cardCount;
+      
+      // Normalize list name - remove numbers and extra spaces
+      // Example: "TODO 2" -> "TODO", "In Progress 0" -> "In Progress"
+      const normalizedName = (list.name || '').trim().replace(/\s+\d+$/, '').trim();
+      
+      // Try to match with LIST_STATUS_MAP
+      let listStatus = LIST_STATUS_MAP[list.name] || LIST_STATUS_MAP[normalizedName];
+      
+      // If still no match, try case-insensitive matching
+      if (!listStatus) {
+        const nameUpper = normalizedName.toUpperCase();
+        for (const [key, value] of Object.entries(LIST_STATUS_MAP)) {
+          if (key.toUpperCase() === nameUpper) {
+            listStatus = value;
+            break;
+          }
+        }
+      }
+      
+      // Default to TODO if no match
+      if (!listStatus) {
+        listStatus = 'TODO';
+        // Debug: log unmapped list names (only in development)
+        if (process.env.NODE_ENV === 'development') {
+          console.debug('⚠️ Unmapped list name:', list.name, 'normalized:', normalizedName);
+        }
+      }
 
       switch (listStatus) {
         case 'TODO':
+        case 'NEW':
           stats.todo += cardCount;
           break;
         case 'IN_PROGRESS':
@@ -1526,6 +1557,7 @@ export const KanbanProvider = ({ children }) => {
           stats.review += cardCount;
           break;
         case 'DONE':
+        case 'COMPLETED':
           stats.done += cardCount;
           break;
         default:

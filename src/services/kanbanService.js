@@ -1,9 +1,8 @@
 // src/services/kanbanService.js
-// Kanban Board API Service Layer
+// Kanban Board API Service Layer - RESTful Version
 
 import { JAVA_API, http } from './config';
 
-// Note: BE uses /api/boards, not /api/kanban/boards
 const BASE_URL = `${JAVA_API}`;
 
 // Helper to get authentication headers
@@ -15,9 +14,10 @@ const getAuthHeaders = () => ({
 // ============== BOARDS ==============
 
 export const boardService = {
-  // GET /boards - Lấy tất cả boards (ownedBoards + memberBoards)
-  async getAll() {
-    const res = await http(`${BASE_URL}/boards`, {
+  // GET /api/boards - Lấy tất cả boards
+  async getAll(search = null) {
+    const url = search ? `${BASE_URL}/boards?search=${encodeURIComponent(search)}` : `${BASE_URL}/boards`;
+    const res = await http(url, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
@@ -25,22 +25,33 @@ export const boardService = {
     return res.json();
   },
 
-  // GET /boards/:id - Lấy chi tiết board với lists & cards
-  // ❌ CHƯA CÓ TRONG BE - API này chưa được implement
-  // TODO: BE cần tạo API GET /api/boards/{id}
-  // async getById(boardId) {
-  //   if (!boardId || boardId === 'undefined') {
-  //     throw new Error('Invalid boardId: boardId is required');
-  //   }
-  //   const res = await http(`${BASE_URL}/boards/${boardId}`, {
-  //     method: 'GET',
-  //     headers: getAuthHeaders(),
-  //   });
-  //   if (!res.ok) throw new Error('Failed to fetch board');
-  //   return res.json();
-  // },
+  // GET /api/boards/{id} - Lấy chi tiết board với lists & cards
+  async getById(boardId) {
+    if (!boardId || boardId === 'undefined' || boardId === 'null') {
+      throw new Error('Invalid boardId: boardId is required');
+    }
 
-  // POST /boards - Tạo board mới
+    const boardIdNum = typeof boardId === 'string' ? Number(boardId) : boardId;
+    if (isNaN(boardIdNum) || boardIdNum <= 0) {
+      throw new Error(`Invalid board ID: ${boardId}. Must be a positive number.`);
+    }
+
+    const res = await http(`${BASE_URL}/boards/${boardIdNum}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error(`Board không tồn tại (boardId: ${boardIdNum})`);
+      }
+      throw new Error('Failed to fetch board');
+    }
+
+    return res.json();
+  },
+
+  // POST /api/boards - Tạo board mới
   async create(data) {
     const res = await http(`${BASE_URL}/boards`, {
       method: 'POST',
@@ -51,74 +62,108 @@ export const boardService = {
     return res.json();
   },
 
-  // PUT /boards/:id - Cập nhật board
-  // ❌ CHƯA CÓ TRONG BE - API này chưa được implement
-  // TODO: BE cần tạo API PUT /api/boards/{id}
-  // async update(boardId, data) {
-  //   const res = await http(`${BASE_URL}/boards/${boardId}`, {
-  //     method: 'PUT',
-  //     headers: getAuthHeaders(),
-  //     body: JSON.stringify(data),
-  //   });
-  //   if (!res.ok) throw new Error('Failed to update board');
-  //   return res.json();
-  // },
+  // PUT /api/boards/{id} - Cập nhật board
+  async update(boardId, data) {
+    const res = await http(`${BASE_URL}/boards/${boardId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update board');
+    return res.json();
+  },
 
-  // DELETE /boards/:id - Xóa board
+  // DELETE /api/boards/{id} - Xóa board
   async delete(boardId) {
     const res = await http(`${BASE_URL}/boards/${boardId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    if (!res.ok) throw new Error('Failed to delete board');
-    return res.ok;
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      let errorMessage = 'Failed to delete board';
+
+      if (errorText) {
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch {
+          if (errorText.includes('foreign key') || errorText.includes('kanban_lists')) {
+            errorMessage = 'Không thể xóa board này vì còn có danh sách. Vui lòng xóa tất cả danh sách trước.';
+          }
+        }
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    return true;
   },
 };
 
-// ============== MEMBERS ==============
+// ============== BOARD MEMBERS ==============
 
 export const memberService = {
-  // GET /boards/:id/members - Lấy danh sách members
-  // ❌ CHƯA CÓ TRONG BE - API này chưa được implement
-  // TODO: BE cần tạo API GET /api/boards/{id}/members
-  // async getByBoard(boardId) {
-  //   const res = await http(`${BASE_URL}/boards/${boardId}/members`, {
-  //     method: 'GET',
-  //     headers: getAuthHeaders(),
-  //   });
-  //   if (!res.ok) throw new Error('Failed to fetch members');
-  //   return res.json();
-  // },
-
-  // POST /boards/:id/members - Thêm member
-  // ✅ CÓ TRONG BE - POST /api/boards/{id}/members
-  async add(boardId, data) {
+  // GET /api/boards/{id}/members - Lấy danh sách members
+  async getByBoard(boardId) {
     const res = await http(`${BASE_URL}/boards/${boardId}/members`, {
-      method: 'POST',
+      method: 'GET',
       headers: getAuthHeaders(),
-      body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error('Failed to add member');
+    if (!res.ok) throw new Error('Failed to fetch members');
     return res.json();
   },
 
-  // DELETE /boards/:id/members/:memberId - Xóa member
-  // ❌ CHƯA CÓ TRONG BE - API này chưa được implement
-  // TODO: BE cần tạo API DELETE /api/boards/{id}/members/{memberId}
-  // async remove(boardId, memberId) {
-  //   const res = await http(`${BASE_URL}/boards/${boardId}/members/${memberId}`, {
-  //     method: 'DELETE',
-  //     headers: getAuthHeaders(),
-  //   });
-  //   if (!res.ok) throw new Error('Failed to remove member');
-  //   return res.ok;
-  // },
+  // POST /api/boards/{id}/members - Thêm member
+  async add(boardId, data) {
+    if (!boardId) throw new Error('Board ID is required');
+    if (!data.email) throw new Error('Email is required to add member');
+
+    const res = await http(`${BASE_URL}/boards/${boardId}/members`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ email: data.email.trim() }),
+    });
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      let errorMessage = 'Failed to add member';
+
+      if (errorText) {
+        try {
+          const errorJson = JSON.parse(errorText);
+          errorMessage = errorJson.message || errorJson.error || errorMessage;
+        } catch {
+          errorMessage = errorText;
+        }
+      }
+
+      if (errorMessage.includes('đã là thành viên') || errorMessage.includes('already a member')) {
+        errorMessage = 'Nhân viên này đã là thành viên của Board';
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    return res.json();
+  },
+
+  // DELETE /api/boards/{boardId}/members/{memberId} - Xóa member
+  async remove(boardId, memberId) {
+    const res = await http(`${BASE_URL}/boards/${boardId}/members/${memberId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to remove member');
+    return true;
+  },
 };
 
 // ============== LISTS ==============
 
 export const listService = {
-  // GET /boards/:id/lists - Lấy lists của board
+  // GET /api/boards/{id}/lists - Lấy lists của board
   async getByBoard(boardId) {
     const res = await http(`${BASE_URL}/boards/${boardId}/lists`, {
       method: 'GET',
@@ -128,7 +173,7 @@ export const listService = {
     return res.json();
   },
 
-  // POST /boards/:id/lists - Tạo list
+  // POST /api/boards/{id}/lists - Tạo list
   async create(boardId, data) {
     const res = await http(`${BASE_URL}/boards/${boardId}/lists`, {
       method: 'POST',
@@ -139,7 +184,7 @@ export const listService = {
     return res.json();
   },
 
-  // PUT /lists/:id - Cập nhật list
+  // PUT /api/lists/{id} - Cập nhật list
   async update(listId, data) {
     const res = await http(`${BASE_URL}/lists/${listId}`, {
       method: 'PUT',
@@ -150,21 +195,43 @@ export const listService = {
     return res.json();
   },
 
-  // DELETE /lists/:id - Xóa list
+  // DELETE /api/lists/{id} - Xóa list
   async delete(listId) {
     const res = await http(`${BASE_URL}/lists/${listId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete list');
-    return res.ok;
+    return true;
+  },
+
+  // PATCH /api/lists/{id}/archive - Archive/unarchive list
+  async archive(listId, archived = true) {
+    const res = await http(`${BASE_URL}/lists/${listId}/archive`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ archived }),
+    });
+    if (!res.ok) throw new Error('Failed to archive list');
+    return res.json();
+  },
+
+  // PATCH /api/lists/{id}/move - Di chuyển list
+  async move(listId, newPosition) {
+    const res = await http(`${BASE_URL}/lists/${listId}/move`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ position: newPosition }),
+    });
+    if (!res.ok) throw new Error('Failed to move list');
+    return res.json();
   },
 };
 
 // ============== CARDS ==============
 
 export const cardService = {
-  // POST /lists/:id/cards - Tạo card
+  // POST /api/lists/{id}/cards - Tạo card
   async create(listId, data) {
     const res = await http(`${BASE_URL}/lists/${listId}/cards`, {
       method: 'POST',
@@ -175,7 +242,7 @@ export const cardService = {
     return res.json();
   },
 
-  // GET /lists/:id/cards - Lấy tất cả cards của list
+  // GET /api/lists/{id}/cards - Lấy tất cả cards của list
   async getByList(listId) {
     const res = await http(`${BASE_URL}/lists/${listId}/cards`, {
       method: 'GET',
@@ -185,7 +252,7 @@ export const cardService = {
     return res.json();
   },
 
-  // GET /cards/:id - Lấy chi tiết card
+  // GET /api/cards/{id} - Lấy chi tiết card
   async getById(cardId) {
     const res = await http(`${BASE_URL}/cards/${cardId}`, {
       method: 'GET',
@@ -195,7 +262,7 @@ export const cardService = {
     return res.json();
   },
 
-  // PUT /cards/:id - Cập nhật card
+  // PUT /api/cards/{id} - Cập nhật card
   async update(cardId, data) {
     const res = await http(`${BASE_URL}/cards/${cardId}`, {
       method: 'PUT',
@@ -206,161 +273,302 @@ export const cardService = {
     return res.json();
   },
 
-  // DELETE /cards/:id - Xóa card
+  // DELETE /api/cards/{id} - Xóa card
   async delete(cardId) {
     const res = await http(`${BASE_URL}/cards/${cardId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete card');
-    return res.ok;
+    return true;
   },
 
-  // PUT /cards/:id/move - Di chuyển card
+  // PUT /api/cards/{id}/move - Di chuyển card
   async move(cardId, targetListId, targetPosition) {
     const res = await http(`${BASE_URL}/cards/${cardId}/move`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ targetListId, targetPosition }),
+      body: JSON.stringify({
+        listId: targetListId,
+        position: targetPosition
+      }),
     });
     if (!res.ok) throw new Error('Failed to move card');
+    return res.json();
+  },
+
+  // PUT /api/cards/{id}/archive - Archive/unarchive card
+  async archive(cardId) {
+    const res = await http(`${BASE_URL}/cards/${cardId}/archive`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to archive card');
     return res.json();
   },
 };
 
 // ============== COMMENTS ==============
-// ❌ TẤT CẢ COMMENT APIs CHƯA CÓ TRONG BE
-// TODO: BE cần tạo các APIs sau:
-// - GET /api/cards/{id}/comments
-// - POST /api/cards/{id}/comments
-// - PUT /api/comments/{id}
-// - DELETE /api/comments/{id}
 
 export const commentService = {
-  // GET /cards/:id/comments - Lấy comments
-  // ❌ CHƯA CÓ TRONG BE
+  // GET /api/cards/{cardId}/comments - Lấy comments của card
   async getByCard(cardId) {
-    console.warn('⚠️ Comment API not implemented in BE yet');
-    return { data: [] }; // Return empty array as fallback
-    // const res = await http(`${BASE_URL}/cards/${cardId}/comments`);
-    // if (!res.ok) throw new Error('Failed to fetch comments');
-    // return res.json();
+    if (!cardId) return [];
+
+    const res = await http(`${BASE_URL}/cards/${cardId}/comments`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) return [];
+      throw new Error('Failed to fetch comments');
+    }
+
+    return res.json();
   },
 
-  // POST /cards/:id/comments - Tạo comment
-  // ❌ CHƯA CÓ TRONG BE
+  // POST /api/cards/{cardId}/comments - Tạo comment cho card
   async create(cardId, data) {
-    console.warn('⚠️ Comment API not implemented in BE yet');
-    throw new Error('Comment API not implemented in backend yet');
-    // const res = await http(`${BASE_URL}/cards/${cardId}/comments`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(data),
-    // });
-    // if (!res.ok) throw new Error('Failed to create comment');
-    // return res.json();
+    if (!cardId) throw new Error('Card ID is required');
+
+    const content = typeof data === 'string' ? data : (data?.content || data);
+    if (!content || content.trim().length === 0) {
+      throw new Error('Comment content is required');
+    }
+
+    const res = await http(`${BASE_URL}/cards/${cardId}/comments`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ content: content.trim() }),
+    });
+
+    if (!res.ok) throw new Error('Failed to create comment');
+    return res.json();
   },
 
-  // PUT /comments/:id - Cập nhật comment
-  // ❌ CHƯA CÓ TRONG BE
+  // PUT /api/comments/{id} - Cập nhật comment
   async update(commentId, data) {
-    console.warn('⚠️ Comment API not implemented in BE yet');
-    throw new Error('Comment API not implemented in backend yet');
-    // const res = await http(`${BASE_URL}/comments/${commentId}`, {
-    //   method: 'PUT',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(data),
-    // });
-    // if (!res.ok) throw new Error('Failed to update comment');
-    // return res.json();
+    if (!commentId) throw new Error('Comment ID is required');
+
+    const content = typeof data === 'string' ? data : (data?.content || data);
+    if (!content || content.trim().length === 0) {
+      throw new Error('Comment content is required');
+    }
+
+    const res = await http(`${BASE_URL}/comments/${commentId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ content: content.trim() }),
+    });
+
+    if (!res.ok) {
+      if (res.status === 403) {
+        throw new Error('Bạn không có quyền cập nhật comment này');
+      }
+      throw new Error('Failed to update comment');
+    }
+
+    return res.json();
   },
 
-  // DELETE /comments/:id - Xóa comment
-  // ❌ CHƯA CÓ TRONG BE
+  // DELETE /api/comments/{id} - Xóa comment
   async delete(commentId) {
-    console.warn('⚠️ Comment API not implemented in BE yet');
-    throw new Error('Comment API not implemented in backend yet');
-    // const res = await http(`${BASE_URL}/comments/${commentId}`, {
-    //   method: 'DELETE',
-    // });
-    // if (!res.ok) throw new Error('Failed to delete comment');
-    // return res.ok;
+    if (!commentId) throw new Error('Comment ID is required');
+
+    const res = await http(`${BASE_URL}/comments/${commentId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      if (res.status === 403) {
+        throw new Error('Bạn không có quyền xóa comment này');
+      }
+      throw new Error('Failed to delete comment');
+    }
+
+    return true;
+  },
+};
+
+// ============== CHECKLISTS ==============
+
+export const checklistService = {
+  // GET /api/cards/{cardId}/checklists - Lấy checklists của card
+  async getByCard(cardId) {
+    if (!cardId) return [];
+
+    const res = await http(`${BASE_URL}/cards/${cardId}/checklists`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) return [];
+      throw new Error('Failed to fetch checklists');
+    }
+
+    return res.json();
+  },
+
+  // POST /api/cards/{cardId}/checklists - Tạo checklist item
+  async create(cardId, data) {
+    if (!cardId) throw new Error('Card ID is required');
+
+    const res = await http(`${BASE_URL}/cards/${cardId}/checklists`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) throw new Error('Failed to create checklist');
+    return res.json();
+  },
+
+  // PUT /api/checklists/{id} - Cập nhật checklist
+  async update(checklistId, data) {
+    const res = await http(`${BASE_URL}/checklists/${checklistId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) throw new Error('Failed to update checklist');
+    return res.json();
+  },
+
+  // PATCH /api/checklists/{id}/toggle - Toggle completed status
+  async toggle(checklistId) {
+    const res = await http(`${BASE_URL}/checklists/${checklistId}/toggle`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) throw new Error('Failed to toggle checklist');
+    return res.json();
+  },
+
+  // DELETE /api/checklists/{id} - Xóa checklist
+  async delete(checklistId) {
+    const res = await http(`${BASE_URL}/checklists/${checklistId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) throw new Error('Failed to delete checklist');
+    return true;
   },
 };
 
 // ============== ATTACHMENTS ==============
-// ❌ TẤT CẢ ATTACHMENT APIs CHƯA CÓ TRONG BE
-// TODO: BE cần tạo các APIs sau:
-// - GET /api/cards/{id}/attachments
-// - DELETE /api/attachments/{id}
 
 export const attachmentService = {
-  // GET /cards/:id/attachments - Lấy attachments
-  // ❌ CHƯA CÓ TRONG BE
+  // GET /api/cards/{cardId}/attachments - Lấy attachments của card
   async getByCard(cardId) {
-    console.warn('⚠️ Attachment API not implemented in BE yet');
-    return { data: [] }; // Return empty array as fallback
-    // const res = await http(`${BASE_URL}/cards/${cardId}/attachments`, {
-    //   method: 'GET',
-    //   headers: getAuthHeaders(),
-    // });
-    // if (!res.ok) throw new Error('Failed to fetch attachments');
-    // return res.json();
+    if (!cardId) return [];
+
+    const res = await http(`${BASE_URL}/cards/${cardId}/attachments`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) return [];
+      throw new Error('Failed to fetch attachments');
+    }
+
+    return res.json();
   },
 
-  // DELETE /attachments/:id - Xóa attachment
-  // ❌ CHƯA CÓ TRONG BE
+  // POST /api/cards/{cardId}/attachments - Upload attachment
+  async upload(cardId, file) {
+    if (!cardId) throw new Error('Card ID is required');
+    if (!file) throw new Error('File is required');
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await http(`${BASE_URL}/cards/${cardId}/attachments`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
+        // Note: Don't set Content-Type for FormData, browser will set it with boundary
+      },
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error('Failed to upload attachment');
+    return res.json();
+  },
+
+  // GET /api/attachments/{id}/download - Download attachment
+  async download(attachmentId) {
+    const res = await http(`${BASE_URL}/attachments/${attachmentId}/download`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`,
+      },
+    });
+
+    if (!res.ok) throw new Error('Failed to download attachment');
+    return res.blob();
+  },
+
+  // DELETE /api/attachments/{id} - Xóa attachment
   async delete(attachmentId) {
-    console.warn('⚠️ Attachment API not implemented in BE yet');
-    throw new Error('Attachment API not implemented in backend yet');
-    // const res = await http(`${BASE_URL}/attachments/${attachmentId}`, {
-    //   method: 'DELETE',
-    //   headers: getAuthHeaders(),
-    // });
-    // if (!res.ok) throw new Error('Failed to delete attachment');
-    // return res.ok;
+    const res = await http(`${BASE_URL}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) throw new Error('Failed to delete attachment');
+    return true;
   },
 };
 
 // ============== ACTIVITIES ==============
-// ❌ TẤT CẢ ACTIVITY APIs CHƯA CÓ TRONG BE
-// TODO: BE cần tạo các APIs sau:
-// - GET /api/cards/{id}/activities
-// - GET /api/boards/{id}/activities
 
 export const activityService = {
-  // GET /cards/:id/activities - Lấy activities của card
-  // ❌ CHƯA CÓ TRONG BE
+  // GET /api/cards/{cardId}/activities - Lấy activities của card
   async getByCard(cardId) {
-    console.warn('⚠️ Activity API not implemented in BE yet');
-    return { data: [] }; // Return empty array as fallback
-    // const res = await http(`${BASE_URL}/cards/${cardId}/activities`, {
-    //   method: 'GET',
-    //   headers: getAuthHeaders(),
-    // });
-    // if (!res.ok) throw new Error('Failed to fetch activities');
-    // return res.json();
+    if (!cardId) return [];
+
+    const res = await http(`${BASE_URL}/cards/${cardId}/activities`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) return [];
+      throw new Error('Failed to fetch activities');
+    }
+
+    return res.json();
   },
 
-  // GET /boards/:id/activities - Lấy activities của board
-  // ❌ CHƯA CÓ TRONG BE
+  // GET /api/boards/{boardId}/activities - Lấy activities của board
   async getByBoard(boardId) {
-    console.warn('⚠️ Activity API not implemented in BE yet');
-    return { data: [] }; // Return empty array as fallback
-    // const res = await http(`${BASE_URL}/boards/${boardId}/activities`, {
-    //   method: 'GET',
-    //   headers: getAuthHeaders(),
-    // });
-    // if (!res.ok) throw new Error('Failed to fetch activities');
-    // return res.json();
+    if (!boardId) return [];
+
+    const res = await http(`${BASE_URL}/boards/${boardId}/activities`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      if (res.status === 404) return [];
+      throw new Error('Failed to fetch activities');
+    }
+
+    return res.json();
   },
 };
 
 // ============== LABELS ==============
-// ✅ TẤT CẢ LABEL APIs ĐÃ CÓ TRONG BE
 
 export const labelService = {
-  // GET /api/boards/{boardId}/labels - Lấy tất cả labels của board
+  // GET /api/boards/{boardId}/labels - Lấy labels của board
   async getByBoard(boardId) {
     const res = await http(`${BASE_URL}/boards/${boardId}/labels`, {
       method: 'GET',
@@ -370,17 +578,7 @@ export const labelService = {
     return res.json();
   },
 
-  // GET /api/labels/{labelId} - Lấy chi tiết label
-  async getById(labelId) {
-    const res = await http(`${BASE_URL}/labels/${labelId}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to fetch label');
-    return res.json();
-  },
-
-  // POST /api/boards/{boardId}/labels - Tạo label mới cho board
+  // POST /api/boards/{boardId}/labels - Tạo label
   async create(boardId, data) {
     const res = await http(`${BASE_URL}/boards/${boardId}/labels`, {
       method: 'POST',
@@ -409,10 +607,10 @@ export const labelService = {
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Failed to delete label');
-    return res.ok;
+    return true;
   },
 
-  // GET /api/cards/{cardId}/labels - Lấy danh sách labels của card
+  // GET /api/cards/{cardId}/labels - Lấy labels của card
   async getByCard(cardId) {
     const res = await http(`${BASE_URL}/cards/${cardId}/labels`, {
       method: 'GET',
@@ -422,7 +620,7 @@ export const labelService = {
     return res.json();
   },
 
-  // POST /api/cards/{cardId}/labels/{labelId} - Thêm label vào card
+  // POST /api/cards/{cardId}/labels/{labelId} - Gắn label vào card
   async assignToCard(cardId, labelId) {
     const res = await http(`${BASE_URL}/cards/${cardId}/labels/${labelId}`, {
       method: 'POST',
@@ -432,21 +630,21 @@ export const labelService = {
     return res.json();
   },
 
-  // DELETE /api/cards/{cardId}/labels/{labelId} - Xóa label khỏi card
+  // DELETE /api/cards/{cardId}/labels/{labelId} - Gỡ label khỏi card
   async removeFromCard(cardId, labelId) {
     const res = await http(`${BASE_URL}/cards/${cardId}/labels/${labelId}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Failed to remove label from card');
-    return res.ok;
+    return true;
   },
 };
 
-// ============== EMPLOYEES (for assigning to cards) ==============
+// ============== EMPLOYEES ==============
 
 export const employeeService = {
-  // GET /employees - Lấy tất cả nhân viên trong hệ thống
+  // GET /api/employees - Lấy tất cả nhân viên
   async getAll() {
     const res = await http(`${JAVA_API}/employees`, {
       method: 'GET',
@@ -456,7 +654,7 @@ export const employeeService = {
     return res.json();
   },
 
-  // GET /employees?department=IT - Lấy nhân viên theo phòng ban
+  // GET /api/employees?department=IT - Lấy nhân viên theo phòng ban
   async getByDepartment(departmentId) {
     const res = await http(`${JAVA_API}/employees?department=${departmentId}`, {
       method: 'GET',
@@ -466,7 +664,7 @@ export const employeeService = {
     return res.json();
   },
 
-  // GET /departments - Lấy danh sách phòng ban
+  // GET /api/departments - Lấy danh sách phòng ban
   async getDepartments() {
     const res = await http(`${JAVA_API}/departments`, {
       method: 'GET',
@@ -482,8 +680,7 @@ export const employeeService = {
 const TASK_BASE_URL = `${JAVA_API}/tasks`;
 
 export const taskService = {
-  // GET /api/tasks - Lấy tất cả tasks với filters
-  // Query params: status (new, in-progress, pending, complete), priority (high, medium, low), assigneeId, department
+  // GET /api/tasks - Lấy tất cả tasks
   async getAll(filters = {}) {
     const { status, priority, assigneeId, department } = filters;
     const params = new URLSearchParams();
@@ -491,7 +688,7 @@ export const taskService = {
     if (priority) params.append('priority', priority);
     if (assigneeId) params.append('assigneeId', assigneeId);
     if (department) params.append('department', department);
-    
+
     const queryString = params.toString();
     const url = queryString ? `${TASK_BASE_URL}?${queryString}` : TASK_BASE_URL;
     const res = await http(url, {
@@ -502,9 +699,9 @@ export const taskService = {
     return res.json();
   },
 
-  // POST /api/tasks - Tạo task mới
+  // POST /api/tasks - Tạo task
   async create(data) {
-    const res = await http(`${TASK_BASE_URL}`, {
+    const res = await http(TASK_BASE_URL, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -513,7 +710,7 @@ export const taskService = {
     return res.json();
   },
 
-  // GET /api/tasks/:id - Lấy task theo ID
+  // GET /api/tasks/{id} - Lấy task theo ID
   async getById(taskId) {
     const res = await http(`${TASK_BASE_URL}/${taskId}`, {
       method: 'GET',
@@ -523,8 +720,7 @@ export const taskService = {
     return res.json();
   },
 
-  // PUT /api/tasks/:id - Cập nhật task
-  // Request body: status (NEW, IN_PROGRESS, PENDING, DONE), priority (HIGH, MEDIUM, LOW)
+  // PUT /api/tasks/{id} - Cập nhật task
   async update(taskId, data) {
     const res = await http(`${TASK_BASE_URL}/${taskId}`, {
       method: 'PUT',
@@ -535,7 +731,7 @@ export const taskService = {
     return res.json();
   },
 
-  // DELETE /api/tasks/:id - Xóa task
+  // DELETE /api/tasks/{id} - Xóa task
   async delete(taskId) {
     const res = await http(`${TASK_BASE_URL}/${taskId}`, {
       method: 'DELETE',
@@ -545,7 +741,7 @@ export const taskService = {
     return res.json();
   },
 
-  // GET /api/tasks/:id/progress - Lấy tiến độ task
+  // GET /api/tasks/{id}/progress
   async getProgress(taskId) {
     const res = await http(`${TASK_BASE_URL}/${taskId}/progress`, {
       method: 'GET',
@@ -555,7 +751,7 @@ export const taskService = {
     return res.json();
   },
 
-  // PUT /api/tasks/:id/progress - Cập nhật tiến độ task
+  // PUT /api/tasks/{id}/progress
   async updateProgress(taskId, data) {
     const res = await http(`${TASK_BASE_URL}/${taskId}/progress`, {
       method: 'PUT',
@@ -566,7 +762,7 @@ export const taskService = {
     return res.json();
   },
 
-  // GET /api/tasks/assignees - Lấy danh sách assignees
+  // GET /api/tasks/assignees
   async getAssignees() {
     const res = await http(`${TASK_BASE_URL}/assignees`, {
       method: 'GET',
@@ -576,7 +772,7 @@ export const taskService = {
     return res.json();
   },
 
-  // GET /api/tasks/employee/:employeeId/summary - Lấy tóm tắt task của nhân viên
+  // GET /api/tasks/employee/{employeeId}/summary
   async getEmployeeSummary(employeeId) {
     const res = await http(`${TASK_BASE_URL}/employee/${employeeId}/summary`, {
       method: 'GET',
@@ -586,80 +782,7 @@ export const taskService = {
     return res.json();
   },
 
-  // GET /api/tasks/notifications - Lấy thông báo về task
-  async getNotifications() {
-    const res = await http(`${TASK_BASE_URL}/notifications`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to fetch task notifications');
-    return res.json();
-  },
-
-  // GET /api/tasks/timeline - Lấy timeline task
-  async getTimeline(filters = {}) {
-    const { year, month } = filters;
-    const params = new URLSearchParams();
-    if (year) params.append('year', year);
-    if (month) params.append('month', month);
-    
-    const queryString = params.toString();
-    const url = queryString ? `${TASK_BASE_URL}/timeline?${queryString}` : `${TASK_BASE_URL}/timeline`;
-    const res = await http(url, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to fetch task timeline');
-    return res.json();
-  },
-
-  // GET /api/tasks/analytics - Lấy phân tích task
-  async getAnalytics() {
-    const res = await http(`${TASK_BASE_URL}/analytics`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to fetch task analytics');
-    return res.json();
-  },
-
-  // GET /api/tasks/metrics/evaluation - Lấy metrics để đánh giá nhân viên
-  async getMetricsForEvaluation(employeeId, startDate, endDate) {
-    const params = new URLSearchParams();
-    params.append('employeeId', employeeId);
-    params.append('startDate', startDate);
-    params.append('endDate', endDate);
-    
-    const res = await http(`${TASK_BASE_URL}/metrics/evaluation?${params.toString()}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to fetch task metrics for evaluation');
-    return res.json();
-  },
-
-  // POST /api/tasks/metrics - Tính toán metrics cho các task
-  async calculateMetrics(data) {
-    const res = await http(`${TASK_BASE_URL}/metrics`, {
-      method: 'POST',
-      headers: getAuthHeaders(),
-      body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error('Failed to calculate task metrics');
-    return res.json();
-  },
-
-  // GET /api/tasks/findTaskByStatus - Tìm task theo status
-  async findByStatus(status) {
-    const res = await http(`${TASK_BASE_URL}/findTaskByStatus?status=${status}`, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to find tasks by status');
-    return res.json();
-  },
-
-  // GET /api/tasks/stats/general - Thống kê task tổng quát
+  // GET /api/tasks/stats/general
   async getGeneralStats() {
     const res = await http(`${TASK_BASE_URL}/stats/general`, {
       method: 'GET',
@@ -669,64 +792,13 @@ export const taskService = {
     return res.json();
   },
 
-  // GET /api/tasks/stats/board/:boardId - Thống kê task theo Board
+  // GET /api/tasks/stats/board/{boardId}
   async getStatsByBoard(boardId) {
     const res = await http(`${TASK_BASE_URL}/stats/board/${boardId}`, {
       method: 'GET',
       headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error('Failed to fetch board task stats');
-    return res.json();
-  },
-
-  // GET /api/tasks/employee-completion-percent - Phần trăm hoàn thành của nhân viên
-  async getEmployeeCompletionPercent(filters = {}) {
-    const { startDate, endDate } = filters;
-    const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
-    
-    const queryString = params.toString();
-    const url = queryString ? `${TASK_BASE_URL}/employee-completion-percent?${queryString}` : `${TASK_BASE_URL}/employee-completion-percent`;
-    const res = await http(url, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to fetch employee completion percent');
-    return res.json();
-  },
-
-  // GET /api/tasks/employee-efficiency - Hiệu suất nhân viên
-  async getEmployeeEfficiency(filters = {}) {
-    const { startDate, endDate } = filters;
-    const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
-    
-    const queryString = params.toString();
-    const url = queryString ? `${TASK_BASE_URL}/employee-efficiency?${queryString}` : `${TASK_BASE_URL}/employee-efficiency`;
-    const res = await http(url, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to fetch employee efficiency');
-    return res.json();
-  },
-
-  // GET /api/tasks/average-days - Số ngày trung bình hoàn thành task
-  async getAverageDays(filters = {}) {
-    const { startDate, endDate } = filters;
-    const params = new URLSearchParams();
-    if (startDate) params.append('startDate', startDate);
-    if (endDate) params.append('endDate', endDate);
-    
-    const queryString = params.toString();
-    const url = queryString ? `${TASK_BASE_URL}/average-days?${queryString}` : `${TASK_BASE_URL}/average-days`;
-    const res = await http(url, {
-      method: 'GET',
-      headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error('Failed to fetch average days');
     return res.json();
   },
 };
@@ -736,9 +808,9 @@ export const taskService = {
 const DELEGATION_BASE_URL = `${JAVA_API}/task-delegation`;
 
 export const taskDelegationService = {
-  // POST /api/task-delegation - Tạo yêu cầu ủy quyền
+  // POST /api/task-delegation
   async create(data) {
-    const res = await http(`${DELEGATION_BASE_URL}`, {
+    const res = await http(DELEGATION_BASE_URL, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(data),
@@ -747,14 +819,13 @@ export const taskDelegationService = {
     return res.json();
   },
 
-  // GET /api/task-delegation - Lấy danh sách ủy quyền
-  // Query params: employeeId, status (pending, approved, rejected)
+  // GET /api/task-delegation
   async getAll(filters = {}) {
     const { employeeId, status } = filters;
     const params = new URLSearchParams();
     if (employeeId) params.append('employeeId', employeeId);
     if (status) params.append('status', status);
-    
+
     const queryString = params.toString();
     const url = queryString ? `${DELEGATION_BASE_URL}?${queryString}` : DELEGATION_BASE_URL;
     const res = await http(url, {
@@ -765,7 +836,7 @@ export const taskDelegationService = {
     return res.json();
   },
 
-  // PUT /api/task-delegation/:id/approve - Duyệt ủy quyền
+  // PUT /api/task-delegation/{id}/approve
   async approve(delegationId) {
     const res = await http(`${DELEGATION_BASE_URL}/${delegationId}/approve`, {
       method: 'PUT',
@@ -775,7 +846,7 @@ export const taskDelegationService = {
     return res.json();
   },
 
-  // PUT /api/task-delegation/:id/reject - Từ chối ủy quyền
+  // PUT /api/task-delegation/{id}/reject
   async reject(delegationId, data = {}) {
     const res = await http(`${DELEGATION_BASE_URL}/${delegationId}/reject`, {
       method: 'PUT',
@@ -794,6 +865,7 @@ export default {
   list: listService,
   card: cardService,
   comment: commentService,
+  checklist: checklistService,
   attachment: attachmentService,
   activity: activityService,
   label: labelService,
