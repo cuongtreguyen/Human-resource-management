@@ -238,4 +238,15 @@ public class TaskController {
         CalculateTaskMetricsResponseDTO response = service.calculateTaskMetrics(request);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/employees/search")
+    @Operation(summary = "Search employees by department", description = "Search employees by department name")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Success")
+    })
+    public ResponseEntity<List<EmployeeByDepartmentDTO>> searchEmployeesByDepartment(
+            @RequestParam(required = true) String department) {
+        List<EmployeeByDepartmentDTO> response = service.searchEmployeesByDepartment(department);
+        return ResponseEntity.ok(response);
+    }
 }

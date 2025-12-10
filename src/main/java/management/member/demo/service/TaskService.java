@@ -704,6 +704,22 @@ public class TaskService {
         }).collect(Collectors.toList());
     }
 
+    /**
+     * Tìm kiếm nhân viên theo phòng ban
+     * @param department Tên phòng ban để tìm kiếm
+     * @return Danh sách nhân viên với fullName và department
+     */
+    public List<EmployeeByDepartmentDTO> searchEmployeesByDepartment(String department) {
+        List<Employee> employees = employeeRepository.findByDepartment(department);
+        
+        return employees.stream()
+                .map(emp -> EmployeeByDepartmentDTO.builder()
+                        .fullName(emp.getFullName())
+                        .department(emp.getDepartment())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
     private TaskListItemDTO toTaskListItemDTO(Task task) {
         TaskListItemDTO dto = new TaskListItemDTO();
         dto.setId(task.getId());
