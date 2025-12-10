@@ -5,10 +5,15 @@ import management.member.demo.dto.*;
 import management.member.demo.entity.Board;
 import management.member.demo.entity.KanbanCard;
 import management.member.demo.entity.KanbanList;
+import management.member.demo.entity.User;
+import management.member.demo.enums.Role;
+import management.member.demo.exception.specifiic.ForbiddenException;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.BoardRepository;
 import management.member.demo.repository.KanbanCardRepository;
 import management.member.demo.repository.KanbanListRepository;
+import management.member.demo.repository.UserRepository;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,9 +28,23 @@ public class KanbanListService {
     private final KanbanListRepository listRepository;
     private final KanbanCardRepository cardRepository;
     private final BoardRepository boardRepository;
+    private final UserRepository userRepository;
 
-    // Tạo list mới trong board
+    // Helper: Kiểm tra user có phải Manager/Admin không
+    private boolean isManagerOrAdmin() {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
+        Role role = user.getRole();
+        return role == Role.MANAGER || role == Role.ADMIN;
+    }
+
+    // Tạo list mới trong board - CHỈ MANAGER/ADMIN
     public KanbanListResponse createList(Long boardId, KanbanListRequest request) {
+        if (!isManagerOrAdmin()) {
+            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền tạo List");
+        }
+
         Board board = boardRepository.findById(boardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại với ID: " + boardId));
 

@@ -23,12 +23,17 @@ public class Comment {
 
     LocalDateTime createdAt; // Cần dùng LocalDateTime để lưu cả giờ (16:15)
 
-    // Quan trọng: Link ngược lại Task
+    // Link ngược lại Task (optional - cho Task system)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id")
     Task task;
 
-    // Quan trọng: Lưu người bình luận (để hiện avatar/tên như "Lê Văn Cường")
+    // Link ngược lại Kanban Card (optional - cho Kanban system)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "card_id")
+    KanbanCard card;
+
+    // Lưu người bình luận (để hiện avatar/tên)
     @ManyToOne
     @JoinColumn(name = "author_id")
     Employee author;

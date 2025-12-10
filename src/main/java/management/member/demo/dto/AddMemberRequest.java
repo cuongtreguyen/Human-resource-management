@@ -8,7 +8,11 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class AddMemberRequest {
+    // boardId có thể null khi dùng API mới POST /api/boards/{id}/members
+    // vì boardId được lấy từ path parameter
+    private Long boardId;
+
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không hợp lệ")
-    String email;
+    private String email;
 }

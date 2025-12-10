@@ -5,11 +5,15 @@ import management.member.demo.dto.*;
 import management.member.demo.entity.Employee;
 import management.member.demo.entity.KanbanCard;
 import management.member.demo.entity.KanbanList;
+import management.member.demo.entity.User;
 import management.member.demo.enums.KanbanCardPriority;
+import management.member.demo.enums.Role;
+import management.member.demo.exception.specifiic.ForbiddenException;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.KanbanCardRepository;
 import management.member.demo.repository.KanbanListRepository;
+import management.member.demo.repository.UserRepository;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +29,23 @@ public class KanbanCardService {
     private final KanbanCardRepository cardRepository;
     private final KanbanListRepository listRepository;
     private final EmployeeRepository employeeRepository;
+    private final UserRepository userRepository;
 
-    // Tạo card mới trong list
+    // Helper: Kiểm tra user có phải Manager/Admin không
+    private boolean isManagerOrAdmin() {
+        String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(currentEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
+        Role role = user.getRole();
+        return role == Role.MANAGER || role == Role.ADMIN;
+    }
+
+    // Tạo card mới trong list - CHỈ MANAGER/ADMIN
     public KanbanCardResponse createCard(Long listId, KanbanCardRequest request) {
+        if (!isManagerOrAdmin()) {
+            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền tạo Card");
+        }
+
         KanbanList list = listRepository.findById(listId)
                 .orElseThrow(() -> new ResourceNotFoundException("List không tồn tại với ID: " + listId));
 
