@@ -5,10 +5,11 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import fakeApi from '../../services/fakeApi';
+import { createEmployee } from '../../services/api';
 import adminLogService from '../../services/adminLogService';
 import { User, Phone, Check, X, Clock } from 'lucide-react';
 import { logCreateEmployee } from '../../utils/systemLogger';
+import { toast } from 'react-toastify';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
@@ -168,74 +169,95 @@ const AddEmployee = () => {
     setSaving(true);
 
     try {
-      // Prepare employee data for API
-      // Đảm bảo mapping đúng với Profile.jsx và EmployeeDetails.jsx
-      const employeeData = {
-        // Basic Info
-        id: formData.employeeCode, // Mã nhân viên (dùng làm id)
-        name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.companyEmail, // Email công ty (chính)
-        personalEmail: formData.personalEmail, // Email cá nhân
-        phone: formData.phone,
-        status: 'active',
-        
-        // Personal Information
-        dateOfBirth: formData.dateOfBirth,
-        gender: formData.gender,
-        maritalStatus: formData.maritalStatus,
-        
-        // ID Card Information
-        idCard: formData.idNumber, // Profile.jsx dùng idCard hoặc idNumber
-        idNumber: formData.idNumber, // Để tương thích với cả 2
-        idCardIssueDate: formData.idCardIssueDate,
-        idCardIssuePlace: formData.idCardIssuePlace,
-        taxCode: formData.taxCode,
-        
-        // Address
-        address: formData.permanentAddress, // Profile.jsx dùng address hoặc permanentAddress
-        permanentAddress: formData.permanentAddress,
-        temporaryAddress: formData.temporaryAddress,
-        
-        // Employment Details
-        department: formData.department,
-        position: formData.position,
-        employeeCode: formData.employeeCode,
-        manager: formData.manager,
-        workLocation: formData.workLocation,
-        employeeType: formData.employeeType,
-        contractType: formData.contractType,
-        contractCode: formData.contractCode,
-        hireDate: formData.signDate || new Date().toISOString().split('T')[0],
-        salary: formData.baseSalary ? parseInt(formData.baseSalary) * 1000000 : 0,
-        timeIn: formData.timeIn,
-        timeOut: formData.timeOut,
-        shift: formData.shift,
-        
-        // Emergency Contact
-        emergencyContact: formData.emergencyContactName || formData.emergencyContactRelationship || formData.emergencyContactPhone ? {
-          name: formData.emergencyContactName,
-          relationship: formData.emergencyContactRelationship,
-          phone: formData.emergencyContactPhone
-        } : null
+      // Chuyển đổi timeIn/timeOut từ string "HH:mm" sang object {hour, minute, second, nano}
+      const parseTime = (timeString) => {
+        if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) {
+          return null;
+        }
+        const [hour, minute] = timeString.split(':').map(Number);
+        return {
+          hour: hour || 0,
+          minute: minute || 0,
+          second: 0,
+          nano: 0
+        };
       };
 
-      const response = await fakeApi.createEmployee(employeeData);
+      // Prepare employee data for API theo schema
+      const employeeData = {
+        // Basic Info
+        name: `${formData.firstName} ${formData.lastName}`.trim(),
+        firstName: formData.firstName || '',
+        lastName: formData.lastName || '',
+        email: formData.companyEmail || '',
+        position: formData.position || '',
+        department: formData.department || '',
+        phone: formData.phone || '',
+        status: 'active', // Mặc định là active khi tạo mới
+        
+        // Personal Information
+        personalEmail: formData.personalEmail || '',
+        dateOfBirth: formData.dateOfBirth || '',
+        gender: formData.gender || '',
+        idNumber: formData.idNumber || '',
+        taxCode: formData.taxCode || '',
+        employeeId: formData.employeeCode || '',
+        
+        // Contract
+        contractCode: formData.contractCode || '',
+        contractType: formData.contractType || '',
+        
+        // Address
+        permanentAddress: formData.permanentAddress || '',
+        temporaryAddress: formData.temporaryAddress || '',
+        
+        // ID Card
+        idCardIssueDate: formData.idCardIssueDate || '',
+        idCardIssuePlace: formData.idCardIssuePlace || '',
+        
+        // Other
+        maritalStatus: formData.maritalStatus || '',
+        employeeType: formData.employeeType || '',
+        
+        // Emergency Contact
+        emergencyContactName: formData.emergencyContactName || '',
+        emergencyContactPhone: formData.emergencyContactPhone || '',
+        emergencyContactRelationship: formData.emergencyContactRelationship || '',
+        
+        // Work Schedule
+        timeIn: parseTime(formData.timeIn),
+        timeOut: parseTime(formData.timeOut),
+        shift: formData.shift || '',
+        workLocation: formData.workLocation || '',
+        
+        // Employment
+        hireDate: formData.signDate || new Date().toISOString().split('T')[0],
+        salary: formData.baseSalary ? parseInt(formData.baseSalary) * 1000000 : 0
+      };
 
-      if (response.success) {
-        // Ghi log khi tạo nhân viên mới
-        await adminLogService.logEmployeeCreate(
-          formData.employeeCode,
-          `${formData.firstName} ${formData.lastName}`
-        );
+      // Loại bỏ các field null hoặc empty string
+      Object.keys(employeeData).forEach(key => {
+        if (employeeData[key] === null || employeeData[key] === '') {
+          delete employeeData[key];
+        }
+      });
 
-        alert('Nhân viên mới đã được tạo thành công!');
-        navigate('/employees');
-      } else {
-        alert('Có lỗi xảy ra khi tạo nhân viên');
-      }
+      console.log('📤 Creating employee with data:', employeeData);
+      
+      const response = await createEmployee(employeeData);
+      console.log('✅ Employee created:', response);
+
+      // Ghi log khi tạo nhân viên mới
+      await adminLogService.logEmployeeCreate(
+        formData.employeeCode,
+        `${formData.firstName} ${formData.lastName}`
+      );
+
+      toast.success('Nhân viên mới đã được tạo thành công!');
+      navigate('/employees');
     } catch (error) {
-      console.error('Error creating employee:', error);
-      alert('Có lỗi xảy ra khi tạo nhân viên');
+      console.error('❌ Error creating employee:', error);
+      toast.error('Đã có lỗi xảy ra khi tạo nhân viên. Vui lòng thử lại.');
     } finally {
       setSaving(false);
     }
@@ -243,19 +265,66 @@ const AddEmployee = () => {
 
   // Check if form is valid (for enabling/disabling button)
   const isFormValid = () => {
-    return formData.firstName.trim() &&
-           formData.lastName.trim() &&
-           formData.dateOfBirth &&
-           formData.gender &&
-           formData.phone.trim() &&
-           formData.personalEmail.trim() &&
-           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personalEmail) &&
-           formData.department &&
-           formData.position &&
-           formData.employeeCode.trim() &&
-           formData.companyEmail.trim() &&
-           /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.companyEmail) &&
-           formData.contractType;
+    const firstNameValid = formData.firstName && formData.firstName.trim().length > 0;
+    const lastNameValid = formData.lastName && formData.lastName.trim().length > 0;
+    const dateOfBirthValid = formData.dateOfBirth && formData.dateOfBirth.trim().length > 0;
+    const genderValid = formData.gender && (formData.gender === 'male' || formData.gender === 'female' || formData.gender === 'Nam' || formData.gender === 'Nữ');
+    const phoneValid = formData.phone && formData.phone.trim().length > 0;
+    const personalEmailValid = formData.personalEmail && 
+                               formData.personalEmail.trim().length > 0 && 
+                               /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personalEmail.trim());
+    const departmentValid = formData.department && formData.department.trim().length > 0;
+    const positionValid = formData.position && formData.position.trim().length > 0;
+    const employeeCodeValid = formData.employeeCode && formData.employeeCode.trim().length > 0;
+    const companyEmailValid = formData.companyEmail && 
+                              formData.companyEmail.trim().length > 0 && 
+                              /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.companyEmail.trim());
+    const contractTypeValid = formData.contractType && formData.contractType.trim().length > 0;
+
+    // Debug log để kiểm tra
+    if (process.env.NODE_ENV === 'development') {
+      const missingFields = [];
+      if (!firstNameValid) missingFields.push('Họ');
+      if (!lastNameValid) missingFields.push('Tên');
+      if (!dateOfBirthValid) missingFields.push('Ngày sinh');
+      if (!genderValid) missingFields.push('Giới tính');
+      if (!phoneValid) missingFields.push('Số điện thoại');
+      if (!personalEmailValid) missingFields.push('Email cá nhân');
+      if (!departmentValid) missingFields.push('Phòng ban');
+      if (!positionValid) missingFields.push('Chức vụ');
+      if (!employeeCodeValid) missingFields.push('Mã nhân viên');
+      if (!companyEmailValid) missingFields.push('Email công ty');
+      if (!contractTypeValid) missingFields.push('Loại hợp đồng');
+      
+      if (missingFields.length > 0) {
+        console.log('❌ Các trường chưa điền đủ:', missingFields);
+        console.log('📋 Form data:', {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          dateOfBirth: formData.dateOfBirth,
+          gender: formData.gender,
+          phone: formData.phone,
+          personalEmail: formData.personalEmail,
+          department: formData.department,
+          position: formData.position,
+          employeeCode: formData.employeeCode,
+          companyEmail: formData.companyEmail,
+          contractType: formData.contractType
+        });
+      }
+    }
+
+    return firstNameValid &&
+           lastNameValid &&
+           dateOfBirthValid &&
+           genderValid &&
+           phoneValid &&
+           personalEmailValid &&
+           departmentValid &&
+           positionValid &&
+           employeeCodeValid &&
+           companyEmailValid &&
+           contractTypeValid;
   };
 
   const handleCancel = () => {
@@ -330,9 +399,44 @@ const AddEmployee = () => {
                 {saving ? 'Đang tạo...' : 'Tạo nhân viên'}
               </Button>
               {!isFormValid() && (
-                <p className="text-xs text-amber-600 mt-2 text-center">
-                  Vui lòng điền đầy đủ các trường bắt buộc
-                </p>
+                <div className="text-xs text-amber-600 mt-2 text-center space-y-1">
+                  <p className="font-semibold">Vui lòng điền đầy đủ các trường bắt buộc:</p>
+                  <div className="text-left mt-2 space-y-1">
+                    {(!formData.firstName || !formData.firstName.trim()) && (
+                      <p>• Họ (Thông tin cá nhân)</p>
+                    )}
+                    {(!formData.lastName || !formData.lastName.trim()) && (
+                      <p>• Tên (Thông tin cá nhân)</p>
+                    )}
+                    {(!formData.dateOfBirth || !formData.dateOfBirth.trim()) && (
+                      <p>• Ngày sinh (Thông tin cá nhân)</p>
+                    )}
+                    {(!formData.gender || (formData.gender !== 'male' && formData.gender !== 'female' && formData.gender !== 'Nam' && formData.gender !== 'Nữ')) && (
+                      <p>• Giới tính (Thông tin cá nhân)</p>
+                    )}
+                    {(!formData.phone || !formData.phone.trim()) && (
+                      <p>• Số điện thoại (Thông tin cá nhân)</p>
+                    )}
+                    {(!formData.personalEmail || !formData.personalEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.personalEmail.trim())) && (
+                      <p>• Email cá nhân hợp lệ (Thông tin cá nhân)</p>
+                    )}
+                    {(!formData.department || !formData.department.trim()) && (
+                      <p>• Phòng ban (Thông tin công việc)</p>
+                    )}
+                    {(!formData.position || !formData.position.trim()) && (
+                      <p>• Chức vụ (Thông tin công việc)</p>
+                    )}
+                    {(!formData.employeeCode || !formData.employeeCode.trim()) && (
+                      <p>• Mã nhân viên (Thông tin công việc)</p>
+                    )}
+                    {(!formData.companyEmail || !formData.companyEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.companyEmail.trim())) && (
+                      <p>• Email công ty hợp lệ (Thông tin công việc)</p>
+                    )}
+                    {(!formData.contractType || !formData.contractType.trim()) && (
+                      <p>• Loại hợp đồng (Thông tin công việc)</p>
+                    )}
+                  </div>
+                </div>
               )}
               <Button
                 onClick={handleCancel}
