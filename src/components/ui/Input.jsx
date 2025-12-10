@@ -40,7 +40,7 @@ const Input = ({
         
         <input
           type={type}
-          value={value}
+          value={value ?? ''}
           onChange={(e) => {
             if (onChange) {
               // Pass the value for backward compatibility with existing code

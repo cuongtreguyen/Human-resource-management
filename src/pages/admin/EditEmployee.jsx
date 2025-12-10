@@ -5,15 +5,17 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import fakeApi from '../../services/fakeApi';
+import { getEmployeeById, updateEmployee } from '../../services/api';
 import adminLogService from '../../services/adminLogService';
 import { User, Phone, Clock } from 'lucide-react';
+import { toast } from 'react-toastify';
 
 const EditEmployee = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
   const originalDataRef = useRef(null); // Lưu dữ liệu gốc để so sánh
 
   const [formData, setFormData] = useState({
@@ -51,6 +53,7 @@ const EditEmployee = () => {
     workLocation: '',
     employeeType: '',
     status: '',
+    role: '',
     timeIn: '',
     timeOut: '',
     shift: '',
@@ -65,21 +68,49 @@ const EditEmployee = () => {
     const loadEmployeeData = async () => {
       try {
         setLoading(true);
-        const response = await fakeApi.getEmployeeById(id);
-        if (response.success && response.data) {
-          const data = response.data;
+        
+        if (!id) {
+          toast.error('ID nhân viên không hợp lệ');
+          navigate('/employees');
+          return;
+        }
+
+        console.log('📋 Loading employee data for ID:', id);
+        
+        // Dùng API thật - getEmployeeById hỗ trợ cả ID số và employeeId string
+        const data = await getEmployeeById(id);
+        console.log('✅ Loaded employee data:', data);
+        
+        if (data) {
           // Tách tên thành firstName và lastName
-          const nameParts = (data.name || '').split(' ');
-          const lastName = nameParts.pop() || '';
-          const firstName = nameParts.join(' ') || '';
+          // Ưu tiên dùng firstName/lastName từ API, nếu không có thì tách từ name
+          let firstName = data.firstName || '';
+          let lastName = data.lastName || '';
+          let fullName = data.name || '';
           
+          if (!firstName && !lastName && fullName) {
+            const nameParts = fullName.split(' ').filter(p => p.trim());
+            lastName = nameParts.pop() || '';
+            firstName = nameParts.join(' ') || '';
+          } else if (firstName || lastName) {
+            fullName = `${firstName} ${lastName}`.trim();
+          }
+          
+          // Chuyển đổi gender từ API (male/female) sang form (Nam/Nữ)
+          const convertGenderForDisplay = (gender) => {
+            if (!gender) return '';
+            if (gender === 'male' || gender === 'Nam') return 'Nam';
+            if (gender === 'female' || gender === 'Nữ') return 'Nữ';
+            return gender;
+          };
+
           const loadedData = {
             // Personal Information
             firstName: firstName,
             lastName: lastName,
-            name: data.name || '',
+            name: fullName,
             dateOfBirth: data.dateOfBirth || '',
-            gender: data.gender || '',
+            gender: convertGenderForDisplay(data.gender),
             maritalStatus: data.maritalStatus || '',
             idNumber: data.idCard || data.idNumber || '',
             idCard: data.idCard || data.idNumber || '',
@@ -95,45 +126,67 @@ const EditEmployee = () => {
             // Employment Details
             department: data.department || '',
             position: data.position || '',
-            employeeCode: data.employeeCode || data.id || '',
+            employeeCode: data.employeeId || data.employeeCode || data.id || '',
             companyEmail: data.email || '',
             email: data.email || '',
             contractCode: data.contractCode || '',
             contractType: data.contractType || '',
             baseSalary: data.salary ? (data.salary / 1000000).toString() : '',
             salary: data.salary || '',
-            signDate: data.hireDate || data.signDate || '',
-            hireDate: data.hireDate || '',
+            signDate: data.startDate || data.hireDate || data.signDate || '',
+            hireDate: data.startDate || data.hireDate || '',
             manager: data.manager || '',
             workLocation: data.workLocation || '',
             employeeType: data.employeeType || '',
             status: data.status || '',
-            timeIn: data.timeIn || '',
-            timeOut: data.timeOut || '',
+            // Normalize role: đảm bảo role là uppercase để match với options (ACCOUNTANT, MANAGER, EMPLOYEE)
+            role: data.role ? data.role.toUpperCase() : '',
+            // Xử lý timeIn/timeOut - có thể là object {hour, minute} hoặc string "HH:mm"
+            timeIn: data.timeIn 
+              ? (typeof data.timeIn === 'object' && data.timeIn.hour !== undefined
+                  ? `${String(data.timeIn.hour).padStart(2, '0')}:${String(data.timeIn.minute || 0).padStart(2, '0')}`
+                  : data.timeIn)
+              : '',
+            timeOut: data.timeOut
+              ? (typeof data.timeOut === 'object' && data.timeOut.hour !== undefined
+                  ? `${String(data.timeOut.hour).padStart(2, '0')}:${String(data.timeOut.minute || 0).padStart(2, '0')}`
+                  : data.timeOut)
+              : '',
             shift: data.shift || '',
             
-            // Emergency Contact
-            emergencyContactName: data.emergencyContact?.name || '',
-            emergencyContactRelationship: data.emergencyContact?.relationship || '',
-            emergencyContactPhone: data.emergencyContact?.phone || ''
+            // Emergency Contact - hỗ trợ cả format object và flat
+            emergencyContactName: data.emergencyContactName || data.emergencyContact?.name || '',
+            emergencyContactRelationship: data.emergencyContactRelationship || data.emergencyContact?.relationship || '',
+            emergencyContactPhone: data.emergencyContactPhone || data.emergencyContact?.phone || ''
           };
+          
+          console.log('📝 Form data loaded:', loadedData);
           setFormData(loadedData);
           // Lưu dữ liệu gốc để so sánh khi log
           originalDataRef.current = { ...loadedData };
         } else {
-          alert('Không tìm thấy thông tin nhân viên');
-          navigate('/employees');
+          throw new Error('Không tìm thấy dữ liệu nhân viên');
         }
       } catch (err) {
-        console.error('Error loading employee:', err);
-        alert('Không thể tải thông tin nhân viên');
-        navigate('/employees');
+        console.error('❌ Error loading employee:', err);
+        console.error('Error details:', {
+          message: err.message,
+          stack: err.stack,
+          id: id
+        });
+        setError(err.message || 'Không thể tải thông tin nhân viên');
+        // Không navigate ngay, để hiển thị error message
       } finally {
         setLoading(false);
       }
     };
 
-    loadEmployeeData();
+    if (id) {
+      loadEmployeeData();
+    } else {
+      setError('ID nhân viên không hợp lệ');
+      setLoading(false);
+    }
   }, [id, navigate]);
 
   const handleInputChange = (field, value) => {
@@ -167,57 +220,112 @@ const EditEmployee = () => {
     try {
       setSaving(true);
       
-      // Prepare employee data for API (giống AddEmployee)
+      if (!id) {
+        toast.error('ID nhân viên không hợp lệ');
+        return;
+      }
+
+      console.log('💾 Saving employee data for ID:', id);
+      
+      // Chuyển đổi gender từ tiếng Việt sang tiếng Anh
+      const convertGender = (gender) => {
+        if (!gender) return undefined;
+        if (gender === 'Nam' || gender === 'male') return 'male';
+        if (gender === 'Nữ' || gender === 'female') return 'female';
+        return gender; // Giữ nguyên nếu đã đúng format
+      };
+
+      // Chuyển đổi status sang lowercase và đảm bảo đúng format
+      const convertStatus = (status) => {
+        if (!status) return 'active'; // Mặc định
+        const statusLower = status.toLowerCase();
+        const validStatuses = ['active', 'inactive', 'on_leave', 'terminated'];
+        if (validStatuses.includes(statusLower)) {
+          return statusLower;
+        }
+        // Nếu không hợp lệ, trả về active
+        return 'active';
+      };
+
+      // Prepare employee data for API - chỉ gửi các field có giá trị
       const employeeData = {
         // Basic Info
-        id: formData.employeeCode || id,
-        name: formData.name || `${formData.firstName} ${formData.lastName}`,
-        email: formData.companyEmail || formData.email,
-        personalEmail: formData.personalEmail,
-        phone: formData.phone,
-        status: formData.status || 'active',
+        name: formData.name || `${formData.firstName} ${formData.lastName}`.trim(),
+        firstName: formData.firstName || undefined,
+        lastName: formData.lastName || undefined,
+        email: formData.companyEmail || formData.email || undefined,
+        personalEmail: formData.personalEmail || undefined,
+        phone: formData.phone || undefined,
+        status: convertStatus(formData.status),
         
         // Personal Information
-        dateOfBirth: formData.dateOfBirth,
-        gender: formData.gender,
-        maritalStatus: formData.maritalStatus,
+        dateOfBirth: formData.dateOfBirth || undefined,
+        gender: convertGender(formData.gender),
+        maritalStatus: formData.maritalStatus || undefined,
         
-        // ID Card Information
-        idCard: formData.idNumber || formData.idCard,
-        idNumber: formData.idNumber || formData.idCard,
-        idCardIssueDate: formData.idCardIssueDate,
-        idCardIssuePlace: formData.idCardIssuePlace,
-        taxCode: formData.taxCode,
+        // ID Card Information - chỉ dùng idNumber, không dùng idCard
+        idNumber: formData.idNumber || formData.idCard || undefined,
+        idCardIssueDate: formData.idCardIssueDate || undefined,
+        idCardIssuePlace: formData.idCardIssuePlace || undefined,
+        taxCode: formData.taxCode || undefined,
         
         // Address
-        address: formData.permanentAddress || formData.address,
-        permanentAddress: formData.permanentAddress,
-        temporaryAddress: formData.temporaryAddress,
+        address: formData.permanentAddress || formData.address || undefined,
+        permanentAddress: formData.permanentAddress || undefined,
+        temporaryAddress: formData.temporaryAddress || undefined,
         
         // Employment Details
-        department: formData.department,
-        position: formData.position,
-        employeeCode: formData.employeeCode || id,
-        manager: formData.manager,
-        workLocation: formData.workLocation,
-        employeeType: formData.employeeType,
-        contractType: formData.contractType,
-        contractCode: formData.contractCode,
-        hireDate: formData.signDate || formData.hireDate || new Date().toISOString().split('T')[0],
-        salary: formData.baseSalary ? parseInt(formData.baseSalary) * 1000000 : (formData.salary ? parseInt(formData.salary) : 0),
-        timeIn: formData.timeIn,
-        timeOut: formData.timeOut,
-        shift: formData.shift,
+        department: formData.department || undefined,
+        position: formData.position || undefined,
+        employeeId: formData.employeeCode || id, // employeeId là string (EMP001)
+        manager: formData.manager || undefined,
+        workLocation: formData.workLocation || undefined,
+        employeeType: formData.employeeType || undefined,
+        contractType: formData.contractType || undefined,
+        contractCode: formData.contractCode || undefined,
+        startDate: formData.signDate || formData.hireDate || undefined, // API dùng startDate
+        salary: formData.baseSalary && !isNaN(parseInt(formData.baseSalary)) 
+          ? parseInt(formData.baseSalary) * 1000000 
+          : (formData.salary && !isNaN(parseInt(formData.salary)) ? parseInt(formData.salary) : undefined),
+        role: formData.role || undefined,
+        
+        // Work Schedule - xử lý timeIn/timeOut nếu có (theo schema Swagger cần đầy đủ hour, minute, second, nano)
+        ...(formData.timeIn && typeof formData.timeIn === 'string' && formData.timeIn.includes(':') ? {
+          timeIn: {
+            hour: parseInt(formData.timeIn.split(':')[0]) || 0,
+            minute: parseInt(formData.timeIn.split(':')[1] || 0) || 0,
+            second: 0,
+            nano: 0
+          }
+        } : {}),
+        ...(formData.timeOut && typeof formData.timeOut === 'string' && formData.timeOut.includes(':') ? {
+          timeOut: {
+            hour: parseInt(formData.timeOut.split(':')[0]) || 0,
+            minute: parseInt(formData.timeOut.split(':')[1] || 0) || 0,
+            second: 0,
+            nano: 0
+          }
+        } : {}),
+        shift: formData.shift || undefined,
         
         // Emergency Contact
-        emergencyContact: formData.emergencyContactName || formData.emergencyContactRelationship || formData.emergencyContactPhone ? {
-          name: formData.emergencyContactName,
-          relationship: formData.emergencyContactRelationship,
-          phone: formData.emergencyContactPhone
-        } : null
+        emergencyContactName: formData.emergencyContactName || undefined,
+        emergencyContactRelationship: formData.emergencyContactRelationship || undefined,
+        emergencyContactPhone: formData.emergencyContactPhone || undefined,
       };
+
+      // Loại bỏ các field undefined, empty string, hoặc NaN
+      // Giữ lại: số 0, false, null, object (kể cả timeIn/timeOut), Date
+      Object.keys(employeeData).forEach(key => {
+        const value = employeeData[key];
+        if (value === undefined || value === '' || (typeof value === 'number' && isNaN(value))) {
+          delete employeeData[key];
+        }
+      });
       
-      await fakeApi.updateEmployee(id, employeeData);
+      console.log('📤 Updating employee with data:', employeeData);
+      await updateEmployee(id, employeeData);
+      console.log('✅ Employee updated successfully');
 
       // Ghi log các thay đổi
       if (originalDataRef.current) {
@@ -233,10 +341,10 @@ const EditEmployee = () => {
         }
       }
 
-      alert('Cập nhật nhân viên thành công!');
+      toast.success('Cập nhật nhân viên thành công!');
       navigate('/employees');
     } catch (err) {
-      alert('Không thể cập nhật nhân viên');
+      toast.error('Không thể cập nhật nhân viên');
       console.error('Update error:', err);
     } finally {
       setSaving(false);
@@ -258,6 +366,11 @@ const EditEmployee = () => {
   const shifts = ['Ca sáng', 'Ca chiều', 'Ca tối', 'Ca đêm', 'Tùy chỉnh'];
   const relationships = ['Cha', 'Mẹ', 'Vợ', 'Chồng', 'Anh/Chị/Em', 'Người thân khác'];
   const managers = ['Nguyễn Văn A', 'Trần Thị B', 'Lê Minh C', 'Phạm Thu D'];
+  const roles = [
+    { value: 'ACCOUNTANT', label: 'ACCOUNTANT' },
+    { value: 'MANAGER', label: 'MANAGER' },
+    { value: 'EMPLOYEE', label: 'EMPLOYEE' }
+  ];
 
   if (loading) {
     return (
@@ -266,6 +379,138 @@ const EditEmployee = () => {
           <div className="text-center">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
             <p className="text-gray-600 mt-4">Đang tải thông tin nhân viên...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Hiển thị lỗi nếu có
+  if (error) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-red-600 mb-2">Lỗi</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => {
+                  setError(null);
+                  setLoading(true);
+                  // Retry load
+                  const loadEmployeeData = async () => {
+                    try {
+                      const data = await getEmployeeById(id);
+                      if (data) {
+                        let firstName = data.firstName || '';
+                        let lastName = data.lastName || '';
+                        let fullName = data.name || '';
+                        if (!firstName && !lastName && fullName) {
+                          const nameParts = fullName.split(' ').filter(p => p.trim());
+                          lastName = nameParts.pop() || '';
+                          firstName = nameParts.join(' ') || '';
+                        } else if (firstName || lastName) {
+                          fullName = `${firstName} ${lastName}`.trim();
+                        }
+                        // Chuyển đổi gender từ API (male/female) sang form (Nam/Nữ)
+                        const convertGenderForDisplay = (gender) => {
+                          if (!gender) return '';
+                          if (gender === 'male' || gender === 'Nam') return 'Nam';
+                          if (gender === 'female' || gender === 'Nữ') return 'Nữ';
+                          return gender;
+                        };
+
+                        const loadedData = {
+                          firstName, lastName, name: fullName,
+                          dateOfBirth: data.dateOfBirth || '',
+                          gender: convertGenderForDisplay(data.gender),
+                          maritalStatus: data.maritalStatus || '',
+                          idNumber: data.idCard || data.idNumber || '',
+                          idCard: data.idCard || data.idNumber || '',
+                          idCardIssueDate: data.idCardIssueDate || '',
+                          idCardIssuePlace: data.idCardIssuePlace || '',
+                          taxCode: data.taxCode || '',
+                          personalEmail: data.personalEmail || '',
+                          phone: data.phone || '',
+                          permanentAddress: data.permanentAddress || data.address || '',
+                          temporaryAddress: data.temporaryAddress || '',
+                          address: data.address || data.permanentAddress || '',
+                          department: data.department || '',
+                          position: data.position || '',
+                          employeeCode: data.employeeId || data.employeeCode || data.id || '',
+                          companyEmail: data.email || '',
+                          email: data.email || '',
+                          contractCode: data.contractCode || '',
+                          contractType: data.contractType || '',
+                          baseSalary: data.salary ? (data.salary / 1000000).toString() : '',
+                          salary: data.salary || '',
+                          signDate: data.startDate || data.hireDate || data.signDate || '',
+                          hireDate: data.startDate || data.hireDate || '',
+                          manager: data.manager || '',
+                          workLocation: data.workLocation || '',
+                          employeeType: data.employeeType || '',
+                          status: data.status || '',
+                          // Normalize role: đảm bảo role là uppercase để match với options (ACCOUNTANT, MANAGER, EMPLOYEE)
+                          role: data.role ? data.role.toUpperCase() : '',
+                          timeIn: data.timeIn 
+                            ? (typeof data.timeIn === 'object' && data.timeIn.hour !== undefined
+                                ? `${String(data.timeIn.hour).padStart(2, '0')}:${String(data.timeIn.minute || 0).padStart(2, '0')}`
+                                : data.timeIn)
+                            : '',
+                          timeOut: data.timeOut
+                            ? (typeof data.timeOut === 'object' && data.timeOut.hour !== undefined
+                                ? `${String(data.timeOut.hour).padStart(2, '0')}:${String(data.timeOut.minute || 0).padStart(2, '0')}`
+                                : data.timeOut)
+                            : '',
+                          shift: data.shift || '',
+                          emergencyContactName: data.emergencyContactName || data.emergencyContact?.name || '',
+                          emergencyContactRelationship: data.emergencyContactRelationship || data.emergencyContact?.relationship || '',
+                          emergencyContactPhone: data.emergencyContactPhone || data.emergencyContact?.phone || ''
+                        };
+                        setFormData(loadedData);
+                        originalDataRef.current = { ...loadedData };
+                        setError(null);
+                      }
+                    } catch (err) {
+                      setError(err.message || 'Lỗi không xác định');
+                    } finally {
+                      setLoading(false);
+                    }
+                  };
+                  loadEmployeeData();
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Thử lại
+              </button>
+              <button
+                onClick={() => navigate('/employees')}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Quay lại danh sách
+              </button>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Kiểm tra nếu không có formData (có thể do lỗi load)
+  if (!formData || Object.keys(formData).length === 0) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Không tìm thấy dữ liệu</h2>
+            <p className="text-gray-600 mb-4">Không thể tải thông tin nhân viên</p>
+            <button
+              onClick={() => navigate('/employees')}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Quay lại danh sách
+            </button>
           </div>
         </div>
       </Layout>
@@ -536,6 +781,14 @@ const EditEmployee = () => {
                       value={formData.status}
                       onChange={(value) => handleInputChange('status', value)}
                       placeholder="-- Chọn trạng thái --"
+                    />
+                    <Select
+                      label="Vai trò (Role)"
+                      options={roles}
+                      value={formData.role}
+                      onChange={(value) => handleInputChange('role', value)}
+                      placeholder={formData.role ? `Hiện tại: ${formData.role}` : "-- Chọn vai trò --"}
+                      helperText={formData.role ? `Vai trò hiện tại của nhân viên: ${formData.role}` : "Chọn vai trò cho nhân viên"}
                     />
                   </div>
                   <p className="text-xs text-gray-500 mt-2">Nhập số tiền theo triệu đồng (ví dụ: 10 cho 10 triệu)</p>
