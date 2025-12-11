@@ -27,9 +27,6 @@ public class S3Service {
     @Value("${aws.s3.bucket-name:hrm-attachments}")
     private String bucketName;
 
-    @Value("${aws.region:ap-southeast-1}")
-    private String region;
-
     /**
      * Upload file lên S3 - Tối ưu cho file lớn
      * @param file MultipartFile từ request
@@ -77,11 +74,14 @@ public class S3Service {
         double uploadTimeSeconds = (endTime - startTime) / 1000.0;
         double uploadSpeedMBps = (fileSize / (1024.0 * 1024.0)) / uploadTimeSeconds;
 
+        // Lấy region từ S3Client để đảm bảo đồng bộ
+        String region = s3Client.serviceClientConfiguration().region().toString();
+        
         // Trả về URL public (nếu bucket public) hoặc key để tạo presigned URL
         String fileUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
 
-        log.info("File uploaded successfully: {} (Time: {}s, Speed: {:.2f} MB/s)", 
-                fileUrl, uploadTimeSeconds, uploadSpeedMBps);
+        log.info("File uploaded successfully: {} (Time: {}s, Speed: {:.2f} MB/s, Region: {})", 
+                fileUrl, uploadTimeSeconds, uploadSpeedMBps, region);
         return fileUrl;
     }
 
@@ -102,9 +102,11 @@ public class S3Service {
 
         s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
 
+        // Lấy region từ S3Client để đảm bảo đồng bộ
+        String region = s3Client.serviceClientConfiguration().region().toString();
         String fileUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
 
-        log.info("File uploaded successfully: {}", fileUrl);
+        log.info("File uploaded successfully: {} (Region: {})", fileUrl, region);
         return fileUrl;
     }
 
