@@ -15,9 +15,9 @@ import java.time.LocalTime;
 public class OvertimeValidator {
 
     /**
-     * Validate OvertimeRequest
+     * Validate OvertimeRequest for create operation
      */
-    public void validateOvertimeRequest(OvertimeRequest request) {
+    public void validateCreateOvertimeRequest(OvertimeRequest request) {
         if (request == null) {
             throw ErrorCode.INVALID_REQUEST.toException();
         }
@@ -33,9 +33,20 @@ public class OvertimeValidator {
         }
         validateOtHours(request.getOtHours());
 
-        // Validate reason (optional but if provided should not be empty)
-        if (request.getReason() != null && request.getReason().trim().isEmpty()) {
-            throw ErrorCode.INVALID_REQUEST.toException("Lý do làm thêm giờ không được để trống nếu đã cung cấp");
+        // Validate reason (required)
+        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
+            throw ErrorCode.INVALID_REQUEST.toException("Lý do làm thêm giờ không được để trống");
+        }
+        if (request.getReason().length() > 1000) {
+            throw ErrorCode.INVALID_REQUEST.toException("Lý do làm thêm giờ không được vượt quá 1000 ký tự");
+        }
+
+        // Validate department (required)
+        if (request.getDepartment() == null || request.getDepartment().trim().isEmpty()) {
+            throw ErrorCode.INVALID_REQUEST.toException("Phòng ban không được để trống");
+        }
+        if (request.getDepartment().length() > 100) {
+            throw ErrorCode.INVALID_REQUEST.toException("Phòng ban không được vượt quá 100 ký tự");
         }
     }
 

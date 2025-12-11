@@ -49,7 +49,7 @@ public class OvertimeService {
 
     public OvertimeResponse createOvertime(OvertimeRequest request) {
         // 1. Validate request cơ bản
-        overtimeValidator.validateOvertimeRequest(request);
+        overtimeValidator.validateCreateOvertimeRequest(request);
 
         // ⚠️ QUAN TRỌNG: Đã xóa dòng validateOvertimeRegistrationTime gây lỗi 400/404 ảo
 
@@ -59,17 +59,17 @@ public class OvertimeService {
         Employee employee = employeeRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
 
-        // 3. Map Entity (Lúc này Mapper đã có setDepartment như Bước 1)
+        // 3. Map Entity (Mapper đã set department từ request)
         OverTime overtime = overtimeMapper.toEntity(request);
 
-        // Đảm bảo set đủ thông tin
+        // 4. Set các field bổ sung
         overtime.setEmployee(employee);
         overtime.setOvertimeStatus(OverTimeStatus.PENDING);
         overtime.setCreatedAt(LocalDateTime.now());
 
-        // Nếu Mapper chưa set department thì set thủ công ở đây cho chắc:
-        if (request.getDepartment() != null) {
-            overtime.setDepartment(request.getDepartment());
+        // Nếu request không có department, lấy từ employee
+        if (overtime.getDepartment() == null || overtime.getDepartment().trim().isEmpty()) {
+            overtime.setDepartment(employee.getDepartment());
         }
 
         // 4. Validate Task

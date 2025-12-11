@@ -25,6 +25,8 @@ import org.springframework.web.bind.annotation.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import management.member.demo.exception.specifiic.ResourceNotFoundException;
+import management.member.demo.exception.model.ErrorCode;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -113,10 +115,11 @@ public class AttendanceController {
             @PathVariable Long id,
             @Valid @RequestBody AttendanceDTO attendanceDTO) {
         AttendanceDTO updated = attendanceService.updateAttendance(id, attendanceDTO);
-        if (updated != null) {
-            return ResponseEntity.ok(updated);
+        if (updated == null) {
+            throw new ResourceNotFoundException(
+                    ErrorCode.ATTENDANCE_NOT_FOUND.getMessage() + " với ID: " + id);
         }
-        return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(updated);
     }
 
     @DeleteMapping("/local/{id}")

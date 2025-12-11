@@ -5,10 +5,7 @@ import management.member.demo.dto.OvertimeListResponse;
 import management.member.demo.dto.OvertimeRequest;
 import management.member.demo.dto.OvertimeResponse;
 import management.member.demo.entity.OverTime;
-import management.member.demo.enums.OverTimeStatus;
 import org.springframework.stereotype.Component;
-
-import java.time.LocalDate;
 
 /**
  * Mapper class - Chỉ chịu trách nhiệm mapping giữa Entity và DTO
@@ -70,7 +67,6 @@ public class OverTimeMapper {
                 .otDate(overtime.getOtDate())
                 .overtimeStatus(overtime.getOvertimeStatus())
                 .createdAt(overtime.getCreatedAt())
-                .department(overtime.getDepartment())
                 .build();
     }
 
@@ -82,6 +78,7 @@ public class OverTimeMapper {
         overtime.setOtDate(request.getOtDate());
         overtime.setOtHours(request.getOtHours());
         overtime.setReason(request.getReason());
+        overtime.setDepartment(request.getDepartment());
         // Không map taskId ở đây vì Overtime entity cần object Task, không phải Long taskId.
         // Service sẽ xử lý việc: overtime.setTask(foundTask);
     }
@@ -107,7 +104,6 @@ public class OverTimeMapper {
                 .reason(overtime.getReason())
                 .overtimeStatus(overtime.getOvertimeStatus())
                 .createdAt(overtime.getCreatedAt())
-                .department(overtime.getDepartment())
                 .build();
     }
 }

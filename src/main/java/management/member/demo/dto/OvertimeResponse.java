@@ -19,17 +19,15 @@ import java.time.LocalDateTime;
 public class OvertimeResponse {
     private Long id;
     private String employeeId;
-
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate otDate;
-
     private Double otHours;
     private Long taskId;
     private String reason;
-    private String department;
     private OverTimeStatus overtimeStatus;
     private String managerNote;
     private LocalDateTime createdAt;
     private String approvedBy;
+    private String department;
 }
 
