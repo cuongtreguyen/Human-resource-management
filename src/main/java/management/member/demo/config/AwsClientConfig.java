@@ -10,6 +10,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
@@ -93,6 +94,14 @@ public class AwsClientConfig {
     @Bean
     public SqsClient sqsClient() {
         return SqsClient.builder()
+                .region(getRegion())
+                .credentialsProvider(getCredentialsProvider())
+                .build();
+    }
+
+    @Bean
+    public S3Presigner s3Presigner() {
+        return S3Presigner.builder()
                 .region(getRegion())
                 .credentialsProvider(getCredentialsProvider())
                 .build();

@@ -114,4 +114,26 @@ public class OverTimeMapper {
                 .createdAt(overtime.getCreatedAt())
                 .build();
     }
+
+    /**
+     * Map OverTime entity sang OvertimeHistoryResponseDTO
+     */
+    public management.member.demo.dto.OvertimeHistoryResponseDTO toHistoryResponse(OverTime overtime) {
+        String boardName = null;
+        if (overtime.getTask() != null && overtime.getTask().getBoard() != null) {
+            boardName = overtime.getTask().getBoard().getName();
+        }
+
+        return management.member.demo.dto.OvertimeHistoryResponseDTO.builder()
+                .id(overtime.getId())
+                .employeeId(overtime.getEmployee() != null ? overtime.getEmployee().getId().toString() : null)
+                .employeeFullName(overtime.getEmployee() != null ? overtime.getEmployee().getFullName() : null)
+                .otHours(overtime.getOtHours())
+                .reason(overtime.getReason())
+                .boardName(boardName)
+                .overtimeStatus(overtime.getOvertimeStatus())
+                .otDate(overtime.getOtDate())
+                .department(overtime.getDepartment())
+                .build();
+    }
 }

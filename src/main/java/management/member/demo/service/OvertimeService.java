@@ -234,6 +234,30 @@ public class OvertimeService {
         return overtimeMapper.toStatusResponse(saved);
     }
 
+    /**
+     * Lấy lịch sử overtime của nhân viên
+     */
+    public List<management.member.demo.dto.OvertimeHistoryResponseDTO> getOvertimeHistoryByEmployeeId(Long employeeId) {
+        List<OverTime> overtimes = overtimeRepository.findByEmployeeIdOrderByOtDateDesc(employeeId);
+        return overtimes.stream()
+                .map(overtimeMapper::toHistoryResponse)
+                .toList();
+    }
+
+    /**
+     * Lấy lịch sử overtime của nhân viên hiện tại (tự xem lịch sử của mình)
+     */
+    public List<management.member.demo.dto.OvertimeHistoryResponseDTO> getMyOvertimeHistory() {
+        User user = authService.getCurrentUser();
+        Employee employee = employeeRepository.findByEmail(user.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
+        
+        List<OverTime> overtimes = overtimeRepository.findByEmployeeOrderByOtDateDesc(employee);
+        return overtimes.stream()
+                .map(overtimeMapper::toHistoryResponse)
+                .toList();
+    }
+
     public OvertimeDetailResponse getDetailOTByID(Long id){
         OverTime overtime = overtimeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.OVERTIME_NOT_FOUND.getMessage()));

@@ -95,4 +95,23 @@ public class OverTimeController {
         OvertimeDetailResponse response = overtimeService.getDetailOTByID(id);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/history/employee/{employeeId}")
+    @Operation(summary = "Get overtime history by employee ID", description = "Lấy lịch sử overtime của nhân viên theo employee ID")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Overtime history retrieved successfully"),
+            @ApiResponse(responseCode = "404", description = "Employee not found")
+    })
+    public ResponseEntity<?> getOvertimeHistoryByEmployee(@PathVariable Long employeeId) {
+        return ResponseEntity.ok(overtimeService.getOvertimeHistoryByEmployeeId(employeeId));
+    }
+
+    @GetMapping("/history/my-history")
+    @Operation(summary = "Get my overtime history", description = "Lấy lịch sử overtime của nhân viên hiện tại")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Overtime history retrieved successfully")
+    })
+    public ResponseEntity<?> getMyOvertimeHistory() {
+        return ResponseEntity.ok(overtimeService.getMyOvertimeHistory());
+    }
 }

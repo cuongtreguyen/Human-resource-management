@@ -1,7 +1,6 @@
 package management.member.demo.repository;
 
 import management.member.demo.entity.OverTime;
-import management.member.demo.entity.OverTime;
 import management.member.demo.enums.OverTimeStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,5 +17,11 @@ public interface OverTimeRepository extends JpaRepository<OverTime, Long> {
        OR LOWER(o.employee.fullName) LIKE LOWER(CONCAT('%', :keyword, '%'))
 """)
     List<OverTime> searchOvertime(@Param("keyword") String keyword);
+
+    // Tìm overtime theo employee ID
+    List<OverTime> findByEmployeeIdOrderByOtDateDesc(Long employeeId);
+
+    // Tìm overtime theo employee entity
+    List<OverTime> findByEmployeeOrderByOtDateDesc(management.member.demo.entity.Employee employee);
 
 }

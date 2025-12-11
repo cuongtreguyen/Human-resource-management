@@ -8,9 +8,11 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 import java.io.IOException;
-import java.net.URL;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -20,6 +22,7 @@ import java.util.UUID;
 public class S3Service {
 
     private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
 
     @Value("${aws.s3.bucket-name:hrm-attachments}")
     private String bucketName;
@@ -116,10 +119,23 @@ public class S3Service {
     public String getPresignedUrl(String fileUrl, int expirationMinutes) {
         String key = extractKeyFromUrl(fileUrl);
 
-        // Sử dụng S3Presigner để tạo presigned URL
-        // Note: Cần thêm S3Presigner bean nếu cần presigned URL
-        // Tạm thời trả về URL trực tiếp
-        return fileUrl;
+        log.info("Generating presigned URL for: bucket={}, key={}, expiration={} minutes", bucketName, key, expirationMinutes);
+
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(key)
+                .build();
+
+        GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(expirationMinutes))
+                .getObjectRequest(getObjectRequest)
+                .build();
+
+        PresignedGetObjectRequest presignedRequest = s3Presigner.presignGetObject(presignRequest);
+        String presignedUrl = presignedRequest.url().toString();
+
+        log.info("Presigned URL generated successfully: {}", presignedUrl);
+        return presignedUrl;
     }
 
     /**
@@ -156,10 +172,4 @@ public class S3Service {
         return fileUrl;
     }
 
-    /**
-     * Lấy bucket name
-     */
-    public String getBucketName() {
-        return bucketName;
-    }
 }

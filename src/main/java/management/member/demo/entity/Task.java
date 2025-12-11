@@ -32,7 +32,6 @@ public class Task {
             inverseJoinColumns = @JoinColumn(name = "employee_id") // Khóa ngoại trỏ về Employee
     )
     List<Employee> employees;
-
     @NotBlank
     @Size(max = 255)
     @Column(name = "title", nullable = false)
