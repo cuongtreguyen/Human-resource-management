@@ -20,10 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -85,19 +82,23 @@ public class OvertimeService {
         }
 
         // 6. Check Timezone Việt Nam (Fix lỗi khung giờ)
-        LocalDate otDate = request.getOtDate();
-        ZoneId vietnamZone = ZoneId.of("Asia/Ho_Chi_Minh");
-        LocalDate today = LocalDate.now(vietnamZone);
-        LocalTime now = LocalTime.now(vietnamZone);
-
-        if (otDate.equals(today)) {
-            // Chỉ cho phép đăng ký trước 14h hoặc sau 17h (tùy logic công ty bạn)
-            // Theo logic cũ bạn muốn chặn 14h-17h hay cho phép 14h-17h?
-            // Logic dưới đây là: CHỈ CHO PHÉP TRONG KHOẢNG 14h - 17h
-            if (now.isBefore(LocalTime.of(14, 0)) || now.isAfter(LocalTime.of(17, 0))) {
-                throw new ResourceNotFoundException(ErrorCode.OVERTIME_OUT_OF_TIME.getMessage());
-            }
-        }
+        // Đã bỏ giới hạn thời gian - cho phép đăng ký OT bất kỳ lúc nào
+        // LocalDate otDate = request.getOtDate();
+        // ZoneId vietnamZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        // LocalDate today = LocalDate.now(vietnamZone);
+        // LocalTime now = LocalTime.now(vietnamZone);
+        // 
+        // if (otDate.equals(today)) {
+        //     // Chỉ cho phép đăng ký trong khoảng 21h-24h
+        //     LocalTime start = LocalTime.of(21, 0);
+        //     LocalTime end = LocalTime.of(23, 59);
+        //     
+        //     boolean isInWindow = (now.isAfter(start) || now.equals(start)) && (now.isBefore(end) || now.equals(end));
+        //     
+        //     if (!isInWindow) {
+        //         throw new ResourceNotFoundException(ErrorCode.OVERTIME_OUT_OF_TIME.getMessage());
+        //     }
+        // }
 
         // 7. Lưu và trả về (truyền board vào mapper)
         OverTime savedOvertime = overtimeRepository.save(overtime);

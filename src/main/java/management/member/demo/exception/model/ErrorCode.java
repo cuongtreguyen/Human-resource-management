@@ -142,7 +142,7 @@ public enum ErrorCode {
     NO_LEAVE_FOUND("NO_LEAVE_FOUND", "Không tìm thấy đơn nghỉ phép nào"),
 
     //Overtime errors
-    OVERTIME_OUT_OF_TIME("OVERTIME_OUT_OF_TIME", "Chỉ được đăng ký OT trong khoảng 14:00 - 17:00 của ngày hôm nay"),
+    OVERTIME_OUT_OF_TIME("OVERTIME_OUT_OF_TIME", "Chỉ được đăng ký OT trong khoảng 21:00 - 24:00 của ngày hôm nay"),
     OVERTIME_PERMISSION("OVERTIME_PERMISSION", "Bạn không có quyền xem đơn OT của nhân viên khác"),
     OVERTIME_STATUS_PERMISSION("OVERTIME_STATUS_PERMISSION", "Bạn không có quyền thay đổi trạng thái đơn OT này"),
     OVERTIME_NOT_FOUND("OVERTIME_NOT_FOUND", "Đơn OT không tồn tại"),
