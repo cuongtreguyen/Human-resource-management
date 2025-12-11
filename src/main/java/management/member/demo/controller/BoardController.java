@@ -77,15 +77,30 @@ public class BoardController {
         return ResponseEntity.ok(boardService.updateBoardName(id, request));
     }
 
-    // POST /api/boards/{id}/members - Thêm member (RESTful)
+    // POST /api/boards/members - Thêm member (boardId trong request body)
+    @PostMapping("/members")
+    @Operation(summary = "Thêm thành viên vào Board", description = "Add a member to a board by email (boardId in request body)")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Member added successfully"),
+            @ApiResponse(responseCode = "404", description = "Board or Employee not found"),
+            @ApiResponse(responseCode = "400", description = "Employee is already a member of the board or boardId is missing")
+    })
+    public ResponseEntity<BoardResponse> addMember(@RequestBody @Valid AddMemberRequest request) {
+        if (request.getBoardId() == null) {
+            throw new IllegalArgumentException("boardId is required in request body");
+        }
+        return ResponseEntity.ok(boardService.addMemberToBoard(request));
+    }
+
+    // POST /api/boards/{id}/members - Thêm member (RESTful với boardId trong path)
     @PostMapping("/{id}/members")
-    @Operation(summary = "Thêm thành viên vào Board", description = "Add a member to a board by email")
+    @Operation(summary = "Thêm thành viên vào Board", description = "Add a member to a board by email (boardId in path)")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Member added successfully"),
             @ApiResponse(responseCode = "404", description = "Board or Employee not found"),
             @ApiResponse(responseCode = "400", description = "Employee is already a member of the board")
     })
-    public ResponseEntity<BoardResponse> addMember(
+    public ResponseEntity<BoardResponse> addMemberWithPathId(
             @PathVariable Long id,
             @RequestBody @Valid AddMemberRequest request) {
         request.setBoardId(id); // Set boardId từ path
