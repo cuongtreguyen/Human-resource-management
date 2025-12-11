@@ -1,7 +1,7 @@
 package management.member.demo.service;
 
 import management.member.demo.dto.AddBenefitForEmployeeRequestDTO;
-import management.member.demo.dto.EmployeeBenefitResponseDTO;
+
 import management.member.demo.dto.UpdateEmployeeBenefitRequestDTO;
 import management.member.demo.entity.Benefits;
 import management.member.demo.entity.Employee;
@@ -10,6 +10,7 @@ import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.EmployeeBenefitsMapper;
 import management.member.demo.repository.EmployeeBenefitsRepository;
 import management.member.demo.repository.EmployeeRepository;
+import management.member.demo.validator.BenefitsValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,9 @@ public class EmployeeBenefitsService {
 
     @Autowired
     private EmployeeBenefitsMapper employeeBenefitsMapper;
+
+    @Autowired
+    private BenefitsValidator benefitsValidator;
 
     /**
      * Lấy tất cả benefits theo employeeId
@@ -78,6 +82,8 @@ public class EmployeeBenefitsService {
     public EmployeeBenefits addBenefitForEmployeeById(
             String employeeId,
             AddBenefitForEmployeeRequestDTO request) {
+        benefitsValidator.validateAddBenefitForEmployeeRequest(employeeId, request);
+        
         // Tìm employee
         Employee employee = getEmployeeById(employeeId);
         
@@ -99,6 +105,8 @@ public class EmployeeBenefitsService {
             String employeeId,
             String benefitId,
             UpdateEmployeeBenefitRequestDTO request) {
+        benefitsValidator.validateUpdateEmployeeBenefitRequest(employeeId, benefitId, request);
+        
         // Tìm employee
         Employee employee = getEmployeeById(employeeId);
         

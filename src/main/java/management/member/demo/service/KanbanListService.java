@@ -13,6 +13,7 @@ import management.member.demo.repository.BoardRepository;
 import management.member.demo.repository.KanbanCardRepository;
 import management.member.demo.repository.KanbanListRepository;
 import management.member.demo.repository.UserRepository;
+import management.member.demo.validator.KanbanValidator;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class KanbanListService {
     private final KanbanCardRepository cardRepository;
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
+    private final KanbanValidator kanbanValidator;
 
     // Helper: Kiểm tra user có phải Manager/Admin không
     private boolean isManagerOrAdmin() {
@@ -41,6 +43,8 @@ public class KanbanListService {
 
     // Tạo list mới trong board - CHỈ MANAGER/ADMIN
     public KanbanListResponse createList(Long boardId, KanbanListRequest request) {
+        kanbanValidator.validateCreateListRequest(boardId, request);
+        
         if (!isManagerOrAdmin()) {
             throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền tạo List");
         }
@@ -81,6 +85,8 @@ public class KanbanListService {
 
     // Cập nhật list
     public KanbanListResponse updateList(Long listId, KanbanListRequest request) {
+        kanbanValidator.validateUpdateListRequest(listId, request);
+        
         KanbanList list = listRepository.findById(listId)
                 .orElseThrow(() -> new ResourceNotFoundException("List không tồn tại với ID: " + listId));
 
@@ -91,6 +97,8 @@ public class KanbanListService {
 
     // Archive/Unarchive list
     public KanbanListResponse archiveList(Long listId, KanbanListArchiveRequest request) {
+        kanbanValidator.validateArchiveListRequest(listId, request);
+        
         KanbanList list = listRepository.findById(listId)
                 .orElseThrow(() -> new ResourceNotFoundException("List không tồn tại với ID: " + listId));
 
@@ -101,6 +109,8 @@ public class KanbanListService {
 
     // Di chuyển list (thay đổi position)
     public KanbanListResponse moveList(Long listId, KanbanListMoveRequest request) {
+        kanbanValidator.validateMoveListRequest(listId, request);
+        
         KanbanList list = listRepository.findById(listId)
                 .orElseThrow(() -> new ResourceNotFoundException("List không tồn tại với ID: " + listId));
 
@@ -111,9 +121,8 @@ public class KanbanListService {
 
     // Xóa list
     public void deleteList(Long listId) {
-        if (!listRepository.existsById(listId)) {
-            throw new ResourceNotFoundException("List không tồn tại với ID: " + listId);
-        }
+        kanbanValidator.validateListId(listId);
+        
         listRepository.deleteById(listId);
     }
 

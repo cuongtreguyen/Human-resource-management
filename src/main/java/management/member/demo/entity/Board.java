@@ -51,4 +51,8 @@ public class Board {
     // Quan hệ Board - Labels (Nhãn của board)
     @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     List<KanbanLabel> labels;
+
+    // Quan hệ Board - Lists (Danh sách Kanban của board)
+    @OneToMany(mappedBy = "board", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    List<KanbanList> lists;
 }

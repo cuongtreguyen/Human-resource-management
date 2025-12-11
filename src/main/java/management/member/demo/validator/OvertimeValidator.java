@@ -73,10 +73,10 @@ public class OvertimeValidator {
         if (otDate == null) {
             return; // validateOtDate sẽ xử lý
         }
-        
+
         LocalDate today = LocalDate.now();
         LocalTime now = LocalTime.now();
-        
+
         if (otDate.equals(today)) {
             // Giới hạn giờ: trước 14h hoặc sau 17h không được đăng ký
             if (now.isBefore(LocalTime.of(14, 0)) || now.isAfter(LocalTime.of(17, 0))) {
@@ -85,4 +85,3 @@ public class OvertimeValidator {
         }
     }
 }
-

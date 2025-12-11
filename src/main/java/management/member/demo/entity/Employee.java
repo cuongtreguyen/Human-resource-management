@@ -243,9 +243,6 @@ public class Employee {
     @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
     private List<EmployeeEvaluation> employeeEvaluations = new ArrayList<>();
 
-    /** Quan hệ One-to-Many với SupportTicket: 1 nhân viên có thể tạo nhiều ticket hỗ trợ */
-    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
-    private List<SupportTicket> supportTickets = new ArrayList<>();
 
     /** Quan hệ One-to-Many với SupportRequest: 1 nhân viên có thể gửi nhiều yêu cầu hỗ trợ */
     @OneToMany(mappedBy = "requester", fetch = FetchType.LAZY)

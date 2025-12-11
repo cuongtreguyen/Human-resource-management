@@ -9,6 +9,7 @@ import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.EmployeeInsuranceContractMapper;
 import management.member.demo.repository.EmployeeInsuranceContractRepository;
 import management.member.demo.repository.EmployeeRepository;
+import management.member.demo.validator.InsuranceContractValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +36,9 @@ public class EmployeeInsuranceContractService {
 
     @Autowired
     private EmployeeInsuranceContractMapper employeeInsuranceContractMapper;
+
+    @Autowired
+    private InsuranceContractValidator insuranceContractValidator;
 
     /**
      * Lấy tất cả insurance contracts theo employeeId
@@ -77,6 +81,8 @@ public class EmployeeInsuranceContractService {
     public EmployeeInsuranceContract addInsuranceContractForEmployeeById(
             String employeeId,
             AddInsuranceContractForEmployeeRequestDTO request) {
+        insuranceContractValidator.validateAddInsuranceContractForEmployeeRequest(employeeId, request);
+        
         // Tìm employee
         Employee employee = getEmployeeById(employeeId);
         
@@ -98,6 +104,8 @@ public class EmployeeInsuranceContractService {
             String employeeId,
             Long contractId,
             UpdateInsuranceContractByEmployeeRequestDTO request) {
+        insuranceContractValidator.validateUpdateInsuranceContractByEmployeeRequest(employeeId, contractId, request);
+        
         // Tìm employee
         Employee employee = getEmployeeById(employeeId);
         

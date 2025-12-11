@@ -14,6 +14,7 @@ import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.KanbanCardRepository;
 import management.member.demo.repository.KanbanListRepository;
 import management.member.demo.repository.UserRepository;
+import management.member.demo.validator.KanbanValidator;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class KanbanCardService {
     private final KanbanListRepository listRepository;
     private final EmployeeRepository employeeRepository;
     private final UserRepository userRepository;
+    private final KanbanValidator kanbanValidator;
 
     // Helper: Kiểm tra user có phải Manager/Admin không
     private boolean isManagerOrAdmin() {
@@ -42,6 +44,8 @@ public class KanbanCardService {
 
     // Tạo card mới trong list - CHỈ MANAGER/ADMIN
     public KanbanCardResponse createCard(Long listId, KanbanCardRequest request) {
+        kanbanValidator.validateCreateCardRequest(listId, request);
+        
         if (!isManagerOrAdmin()) {
             throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền tạo Card");
         }
@@ -78,6 +82,8 @@ public class KanbanCardService {
 
     // Lấy chi tiết card
     public KanbanCardResponse getCardById(Long cardId) {
+        kanbanValidator.validateCardId(cardId);
+        
         KanbanCard card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
         return toResponse(card);
@@ -85,6 +91,8 @@ public class KanbanCardService {
 
     // Cập nhật card
     public KanbanCardResponse updateCard(Long cardId, KanbanCardUpdateRequest request) {
+        kanbanValidator.validateUpdateCardRequest(cardId, request);
+        
         KanbanCard card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
 
@@ -116,6 +124,8 @@ public class KanbanCardService {
 
     // Di chuyển card (đổi list và/hoặc position)
     public KanbanCardResponse moveCard(Long cardId, KanbanCardMoveRequest request) {
+        kanbanValidator.validateMoveCardRequest(cardId, request);
+        
         KanbanCard card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
 
@@ -133,6 +143,8 @@ public class KanbanCardService {
 
     // Archive/Unarchive card
     public KanbanCardResponse toggleArchiveCard(Long cardId) {
+        kanbanValidator.validateCardId(cardId);
+        
         KanbanCard card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
 
@@ -143,9 +155,8 @@ public class KanbanCardService {
 
     // Xóa card
     public void deleteCard(Long cardId) {
-        if (!cardRepository.existsById(cardId)) {
-            throw new ResourceNotFoundException("Card không tồn tại với ID: " + cardId);
-        }
+        kanbanValidator.validateCardId(cardId);
+        
         cardRepository.deleteById(cardId);
     }
 

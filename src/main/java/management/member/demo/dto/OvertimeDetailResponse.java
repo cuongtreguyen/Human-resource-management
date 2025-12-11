@@ -1,28 +1,34 @@
 package management.member.demo.dto;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-import management.member.demo.entity.Employee;
-import management.member.demo.entity.Task;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import management.member.demo.enums.OverTimeStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class OvertimeDetailResponse {
-    Long id;
-    String employeeName;
-    String department;
-    LocalDate otDate;
-    String title;
-    LocalDate deadline;
-    Double otHours;
-    String reason;
-    OverTimeStatus overtimeStatus;
-    LocalDateTime createdAt;
+    private Long id;
+    private String employeeName;
+    private String department;
+    private String title; // Task title
+    private LocalDate deadline; // Task deadline
+
+    @JsonFormat(pattern = "yyyy-MM-dd")
+    private LocalDate otDate;
+
+    private Double otHours;
+    private String reason;
+    private OverTimeStatus overtimeStatus;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime createdAt;
 }
+

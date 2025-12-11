@@ -8,6 +8,7 @@ import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.TaskDelegationMapper;
 import management.member.demo.repository.TaskDelegationRepository;
 import management.member.demo.repository.EmployeeRepository;
+import management.member.demo.validator.TaskDelegationValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +30,12 @@ public class TaskDelegationService {
     @Autowired
     private TaskDelegationMapper delegationMapper;
 
+    @Autowired
+    private TaskDelegationValidator taskDelegationValidator;
+
     public CreateDelegationResponseDTO createDelegation(CreateDelegationRequestDTO request) {
+        taskDelegationValidator.validateCreateDelegationRequest(request);
+        
         Long fromEmployeeId = Long.parseLong(request.getFromEmployeeId());
         Long toEmployeeId = Long.parseLong(request.getToEmployeeId());
 
@@ -79,6 +85,8 @@ public class TaskDelegationService {
     }
 
     public UpdateDelegationStatusResponseDTO approveDelegation(String id) {
+        taskDelegationValidator.validateDelegationId(id);
+        
         Long delegationId = Long.parseLong(id);
         TaskDelegation delegation = delegationRepository.findById(delegationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Delegation not found with id: " + id));
@@ -96,6 +104,9 @@ public class TaskDelegationService {
     }
 
     public UpdateDelegationStatusResponseDTO rejectDelegation(String id, RejectDelegationRequestDTO request) {
+        taskDelegationValidator.validateDelegationId(id);
+        taskDelegationValidator.validateRejectDelegationRequest(request);
+        
         Long delegationId = Long.parseLong(id);
         TaskDelegation delegation = delegationRepository.findById(delegationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Delegation not found with id: " + id));

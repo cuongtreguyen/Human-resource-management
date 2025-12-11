@@ -9,6 +9,7 @@ import management.member.demo.mapper.InsuranceContractMapper;
 import management.member.demo.repository.InsuranceContractRepository;
 import management.member.demo.repository.EmployeeInsuranceContractRepository;
 import management.member.demo.repository.NotificationRepository;
+import management.member.demo.validator.InsuranceContractValidator;
 import management.member.demo.entity.Notification;
 import management.member.demo.enums.InsuranceContractStatus;
 import org.slf4j.Logger;
@@ -43,6 +44,9 @@ public class InsuranceContractService {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private InsuranceContractValidator insuranceContractValidator;
+
     /**
      * Lấy tất cả danh sách insurance contracts (templates)
      */
@@ -57,10 +61,7 @@ public class InsuranceContractService {
      * Tạo insurance contract mới (template)
      */
     public InsuranceContractResponseDTO createInsuranceContract(CreateInsuranceContractRequestDTO request) {
-        // Kiểm tra insurenceName đã tồn tại chưa
-        if (insuranceContractRepository.existsByInsurenceName(request.getInsurenceName())) {
-            throw new IllegalArgumentException("Insurance contract với tên '" + request.getInsurenceName() + "' đã tồn tại");
-        }
+        insuranceContractValidator.validateCreateInsuranceContractRequest(request);
         
         // Map từ DTO sang Entity
         InsuranceContract contract = insuranceContractMapper.toEntity(request);
@@ -78,6 +79,8 @@ public class InsuranceContractService {
      * Không xóa các EmployeeInsuranceContract còn đang sử dụng (chưa hết hạn)
      */
     public InsuranceContractResponseDTO updateInsuranceContract(String insurenceName, UpdateInsuranceContractRequestDTO request) {
+        insuranceContractValidator.validateUpdateInsuranceContractRequest(insurenceName, request);
+        
         // Tìm contract theo insurenceName
         InsuranceContract contract = insuranceContractRepository.findByInsurenceName(insurenceName)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -166,6 +169,8 @@ public class InsuranceContractService {
      * Nếu còn EmployeeInsuranceContract chưa hết hạn thì không cho phép xóa
      */
     public void deleteInsuranceContract(String insurenceName) {
+        insuranceContractValidator.validateInsuranceContractName(insurenceName);
+        
         // Tìm contract theo insurenceName
         InsuranceContract contract = insuranceContractRepository.findByInsurenceName(insurenceName)
                 .orElseThrow(() -> new ResourceNotFoundException(

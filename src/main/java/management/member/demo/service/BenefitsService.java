@@ -12,6 +12,7 @@ import management.member.demo.repository.EmployeeBenefitsRepository;
 import management.member.demo.repository.NotificationRepository;
 import management.member.demo.entity.Notification;
 import management.member.demo.enums.BenefitsStatus;
+import management.member.demo.validator.BenefitsValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +44,9 @@ public class BenefitsService {
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private BenefitsValidator benefitsValidator;
 
     /**
      * Lấy tất cả danh sách benefits (templates)
@@ -82,10 +86,7 @@ public class BenefitsService {
      * Tạo benefit mới (template)
      */
     public AllBenefitResponseDTO createBenefit(CreateBenefitRequestDTO request) {
-        // Kiểm tra benefitId đã tồn tại chưa
-        if (benefitsRepository.existsByBenefitId(request.getBenefitId())) {
-            throw new IllegalArgumentException("Benefit với ID '" + request.getBenefitId() + "' đã tồn tại");
-        }
+        benefitsValidator.validateCreateBenefitRequest(request);
         
         // Map từ DTO sang Entity
         Benefits benefit = benefitsMapper.toEntity(request);
@@ -103,6 +104,8 @@ public class BenefitsService {
      * Không xóa các EmployeeBenefits còn đang hoạt động (status = ACTIVE)
      */
     public AllBenefitResponseDTO updateBenefit(String benefitId, UpdateBenefitRequestDTO request) {
+        benefitsValidator.validateUpdateBenefitRequest(benefitId, request);
+        
         // Tìm benefit theo benefitId
         Benefits benefit = benefitsRepository.findByBenefitId(benefitId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -181,6 +184,8 @@ public class BenefitsService {
      * Nếu còn EmployeeBenefits đang ACTIVE thì không cho phép xóa
      */
     public void deleteBenefit(String benefitId) {
+        benefitsValidator.validateBenefitId(benefitId);
+        
         // Tìm benefit theo benefitId
         Benefits benefit = benefitsRepository.findByBenefitId(benefitId)
                 .orElseThrow(() -> new ResourceNotFoundException(

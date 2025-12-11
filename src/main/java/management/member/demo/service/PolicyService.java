@@ -4,6 +4,7 @@ import management.member.demo.dto.*;
 import management.member.demo.entity.Policy;
 import management.member.demo.mapper.PolicyMapper;
 import management.member.demo.repository.PolicyRepository;
+import management.member.demo.validator.PolicyValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +22,9 @@ public class PolicyService {
     @Autowired
     private PolicyMapper policyMapper;
 
+    @Autowired
+    private PolicyValidator policyValidator;
+
     public PolicyListResponseDTO getAllPolicies() {
         List<Policy> policies = policyRepository.findAll();
 
@@ -36,6 +40,8 @@ public class PolicyService {
     }
 
     public CreatePolicyResponseDTO createPolicy(CreatePolicyRequestDTO request) {
+        policyValidator.validateCreatePolicyRequest(request);
+        
         Policy policy = new Policy();
         policy.setName(request.getName());
         policy.setDescription(request.getDescription());

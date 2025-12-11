@@ -1,16 +1,22 @@
 package management.member.demo.dto;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
-import management.member.demo.enums.OverTimeStatus;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import management.member.demo.enums.OverTimeStatus;
 
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class OvertimeSetStatusRequest {
-    OverTimeStatus status;
-    String managerNote;
+    @NotNull(message = "Status is required")
+    private OverTimeStatus status;
+
+    @Size(max = 1000, message = "Manager note must not exceed 1000 characters")
+    private String managerNote;
 }
+

@@ -165,7 +165,7 @@ public class AuthController {
     }
 
     @PostMapping("/forgot-password")
-    @Operation(summary = "Forgot password", description = "Send OTP to email for password reset")
+    @Operation(summary = "Forgot password", description = "Send OTP to personal email for password reset")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OTP sent successfully"),
             @ApiResponse(responseCode = "400", description = "USER_NOT_FOUND")
@@ -174,14 +174,26 @@ public class AuthController {
         try {
             String otp = authService.sendForgotPasswordOtp(request.getEmail());
 
-            // Lấy tên đầy đủ từ database để gửi email
+            // Lấy thông tin user và employee từ email công ty
             User user = authService.getUserByEmail(request.getEmail());
             String fullName = (user != null && user.getEmployee() != null && user.getEmployee().getFullName() != null) 
                     ? user.getEmployee().getFullName() 
                     : "User";
-            emailService.sendForgotPasswordOtp(request.getEmail(), fullName, otp);
+            
+            // Lấy personal email từ Employee để gửi OTP
+            String personalEmail = null;
+            if (user != null && user.getEmployee() != null) {
+                personalEmail = user.getEmployee().getPersonalEmail();
+            }
+            
+            // Nếu không có personal email, fallback về email công ty
+            String emailToSend = (personalEmail != null && !personalEmail.trim().isEmpty()) 
+                    ? personalEmail 
+                    : request.getEmail();
+            
+            emailService.sendForgotPasswordOtp(emailToSend, fullName, otp);
 
-            return ResponseEntity.ok(Map.of("message", "OTP sent to your email"));
+            return ResponseEntity.ok(Map.of("message", "OTP sent to your personal email"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to send OTP"));
         }

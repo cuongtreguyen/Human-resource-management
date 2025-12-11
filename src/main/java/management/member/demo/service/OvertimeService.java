@@ -50,7 +50,7 @@ public class OvertimeService {
         // Validate request
         overtimeValidator.validateOvertimeRequest(request);
         overtimeValidator.validateOvertimeRegistrationTime(request.getOtDate());
-        
+
         //Lấy email từ Token (Security Context)
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentEmail = authentication.getName();

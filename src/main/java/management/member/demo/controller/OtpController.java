@@ -2,9 +2,11 @@ package management.member.demo.controller;
 
 import management.member.demo.service.OtpService;
 import management.member.demo.service.EmailService;
+import management.member.demo.service.AuthService;
 import management.member.demo.dto.ForgotPasswordRequest;
 import management.member.demo.dto.VerifyOtpRequest;
 import management.member.demo.dto.OtpStatisticsDTO;
+import management.member.demo.entity.User;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -27,15 +29,17 @@ public class OtpController {
 
     private final OtpService otpService;
     private final EmailService emailService;
+    private final AuthService authService;
 
     @Autowired
-    public OtpController(OtpService otpService, EmailService emailService) {
+    public OtpController(OtpService otpService, EmailService emailService, AuthService authService) {
         this.otpService = otpService;
         this.emailService = emailService;
+        this.authService = authService;
     }
 
     @PostMapping("/generate")
-    @Operation(summary = "Generate OTP", description = "Generate OTP for email verification")
+    @Operation(summary = "Generate OTP", description = "Generate OTP and send to personal email")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "OTP generated and sent successfully"),
             @ApiResponse(responseCode = "400", description = "Failed to generate or send OTP")
@@ -44,13 +48,28 @@ public class OtpController {
         try {
             String otp = otpService.generateOtp(request.getEmail());
             
-            // Gửi OTP qua email
-            String fullName = "User"; // Có thể lấy từ database nếu cần
-            emailService.sendForgotPasswordOtp(request.getEmail(), fullName, otp);
+            // Lấy thông tin user và employee từ email công ty
+            User user = authService.getUserByEmail(request.getEmail());
+            String fullName = (user != null && user.getEmployee() != null && user.getEmployee().getFullName() != null) 
+                    ? user.getEmployee().getFullName() 
+                    : "User";
+            
+            // Lấy personal email từ Employee để gửi OTP
+            String personalEmail = null;
+            if (user != null && user.getEmployee() != null) {
+                personalEmail = user.getEmployee().getPersonalEmail();
+            }
+            
+            // Nếu không có personal email, fallback về email công ty
+            String emailToSend = (personalEmail != null && !personalEmail.trim().isEmpty()) 
+                    ? personalEmail 
+                    : request.getEmail();
+            
+            emailService.sendForgotPasswordOtp(emailToSend, fullName, otp);
             
             return ResponseEntity.ok(Map.of(
-                "message", "OTP generated and sent to your email",
-                "email", request.getEmail()
+                "message", "OTP generated and sent to your personal email",
+                "email", emailToSend
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Failed to generate OTP: " + e.getMessage()));

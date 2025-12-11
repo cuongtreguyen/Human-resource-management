@@ -6,6 +6,7 @@ import management.member.demo.enums.SupportCategory;
 import management.member.demo.enums.SupportStatus;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.SupportRequestRepository;
+import management.member.demo.validator.SupportRequestValidator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,9 @@ public class SupportRequestService {
 
     @Autowired
     SupportRequestRepository supportRequestRepository;
+
+    @Autowired
+    SupportRequestValidator supportRequestValidator;
 
     // 1. API Đếm số lượng (Stats Cards)
     public SupportStatsDTO getStats() {
@@ -81,6 +85,8 @@ public class SupportRequestService {
 
     // 3. API Xem chi tiết
     public SupportRequestResponse getRequestDetail(Long id) {
+        supportRequestValidator.validateSupportRequestId(id);
+        
         SupportRequest req = supportRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Yêu cầu hỗ trợ không tồn tại"));
         return toResponse(req);
@@ -88,6 +94,8 @@ public class SupportRequestService {
 
     // 4. API Manager xử lý (Chuyển trạng thái + Ghi phản hồi)
     public SupportRequestResponse processRequest(Long id, ProcessRequestDTO requestDTO) {
+        supportRequestValidator.validateProcessRequest(id, requestDTO);
+        
         SupportRequest req = supportRequestRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Yêu cầu hỗ trợ không tồn tại"));
 
