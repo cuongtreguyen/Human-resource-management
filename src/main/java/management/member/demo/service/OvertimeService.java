@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -47,21 +48,26 @@ public class OvertimeService {
     OvertimeValidator overtimeValidator;
 
     public OvertimeResponse createOvertime(OvertimeRequest request) {
-        // Validate request
+        // 1. Validate request cơ bản
         overtimeValidator.validateOvertimeRequest(request);
-        overtimeValidator.validateOvertimeRegistrationTime(request.getOtDate());
 
-        //Lấy email từ Token (Security Context)
+        // QUAN TRỌNG: Xóa dòng validateOvertimeRegistrationTime ở đây đi
+        // vì nó check theo giờ Server (UTC) sẽ gây lỗi.
+        // Chúng ta sẽ check thủ công ở bước 5 bên dưới.
+
+        // 2. Lấy thông tin nhân viên từ Token
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentEmail = authentication.getName();
         Employee employee = employeeRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
-        OverTime overtime = overtimeMapper.toEntity(request);
 
+        // 3. Map Entity
+        OverTime overtime = overtimeMapper.toEntity(request);
         overtime.setEmployee(employee);
         overtime.setOvertimeStatus(OverTimeStatus.PENDING);
         overtime.setCreatedAt(LocalDateTime.now());
 
+        // 4. Validate Task (nếu có)
         if (request.getTaskId() != null) {
             Task task = taskRepository.findById(request.getTaskId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND.getMessage()));
@@ -73,9 +79,13 @@ public class OvertimeService {
             overtime.setTask(task);
         }
 
+        // 5. Check thời gian đăng ký (SỬA LẠI TIMEZONE VN)
         LocalDate otDate = request.getOtDate();
-        LocalDate today = LocalDate.now();
-        LocalTime now = LocalTime.now();
+
+        // Lấy giờ hiện tại theo múi giờ Việt Nam
+        ZoneId vietnamZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDate today = LocalDate.now(vietnamZone);
+        LocalTime now = LocalTime.now(vietnamZone);
 
         if (otDate.equals(today)) {
             // Giới hạn giờ: trước 14h hoặc sau 17h không được đăng ký
@@ -84,8 +94,9 @@ public class OvertimeService {
             }
         }
 
+        // 6. Lưu và trả về Response (Dùng hàm mapper mới)
         OverTime savedOvertime = overtimeRepository.save(overtime);
-        return overtimeMapper.toResponse(savedOvertime);
+        return overtimeMapper.toCreateResponse(savedOvertime);
     }
 
     public Long countOvertimeByStatus(OverTimeStatus status) {
@@ -132,23 +143,28 @@ public class OvertimeService {
 
     public OvertimeResponse setOvertimeStatus(Long id, OverTimeStatus status, String managerNote) {
 
+        // 1. Tìm Overtime request
         OverTime overtime = overtimeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.OVERTIME_NOT_FOUND.getMessage()));
 
+        // 2. Lấy thông tin người đang thực hiện (Manager hoặc Employee)
         User user = authService.getCurrentUser();
-        Employee employee = employeeRepository.findById(user.getId())
-                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
 
+        // --- SỬA LẠI ĐOẠN NÀY ---
+        // Tìm nhân viên theo Email (vì ID của User và Employee có thể khác nhau)
+        Employee employee = employeeRepository.findByEmail(user.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
+        // -------------------------
+
+        // 3. Xử lý logic chuyển trạng thái
         switch (status) {
 
             case APPROVED -> {
                 if (user.getRole() == Role.MANAGER) {
                     if (overtime.getOvertimeStatus() == OverTimeStatus.PENDING) {
-
                         overtime.setOvertimeStatus(OverTimeStatus.APPROVED);
-                        overtime.setApprovedBy(employee);
+                        overtime.setApprovedBy(employee); // Lưu người duyệt
                         overtime.setManagerNote(managerNote);
-
                     } else {
                         throw new ResourceNotFoundException(ErrorCode.OVERTIME_CANNOT_APPROVE.getMessage());
                     }
@@ -160,11 +176,9 @@ public class OvertimeService {
             case REJECTED -> {
                 if (user.getRole() == Role.MANAGER) {
                     if (overtime.getOvertimeStatus() == OverTimeStatus.PENDING) {
-
                         overtime.setOvertimeStatus(OverTimeStatus.REJECTED);
-                        overtime.setApprovedBy(employee);
+                        overtime.setApprovedBy(employee); // Lưu người từ chối
                         overtime.setManagerNote(managerNote);
-
                     } else {
                         throw new ResourceNotFoundException(ErrorCode.OVERTIME_CANNOT_REJECT.getMessage());
                     }
@@ -172,14 +186,13 @@ public class OvertimeService {
                     throw new ResourceNotFoundException(ErrorCode.OVERTIME_ONLY_MANAGER_REJECT.getMessage());
                 }
             }
+
             case COMPLETED -> {
                 if (user.getRole() == Role.MANAGER) {
                     if (overtime.getOvertimeStatus() == OverTimeStatus.APPROVED) {
-
                         overtime.setOvertimeStatus(OverTimeStatus.COMPLETED);
-                        overtime.setApprovedBy(employee); // giữ manager đã duyệt
+                        // Giữ nguyên approvedBy của người đã duyệt trước đó
                         overtime.setManagerNote(managerNote);
-
                     } else {
                         throw new ResourceNotFoundException(ErrorCode.OVERTIME_CANNOT_COMPLETE.getMessage());
                     }
@@ -187,16 +200,16 @@ public class OvertimeService {
                     throw new ResourceNotFoundException(ErrorCode.OVERTIME_ONLY_MANAGER_COMPLETE.getMessage());
                 }
             }
+
             case CANCELLED -> {
+                // Check xem có phải chính chủ hủy không
                 boolean isOwner = overtime.getEmployee().getId().equals(employee.getId());
 
                 if (user.getRole() == Role.EMPLOYEE && isOwner) {
                     if (overtime.getOvertimeStatus() == OverTimeStatus.PENDING) {
-
                         overtime.setOvertimeStatus(OverTimeStatus.CANCELLED);
                         overtime.setApprovedBy(null);
                         overtime.setManagerNote(null);
-
                     } else {
                         throw new ResourceNotFoundException(ErrorCode.OVERTIME_CANNOT_CANCEL.getMessage());
                     }
@@ -210,8 +223,9 @@ public class OvertimeService {
             }
         }
 
+        // 4. Lưu và trả về response (Dùng hàm toStatusResponse để hiện người duyệt)
         OverTime saved = overtimeRepository.save(overtime);
-        return overtimeMapper.toResponse(saved);
+        return overtimeMapper.toStatusResponse(saved);
     }
 
     public OvertimeDetailResponse getDetailOTByID(Long id){

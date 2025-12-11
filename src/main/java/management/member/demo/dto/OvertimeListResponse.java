@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import management.member.demo.enums.OverTimeStatus;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -22,7 +23,7 @@ public class OvertimeListResponse {
     
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate otDate;
-    
+    private LocalDateTime createdAt;
     private Double otHours;
     private OverTimeStatus overtimeStatus;
 }

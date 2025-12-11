@@ -20,7 +20,8 @@ public class OverTimeMapper {
      * Map Overtime entity sang OvertimeResponse DTO
      * Bao gồm cả việc lấy thông tin Task nếu có
      */
-    public OvertimeResponse toResponse(OverTime overtime) {
+    // Hàm 1: Dùng cho Create (Chỉ trả về thông tin cơ bản, ẩn người duyệt)
+    public OvertimeResponse toCreateResponse(OverTime overtime) {
         return OvertimeResponse.builder()
                 .id(overtime.getId())
                 .employeeId(overtime.getEmployee() != null ? overtime.getEmployee().getId().toString() : null)
@@ -29,7 +30,30 @@ public class OverTimeMapper {
                 .reason(overtime.getReason())
                 .taskId(overtime.getTask() != null ? overtime.getTask().getId() : null)
                 .overtimeStatus(overtime.getOvertimeStatus())
+                .createdAt(overtime.getCreatedAt()) // Đã fix: Map trường này để không bị null
+                // Không map approvedBy và managerNote (để mặc định null)
+                .build();
+    }
+
+    // Hàm 2: Dùng cho Set Status (Trả về đầy đủ thông tin người duyệt)
+    public OvertimeResponse toStatusResponse(OverTime overtime) {
+        String approverName = null;
+        if (overtime.getApprovedBy() != null) {
+            // Giả sử Employee có hàm getFullName() hoặc getEmail()
+            approverName = overtime.getApprovedBy().getEmail(); // Hoặc .getFullName() tùy bạn
+        }
+
+        return OvertimeResponse.builder()
+                .id(overtime.getId())
+                .employeeId(overtime.getEmployee() != null ? overtime.getEmployee().getId().toString() : null)
+                .otDate(overtime.getOtDate())
+                .otHours(overtime.getOtHours())
+                .reason(overtime.getReason())
+                .taskId(overtime.getTask() != null ? overtime.getTask().getId() : null)
+                .overtimeStatus(overtime.getOvertimeStatus())
+                .createdAt(overtime.getCreatedAt())
                 .managerNote(overtime.getManagerNote())
+                .approvedBy(approverName) // Đã fix: Lấy String tên/email thay vì object
                 .build();
     }
 
@@ -43,6 +67,7 @@ public class OverTimeMapper {
                 .otHours(overtime.getOtHours())
                 .otDate(overtime.getOtDate())
                 .overtimeStatus(overtime.getOvertimeStatus())
+                .createdAt(overtime.getCreatedAt())
                 .build();
     }
 
