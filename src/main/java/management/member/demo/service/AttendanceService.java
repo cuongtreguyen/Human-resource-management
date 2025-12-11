@@ -7,6 +7,7 @@ import management.member.demo.dto.AttendanceFilterResponseDTO;
 import management.member.demo.dto.DailyAttendanceResponseDTO;
 import management.member.demo.dto.EmployeeAttendanceForAccountantDTO;
 import management.member.demo.dto.FaceRecognitionResponseDTO;
+import management.member.demo.dto.DayOffAndLateDayDTO;
 import management.member.demo.entity.Attendance;
 import management.member.demo.entity.Employee;
 import management.member.demo.enums.AttendenceStatus;
@@ -64,7 +65,7 @@ public class AttendanceService {
         try {
             employeeId = Long.parseLong(request.getEmployeeId().trim());
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid employee ID format: " + request.getEmployeeId());
+            throw ErrorCode.INVALID_EMPLOYEE_ID_FORMAT.toException("Định dạng ID nhân viên không hợp lệ: " + request.getEmployeeId());
         }
         
         // Tìm Employee
@@ -114,7 +115,7 @@ public class AttendanceService {
             try {
                 employeeId = Long.parseLong(attendanceDTO.getEmployeeId().trim());
             } catch (NumberFormatException e) {
-                throw new IllegalArgumentException("Invalid employee ID format: " + attendanceDTO.getEmployeeId());
+                throw ErrorCode.INVALID_EMPLOYEE_ID_FORMAT.toException("Định dạng ID nhân viên không hợp lệ: " + attendanceDTO.getEmployeeId());
             }
             Employee employee = employeeRepository.findById(employeeId)
                     .orElseThrow(() -> new ResourceNotFoundException(
@@ -126,7 +127,7 @@ public class AttendanceService {
             // Fallback: dùng userId nếu không có employeeId
             attendance.setUserId(attendanceDTO.getUserId());
         } else {
-            throw new IllegalArgumentException("Cần có employeeId hoặc userId để tạo attendance");
+            throw ErrorCode.INVALID_REQUEST.toException("Cần có employeeId hoặc userId để tạo attendance");
         }
 
         attendance.setAttendanceDate(attendanceDTO.getAttendanceDate());
@@ -235,7 +236,7 @@ public class AttendanceService {
         if (existing.isPresent()) {
             attendance = existing.get();
             if (attendance.getCheckIn() != null) {
-                throw new IllegalStateException("Employee đã check-in vào ngày này");
+                throw ErrorCode.ATTENDANCE_ALREADY_CHECKED_IN.toException();
             }
             attendance.setCheckIn(checkInTime);
             attendance.setStatus(status);
@@ -262,7 +263,7 @@ public class AttendanceService {
                         "Không tìm thấy attendance cho nhân viên ID: " + employeeId + " vào ngày: " + date));
 
         if (attendance.getCheckOut() != null) {
-            throw new IllegalStateException("Employee đã check-out vào ngày này");
+            throw ErrorCode.ATTENDANCE_ALREADY_CHECKED_OUT.toException();
         }
 
         attendance.setCheckOut(java.time.LocalTime.now());
@@ -623,13 +624,13 @@ public class AttendanceService {
      * @param employeeId ID của nhân viên
      * @return Map chứa dayOff và lateDay
      */
-    public java.util.Map<String, String> getDayOffAndLateDay(Long employeeId) {
+    public DayOffAndLateDayDTO getDayOffAndLateDay(Long employeeId) {
         String dayOff = calculateTotalDayOff(employeeId); // Sử dụng method mới tính tổng dayOff
         String lateDay = calculateLateDay(employeeId);
         
-        java.util.Map<String, String> result = new java.util.HashMap<>();
-        result.put("dayOff", dayOff);
-        result.put("lateDay", lateDay);
+        DayOffAndLateDayDTO result = new DayOffAndLateDayDTO();
+        result.setDayOff(dayOff);
+        result.setLateDay(lateDay);
         
         return result;
     }

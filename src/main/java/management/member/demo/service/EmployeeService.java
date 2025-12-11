@@ -9,6 +9,7 @@ import management.member.demo.enums.Role;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.EmployeeMapper;
+import management.member.demo.validator.EmployeeValidator;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,9 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -45,13 +44,19 @@ public class EmployeeService {
     @Autowired
     private EmailService emailService;
 
+    @Autowired
+    private EmployeeValidator employeeValidator;
+
     public CreateEmployeeResponseDTO createEmployee(AddEmployeeRequest request) {
+        // Validate request
+        employeeValidator.validateAddEmployeeRequest(request);
+        
         // Generate email từ fullName: fullname (không dấu, lowercase, remove spaces) + @company.com
         String generatedEmail = generateEmailFromFullName(request.getName());
         
         // Check if email already exists
         if (employeeRepository.existsByEmail(generatedEmail)) {
-            throw new IllegalArgumentException("Email already exists: " + generatedEmail);
+            throw ErrorCode.EMPLOYEE_EMAIL_EXISTS.toException("Email đã tồn tại: " + generatedEmail);
         }
 
         Employee employee = new Employee();
@@ -157,7 +162,7 @@ public class EmployeeService {
      */
     private String generateEmailFromFullName(String fullName) {
         if (fullName == null || fullName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Full name cannot be empty");
+            throw ErrorCode.INVALID_FULL_NAME.toException();
         }
         
         // Remove Vietnamese accents
@@ -248,13 +253,10 @@ public class EmployeeService {
      * 
      * @return Map chứa totalEmployees và activeEmployees
      */
-    public Map<String, Long> getEmployeeStats() {
+    public EmployeeStatsDTO getEmployeeStats() {
         Long total = getTotalEmployees();
         Long active = getActiveEmployeesCount();
-        return Map.of(
-            "totalEmployees", total,
-            "activeEmployees", active
-        );
+        return new EmployeeStatsDTO(total, active);
     }
 
     public EmployeeDetailDTO getEmployeeDetailById(String id) {
@@ -278,8 +280,15 @@ public class EmployeeService {
             date != null && !date.equals(LocalDate.now());
         
         // Update basic fields: chỉ update nếu có giá trị hợp lệ (không phải null, empty string, hoặc placeholder "string")
+        boolean fullNameChanged = false;
+        boolean emailChanged = false;
+        
         if (isValidValue.test(request.getName())) {
-            employee.setFullName(request.getName().trim());
+            String newFullName = request.getName().trim();
+            if (!newFullName.equals(employee.getFullName())) {
+                employee.setFullName(newFullName);
+                fullNameChanged = true;
+            }
         }
         if (isValidValue.test(request.getFirstName())) {
             employee.setFirstName(request.getFirstName().trim());
@@ -301,9 +310,10 @@ public class EmployeeService {
             String newEmail = request.getEmail().trim();
             if (!newEmail.equals(employee.getEmail())) {
                 if (employeeRepository.existsByEmail(newEmail)) {
-                    throw new IllegalArgumentException("Email already exists: " + newEmail);
+                    throw ErrorCode.EMPLOYEE_EMAIL_EXISTS.toException("Email đã tồn tại: " + newEmail);
                 }
                 employee.setEmail(newEmail);
+                emailChanged = true;
             }
         }
         // Update personalEmail: chỉ update nếu có giá trị hợp lệ (không phải placeholder "string")
@@ -386,7 +396,7 @@ public class EmployeeService {
             try {
                 employee.setStatus(EmployeeStatus.valueOf(request.getStatus().toUpperCase()));
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid status: " + request.getStatus());
+                throw ErrorCode.INVALID_STATUS_VALUE.toException("Trạng thái không hợp lệ: " + request.getStatus());
             }
         }
         if (request.getSalary() != null) {
@@ -399,23 +409,56 @@ public class EmployeeService {
             employee.setManager(request.getManager().trim());
         }
         // Update role: chỉ update nếu có giá trị hợp lệ (không phải placeholder "string")
+        boolean roleChanged = false;
+        Role newRole = null;
         if (request.getRole() != null && !request.getRole().trim().equalsIgnoreCase("string")) {
             try {
-                Role newRole = Role.valueOf(request.getRole().toUpperCase());
-                employee.setRole(newRole);
-                
-                // Cập nhật role trong bảng User nếu employee có user liên kết
-                if (employee.getUser() != null) {
-                    User user = employee.getUser();
-                    user.setRole(newRole);
-                    userRepository.save(user);
+                newRole = Role.valueOf(request.getRole().toUpperCase());
+                if (newRole != employee.getRole()) {
+                    employee.setRole(newRole);
+                    roleChanged = true;
                 }
             } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Invalid role: " + request.getRole());
+                throw ErrorCode.BAD_REQUEST.toException("Vai trò không hợp lệ: " + request.getRole());
             }
         }
 
         Employee updated = employeeRepository.save(employee);
+        
+        // Đồng bộ thông tin từ Employee sang User (nếu có thay đổi)
+        // QUAN TRỌNG: Chỉ cập nhật các field cần thiết, KHÔNG động vào password
+        if (employee.getUser() != null && (fullNameChanged || emailChanged || roleChanged)) {
+            User user = employee.getUser();
+            boolean userNeedsUpdate = false;
+            
+            // Chỉ cập nhật các field đã thay đổi
+            if (fullNameChanged) {
+                user.setFullName(updated.getFullName());
+                userNeedsUpdate = true;
+            }
+            if (emailChanged) {
+                user.setEmail(updated.getEmail());
+                userNeedsUpdate = true;
+            }
+            if (roleChanged && newRole != null) {
+                user.setRole(newRole);
+                userNeedsUpdate = true;
+            }
+            
+            // Chỉ save nếu có thay đổi
+            if (userNeedsUpdate) {
+                // Lưu password hiện tại để đảm bảo không bị mất
+                String currentPassword = user.getPassword();
+                userRepository.save(user);
+                // Đảm bảo password không bị thay đổi sau khi save
+                // (JPA có thể trigger update tất cả fields, nhưng password đã được hash nên không nên thay đổi)
+                if (currentPassword != null && !currentPassword.equals(user.getPassword())) {
+                    // Nếu password bị thay đổi (không nên xảy ra), restore lại
+                    user.setPassword(currentPassword);
+                    userRepository.save(user);
+                }
+            }
+        }
 
         UpdateEmployeeResponseDTO response = new UpdateEmployeeResponseDTO();
         response.setData(new UpdateEmployeeResponseDTO.EmployeeData());
@@ -533,7 +576,7 @@ public class EmployeeService {
                 ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với employeeId: " + id);
     }
 
-    public java.util.Map<String, String> seniority(String employeeID) {
+    public SeniorityDTO seniority(String employeeID) {
         Employee employee = employeeRepository.findByEmployeeId(employeeID)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeID));
@@ -541,9 +584,9 @@ public class EmployeeService {
         java.time.LocalDate hireDate = employee.getHireDate();
 
         if (hireDate == null) {
-            throw new IllegalArgumentException("Hire date is null");
+            throw ErrorCode.INVALID_HIRE_DATE.toException();
         } else if (hireDate.isAfter(java.time.LocalDate.now())) {
-            throw new IllegalArgumentException("Hire date is in the future");
+            throw ErrorCode.INVALID_HIRE_DATE.toException("Ngày vào làm không được ở tương lai");
         }
 
         java.time.LocalDate currentDate = java.time.LocalDate.now();
@@ -568,10 +611,7 @@ public class EmployeeService {
             seniorityString = "Dưới 1 tháng";
         }
 
-        java.util.Map<String, String> responseBody = new java.util.HashMap<>();
-        responseBody.put("seniority", seniorityString);
-
-        return responseBody;
+        return new SeniorityDTO(seniorityString);
     }
 
     @Autowired

@@ -22,6 +22,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "users")
+@org.hibernate.annotations.DynamicUpdate
 @EntityListeners(AuditingEntityListener.class)
 public class User {
     
@@ -33,6 +34,7 @@ public class User {
     /** Mật khẩu đã được mã hóa của user */
     @NotBlank
     @Size(max = 100)
+    @Column(name = "password")
     private String password;
 
     /** Email của user (duy nhất) */

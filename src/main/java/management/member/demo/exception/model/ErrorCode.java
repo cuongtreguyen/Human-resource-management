@@ -93,6 +93,9 @@ public enum ErrorCode {
     // Attendance errors
     ATTENDANCE_NOT_FOUND("ATTENDANCE_NOT_FOUND", "Chấm công không tồn tại"),
     INVALID_ATTENDANCE_ID("INVALID_ATTENDANCE_ID", "ID chấm công không hợp lệ"),
+    ATTENDANCE_ALREADY_CHECKED_IN("ATTENDANCE_ALREADY_CHECKED_IN", "Nhân viên đã check-in vào ngày này"),
+    ATTENDANCE_ALREADY_CHECKED_OUT("ATTENDANCE_ALREADY_CHECKED_OUT", "Nhân viên đã check-out vào ngày này"),
+    INVALID_EMPLOYEE_ID_FORMAT("INVALID_EMPLOYEE_ID_FORMAT", "Định dạng ID nhân viên không hợp lệ"),
     
     // Chat errors
     INVALID_CHAT_CONTACT_ID("INVALID_CHAT_CONTACT_ID", "ID liên hệ chat không hợp lệ"),

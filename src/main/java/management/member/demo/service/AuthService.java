@@ -3,8 +3,11 @@ package management.member.demo.service;
 import management.member.demo.dto.LoginRequest;
 import management.member.demo.dto.LoginResponse;
 import management.member.demo.dto.TokenRequest;
+import management.member.demo.dto.TokenResponseDTO;
 import management.member.demo.entity.User;
+import management.member.demo.exception.base.BusinessException;
 import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.validator.AuthValidator;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.repository.UserRepository;
 import management.member.demo.security.JwtService;
@@ -17,7 +20,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Map;
 
 @Service
 @Transactional
@@ -34,6 +36,9 @@ public class AuthService {
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
+
+    @Autowired
+    private AuthValidator authValidator;
 
     @Autowired
     private OtpService otpService;
@@ -73,19 +78,23 @@ public class AuthService {
     }
 
     public Tokens authenticate(String email, String password) {
+        // Validate email and password
+        authValidator.validateEmail(email);
+        authValidator.validatePassword(password);
+        
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> ErrorCode.INVALID_CREDENTIALS.toException());
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw ErrorCode.INVALID_CREDENTIALS.toException();
         }
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
-            throw new RuntimeException("Account is inactive");
+            throw ErrorCode.ACCOUNT_LOCKED_OR_INACTIVE.toException("Tài khoản không hoạt động");
         }
 
         if (Boolean.TRUE.equals(user.getIsLocked())) {
-            throw new RuntimeException("Account is locked");
+            throw ErrorCode.ACCOUNT_LOCKED_OR_INACTIVE.toException("Tài khoản đã bị khóa");
         }
 
         // Update last login
@@ -115,12 +124,12 @@ public class AuthService {
         return response;
     }
 
-    public Map<String, String> refreshToken(TokenRequest request) {
+    public TokenResponseDTO refreshToken(TokenRequest request) {
         // Validate refresh token and generate new access token
         String username = jwtService.validateAndExtractUsernameFromRefreshToken(request.getToken());
         UserDetails userDetails = userDetailsService.loadUserByUsername(username);
         String newAccessToken = jwtService.generateToken(userDetails);
-        return Map.of("accessToken", newAccessToken);
+        return new TokenResponseDTO(newAccessToken);
     }
     
     public String refreshAccessToken(String refreshToken) {
@@ -137,7 +146,7 @@ public class AuthService {
     public void changePassword(String oldPassword, String newPassword) {
         // Get current user from security context
         // For now, throw exception - needs security context implementation
-        throw new RuntimeException("Not implemented - needs security context");
+        throw ErrorCode.INTERNAL_SERVER_ERROR.toException("Chức năng đổi mật khẩu chưa được triển khai");
     }
     
     public boolean validateToken(String token) {
@@ -179,16 +188,19 @@ public class AuthService {
         // Validate OTP trước khi reset password
         try {
             otpService.verifyOtp(email, otp);
+        } catch (BusinessException e) {
+            // Re-throw BusinessException từ OtpService
+            throw e;
         } catch (RuntimeException e) {
             // Map các exception từ OtpService sang ErrorCode
             if (e.getMessage().equals("OTP_NOT_FOUND")) {
-                throw new RuntimeException(ErrorCode.OTP_INVALID.getMessage());
+                throw ErrorCode.OTP_INVALID.toException();
             } else if (e.getMessage().equals("OTP_EXPIRED")) {
-                throw new RuntimeException(ErrorCode.OTP_EXPIRED.getMessage());
+                throw ErrorCode.OTP_EXPIRED.toException();
             } else if (e.getMessage().equals("INVALID_OTP")) {
-                throw new RuntimeException(ErrorCode.OTP_INVALID.getMessage());
+                throw ErrorCode.OTP_INVALID.toException();
             }
-            throw e;
+            throw ErrorCode.INTERNAL_SERVER_ERROR.toException();
         }
         
         // OTP hợp lệ, reset password

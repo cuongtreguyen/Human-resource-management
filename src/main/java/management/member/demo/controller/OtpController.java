@@ -4,6 +4,7 @@ import management.member.demo.service.OtpService;
 import management.member.demo.service.EmailService;
 import management.member.demo.dto.ForgotPasswordRequest;
 import management.member.demo.dto.VerifyOtpRequest;
+import management.member.demo.dto.OtpStatisticsDTO;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -111,8 +112,8 @@ public class OtpController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Statistics retrieved successfully")
     })
-    public ResponseEntity<Map<String, Object>> getStatistics() {
-        Map<String, Object> stats = otpService.getOtpStatistics();
+    public ResponseEntity<OtpStatisticsDTO> getStatistics() {
+        OtpStatisticsDTO stats = otpService.getOtpStatistics();
         return ResponseEntity.ok(stats);
     }
 }

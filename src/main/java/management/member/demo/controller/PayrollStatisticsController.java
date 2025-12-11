@@ -1,6 +1,8 @@
 package management.member.demo.controller;
 
 import management.member.demo.dto.DashboardPayrollStatisticsDTO;
+import management.member.demo.dto.FilterOptionsDTO;
+import management.member.demo.dto.PayrollSummaryDTO;
 import management.member.demo.service.PayrollStatisticsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +13,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import management.member.demo.service.EmployeeService;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/payroll-statistics")
@@ -46,9 +47,9 @@ public class PayrollStatisticsController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success")
     })
-    public ResponseEntity<Map<String, Object>> getPayrollSummary() {
+    public ResponseEntity<PayrollSummaryDTO> getPayrollSummary() {
         Long totalEmployees = employeeService.getTotalEmployees();
-        Map<String, Object> summary = payrollStatisticsService.getPayrollSummary(totalEmployees);
+        PayrollSummaryDTO summary = payrollStatisticsService.getPayrollSummary(totalEmployees);
         return ResponseEntity.ok(summary);
     }
 
@@ -60,8 +61,8 @@ public class PayrollStatisticsController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success")
     })
-    public ResponseEntity<Map<String, Object>> getFilterOptions() {
-        Map<String, Object> filters = payrollStatisticsService.getFilterOptions();
+    public ResponseEntity<FilterOptionsDTO> getFilterOptions() {
+        FilterOptionsDTO filters = payrollStatisticsService.getFilterOptions();
         return ResponseEntity.ok(filters);
     }
 

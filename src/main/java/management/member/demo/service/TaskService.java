@@ -12,6 +12,7 @@ import management.member.demo.enums.TaskTag;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.CommentMapper;
 import management.member.demo.mapper.TaskMapper;
+import management.member.demo.validator.TaskValidator;
 import management.member.demo.repository.BoardRepository;
 import management.member.demo.repository.TaskRepository;
 import management.member.demo.repository.EmployeeRepository;
@@ -49,6 +50,9 @@ public class TaskService {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private TaskValidator taskValidator;
+
     private Employee getPrimaryAssignee(Task task) {
         if (task.getEmployees() != null && !task.getEmployees().isEmpty()) {
             return task.getEmployees().get(0); // Lấy người đầu tiên
@@ -63,7 +67,7 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
-    public Map<String, Long> getTaskStatisticsGeneral() {
+    public TaskStatisticsDTO getTaskStatisticsGeneral() {
         // 1. Khởi tạo map với tất cả status = 0 (để tránh trả về null hoặc thiếu key)
         Map<String, Long> stats = new HashMap<>();
         for (TaskStatus status : TaskStatus.values()) {
@@ -81,7 +85,7 @@ public class TaskService {
                 stats.put(status.name(), count);
             }
         }
-        return stats;
+        return new TaskStatisticsDTO(stats);
     }
 
     /**
@@ -183,6 +187,9 @@ public class TaskService {
     }
 
     public CreateTaskResponseDTO createTask(CreateTaskRequestDTO request) {
+        // Validate request
+        taskValidator.validateCreateTaskRequest(request);
+        
         User user = authService.getCurrentUser();
         // Check quyền Manager nếu cần thiết (hoặc nới lỏng nếu nhân viên cũng được tạo task)
         if(!user.getRole().equals(Role.MANAGER)){
@@ -225,6 +232,9 @@ public class TaskService {
     }
 
     public UpdateTaskResponseDTO updateTask(String id, UpdateTaskRequestDTO request) {
+        // Validate request
+        taskValidator.validateUpdateTaskRequest(request);
+        
         Long taskId = Long.parseLong(id);
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + id));

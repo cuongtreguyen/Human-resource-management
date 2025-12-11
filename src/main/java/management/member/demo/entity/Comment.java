@@ -1,6 +1,8 @@
 package management.member.demo.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -18,9 +20,12 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(columnDefinition = "TEXT")
+    @NotBlank
+    @Column(columnDefinition = "TEXT", nullable = false)
     String content; // Nội dung bình luận ("JWT đã implement xong...")
 
+    @NotNull
+    @Column(name = "created_at", nullable = false)
     LocalDateTime createdAt; // Cần dùng LocalDateTime để lưu cả giờ (16:15)
 
     // Link ngược lại Task (optional - cho Task system)
@@ -34,7 +39,8 @@ public class Comment {
     KanbanCard card;
 
     // Lưu người bình luận (để hiện avatar/tên)
+    @NotNull
     @ManyToOne
-    @JoinColumn(name = "author_id")
+    @JoinColumn(name = "author_id", nullable = false)
     Employee author;
 }

@@ -1,6 +1,8 @@
 package management.member.demo.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import management.member.demo.enums.OnLeaveStatus;
@@ -20,24 +22,31 @@ public class OnLeave {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
+    @NotNull
     @ManyToOne
-    @JoinColumn(name = "employee_id")
+    @JoinColumn(name = "employee_id", nullable = false)
     Employee employee;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "on_leave_type", nullable = false)
     private OnLeaveType onLeaveType;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(name = "on_leave_status", nullable = false)
     private OnLeaveStatus onLeaveStatus;
 
-    @Column(name = "start_date")
+    @NotNull
+    @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
-    @Column(name = "end_date")
+    @NotNull
+    @Column(name = "end_date", nullable = false)
     private LocalDate endDate;
 
+    @Size(max = 1000)
+    @Column(name = "reason")
     private String reason;
     @Column(name = "submitted_date")
     LocalDate submittedDate;

@@ -1,6 +1,9 @@
 package management.member.demo.entity;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import management.member.demo.enums.TaskPriorityStatus;
@@ -30,16 +33,30 @@ public class Task {
     )
     List<Employee> employees;
 
+    @NotBlank
+    @Size(max = 255)
+    @Column(name = "title", nullable = false)
     String title;
+    @Size(max = 5000)
+    @Column(name = "description", columnDefinition = "TEXT")
     String description;
+    @NotNull
     @Enumerated(EnumType.STRING)
+    @Column(name = "task_priority_status", nullable = false)
     TaskPriorityStatus taskPriorityStatus;
+    @NotNull
     @Enumerated(EnumType.STRING)
+    @Column(name = "task_status", nullable = false)
     TaskStatus taskStatus;
+    @NotNull
+    @Column(name = "created_at", nullable = false)
     LocalDate createdAt;
+    @Column(name = "updated_at")
     LocalDate updatedAt;
+    @Column(name = "deadline")
     LocalDate deadline;
     @Enumerated(EnumType.STRING)
+    @Column(name = "tag")
     TaskTag tag;
 
     @ManyToOne(fetch = FetchType.LAZY) // Lazy để khi load Task không nhất thiết phải load hết thông tin Board ngay

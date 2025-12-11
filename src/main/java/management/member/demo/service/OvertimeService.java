@@ -10,6 +10,7 @@ import management.member.demo.enums.Role;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.OverTimeMapper;
+import management.member.demo.validator.OvertimeValidator;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.OverTimeRepository;
 import management.member.demo.repository.TaskRepository;
@@ -42,7 +43,14 @@ public class OvertimeService {
     @Autowired
     AuthService authService;
 
+    @Autowired
+    OvertimeValidator overtimeValidator;
+
     public OvertimeResponse createOvertime(OvertimeRequest request) {
+        // Validate request
+        overtimeValidator.validateOvertimeRequest(request);
+        overtimeValidator.validateOvertimeRegistrationTime(request.getOtDate());
+        
         //Lấy email từ Token (Security Context)
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentEmail = authentication.getName();
