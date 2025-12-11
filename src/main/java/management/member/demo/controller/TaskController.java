@@ -61,7 +61,7 @@ public class TaskController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Thống kê thành công")
     })
-    public ResponseEntity<Map<String, Long>> getGeneralTaskStats() {
+    public ResponseEntity<TaskStatisticsDTO> getGeneralTaskStats() {
         return ResponseEntity.ok(service.getTaskStatisticsGeneral());
     }
 

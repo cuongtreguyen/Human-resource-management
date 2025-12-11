@@ -8,6 +8,7 @@ import management.member.demo.entity.Employee;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.SalaryMapper;
+import management.member.demo.validator.SalaryValidator;
 import management.member.demo.repository.SalaryRepository;
 import management.member.demo.repository.EmployeeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,9 @@ public class SalaryService {
     @Autowired
     private SalaryMapper salaryMapper;
 
+    @Autowired
+    private SalaryValidator salaryValidator;
+
     public BigDecimal calculateLatestSalary(Long employeeId) {
         List<Salary> salaries = salaryRepository.findFirstByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
         if (salaries.isEmpty()) {
@@ -42,6 +46,7 @@ public class SalaryService {
     }
 
     public BigDecimal calculateAverageSalary(Long employeeId) {
+        salaryValidator.validateEmployeeId(employeeId);
         List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
         if (salaries.isEmpty()) {
             throw new ResourceNotFoundException(
@@ -73,6 +78,9 @@ public class SalaryService {
     }
 
     public SalaryResponse createSalary(SalaryRequest request) {
+        // Validate request
+        salaryValidator.validateSalaryRequest(request);
+        
         Employee employee = employeeRepository.findById(request.getEmployeeId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + request.getEmployeeId()));
@@ -335,8 +343,12 @@ public class SalaryService {
     }
 
     public SalaryResponse updateSalary(Long id, SalaryRequest request) {
+        // Validate
+        salaryValidator.validateSalaryId(id);
+        salaryValidator.validateSalaryRequest(request);
+        
         Salary salary = salaryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Salary not found with id: " + id));
+                .orElseThrow(() -> ErrorCode.SALARY_NOT_FOUND.toException("Salary không tồn tại với ID: " + id));
 
         // Update từ request (mapper sẽ xử lý alias fields)
         salaryMapper.updateSalaryFromRequest(salary, request);

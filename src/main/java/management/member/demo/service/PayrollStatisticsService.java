@@ -3,9 +3,11 @@ package management.member.demo.service;
 import management.member.demo.dto.DashboardPayrollStatisticsDTO;
 import management.member.demo.dto.EmployeeByDepartmentStatisticsDTO;
 import management.member.demo.dto.EmployeeStatisticsDTO;
+import management.member.demo.dto.FilterOptionsDTO;
 import management.member.demo.dto.MonthlyPayrollDTO;
 import management.member.demo.dto.PayrollByDepartmentDTO;
 import management.member.demo.dto.PayrollStatisticsDTO;
+import management.member.demo.dto.PayrollSummaryDTO;
 import management.member.demo.dto.WaitingPayrollListDTO;
 import management.member.demo.dto.WeeklyAttendanceStatisticsDTO;
 import management.member.demo.entity.Attendance;
@@ -566,16 +568,16 @@ public class PayrollStatisticsService {
      * Lấy thống kê tổng hợp payroll: totalEmployees, totalPayroll, totalOTPay, totalInsurance, totalTax
      * 
      * @param totalEmployees Tổng số nhân viên (từ EmployeeService)
-     * @return Map chứa các thống kê
+     * @return PayrollSummaryDTO chứa các thống kê
      */
-    public Map<String, Object> getPayrollSummary(Long totalEmployees) {
-        Map<String, Object> summary = new HashMap<>();
+    public PayrollSummaryDTO getPayrollSummary(Long totalEmployees) {
+        PayrollSummaryDTO summary = new PayrollSummaryDTO();
         
-        summary.put("totalEmployees", totalEmployees);
-        summary.put("totalPayroll", getTotalPayroll());
-        summary.put("totalOTPay", getOvertimeTotal());
-        summary.put("totalInsurance", getInsuranceTotal());
-        summary.put("totalTax", getTotalTax());
+        summary.setTotalEmployees(totalEmployees);
+        summary.setTotalPayroll(getTotalPayroll());
+        summary.setTotalOTPay(getOvertimeTotal());
+        summary.setTotalInsurance(getInsuranceTotal());
+        summary.setTotalTax(getTotalTax());
         
         return summary;
     }
@@ -583,10 +585,10 @@ public class PayrollStatisticsService {
     /**
      * Lấy danh sách filter options: selectedDepartment (tất cả phòng ban) và selectedMonth (tất cả tháng có payroll)
      * 
-     * @return Map chứa selectedDepartment và selectedMonth
+     * @return FilterOptionsDTO chứa selectedDepartment và selectedMonth
      */
-    public Map<String, Object> getFilterOptions() {
-        Map<String, Object> filters = new HashMap<>();
+    public FilterOptionsDTO getFilterOptions() {
+        FilterOptionsDTO filters = new FilterOptionsDTO();
         
         // Lấy tất cả phòng ban từ employees
         List<String> departments = employeeRepository.findAll().stream()
@@ -595,7 +597,7 @@ public class PayrollStatisticsService {
                 .distinct()
                 .sorted()
                 .collect(Collectors.toList());
-        filters.put("selectedDepartment", departments);
+        filters.setSelectedDepartment(departments);
         
         // Lấy tất cả tháng có payroll (từ paymentDate)
         List<String> months = payrollRepository.findAll().stream()
@@ -607,7 +609,7 @@ public class PayrollStatisticsService {
                 .distinct()
                 .sorted((a, b) -> b.compareTo(a)) // Sắp xếp giảm dần (tháng mới nhất trước)
                 .collect(Collectors.toList());
-        filters.put("selectedMonth", months);
+        filters.setSelectedMonth(months);
         
         return filters;
     }

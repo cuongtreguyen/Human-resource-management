@@ -1,5 +1,8 @@
 package management.member.demo.service;
 
+import management.member.demo.dto.OtpStatisticsDTO;
+import management.member.demo.exception.base.BusinessException;
+import management.member.demo.exception.model.ErrorCode;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -34,14 +37,14 @@ public class OtpService {
     public boolean verifyOtp(String email, String otp) {
         OtpData data = otpStore.get(email);
         if (data == null) {
-            throw new RuntimeException("OTP_NOT_FOUND");
+            throw ErrorCode.OTP_INVALID.toException();
         }
         if (System.currentTimeMillis() > data.expiryTime) {
             otpStore.remove(email);
-            throw new RuntimeException("OTP_EXPIRED");
+            throw ErrorCode.OTP_EXPIRED.toException();
         }
         if (!data.otp.equals(otp)) {
-            throw new RuntimeException("INVALID_OTP");
+            throw ErrorCode.OTP_INVALID.toException();
         }
         return true;
     }
@@ -75,15 +78,15 @@ public class OtpService {
         otpStore.remove(email);
     }
 
-    public Map<String, Object> getOtpStatistics() {
+    public OtpStatisticsDTO getOtpStatistics() {
         long validOtps = otpStore.values().stream()
                 .filter(data -> System.currentTimeMillis() <= data.expiryTime)
                 .count();
 
-        return Map.of(
-                "totalOtps", otpStore.size(),
-                "validOtps", validOtps,
-                "expiredOtps", otpStore.size() - validOtps
+        return new OtpStatisticsDTO(
+                (long) otpStore.size(),
+                validOtps,
+                otpStore.size() - validOtps
         );
     }
 }

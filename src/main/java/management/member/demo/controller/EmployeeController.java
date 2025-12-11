@@ -8,6 +8,8 @@ import management.member.demo.dto.DeleteEmployeeResponseDTO;
 import management.member.demo.dto.EmployeeDetailDTO;
 import management.member.demo.dto.EmployeeDetailResponse;
 import management.member.demo.dto.EmployeeListResponse;
+import management.member.demo.dto.EmployeeStatsDTO;
+import management.member.demo.dto.SeniorityDTO;
 import management.member.demo.dto.UpdateEmployeeRequest;
 import management.member.demo.dto.UpdateEmployeeResponseDTO;
 import management.member.demo.normalizer.EmployeeRequestNormalizer;
@@ -113,8 +115,8 @@ public class EmployeeController {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Success")
     })
-    public ResponseEntity<Map<String, Long>> getEmployeeStats() {
-        Map<String, Long> stats = service.getEmployeeStats();
+    public ResponseEntity<EmployeeStatsDTO> getEmployeeStats() {
+        EmployeeStatsDTO stats = service.getEmployeeStats();
         return ResponseEntity.ok(stats);
     }
 
@@ -194,8 +196,8 @@ public class EmployeeController {
             @ApiResponse(responseCode = "404", description = "Employee not found"),
             @ApiResponse(responseCode = "400", description = "Invalid employee ID")
     })
-    public ResponseEntity<Map<String, String>> getSeniority(@PathVariable String employeeID) {
-        Map<String, String> result = service.seniority(employeeID);
+    public ResponseEntity<SeniorityDTO> getSeniority(@PathVariable String employeeID) {
+        SeniorityDTO result = service.seniority(employeeID);
         return ResponseEntity.ok(result);
     }
 }

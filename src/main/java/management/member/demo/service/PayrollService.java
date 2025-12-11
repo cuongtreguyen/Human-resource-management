@@ -14,6 +14,8 @@ import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.OverTimeRepository;
 import management.member.demo.entity.OverTime;
 import management.member.demo.enums.OverTimeStatus;
+import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.validator.PayrollValidator;
 import java.time.YearMonth;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -45,6 +47,9 @@ public class PayrollService {
 
     @Autowired
     private management.member.demo.service.AttendanceService attendanceService;
+
+    @Autowired
+    private PayrollValidator payrollValidator;
 
     public PayrollResponse getPayrollById(Long id) {
         Payroll payroll = payrollRepository.findById(id)
@@ -129,8 +134,10 @@ public class PayrollService {
     }
 
     public void cancelPayroll(Long id) {
+        payrollValidator.validatePayrollId(id);
         Payroll payroll = payrollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
+                .orElseThrow(() -> ErrorCode.PAYROLL_NOT_FOUND.toException("Payroll không tồn tại với ID: " + id));
+        payrollValidator.validateCanCancel(payroll);
         payroll.setStatus(PayrollStatus.CANCELLED);
         payrollRepository.save(payroll);
     }
@@ -259,15 +266,18 @@ public class PayrollService {
 
     public UpdatePayrollStatusResponseDTO updatePayrollStatusById(String id, String status) {
         Long payrollId = Long.parseLong(id);
+        payrollValidator.validatePayrollId(payrollId);
+        
         Payroll payroll = payrollRepository.findById(payrollId)
-                .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
+                .orElseThrow(() -> ErrorCode.PAYROLL_NOT_FOUND.toException("Payroll không tồn tại với ID: " + id));
 
         try {
             PayrollStatus statusEnum = PayrollStatus.valueOf(status.toUpperCase());
+            payrollValidator.validateStatusTransition(payroll.getStatus(), statusEnum);
             payroll.setStatus(statusEnum);
             payrollRepository.save(payroll);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid status: " + status);
+            throw ErrorCode.INVALID_PAYROLL_STATUS_VALUE.toException("Trạng thái không hợp lệ: " + status);
         }
 
         UpdatePayrollStatusResponseDTO response = new UpdatePayrollStatusResponseDTO();
@@ -463,13 +473,13 @@ public class PayrollService {
         // Query có thể trả về nhiều kết quả nếu có cùng paymentDate, nên lấy phần tử đầu tiên
         List<Salary> salaries = salaryRepository.findFirstByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
         if (salaries.isEmpty()) {
-            throw new RuntimeException("No salary record found for employee id: " + employeeId);
+            throw ErrorCode.SALARY_NOT_FOUND.toException("Không tìm thấy bản ghi lương cho nhân viên ID: " + employeeId);
         }
         Salary salary = salaries.get(0); // Lấy record đầu tiên (đã sắp xếp theo paymentDate DESC, id DESC)
         
         // Kiểm tra salary có payroll không
         if (salary.getPayroll() == null || salary.getPayroll().getPeriod() == null) {
-            throw new RuntimeException("Salary record does not have valid payroll information for employee id: " + employeeId);
+            throw ErrorCode.INVALID_SALARY.toException("Bản ghi lương không có thông tin payroll hợp lệ cho nhân viên ID: " + employeeId);
         }
         
         // Tạo response

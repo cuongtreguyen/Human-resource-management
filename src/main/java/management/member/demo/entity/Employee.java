@@ -59,6 +59,7 @@ public class Employee {
 
     /** Số điện thoại */
     @Size(max = 30)
+    @Column(name = "phone")
     private String phone;
 
     /** Địa chỉ thường trú */
@@ -77,6 +78,7 @@ public class Employee {
 
     /** Giới tính */
     @Size(max = 10)
+    @Column(name = "gender")
     private String gender;
 
     /** Số CMND/CCCD */
@@ -89,7 +91,7 @@ public class Employee {
     @Column(name = "tax_code")
     private String taxCode;
 
-    /** ID nhân viên (String) */
+    /** ID nhân viên (String dinh dang EMP***) */
     @Size(max = 50)
     @Column(name = "employee_id")
     private String employeeId;
@@ -107,11 +109,13 @@ public class Employee {
     /** Phòng ban */
     @NotBlank
     @Size(max = 100)
+    @Column(name = "department")
     private String department;
 
     /** Chức vụ */
     @NotBlank
     @Size(max = 100)
+    @Column(name = "position")
     private String position;
 
     /** Ngày bắt đầu làm việc */

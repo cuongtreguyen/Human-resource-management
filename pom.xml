@@ -41,7 +41,7 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
 
-        <!-- Web (REST APIs, MVC) -->
+        <!-- Web (includes Jakarta Servlet API) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

@@ -158,8 +158,8 @@ public class OnLeaveController {
             @ApiResponse(responseCode = "200", description = "Success"),
             @ApiResponse(responseCode = "404", description = "Employee not found")
     })
-    public ResponseEntity<Map<String, Long>> getLeaveSummary(@PathVariable Long id) {
-        Map<String, Long> summary = service.getLeaveSummary(id);
+    public ResponseEntity<LeaveSummaryDTO> getLeaveSummary(@PathVariable Long id) {
+        LeaveSummaryDTO summary = service.getLeaveSummary(id);
         return ResponseEntity.ok(summary);
     }
 

@@ -10,6 +10,7 @@ import management.member.demo.enums.Role;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.OnLeaveMapper;
+import management.member.demo.validator.OnLeaveValidator;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.OnLeaveRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,9 @@ public class OnLeaveService {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private OnLeaveValidator onLeaveValidator;
+
     
     /**
      * Tính tổng số ngày nghỉ phép và lưu vào field totalDaysOnleave
@@ -65,7 +69,7 @@ public class OnLeaveService {
      * @return Tổng số ngày nghỉ phép
      */
     public long getTotalDays(OnLeave onLeave) {
-        // Nếu đã có totalDaysOnleave, trả về giá trị đó
+        // Nếu đã có totalDaysOnleave, trả về giá trị đóF
         if (onLeave.getTotalDaysOnleave() != null) {
             return onLeave.getTotalDaysOnleave();
         }
@@ -134,6 +138,9 @@ public class OnLeaveService {
      * TẠO ĐƠN NGHỈ PHÉP (Hàm hợp nhất - Dùng cho cả Mobile và Web)
      */
     public CreateLeaveResponseDTO createLeaveRequestForManager(CreateLeaveRequestDTO request) {
+        // Validate request
+        onLeaveValidator.validateCreateLeaveRequest(request);
+        
         // 1. Tìm nhân viên
         Long employeeId = Long.parseLong(request.getEmployeeId());
         Employee employee = employeeRepository.findById(employeeId)
@@ -467,18 +474,18 @@ public class OnLeaveService {
         return (long) pendingLeaves.size();
     }
 
-    public Map<String, Long> getLeaveSummary(Long id) {
+    public LeaveSummaryDTO getLeaveSummary(Long id) {
         List<OnLeave> allLeaves = onLeaveRepository.findByEmployeeId(id);
         
-        Map<String, Long> summary = new HashMap<>();
-        summary.put("total", (long) allLeaves.size());
-        summary.put("pending", allLeaves.stream()
+        LeaveSummaryDTO summary = new LeaveSummaryDTO();
+        summary.setTotal((long) allLeaves.size());
+        summary.setPending(allLeaves.stream()
                 .filter(leave -> leave.getOnLeaveStatus() == OnLeaveStatus.PENDING)
                 .count());
-        summary.put("approved", allLeaves.stream()
+        summary.setApproved(allLeaves.stream()
                 .filter(leave -> leave.getOnLeaveStatus() == OnLeaveStatus.APPROVED)
                 .count());
-        summary.put("rejected", allLeaves.stream()
+        summary.setRejected(allLeaves.stream()
                 .filter(leave -> leave.getOnLeaveStatus() == OnLeaveStatus.REJECTED)
                 .count());
         

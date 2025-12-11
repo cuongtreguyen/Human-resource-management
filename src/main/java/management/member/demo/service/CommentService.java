@@ -10,6 +10,7 @@ import management.member.demo.entity.Task;
 import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.CommentMapper;
+import management.member.demo.validator.CommentValidator;
 import management.member.demo.repository.CommentRepository;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.KanbanCardRepository;
@@ -45,7 +46,13 @@ public class CommentService {
     @Autowired
     private CommentMapper commentMapper;
 
+    @Autowired
+    private CommentValidator commentValidator;
+
     public CommentResponse createComment(CommentRequest request){
+        // Validate request
+        commentValidator.validateCommentRequest(request);
+        
         Task task = taskRepository.findById(request.getTaskId())
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND.getMessage()));
 
@@ -97,9 +104,12 @@ public class CommentService {
         Employee currentEmployee = employeeRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
 
+        // Validate update request
+        commentValidator.validateCommentUpdateRequest(request);
+        
         // 3. Kiểm tra quyền: chỉ author mới được cập nhật
         if (comment.getAuthor() == null || !comment.getAuthor().getId().equals(currentEmployee.getId())) {
-            throw new IllegalStateException("Bạn không có quyền cập nhật comment này. Chỉ người đã tạo comment mới có quyền cập nhật.");
+            throw ErrorCode.ACCESS_DENIED.toException("Bạn không có quyền cập nhật comment này. Chỉ người đã tạo comment mới có quyền cập nhật.");
         }
 
         // 4. Cập nhật nội dung
@@ -117,6 +127,9 @@ public class CommentService {
      * Chỉ nhân viên đã tạo comment mới có quyền xóa
      */
     public void deleteComment(Long commentId) {
+        // Validate comment ID
+        commentValidator.validateCommentId(commentId);
+        
         // 1. Tìm comment theo ID
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Comment không tồn tại với ID: " + commentId));
@@ -133,7 +146,7 @@ public class CommentService {
 
         // 3. Kiểm tra quyền: chỉ author mới được xóa
         if (comment.getAuthor() == null || !comment.getAuthor().getId().equals(currentEmployee.getId())) {
-            throw new IllegalStateException("Bạn không có quyền xóa comment này. Chỉ người đã tạo comment mới có quyền xóa.");
+            throw ErrorCode.ACCESS_DENIED.toException("Bạn không có quyền xóa comment này. Chỉ người đã tạo comment mới có quyền xóa.");
         }
 
         // 4. Xóa comment
@@ -161,6 +174,10 @@ public class CommentService {
      * Tạo comment cho Kanban Card
      */
     public CommentResponse createCardComment(Long cardId, String content) {
+        // Validate
+        commentValidator.validateCardId(cardId);
+        commentValidator.validateCardCommentContent(content);
+        
         log.info("=== createCardComment START ===");
         log.info("CardId: {}, Content: {}", cardId, content);
 

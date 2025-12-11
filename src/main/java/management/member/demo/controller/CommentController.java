@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import management.member.demo.dto.CommentResponse;
 import management.member.demo.dto.CommentUpdateRequest;
+import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.service.CommentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -47,7 +48,7 @@ public class CommentController {
             @RequestBody Map<String, String> body) {
         String content = body.get("content");
         if (content == null || content.trim().isEmpty()) {
-            throw new IllegalArgumentException("Nội dung comment không được để trống");
+            throw ErrorCode.INVALID_REQUEST.toException("Nội dung comment không được để trống");
         }
         CommentResponse response = commentService.createCardComment(cardId, content.trim());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
