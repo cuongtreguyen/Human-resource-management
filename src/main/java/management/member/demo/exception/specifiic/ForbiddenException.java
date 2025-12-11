@@ -1,19 +1,16 @@
 package management.member.demo.exception.specifiic;
 
-import management.member.demo.exception.base.BusinessException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-/**
- * Custom exception cho Forbidden errors (403)
- * Kế thừa BusinessException để tương thích với GlobalExceptionHandler
- */
-public class ForbiddenException extends BusinessException {
-    
+@ResponseStatus(HttpStatus.FORBIDDEN)
+public class ForbiddenException extends RuntimeException {
+
     public ForbiddenException(String message) {
-        super("ACCESS_DENIED", message);
+        super(message);
     }
-    
+
     public ForbiddenException(String message, Throwable cause) {
-        super("ACCESS_DENIED", message, cause);
+        super(message, cause);
     }
 }
-
