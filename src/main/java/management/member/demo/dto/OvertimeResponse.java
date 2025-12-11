@@ -22,7 +22,8 @@ public class OvertimeResponse {
     @JsonFormat(pattern = "yyyy-MM-dd")
     private LocalDate otDate;
     private Double otHours;
-    private Long taskId;
+    private Long boardId;
+    private String boardName;
     private String reason;
     private OverTimeStatus overtimeStatus;
     private String managerNote;

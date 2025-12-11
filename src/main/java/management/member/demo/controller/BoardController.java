@@ -31,6 +31,16 @@ public class BoardController {
         return ResponseEntity.ok(boardService.getAllBoards(search));
     }
 
+    // GET /api/boards/my-boards
+    @GetMapping("/my-boards")
+    @Operation(summary = "Lấy tất cả boards mà nhân viên hiện tại là thành viên", description = "Get all boards where current employee is a member")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Boards retrieved successfully")
+    })
+    public ResponseEntity<List<BoardResponse>> getMyBoards() {
+        return ResponseEntity.ok(boardService.getMyBoards());
+    }
+
     // POST /api/boards
     @PostMapping
     @Operation(summary = "Tạo Board mới", description = "Create a new board")

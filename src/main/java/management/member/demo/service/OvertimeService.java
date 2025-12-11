@@ -3,7 +3,6 @@ package management.member.demo.service;
 import management.member.demo.dto.*;
 import management.member.demo.entity.Employee;
 import management.member.demo.entity.OverTime;
-import management.member.demo.entity.Task;
 import management.member.demo.entity.User;
 import management.member.demo.enums.OverTimeStatus;
 import management.member.demo.enums.Role;
@@ -11,9 +10,10 @@ import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.OverTimeMapper;
 import management.member.demo.validator.OvertimeValidator;
+import management.member.demo.entity.Board;
+import management.member.demo.repository.BoardRepository;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.OverTimeRepository;
-import management.member.demo.repository.TaskRepository;
 import management.member.demo.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -39,7 +39,7 @@ public class OvertimeService {
     EmployeeRepository employeeRepository;
 
     @Autowired
-    TaskRepository taskRepository;
+    BoardRepository boardRepository;
 
     @Autowired
     AuthService authService;
@@ -67,32 +67,24 @@ public class OvertimeService {
         overtime.setOvertimeStatus(OverTimeStatus.PENDING);
         overtime.setCreatedAt(LocalDateTime.now());
 
-
-        // 4. Validate Task
-        if (request.getTaskId() != null) {
-            Task task = taskRepository.findById(request.getTaskId())
-                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND.getMessage()));
+        // 5. Validate và lấy Board (nếu có boardId)
+        Board board = null;
+        if (request.getBoardId() != null) {
+            board = boardRepository.findById(request.getBoardId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại với ID: " + request.getBoardId()));
             
-            // Validate: Employee phải được assign vào task này
-            boolean isAssigned = task.getEmployees().stream()
-                    .anyMatch(e -> e.getId().equals(employee.getId()));
-            if (!isAssigned) {
-                throw ErrorCode.PERMISSION_DENIED.toException("Bạn không được giao task này");
-            }
-            
-            // Validate: Employee phải là member của board của task này
-            if (task.getBoard() != null && task.getBoard().getMembers() != null) {
-                boolean isBoardMember = task.getBoard().getMembers().stream()
+            // Validate: Employee phải là member của board này
+            if (board.getMembers() != null) {
+                boolean isBoardMember = board.getMembers().stream()
                         .anyMatch(m -> m.getId().equals(employee.getId()));
                 if (!isBoardMember) {
-                    throw ErrorCode.PERMISSION_DENIED.toException("Bạn không phải là thành viên của board này");
+                    throw ErrorCode.PERMISSION_DENIED.toException(
+                            "Bạn không phải là thành viên của board '" + board.getName() + "'");
                 }
             }
-            
-            overtime.setTask(task);
         }
 
-        // 5. Check Timezone Việt Nam (Fix lỗi khung giờ)
+        // 6. Check Timezone Việt Nam (Fix lỗi khung giờ)
         LocalDate otDate = request.getOtDate();
         ZoneId vietnamZone = ZoneId.of("Asia/Ho_Chi_Minh");
         LocalDate today = LocalDate.now(vietnamZone);
@@ -107,9 +99,9 @@ public class OvertimeService {
             }
         }
 
-        // 6. Lưu và trả về
+        // 7. Lưu và trả về (truyền board vào mapper)
         OverTime savedOvertime = overtimeRepository.save(overtime);
-        return overtimeMapper.toCreateResponse(savedOvertime);
+        return overtimeMapper.toCreateResponse(savedOvertime, board);
     }
 
     public Long countOvertimeByStatus(OverTimeStatus status) {

@@ -262,4 +262,20 @@ public class BoardService {
                 .map(employeeMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
+    // Lấy tất cả boards mà nhân viên hiện tại là thành viên
+    public List<BoardResponse> getMyBoards() {
+        Employee currentEmployee = getCurrentEmployee();
+        Long employeeId = currentEmployee.getId();
+        
+        log.info("getMyBoards - Employee ID: {}, Name: {}", employeeId, currentEmployee.getFullName());
+        
+        List<Board> boards = boardRepository.findByMemberIdAndStatus(employeeId, BoardStatus.ACTIVE);
+        
+        log.info("Found {} boards for employee {}", boards.size(), employeeId);
+        
+        return boards.stream()
+                .map(boardMapper::toResponse)
+                .collect(Collectors.toList());
+    }
 }

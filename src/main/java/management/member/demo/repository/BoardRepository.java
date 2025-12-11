@@ -24,4 +24,8 @@ public interface BoardRepository extends JpaRepository<Board, Long> {
     // Tìm kiếm với members đã được JOIN FETCH
     @Query("SELECT DISTINCT b FROM Board b LEFT JOIN FETCH b.members WHERE LOWER(b.name) LIKE LOWER(CONCAT('%', :name, '%')) AND b.status = :status")
     List<Board> findByNameContainingAndStatusWithMembers(@Param("name") String name, @Param("status") BoardStatus status);
+
+    // Lấy tất cả boards mà employee là member
+    @Query("SELECT DISTINCT b FROM Board b LEFT JOIN FETCH b.members m WHERE m.id = :employeeId AND b.status = :status")
+    List<Board> findByMemberIdAndStatus(@Param("employeeId") Long employeeId, @Param("status") BoardStatus status);
 }

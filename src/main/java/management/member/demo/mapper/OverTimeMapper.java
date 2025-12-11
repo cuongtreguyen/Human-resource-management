@@ -18,16 +18,18 @@ public class OverTimeMapper {
      * Bao gồm cả việc lấy thông tin Task nếu có
      */
     // Hàm 1: Dùng cho Create (Chỉ trả về thông tin cơ bản, ẩn người duyệt)
-    public OvertimeResponse toCreateResponse(OverTime overtime) {
+    public OvertimeResponse toCreateResponse(OverTime overtime, management.member.demo.entity.Board board) {
         return OvertimeResponse.builder()
                 .id(overtime.getId())
                 .employeeId(overtime.getEmployee() != null ? overtime.getEmployee().getId().toString() : null)
                 .otDate(overtime.getOtDate())
                 .otHours(overtime.getOtHours())
                 .reason(overtime.getReason())
-                .taskId(overtime.getTask() != null ? overtime.getTask().getId() : null)
+                .boardId(board != null ? board.getId() : null)
+                .boardName(board != null ? board.getName() : null)
                 .overtimeStatus(overtime.getOvertimeStatus())
                 .createdAt(overtime.getCreatedAt()) // Đã fix: Map trường này để không bị null
+                .department(overtime.getDepartment())
                 // Không map approvedBy và managerNote (để mặc định null)
                 .build();
     }
@@ -40,13 +42,20 @@ public class OverTimeMapper {
             approverName = overtime.getApprovedBy().getEmail(); // Hoặc .getFullName() tùy bạn
         }
 
+        // Lấy board từ task nếu có
+        management.member.demo.entity.Board board = null;
+        if (overtime.getTask() != null && overtime.getTask().getBoard() != null) {
+            board = overtime.getTask().getBoard();
+        }
+
         return OvertimeResponse.builder()
                 .id(overtime.getId())
                 .employeeId(overtime.getEmployee() != null ? overtime.getEmployee().getId().toString() : null)
                 .otDate(overtime.getOtDate())
                 .otHours(overtime.getOtHours())
                 .reason(overtime.getReason())
-                .taskId(overtime.getTask() != null ? overtime.getTask().getId() : null)
+                .boardId(board != null ? board.getId() : null)
+                .boardName(board != null ? board.getName() : null)
                 .overtimeStatus(overtime.getOvertimeStatus())
                 .createdAt(overtime.getCreatedAt())
                 .managerNote(overtime.getManagerNote())

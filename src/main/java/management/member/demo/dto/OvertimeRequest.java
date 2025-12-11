@@ -27,7 +27,7 @@ public class OvertimeRequest {
     @Max(value = 24, message = "OT hours must be <= 24")
     private Double otHours;
 
-    private Long taskId; // Optional
+    private Long boardId; // Optional - Board ID mà nhân viên là member
 
     @Size(max = 1000, message = "Reason must not exceed 1000 characters")
     private String reason;
