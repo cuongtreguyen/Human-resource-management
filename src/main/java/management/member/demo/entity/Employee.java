@@ -272,4 +272,12 @@ public class Employee {
     @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY)
     private List<EmployeeBenefits> employeeBenefits = new ArrayList<>();
 
+    /** Quan hệ Many-to-Many với Board: 1 nhân viên có thể tham gia nhiều board */
+    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
+    private List<Board> boards = new ArrayList<>();
+
+    /** Quan hệ Many-to-Many với Task: 1 nhân viên có thể được assign vào nhiều task */
+    @ManyToMany(mappedBy = "employees", fetch = FetchType.LAZY)
+    private List<Task> tasks = new ArrayList<>();
+
 }

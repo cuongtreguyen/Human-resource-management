@@ -9,6 +9,8 @@ import management.member.demo.enums.Role;
 import management.member.demo.enums.TaskStatus;
 import management.member.demo.enums.TaskPriorityStatus;
 import management.member.demo.enums.TaskTag;
+import management.member.demo.exception.base.BusinessException;
+import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.CommentMapper;
 import management.member.demo.mapper.TaskMapper;
@@ -212,7 +214,28 @@ public class TaskService {
         task.setTaskStatus(TaskStatus.NEW); // Mặc định là Mới/Todo
         task.setTaskPriorityStatus(TaskPriorityStatus.MEDIUM); // Mặc định Trung bình
         task.setCreatedAt(LocalDate.now());
-        task.setEmployees(new ArrayList<>()); // Chưa có ai làm
+
+        // 3. Gán assignees nếu có trong request
+        if (request.getAssigneeIds() != null && !request.getAssigneeIds().isEmpty()) {
+            List<Employee> assignees = employeeRepository.findAllById(request.getAssigneeIds());
+
+            // Validate: Employees phải là members của board
+            if (board != null && board.getMembers() != null) {
+                List<Employee> boardMembers = board.getMembers();
+                for (Employee emp : assignees) {
+                    boolean isBoardMember = boardMembers.stream()
+                            .anyMatch(m -> m.getId().equals(emp.getId()));
+                    if (!isBoardMember) {
+                        throw new BusinessException(ErrorCode.INVALID_REQUEST.getCode(),
+                                "Nhân viên " + emp.getFullName() + " không phải là thành viên của board này");
+                    }
+                }
+            }
+
+            task.setEmployees(assignees);
+        } else {
+            task.setEmployees(new ArrayList<>()); // Chưa có ai làm
+        }
 
         Task saved = taskRepository.save(task);
 
@@ -279,6 +302,19 @@ public class TaskService {
         if (request.getAssigneeIds() != null && !request.getAssigneeIds().isEmpty()) {
             List<Employee> currentAssignees = task.getEmployees(); // Lấy danh sách hiện tại
             List<Employee> newAssignees = employeeRepository.findAllById(request.getAssigneeIds());
+
+            // Validate: Employees phải là members của board của task này
+            if (task.getBoard() != null && task.getBoard().getMembers() != null) {
+                List<Employee> boardMembers = task.getBoard().getMembers();
+                for (Employee emp : newAssignees) {
+                    boolean isBoardMember = boardMembers.stream()
+                            .anyMatch(m -> m.getId().equals(emp.getId()));
+                    if (!isBoardMember) {
+                        throw new BusinessException(ErrorCode.INVALID_REQUEST.getCode(),
+                                "Nhân viên " + emp.getFullName() + " không phải là thành viên của board này");
+                    }
+                }
+            }
 
             for (Employee emp : newAssignees) {
                 // Chỉ thêm nếu chưa có trong list (tránh trùng)

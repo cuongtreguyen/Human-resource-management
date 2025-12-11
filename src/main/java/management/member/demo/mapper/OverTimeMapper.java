@@ -29,7 +29,6 @@ public class OverTimeMapper {
                 .overtimeStatus(overtime.getOvertimeStatus())
                 .createdAt(overtime.getCreatedAt()) // Đã fix: Map trường này để không bị null
                 // Không map approvedBy và managerNote (để mặc định null)
-                .department(overtime.getDepartment())
                 .build();
     }
 

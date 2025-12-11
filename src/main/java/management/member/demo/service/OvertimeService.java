@@ -67,20 +67,28 @@ public class OvertimeService {
         overtime.setOvertimeStatus(OverTimeStatus.PENDING);
         overtime.setCreatedAt(LocalDateTime.now());
 
-        // Nếu request không có department, lấy từ employee
-        if (overtime.getDepartment() == null || overtime.getDepartment().trim().isEmpty()) {
-            overtime.setDepartment(employee.getDepartment());
-        }
 
         // 4. Validate Task
         if (request.getTaskId() != null) {
             Task task = taskRepository.findById(request.getTaskId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND.getMessage()));
+            
+            // Validate: Employee phải được assign vào task này
             boolean isAssigned = task.getEmployees().stream()
                     .anyMatch(e -> e.getId().equals(employee.getId()));
             if (!isAssigned) {
-                throw new ResourceNotFoundException(ErrorCode.PERMISSION_DENIED.getMessage());
+                throw ErrorCode.PERMISSION_DENIED.toException("Bạn không được giao task này");
             }
+            
+            // Validate: Employee phải là member của board của task này
+            if (task.getBoard() != null && task.getBoard().getMembers() != null) {
+                boolean isBoardMember = task.getBoard().getMembers().stream()
+                        .anyMatch(m -> m.getId().equals(employee.getId()));
+                if (!isBoardMember) {
+                    throw ErrorCode.PERMISSION_DENIED.toException("Bạn không phải là thành viên của board này");
+                }
+            }
+            
             overtime.setTask(task);
         }
 
