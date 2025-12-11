@@ -45,35 +45,31 @@ public class OtpController {
             @ApiResponse(responseCode = "400", description = "Failed to generate or send OTP")
     })
     public ResponseEntity<Map<String, String>> generateOtp(@Valid @RequestBody ForgotPasswordRequest request) {
-        try {
-            String otp = otpService.generateOtp(request.getEmail());
-            
-            // Lấy thông tin user và employee từ email công ty
-            User user = authService.getUserByEmail(request.getEmail());
-            String fullName = (user != null && user.getEmployee() != null && user.getEmployee().getFullName() != null) 
-                    ? user.getEmployee().getFullName() 
-                    : "User";
-            
-            // Lấy personal email từ Employee để gửi OTP
-            String personalEmail = null;
-            if (user != null && user.getEmployee() != null) {
-                personalEmail = user.getEmployee().getPersonalEmail();
-            }
-            
-            // Nếu không có personal email, fallback về email công ty
-            String emailToSend = (personalEmail != null && !personalEmail.trim().isEmpty()) 
-                    ? personalEmail 
-                    : request.getEmail();
-            
-            emailService.sendForgotPasswordOtp(emailToSend, fullName, otp);
-            
-            return ResponseEntity.ok(Map.of(
-                "message", "OTP generated and sent to your personal email",
-                "email", emailToSend
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Failed to generate OTP: " + e.getMessage()));
+        String otp = otpService.generateOtp(request.getEmail());
+        
+        // Lấy thông tin user và employee từ email công ty
+        User user = authService.getUserByEmail(request.getEmail());
+        String fullName = (user != null && user.getEmployee() != null && user.getEmployee().getFullName() != null) 
+                ? user.getEmployee().getFullName() 
+                : "User";
+        
+        // Lấy personal email từ Employee để gửi OTP
+        String personalEmail = null;
+        if (user != null && user.getEmployee() != null) {
+            personalEmail = user.getEmployee().getPersonalEmail();
         }
+        
+        // Nếu không có personal email, fallback về email công ty
+        String emailToSend = (personalEmail != null && !personalEmail.trim().isEmpty()) 
+                ? personalEmail 
+                : request.getEmail();
+        
+        emailService.sendForgotPasswordOtp(emailToSend, fullName, otp);
+        
+        return ResponseEntity.ok(Map.of(
+            "message", "OTP generated and sent to your personal email",
+            "email", emailToSend
+        ));
     }
 
     @PostMapping("/verify")
@@ -83,21 +79,14 @@ public class OtpController {
             @ApiResponse(responseCode = "400", description = "OTP_NOT_FOUND/OTP_EXPIRED/INVALID_OTP")
     })
     public ResponseEntity<Map<String, Object>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
-        try {
-            boolean isValid = otpService.verifyOtp(request.getEmail(), request.getOtp());
-            long remainingMinutes = otpService.getOtpRemainingMinutes(request.getEmail());
-            
-            return ResponseEntity.ok(Map.of(
-                "valid", isValid,
-                "remainingMinutes", remainingMinutes,
-                "message", "OTP verified successfully"
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                "valid", false,
-                "error", e.getMessage()
-            ));
-        }
+        boolean isValid = otpService.verifyOtp(request.getEmail(), request.getOtp());
+        long remainingMinutes = otpService.getOtpRemainingMinutes(request.getEmail());
+        
+        return ResponseEntity.ok(Map.of(
+            "valid", isValid,
+            "remainingMinutes", remainingMinutes,
+            "message", "OTP verified successfully"
+        ));
     }
 
     @GetMapping("/status/{email}")

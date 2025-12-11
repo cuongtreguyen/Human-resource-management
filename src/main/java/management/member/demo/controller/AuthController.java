@@ -7,6 +7,7 @@ import management.member.demo.dto.LoginResponse;
 import management.member.demo.dto.ForgotPasswordRequest;
 import management.member.demo.dto.ResetPasswordRequest;
 import management.member.demo.entity.User;
+import management.member.demo.exception.model.ErrorCode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -116,28 +117,15 @@ public class AuthController {
         String newPassword = request.get("newPassword");
 
         if (oldPassword == null || newPassword == null) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Validation failed",
-                    "message", "oldPassword and newPassword are required"
-            ));
+            throw ErrorCode.INVALID_REQUEST.toException("oldPassword and newPassword are required");
         }
 
         if (newPassword.length() < 8) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Validation failed",
-                    "message", "New password must be at least 8 characters"
-            ));
+            throw ErrorCode.INVALID_PASSWORD_FORMAT.toException();
         }
 
-        try {
-            authService.changePassword(oldPassword, newPassword);
-            return ResponseEntity.ok(Map.of("message", "Password changed successfully", "success", true));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "error", "Invalid old password",
-                    "message", e.getMessage() != null ? e.getMessage() : "Old password is incorrect"
-            ));
-        }
+        authService.changePassword(oldPassword, newPassword);
+        return ResponseEntity.ok(Map.of("message", "Password changed successfully", "success", true));
     }
 
     /**
@@ -171,32 +159,28 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "USER_NOT_FOUND")
     })
     public ResponseEntity<Map<String, String>> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        try {
-            String otp = authService.sendForgotPasswordOtp(request.getEmail());
+        String otp = authService.sendForgotPasswordOtp(request.getEmail());
 
-            // Lấy thông tin user và employee từ email công ty
-            User user = authService.getUserByEmail(request.getEmail());
-            String fullName = (user != null && user.getEmployee() != null && user.getEmployee().getFullName() != null) 
-                    ? user.getEmployee().getFullName() 
-                    : "User";
-            
-            // Lấy personal email từ Employee để gửi OTP
-            String personalEmail = null;
-            if (user != null && user.getEmployee() != null) {
-                personalEmail = user.getEmployee().getPersonalEmail();
-            }
-            
-            // Nếu không có personal email, fallback về email công ty
-            String emailToSend = (personalEmail != null && !personalEmail.trim().isEmpty()) 
-                    ? personalEmail 
-                    : request.getEmail();
-            
-            emailService.sendForgotPasswordOtp(emailToSend, fullName, otp);
-
-            return ResponseEntity.ok(Map.of("message", "OTP sent to your personal email"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to send OTP"));
+        // Lấy thông tin user và employee từ email công ty
+        User user = authService.getUserByEmail(request.getEmail());
+        String fullName = (user != null && user.getEmployee() != null && user.getEmployee().getFullName() != null) 
+                ? user.getEmployee().getFullName() 
+                : "User";
+        
+        // Lấy personal email từ Employee để gửi OTP
+        String personalEmail = null;
+        if (user != null && user.getEmployee() != null) {
+            personalEmail = user.getEmployee().getPersonalEmail();
         }
+        
+        // Nếu không có personal email, fallback về email công ty
+        String emailToSend = (personalEmail != null && !personalEmail.trim().isEmpty()) 
+                ? personalEmail 
+                : request.getEmail();
+        
+        emailService.sendForgotPasswordOtp(emailToSend, fullName, otp);
+
+        return ResponseEntity.ok(Map.of("message", "OTP sent to your personal email"));
     }
 
     @PostMapping("/reset-password")
@@ -206,14 +190,8 @@ public class AuthController {
             @ApiResponse(responseCode = "400", description = "OTP_NOT_FOUND/OTP_EXPIRED/INVALID_OTP/USER_NOT_FOUND")
     })
     public ResponseEntity<Map<String, String>> resetPassword(@RequestBody ResetPasswordRequest request) {
-        try {
-            authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
-            return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to reset password"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "An unexpected error occurred: " + e.getMessage()));
-        }
+        authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 
     // Endpoint test để reset password trực tiếp (không cần OTP) - chỉ dùng cho development
@@ -223,7 +201,7 @@ public class AuthController {
         String email = request.get("email");
         String newPassword = request.get("newPassword");
         if (email == null || newPassword == null) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email and newPassword are required"));
+            throw ErrorCode.INVALID_REQUEST.toException("Email and newPassword are required");
         }
         authService.testResetPassword(email, newPassword);
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));

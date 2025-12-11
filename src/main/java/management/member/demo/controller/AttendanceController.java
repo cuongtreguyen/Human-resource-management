@@ -53,13 +53,8 @@ public class AttendanceController {
     })
     public ResponseEntity<List<DailyAttendanceResponseDTO>> getDailyAttendance(
             @RequestParam(required = false) String date) {
-        try {
-            List<DailyAttendanceResponseDTO> attendance = attendanceService.getDailyAttendance(date);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            logger.error("Error getting daily attendance: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<DailyAttendanceResponseDTO> attendance = attendanceService.getDailyAttendance(date);
+        return ResponseEntity.ok(attendance);
     }
 
     // Get attendance range from local database - Trả về format API spec
@@ -71,13 +66,8 @@ public class AttendanceController {
     public ResponseEntity<List<DailyAttendanceResponseDTO>> getAttendanceRange(
             @RequestParam String startDate,
             @RequestParam String endDate) {
-        try {
-            List<DailyAttendanceResponseDTO> attendance = attendanceService.getAttendanceRange(startDate, endDate);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            logger.error("Error getting attendance range: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<DailyAttendanceResponseDTO> attendance = attendanceService.getAttendanceRange(startDate, endDate);
+        return ResponseEntity.ok(attendance);
     }
 
     // Get attendance by employee from Flask API (by employee ID string) - Trả về format Flask
@@ -86,81 +76,53 @@ public class AttendanceController {
             @PathVariable String empId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) String startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) String endDate) {
-        try {
-            List<AttendanceFlaskResponseDTO> attendance = flaskApiService.getAttendanceByEmployeeFlaskFormat(empId, startDate, endDate);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AttendanceFlaskResponseDTO> attendance = flaskApiService.getAttendanceByEmployeeFlaskFormat(empId, startDate, endDate);
+        return ResponseEntity.ok(attendance);
     }
 
     // Get attendance stats from Flask API
     @GetMapping("/stats")
     public ResponseEntity<AttendanceStatsDTO> getAttendanceStats(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) String date) {
-        try {
-            AttendanceStatsDTO stats = flaskApiService.getAttendanceStats(date);
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        AttendanceStatsDTO stats = flaskApiService.getAttendanceStats(date);
+        return ResponseEntity.ok(stats);
     }
 
     // Local database operations
     @PostMapping("/local")
     public ResponseEntity<AttendanceDTO> createAttendance(@Valid @RequestBody AttendanceDTO attendanceDTO) {
-        try {
-            AttendanceDTO created = attendanceService.createAttendance(attendanceDTO);
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        AttendanceDTO created = attendanceService.createAttendance(attendanceDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @GetMapping("/local/user/{userId}")
     public ResponseEntity<List<AttendanceDTO>> getLocalAttendanceByUserId(@PathVariable String userId) {
-        try {
-            List<AttendanceDTO> attendance = attendanceService.getAttendanceByUserId(userId);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AttendanceDTO> attendance = attendanceService.getAttendanceByUserId(userId);
+        return ResponseEntity.ok(attendance);
     }
 
     @GetMapping("/local/date")
     public ResponseEntity<List<AttendanceDTO>> getLocalAttendanceByDate(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            List<AttendanceDTO> attendance = attendanceService.getAttendanceByDate(date);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AttendanceDTO> attendance = attendanceService.getAttendanceByDate(date);
+        return ResponseEntity.ok(attendance);
     }
 
     @PutMapping("/local/{id}")
     public ResponseEntity<AttendanceDTO> updateAttendance(
             @PathVariable Long id,
             @Valid @RequestBody AttendanceDTO attendanceDTO) {
-        try {
-            AttendanceDTO updated = attendanceService.updateAttendance(id, attendanceDTO);
-            if (updated != null) {
-                return ResponseEntity.ok(updated);
-            }
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        AttendanceDTO updated = attendanceService.updateAttendance(id, attendanceDTO);
+        if (updated != null) {
+            return ResponseEntity.ok(updated);
         }
+        return ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/local/{id}")
     public ResponseEntity<Void> deleteAttendance(@PathVariable Long id) {
-        try {
-            attendanceService.deleteAttendance(id);
-            return ResponseEntity.noContent().build();
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        attendanceService.deleteAttendance(id);
+        return ResponseEntity.noContent().build();
     }
 
     // ========== Employee-based Attendance Operations ==========
@@ -178,12 +140,8 @@ public class AttendanceController {
     })
     public ResponseEntity<AttendanceDTO> createEmployeeAttendance(
             @Valid @RequestBody AttendanceRequest request) {
-        try {
-            AttendanceDTO created = attendanceService.createAttendance(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        AttendanceDTO created = attendanceService.createAttendance(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     // Lấy attendance của một employee (hỗ trợ Long id hoặc employeeId)
@@ -200,13 +158,8 @@ public class AttendanceController {
             @PathVariable String employeeId,
             @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
-        try {
-            List<DailyAttendanceResponseDTO> attendance = attendanceService.getEmployeeAttendance(employeeId, startDate, endDate);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            logger.error("Error getting employee attendance: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<DailyAttendanceResponseDTO> attendance = attendanceService.getEmployeeAttendance(employeeId, startDate, endDate);
+        return ResponseEntity.ok(attendance);
     }
 
     // Lấy attendance của employee theo ngày
@@ -222,12 +175,8 @@ public class AttendanceController {
     public ResponseEntity<AttendanceDTO> getAttendanceByEmployeeIdAndDate(
             @PathVariable Long employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            AttendanceDTO attendance = attendanceService.getAttendanceByEmployeeIdAndDate(employeeId, date);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        AttendanceDTO attendance = attendanceService.getAttendanceByEmployeeIdAndDate(employeeId, date);
+        return ResponseEntity.ok(attendance);
     }
 
     // Lấy attendance của employee theo khoảng thời gian
@@ -243,13 +192,9 @@ public class AttendanceController {
             @PathVariable Long employeeId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        try {
-            List<AttendanceDTO> attendance = attendanceService.getAttendanceByEmployeeIdAndDateRange(
-                    employeeId, startDate, endDate);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AttendanceDTO> attendance = attendanceService.getAttendanceByEmployeeIdAndDateRange(
+                employeeId, startDate, endDate);
+        return ResponseEntity.ok(attendance);
     }
 
     // Check-in cho employee
@@ -266,13 +211,9 @@ public class AttendanceController {
     public ResponseEntity<AttendanceDTO> checkIn(
             @PathVariable Long employeeId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            LocalDate checkDate = date != null ? date : LocalDate.now();
-            AttendanceDTO attendance = attendanceService.checkIn(employeeId, checkDate);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        LocalDate checkDate = date != null ? date : LocalDate.now();
+        AttendanceDTO attendance = attendanceService.checkIn(employeeId, checkDate);
+        return ResponseEntity.ok(attendance);
     }
 
     // Check-out cho employee
@@ -289,13 +230,9 @@ public class AttendanceController {
     public ResponseEntity<AttendanceDTO> checkOut(
             @PathVariable Long employeeId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        try {
-            LocalDate checkDate = date != null ? date : LocalDate.now();
-            AttendanceDTO attendance = attendanceService.checkOut(employeeId, checkDate);
-            return ResponseEntity.ok(attendance);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        LocalDate checkDate = date != null ? date : LocalDate.now();
+        AttendanceDTO attendance = attendanceService.checkOut(employeeId, checkDate);
+        return ResponseEntity.ok(attendance);
     }
 
     /**
@@ -313,39 +250,31 @@ public class AttendanceController {
     })
     public ResponseEntity<FaceRecognitionResponseDTO> handleRecognitionSuccess(
             @Valid @RequestBody FaceRecognitionRequestDTO request) {
-        try {
-            logger.info("Received face recognition request: employeeId={}, name={}, timestamp={}, confidence={}",
-                    request.getEmployeeId(), request.getEmployeeName(), request.getTimestamp(), request.getConfidence());
+        logger.info("Received face recognition request: employeeId={}, name={}, timestamp={}, confidence={}",
+                request.getEmployeeId(), request.getEmployeeName(), request.getTimestamp(), request.getConfidence());
 
-            // Delegate to service layer
-            FaceRecognitionResponseDTO response = attendanceService.handleFaceRecognitionSuccess(
-                    request.getEmployeeId(),
-                    request.getEmployeeName(),
-                    request.getConfidence(),
-                    request.getTimestamp()
-            );
+        // Delegate to service layer
+        FaceRecognitionResponseDTO response = attendanceService.handleFaceRecognitionSuccess(
+                request.getEmployeeId(),
+                request.getEmployeeName(),
+                request.getConfidence(),
+                request.getTimestamp()
+        );
 
-            if (!response.isSuccess()) {
-                // Check if it's a low confidence error
-                if (response.getConfidence() != null && response.getConfidence() < confidenceThreshold) {
-                    logger.warn("Low confidence score: {} (threshold: {})", response.getConfidence(), confidenceThreshold);
-                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
-                }
-                // Other errors (e.g., employee not found)
-                logger.warn("Face recognition failed: {}", response.getMessage());
+        if (!response.isSuccess()) {
+            // Check if it's a low confidence error
+            if (response.getConfidence() != null && response.getConfidence() < confidenceThreshold) {
+                logger.warn("Low confidence score: {} (threshold: {})", response.getConfidence(), confidenceThreshold);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
             }
-
-            logger.info("Face recognition success: attendanceId={}, status={}",
-                    response.getAttendanceId(), response.getStatus());
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            logger.error("Error handling recognition success: {}", e.getMessage(), e);
-            FaceRecognitionResponseDTO errorResponse = new FaceRecognitionResponseDTO();
-            errorResponse.setSuccess(false);
-            errorResponse.setMessage("Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+            // Other errors (e.g., employee not found)
+            logger.warn("Face recognition failed: {}", response.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
+
+        logger.info("Face recognition success: attendanceId={}, status={}",
+                response.getAttendanceId(), response.getStatus());
+        return ResponseEntity.ok(response);
     }
 
 
@@ -389,13 +318,8 @@ public class AttendanceController {
             @RequestParam(required = false) Integer day,
             @RequestParam(required = false) Integer month,
             @RequestParam(required = false) Integer year) {
-        try {
-            List<AttendanceFilterResponseDTO> result = attendanceService.getAllAttendanceByDateFilter(day, month, year);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            logger.error("Error getting attendance by date filter: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AttendanceFilterResponseDTO> result = attendanceService.getAllAttendanceByDateFilter(day, month, year);
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -412,12 +336,7 @@ public class AttendanceController {
     })
     public ResponseEntity<List<AttendanceFilterResponseDTO>> searchAttendanceByFullName(
             @RequestParam(required = false) String fullName) {
-        try {
-            List<AttendanceFilterResponseDTO> result = attendanceService.searchAttendanceByFullName(fullName);
-            return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            logger.error("Error searching attendance by full name: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        List<AttendanceFilterResponseDTO> result = attendanceService.searchAttendanceByFullName(fullName);
+        return ResponseEntity.ok(result);
     }
 }
