@@ -31,7 +31,7 @@ public class S3Service {
     private String region;
 
     /**
-     * Upload file lên S3
+     * Upload file lên S3 - Tối ưu cho file lớn
      * @param file MultipartFile từ request
      * @param folder Thư mục trong bucket (vd: "kanban/attachments")
      * @return URL của file trên S3
@@ -48,22 +48,40 @@ public class S3Service {
         // Key = folder/filename
         String key = folder + "/" + uniqueFilename;
 
-        log.info("Uploading file to S3: bucket={}, key={}", bucketName, key);
+        long fileSize = file.getSize();
+        log.info("Uploading file to S3: bucket={}, key={}, size={} bytes ({} MB)", 
+                bucketName, key, fileSize, fileSize / (1024 * 1024));
 
-        // Upload lên S3
+        long startTime = System.currentTimeMillis();
+
+        // Upload lên S3 với tối ưu cho file lớn
         PutObjectRequest putRequest = PutObjectRequest.builder()
                 .bucket(bucketName)
                 .key(key)
                 .contentType(file.getContentType())
-                .contentLength(file.getSize())
+                .contentLength(fileSize)
+                // Tối ưu metadata
+                .metadata(java.util.Map.of(
+                        "original-filename", originalFilename != null ? originalFilename : "unknown",
+                        "upload-timestamp", String.valueOf(System.currentTimeMillis())
+                ))
                 .build();
 
-        s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        // Sử dụng RequestBody.fromInputStream với buffer tối ưu
+        // Đối với file lớn, nên stream trực tiếp thay vì load toàn bộ vào memory
+        try (java.io.InputStream inputStream = file.getInputStream()) {
+            s3Client.putObject(putRequest, RequestBody.fromInputStream(inputStream, fileSize));
+        }
+
+        long endTime = System.currentTimeMillis();
+        double uploadTimeSeconds = (endTime - startTime) / 1000.0;
+        double uploadSpeedMBps = (fileSize / (1024.0 * 1024.0)) / uploadTimeSeconds;
 
         // Trả về URL public (nếu bucket public) hoặc key để tạo presigned URL
         String fileUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, key);
 
-        log.info("File uploaded successfully: {}", fileUrl);
+        log.info("File uploaded successfully: {} (Time: {}s, Speed: {:.2f} MB/s)", 
+                fileUrl, uploadTimeSeconds, uploadSpeedMBps);
         return fileUrl;
     }
 

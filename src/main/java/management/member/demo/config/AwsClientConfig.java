@@ -8,11 +8,18 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.core.retry.RetryPolicy;
+import software.amazon.awssdk.core.retry.backoff.BackoffStrategy;
+import software.amazon.awssdk.core.retry.backoff.FullJitterBackoffStrategy;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
+
+import java.time.Duration;
 
 @Configuration
 public class AwsClientConfig {
@@ -69,9 +76,35 @@ public class AwsClientConfig {
 
     @Bean
     public S3Client s3Client() {
+        // Retry policy tối ưu với exponential backoff
+        BackoffStrategy backoffStrategy = FullJitterBackoffStrategy.builder()
+                .baseDelay(Duration.ofSeconds(1))
+                .maxBackoffTime(Duration.ofSeconds(10))
+                .build();
+
+        RetryPolicy retryPolicy = RetryPolicy.builder()
+                .numRetries(3)
+                .backoffStrategy(backoffStrategy)
+                .build();
+
+        // Client configuration với timeout và retry tối ưu cho file lớn
+        ClientOverrideConfiguration clientConfig = ClientOverrideConfiguration.builder()
+                .apiCallTimeout(Duration.ofMinutes(10)) // Timeout tổng cho toàn bộ request
+                .apiCallAttemptTimeout(Duration.ofMinutes(5)) // Timeout cho mỗi lần thử
+                .retryPolicy(retryPolicy)
+                .build();
+
+        // S3 Configuration tối ưu cho upload file lớn
+        S3Configuration s3Config = S3Configuration.builder()
+                .checksumValidationEnabled(false) // Tắt checksum để tăng tốc độ upload
+                .pathStyleAccessEnabled(false) // Sử dụng virtual-hosted style (nhanh hơn)
+                .build();
+
         return S3Client.builder()
                 .region(getRegion())
                 .credentialsProvider(getCredentialsProvider())
+                .overrideConfiguration(clientConfig)
+                .serviceConfiguration(s3Config)
                 .build();
     }
 
