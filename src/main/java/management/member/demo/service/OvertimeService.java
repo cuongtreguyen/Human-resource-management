@@ -51,23 +51,28 @@ public class OvertimeService {
         // 1. Validate request cơ bản
         overtimeValidator.validateOvertimeRequest(request);
 
-        // QUAN TRỌNG: Xóa dòng validateOvertimeRegistrationTime ở đây đi
-        // vì nó check theo giờ Server (UTC) sẽ gây lỗi.
-        // Chúng ta sẽ check thủ công ở bước 5 bên dưới.
+        // ⚠️ QUAN TRỌNG: Đã xóa dòng validateOvertimeRegistrationTime gây lỗi 400/404 ảo
 
-        // 2. Lấy thông tin nhân viên từ Token
+        // 2. Lấy thông tin nhân viên
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentEmail = authentication.getName();
         Employee employee = employeeRepository.findByEmail(currentEmail)
                 .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
 
-        // 3. Map Entity
+        // 3. Map Entity (Lúc này Mapper đã có setDepartment như Bước 1)
         OverTime overtime = overtimeMapper.toEntity(request);
+
+        // Đảm bảo set đủ thông tin
         overtime.setEmployee(employee);
         overtime.setOvertimeStatus(OverTimeStatus.PENDING);
         overtime.setCreatedAt(LocalDateTime.now());
 
-        // 4. Validate Task (nếu có)
+        // Nếu Mapper chưa set department thì set thủ công ở đây cho chắc:
+        if (request.getDepartment() != null) {
+            overtime.setDepartment(request.getDepartment());
+        }
+
+        // 4. Validate Task
         if (request.getTaskId() != null) {
             Task task = taskRepository.findById(request.getTaskId())
                     .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND.getMessage()));
@@ -79,22 +84,22 @@ public class OvertimeService {
             overtime.setTask(task);
         }
 
-        // 5. Check thời gian đăng ký (SỬA LẠI TIMEZONE VN)
+        // 5. Check Timezone Việt Nam (Fix lỗi khung giờ)
         LocalDate otDate = request.getOtDate();
-
-        // Lấy giờ hiện tại theo múi giờ Việt Nam
         ZoneId vietnamZone = ZoneId.of("Asia/Ho_Chi_Minh");
         LocalDate today = LocalDate.now(vietnamZone);
         LocalTime now = LocalTime.now(vietnamZone);
 
         if (otDate.equals(today)) {
-            // Giới hạn giờ: trước 14h hoặc sau 17h không được đăng ký
+            // Chỉ cho phép đăng ký trước 14h hoặc sau 17h (tùy logic công ty bạn)
+            // Theo logic cũ bạn muốn chặn 14h-17h hay cho phép 14h-17h?
+            // Logic dưới đây là: CHỈ CHO PHÉP TRONG KHOẢNG 14h - 17h
             if (now.isBefore(LocalTime.of(14, 0)) || now.isAfter(LocalTime.of(17, 0))) {
                 throw new ResourceNotFoundException(ErrorCode.OVERTIME_OUT_OF_TIME.getMessage());
             }
         }
 
-        // 6. Lưu và trả về Response (Dùng hàm mapper mới)
+        // 6. Lưu và trả về
         OverTime savedOvertime = overtimeRepository.save(overtime);
         return overtimeMapper.toCreateResponse(savedOvertime);
     }

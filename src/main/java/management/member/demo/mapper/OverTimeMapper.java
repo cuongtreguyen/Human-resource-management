@@ -32,6 +32,7 @@ public class OverTimeMapper {
                 .overtimeStatus(overtime.getOvertimeStatus())
                 .createdAt(overtime.getCreatedAt()) // Đã fix: Map trường này để không bị null
                 // Không map approvedBy và managerNote (để mặc định null)
+                .department(overtime.getDepartment())
                 .build();
     }
 
@@ -54,6 +55,7 @@ public class OverTimeMapper {
                 .createdAt(overtime.getCreatedAt())
                 .managerNote(overtime.getManagerNote())
                 .approvedBy(approverName) // Đã fix: Lấy String tên/email thay vì object
+                .department(overtime.getDepartment())
                 .build();
     }
 
@@ -68,6 +70,7 @@ public class OverTimeMapper {
                 .otDate(overtime.getOtDate())
                 .overtimeStatus(overtime.getOvertimeStatus())
                 .createdAt(overtime.getCreatedAt())
+                .department(overtime.getDepartment())
                 .build();
     }
 
@@ -104,6 +107,7 @@ public class OverTimeMapper {
                 .reason(overtime.getReason())
                 .overtimeStatus(overtime.getOvertimeStatus())
                 .createdAt(overtime.getCreatedAt())
+                .department(overtime.getDepartment())
                 .build();
     }
 }
