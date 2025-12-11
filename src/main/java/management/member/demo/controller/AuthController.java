@@ -1,13 +1,15 @@
 package management.member.demo.controller;
 
-import management.member.demo.service.AuthService;
-import management.member.demo.service.EmailService;
 import management.member.demo.dto.LoginRequest;
 import management.member.demo.dto.LoginResponse;
 import management.member.demo.dto.ForgotPasswordRequest;
 import management.member.demo.dto.ResetPasswordRequest;
+import management.member.demo.dto.TokenRequest;
 import management.member.demo.entity.User;
 import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.mapper.AuthMapper;
+import management.member.demo.service.AuthService;
+import management.member.demo.service.EmailService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -17,9 +19,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.time.LocalDateTime;
-
-import management.member.demo.dto.TokenRequest;
 
 /**
  * Controller xử lý các API liên quan đến authentication
@@ -32,11 +31,13 @@ public class AuthController {
 
     private final AuthService authService;
     private final EmailService emailService;
+    private final AuthMapper authMapper;
 
     @Autowired
-    public AuthController(AuthService authService, EmailService emailService) {
+    public AuthController(AuthService authService, EmailService emailService, AuthMapper authMapper) {
         this.authService = authService;
         this.emailService = emailService;
+        this.authMapper = authMapper;
     }
 
     // Đăng nhập bằng email và password, trả về JWT token cùng với role
@@ -54,31 +55,9 @@ public class AuthController {
         // Lấy thông tin user
         User currentUser = authService.getUserByEmail(loginRequest.getEmail());
 
-        // Set token (main field for API spec)
-        response.setToken(tokens.getAccessToken());
-
-        // Set user info object
-        management.member.demo.dto.UserInfoDTO userInfo = new management.member.demo.dto.UserInfoDTO();
-        if (currentUser != null) {
-            userInfo.setId(String.valueOf(currentUser.getId()));
-            userInfo.setEmail(currentUser.getEmail());
-            userInfo.setRole(currentUser.getRole() != null ? currentUser.getRole().name().toLowerCase() : "employee");
-            userInfo.setEmployeeId(currentUser.getEmployee() != null && currentUser.getEmployee().getEmployeeId() != null 
-                    ? currentUser.getEmployee().getEmployeeId() : null);
-        } else {
-            userInfo.setId(null);
-            userInfo.setEmail(loginRequest.getEmail());
-            userInfo.setRole("employee");
-            userInfo.setEmployeeId(null);
-        }
-        response.setUser(userInfo);
-
-        // Keep backward compatibility fields
-        response.setUsername(currentUser != null ? currentUser.getEmail() : loginRequest.getEmail());
-        response.setAccessToken(tokens.getAccessToken());
-        response.setRefreshToken(tokens.getRefreshToken());
-        response.setAccessTokenExpiresAt(LocalDateTime.now().plusSeconds(3600));
-        response.setRole(currentUser != null && currentUser.getRole() != null ? currentUser.getRole().name() : "EMPLOYEE");
+        // Map response sử dụng AuthMapper
+        authMapper.populateLoginResponse(response, currentUser, loginRequest.getEmail(), 
+                                        tokens.getAccessToken(), tokens.getRefreshToken());
 
         return ResponseEntity.ok(response);
     }

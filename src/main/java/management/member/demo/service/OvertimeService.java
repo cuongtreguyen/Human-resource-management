@@ -68,7 +68,7 @@ public class OvertimeService {
         Board board = null;
         if (request.getBoardId() != null) {
             board = boardRepository.findById(request.getBoardId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại với ID: " + request.getBoardId()));
+                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
             
             // Validate: Employee phải là member của board này
             if (board.getMembers() != null) {

@@ -24,6 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,6 +35,11 @@ import java.util.stream.Collectors;
 public class AttendanceService {
 
     private static final Logger logger = LoggerFactory.getLogger(AttendanceService.class);
+    
+    /**
+     * Timezone cho attendance - Việt Nam (UTC+7)
+     */
+    private static final ZoneId VIETNAM_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     @Autowired
     private AttendanceRepository attendanceRepository;
@@ -228,7 +235,8 @@ public class AttendanceService {
                         ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
 
         Optional<Attendance> existing = attendanceRepository.findByEmployeeIdAndDate(employeeId, date);
-        LocalTime checkInTime = java.time.LocalTime.now();
+        // Lấy thời gian theo timezone Việt Nam (UTC+7)
+        LocalTime checkInTime = getCurrentVietnamTime();
 
         Attendance attendance;
         AttendenceStatus status = calculateCheckInStatus(employee, checkInTime);
@@ -266,7 +274,8 @@ public class AttendanceService {
             throw ErrorCode.ATTENDANCE_ALREADY_CHECKED_OUT.toException();
         }
 
-        attendance.setCheckOut(java.time.LocalTime.now());
+        // Lấy thời gian theo timezone Việt Nam (UTC+7)
+        attendance.setCheckOut(getCurrentVietnamTime());
         Attendance saved = attendanceRepository.save(attendance);
         return attendanceMapper.toDTO(saved);
     }
@@ -343,7 +352,8 @@ public class AttendanceService {
                 attendance = existing.get();
                 // Nếu đã có check-in, thì đây là check-out
                 if (attendance.getCheckIn() != null && attendance.getCheckOut() == null) {
-                    attendance.setCheckOut(java.time.LocalTime.now());
+                    // Lấy thời gian theo timezone Việt Nam (Asia/Ho_Chi_Minh = UTC+7)
+                    attendance.setCheckOut(ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh")).toLocalTime());
                     // Giữ nguyên status LATE nếu đã đi muộn, không đổi thành OUT_WORK
                     if (attendance.getStatus() != AttendenceStatus.LATE) {
                         attendance.setStatus(AttendenceStatus.OUT_WORK); // Set status khi check-out
@@ -351,7 +361,8 @@ public class AttendanceService {
                     isCheckIn = false;
                 } else if (attendance.getCheckIn() == null) {
                     // Chưa có check-in, tạo check-in với logic kiểm tra muộn
-                    LocalTime checkInTime = java.time.LocalTime.now();
+                    // Lấy thời gian theo timezone Việt Nam (UTC+7)
+                    LocalTime checkInTime = getCurrentVietnamTime();
                     attendance.setCheckIn(checkInTime);
                     attendance.setStatus(calculateCheckInStatus(attendance.getEmployee(), checkInTime));
                     isCheckIn = true;
@@ -365,7 +376,8 @@ public class AttendanceService {
                         .orElseThrow(() -> new ResourceNotFoundException(
                                 ErrorCode.EMPLOYEE_NOT_FOUND.getMessage() + " với ID: " + employeeId));
 
-                LocalTime checkInTime = java.time.LocalTime.now();
+                // Lấy thời gian theo timezone Việt Nam (UTC+7)
+                LocalTime checkInTime = getCurrentVietnamTime();
                 attendance = new Attendance();
                 attendance.setEmployee(employee);
                 attendance.setAttendanceDate(today);
@@ -835,6 +847,14 @@ public class AttendanceService {
         
         // Check-in đúng giờ hoặc sớm
         return AttendenceStatus.IN_WORK;
+    }
+
+    /**
+     * Helper method: Lấy thời gian hiện tại theo timezone Việt Nam (UTC+7)
+     * Đảm bảo check-in/check-out được lưu đúng với real time ở Việt Nam
+     */
+    private LocalTime getCurrentVietnamTime() {
+        return ZonedDateTime.now(VIETNAM_ZONE).toLocalTime();
     }
 
 }

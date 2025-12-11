@@ -3,9 +3,11 @@ package management.member.demo.service;
 import management.member.demo.dto.*;
 import management.member.demo.entity.Employee;
 import management.member.demo.entity.Evaluation;
+import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.exception.specifiic.ResourceNotFoundException;
+import management.member.demo.mapper.EvaluationMapper;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.EvaluationRepository;
-import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class EvaluationService {
 
     @Autowired EvaluationRepository evaluationRepository;
     @Autowired EmployeeRepository employeeRepository;
+    @Autowired EvaluationMapper evaluationMapper;
 
     // 1. API Tổng hợp: Tìm kiếm nhân viên + Lấy đánh giá gần nhất
     // (Phục vụ cho màn hình List danh sách)
@@ -30,7 +33,7 @@ public class EvaluationService {
     // 2. API Tạo đánh giá mới
     public EvaluationResponse createEvaluation(EvaluationRequest request) {
         Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new ResourceNotFoundException("Nhân viên không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
 
         // Lấy người đánh giá (User đang login)
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -59,28 +62,14 @@ public class EvaluationService {
                 .build();
 
         Evaluation saved = evaluationRepository.save(evaluation);
-        return toResponse(saved);
+        return evaluationMapper.toResponse(saved);
     }
 
     // 3. API Xem chi tiết đánh giá
     public EvaluationResponse getEvaluationDetail(Long id) {
         Evaluation eval = evaluationRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Đánh giá không tồn tại"));
-        return toResponse(eval);
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EVALUATION_NOT_FOUND.getMessage()));
+        return evaluationMapper.toResponse(eval);
     }
 
-    private EvaluationResponse toResponse(Evaluation eval) {
-        return EvaluationResponse.builder()
-                .id(eval.getId())
-                .employeeName(eval.getEmployee().getFullName())
-                .evaluatorName(eval.getEvaluator() != null ? eval.getEvaluator().getFullName() : "Unknown")
-                .evaluationDate(eval.getEvaluationDate())
-                .workPerformanceScore(eval.getWorkPerformanceScore())
-                .teamworkScore(eval.getTeamworkScore())
-                .attitudeScore(eval.getAttitudeScore())
-                .averageScore(eval.getAverageScore())
-                .strengths(eval.getStrengths())
-                .goals(eval.getGoals())
-                .build();
-    }
 }

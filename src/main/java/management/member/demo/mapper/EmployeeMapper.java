@@ -1,10 +1,14 @@
 package management.member.demo.mapper;
 
+import management.member.demo.dto.AddEmployeeRequest;
 import management.member.demo.dto.EmployeeDetailDTO;
 import management.member.demo.dto.EmployeeListItemDTO;
 import management.member.demo.dto.EmployeeRequest;
 import management.member.demo.dto.EmployeeResponse;
 import management.member.demo.entity.Employee;
+import management.member.demo.enums.EmployeeStatus;
+import management.member.demo.enums.EmployeeType;
+import management.member.demo.enums.Role;
 import management.member.demo.normalizer.config.ContractTypeMappingConfig;
 import management.member.demo.normalizer.config.GenderMappingConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -201,5 +205,70 @@ public class EmployeeMapper {
         dto.setBankBranch(null); // Not in entity
         
         return dto;
+    }
+
+    /**
+     * Map AddEmployeeRequest DTO sang Employee entity
+     * @param request AddEmployeeRequest từ frontend
+     * @param generatedEmail Email đã được generate từ service
+     * @return Employee entity mới
+     */
+    public Employee toEntity(AddEmployeeRequest request, String generatedEmail) {
+        Employee employee = new Employee();
+        
+        // Set các field cơ bản
+        employee.setFullName(request.getName());
+        employee.setFirstName(request.getName() != null && request.getName().contains(" ") 
+                ? request.getName().split(" ")[0] : request.getName());
+        employee.setLastName(request.getName() != null && request.getName().contains(" ") 
+                ? request.getName().substring(request.getName().indexOf(" ") + 1) : "");
+        employee.setEmail(generatedEmail); // Email generated từ fullName
+        employee.setPersonalEmail(request.getPersonalEmail()); // Email cá nhân
+        employee.setPhone(request.getPhone());
+        employee.setGender(request.getGender());
+        employee.setStatus(EmployeeStatus.ACTIVE);
+        employee.setDepartment(request.getDepartment());
+        employee.setPosition(request.getPosition());
+        employee.setEmployeeId(request.getEmployeeId());
+        employee.setRole(Role.EMPLOYEE);
+        
+        // Set các field bổ sung
+        employee.setIdCardIssueDate(request.getIdCardIssueDate());
+        employee.setIdCardIssuePlace(request.getIdCardIssuePlace());
+        employee.setMaritalStatus(request.getMaritalStatus());
+        employee.setTaxCode(request.getTaxCode());
+        employee.setContractCode(request.getContractCode());
+        
+        // EmployeeType enum
+        if (request.getEmployeeType() != null) {
+            try {
+                employee.setEmployeeType(EmployeeType.valueOf(request.getEmployeeType().toUpperCase()));
+            } catch (IllegalArgumentException ignored) {
+                // Nếu sai enum → bỏ qua
+            }
+        }
+        
+        employee.setEmergencyContactName(request.getEmergencyContactName());
+        employee.setEmergencyContactPhone(request.getEmergencyContactPhone());
+        employee.setEmergencyContactRelationship(request.getEmergencyContactRelationship());
+        employee.setTimeOut(request.getTimeOut());
+        employee.setTimeIn(request.getTimeIn());
+        employee.setShift(request.getShift());
+        employee.setPermanentAddress(request.getPermanentAddress());
+        employee.setTemporaryAddress(request.getTemporaryAddress());
+        employee.setDateOfBirth(request.getDateOfBirth());
+        employee.setIdCard(request.getIdNumber());
+        employee.setContractType(request.getContractType());
+        employee.setWorkLocation(request.getWorkLocation());
+        
+        // Set baseSalary từ salary field trong request
+        if (request.getSalary() != null) {
+            employee.setBaseSalary(request.getSalary());
+        }
+        
+        // Set hireDate
+        employee.setHireDate(request.getHireDate());
+        
+        return employee;
     }
 }

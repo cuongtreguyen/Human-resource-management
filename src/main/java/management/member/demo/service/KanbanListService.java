@@ -7,8 +7,10 @@ import management.member.demo.entity.KanbanCard;
 import management.member.demo.entity.KanbanList;
 import management.member.demo.entity.User;
 import management.member.demo.enums.Role;
+import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ForbiddenException;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
+import management.member.demo.mapper.KanbanListMapper;
 import management.member.demo.repository.BoardRepository;
 import management.member.demo.repository.KanbanCardRepository;
 import management.member.demo.repository.KanbanListRepository;
@@ -31,12 +33,13 @@ public class KanbanListService {
     private final BoardRepository boardRepository;
     private final UserRepository userRepository;
     private final KanbanValidator kanbanValidator;
+    private final KanbanListMapper kanbanListMapper;
 
     // Helper: Kiểm tra user có phải Manager/Admin không
     private boolean isManagerOrAdmin() {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage()));
         Role role = user.getRole();
         return role == Role.MANAGER || role == Role.ADMIN;
     }
@@ -46,11 +49,11 @@ public class KanbanListService {
         kanbanValidator.validateCreateListRequest(boardId, request);
         
         if (!isManagerOrAdmin()) {
-            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền tạo List");
+            throw new ForbiddenException(ErrorCode.ACCESS_DENIED.getMessage());
         }
 
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại với ID: " + boardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
 
         // Tính position mới (cuối danh sách)
         Double maxPosition = listRepository.findMaxPositionByBoardId(boardId);
@@ -64,7 +67,7 @@ public class KanbanListService {
                 .build();
 
         KanbanList savedList = listRepository.save(kanbanList);
-        return toResponse(savedList);
+        return kanbanListMapper.toResponse(savedList);
     }
 
     // Lấy tất cả lists của board (kèm cards)
@@ -73,10 +76,10 @@ public class KanbanListService {
 
         return lists.stream()
                 .map(list -> {
-                    KanbanListResponse response = toResponse(list);
+                    KanbanListResponse response = kanbanListMapper.toResponse(list);
                     // Lấy cards của list
                     List<KanbanCard> cards = cardRepository.findByListIdAndArchivedFalseOrderByPositionAsc(list.getId());
-                    response.setCards(cards.stream().map(this::toCardResponse).collect(Collectors.toList()));
+                    response.setCards(cards.stream().map(kanbanListMapper::toCardResponse).collect(Collectors.toList()));
                     response.setCardCount(cards.size());
                     return response;
                 })
@@ -88,11 +91,11 @@ public class KanbanListService {
         kanbanValidator.validateUpdateListRequest(listId, request);
         
         KanbanList list = listRepository.findById(listId)
-                .orElseThrow(() -> new ResourceNotFoundException("List không tồn tại với ID: " + listId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.LIST_NOT_FOUND.getMessage()));
 
         list.setName(request.getName());
         KanbanList savedList = listRepository.save(list);
-        return toResponse(savedList);
+        return kanbanListMapper.toResponse(savedList);
     }
 
     // Archive/Unarchive list
@@ -100,11 +103,11 @@ public class KanbanListService {
         kanbanValidator.validateArchiveListRequest(listId, request);
         
         KanbanList list = listRepository.findById(listId)
-                .orElseThrow(() -> new ResourceNotFoundException("List không tồn tại với ID: " + listId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.LIST_NOT_FOUND.getMessage()));
 
         list.setArchived(request.isArchived());
         KanbanList savedList = listRepository.save(list);
-        return toResponse(savedList);
+        return kanbanListMapper.toResponse(savedList);
     }
 
     // Di chuyển list (thay đổi position)
@@ -112,11 +115,11 @@ public class KanbanListService {
         kanbanValidator.validateMoveListRequest(listId, request);
         
         KanbanList list = listRepository.findById(listId)
-                .orElseThrow(() -> new ResourceNotFoundException("List không tồn tại với ID: " + listId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.LIST_NOT_FOUND.getMessage()));
 
         list.setPosition(request.getPosition());
         KanbanList savedList = listRepository.save(list);
-        return toResponse(savedList);
+        return kanbanListMapper.toResponse(savedList);
     }
 
     // Xóa list
@@ -126,35 +129,4 @@ public class KanbanListService {
         listRepository.deleteById(listId);
     }
 
-    // Helper: Convert entity to response
-    private KanbanListResponse toResponse(KanbanList list) {
-        return KanbanListResponse.builder()
-                .id(list.getId())
-                .boardId(list.getBoard().getId())
-                .name(list.getName())
-                .position(list.getPosition())
-                .archived(list.isArchived())
-                .build();
-    }
-
-    // Helper: Convert card entity to response
-    private KanbanCardResponse toCardResponse(KanbanCard card) {
-        return KanbanCardResponse.builder()
-                .id(card.getId())
-                .listId(card.getList().getId())
-                .title(card.getTitle())
-                .description(card.getDescription())
-                .position(card.getPosition())
-                .priority(card.getPriority())
-                .dueDate(card.getDueDate())
-                .assigneeIds(card.getAssigneeIds())
-                .labelIds(card.getLabelIds())
-                .attachmentCount(card.getAttachmentCount())
-                .commentCount(card.getCommentCount())
-                .checkItemStatus(card.getCheckItemStatus())
-                .archived(card.isArchived())
-                .createdAt(card.getCreatedAt())
-                .updatedAt(card.getUpdatedAt())
-                .build();
-    }
 }

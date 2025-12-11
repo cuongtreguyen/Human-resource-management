@@ -21,7 +21,7 @@ public class DataSourceConfig {
     @Value("${spring.datasource.password}")
     private String password;
 
-    @Value("${spring.datasource.driver-class-name}")
+    @Value("${spring.datasource.driver-class-name:org.postgresql.Driver}")
     private String driverClassName;
 
     @Value("${spring.datasource.hikari.minimum-idle:5}")

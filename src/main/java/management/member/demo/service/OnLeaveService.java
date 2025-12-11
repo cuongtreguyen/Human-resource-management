@@ -221,7 +221,7 @@ public class OnLeaveService {
         User currentUser = authService.getCurrentUser();
         Employee employee = currentUser.getEmployee();
         if (employee == null) {
-            throw new ResourceNotFoundException("Employee not found for current user");
+            throw new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage());
         }
 
         OnLeave onLeave = new OnLeave();
@@ -325,7 +325,7 @@ public class OnLeaveService {
     public UpdateLeaveStatusResponseDTO updateLeaveStatus(String id, UpdateLeaveStatusRequestDTO request) {
         Long leaveId = Long.parseLong(id);
         OnLeave onLeave = onLeaveRepository.findById(leaveId)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
         
         OnLeaveStatus newStatus = OnLeaveStatus.valueOf(request.getStatus().toUpperCase());
         onLeave.setOnLeaveStatus(newStatus);
@@ -356,7 +356,7 @@ public class OnLeaveService {
     public UpdateLeaveStatusResponseDTO cancelLeaveRequest(String id, String reason) {
         Long leaveId = Long.parseLong(id);
         OnLeave onLeave = onLeaveRepository.findById(leaveId)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
         
         onLeave.setOnLeaveStatus(OnLeaveStatus.CANCELLED);
         if (reason != null) {
@@ -494,7 +494,7 @@ public class OnLeaveService {
 
     public OnLeaveResponse updateOnLeaveStatus(Long leaveId, OnLeaveStatus status) {
         OnLeave onLeave = onLeaveRepository.findById(leaveId)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found with ID: " + leaveId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
         
         onLeave.setOnLeaveStatus(status);
         
@@ -598,7 +598,8 @@ public class OnLeaveService {
 
                             // (Tuỳ chọn) Kiểm tra xem còn đủ phép không
                             if (currentBalance < daysRequested) {
-                                throw new ResourceNotFoundException("Nhân viên không đủ ngày phép năm. (Còn lại: " + currentBalance + ", Yêu cầu: " + daysRequested + ")");
+                                throw new ResourceNotFoundException(ErrorCode.INSUFFICIENT_LEAVE_DAYS.getMessage() + 
+                                        " (Còn lại: " + currentBalance + ", Yêu cầu: " + daysRequested + ")");
                             }
 
                             // Trừ phép và cập nhật Employee
@@ -610,7 +611,7 @@ public class OnLeaveService {
                         onleave.setOnLeaveStatus(OnLeaveStatus.APPROVED);
                         onLeaveRepository.save(onleave);
                     } else {
-                        throw new ResourceNotFoundException("Status not valid");
+                        throw new ResourceNotFoundException(ErrorCode.ONLEAVE_STATUS_NOT_VALID.getMessage());
                     }
                 }
             }
@@ -621,7 +622,7 @@ public class OnLeaveService {
                         onleave.setOnLeaveStatus(OnLeaveStatus.REJECTED);
                         onLeaveRepository.save(onleave);
                     } else {
-                        throw new ResourceNotFoundException("Status not valid");
+                        throw new ResourceNotFoundException(ErrorCode.ONLEAVE_STATUS_NOT_VALID.getMessage());
                     }
                 }
             }
@@ -632,7 +633,7 @@ public class OnLeaveService {
                         onleave.setOnLeaveStatus(OnLeaveStatus.COMPLETED);
                         onLeaveRepository.save(onleave);
                     } else {
-                        throw new ResourceNotFoundException("Status not valid");
+                        throw new ResourceNotFoundException(ErrorCode.ONLEAVE_STATUS_NOT_VALID.getMessage());
                     }
                 }
             }
@@ -646,13 +647,13 @@ public class OnLeaveService {
                     }
                     // Nếu bạn muốn cho phép hủy đơn ĐÃ DUYỆT thì phải cộng lại ngày phép ở đây
                     else {
-                        throw new ResourceNotFoundException("Status not valid");
+                        throw new ResourceNotFoundException(ErrorCode.ONLEAVE_STATUS_NOT_VALID.getMessage());
                     }
                 }
             }
             default -> {
                 System.out.println(status);
-                throw new ResourceNotFoundException("Status not valid");
+                throw new ResourceNotFoundException(ErrorCode.ONLEAVE_STATUS_NOT_VALID.getMessage());
             }
         }
     }
@@ -701,11 +702,11 @@ public class OnLeaveService {
     public LeaveApplicationDetailForAccountantDTO getLeaveApplicationDetailForAccountant(Long leaveId) {
         // Lấy đơn xin nghỉ phép theo ID
         OnLeave leave = onLeaveRepository.findById(leaveId)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave application not found with ID: " + leaveId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NO_LEAVE_FOUND.getMessage()));
         
         // Kiểm tra employee có tồn tại không
         if (leave.getEmployee() == null) {
-            throw new ResourceNotFoundException("Employee not found for leave application ID: " + leaveId);
+            throw new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage());
         }
         
         // Tạo DTO
@@ -743,15 +744,11 @@ public class OnLeaveService {
 
         // lấy phép còn lại từ Employee
         Employee emp = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
 
         long remaining = emp.getRemainingLeaveDays() != null ? emp.getRemainingLeaveDays() : 12;
 
-        return EmployeeLeaveSummaryDTO.builder()
-                .remaining(remaining)
-                .used(used)
-                .pending(pending)
-                .build();
+        return onLeaveMapper.toEmployeeLeaveSummaryDTO(remaining, used, pending);
     }
 
     public List<LeaveListItemDTO> getEmployeeRecentHistory(Long employeeId) {

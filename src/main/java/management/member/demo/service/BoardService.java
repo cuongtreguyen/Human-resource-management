@@ -57,7 +57,7 @@ public class BoardService {
     private User getCurrentUser() {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với email: " + currentEmail));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage()));
     }
 
     private Employee getCurrentEmployee() {
@@ -68,7 +68,7 @@ public class BoardService {
         Employee employee = user.getEmployee();
         if (employee == null) {
             log.error("User {} không có Employee liên kết!", user.getEmail());
-            throw new ResourceNotFoundException("User chưa được liên kết với Employee");
+            throw new ResourceNotFoundException(ErrorCode.USER_NOT_LINKED_TO_EMPLOYEE.getMessage());
         }
         log.info("getCurrentEmployee - Found Employee ID: {}, Name: {}", employee.getId(), employee.getFullName());
         return employee;
@@ -85,7 +85,7 @@ public class BoardService {
         boardValidator.validateCreateBoardRequest(request);
         
         if (!isManagerOrAdmin()) {
-            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền tạo Board");
+            throw new ForbiddenException(ErrorCode.ACCESS_DENIED.getMessage());
         }
         Employee creator = getCurrentEmployee();
 
@@ -107,16 +107,16 @@ public class BoardService {
         boardValidator.validateAddMemberRequest(request);
         
         if (!isManagerOrAdmin()) {
-            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền thêm thành viên");
+            throw new ForbiddenException(ErrorCode.ACCESS_DENIED.getMessage());
         }
 
         // Tìm Board theo boardId từ request
         Board board = boardRepository.findById(request.getBoardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Board với ID: " + request.getBoardId()));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
 
         // Tìm Nhân viên theo Email
         Employee newMember = employeeRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên với email: " + request.getEmail()));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
 
         // Khởi tạo danh sách members nếu null
         if (board.getMembers() == null) {
@@ -131,7 +131,7 @@ public class BoardService {
             board.getMembers().add(newMember);
             board = boardRepository.save(board);
         } else {
-            throw new IllegalArgumentException("Nhân viên này đã là thành viên của Board");
+            throw new ResourceNotFoundException(ErrorCode.BOARD_MEMBER_ALREADY_EXISTS.getMessage());
         }
 
         return boardMapper.toResponse(board);
@@ -189,7 +189,7 @@ public class BoardService {
         boardValidator.validateBoardId(id);
         
         if (!isManagerOrAdmin()) {
-            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền xóa Board");
+            throw new ForbiddenException(ErrorCode.ACCESS_DENIED.getMessage());
         }
         boardRepository.deleteById(id);
     }
@@ -200,11 +200,11 @@ public class BoardService {
         boardValidator.validateUpdateBoardNameRequest(request);
         
         if (!isManagerOrAdmin()) {
-            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền cập nhật Board");
+            throw new ForbiddenException(ErrorCode.ACCESS_DENIED.getMessage());
         }
 
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
 
         board.setName(request.getName());
 
@@ -216,20 +216,20 @@ public class BoardService {
         boardValidator.validateBoardId(boardId);
         
         if (!isManagerOrAdmin()) {
-            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền xóa thành viên");
+            throw new ForbiddenException(ErrorCode.ACCESS_DENIED.getMessage());
         }
 
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Board với ID: " + boardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
 
         if (board.getMembers() == null || board.getMembers().isEmpty()) {
-            throw new ResourceNotFoundException("Board không có thành viên nào");
+            throw new ResourceNotFoundException(ErrorCode.BOARD_NO_MEMBERS.getMessage());
         }
 
         boolean removed = board.getMembers().removeIf(emp -> emp.getId().equals(memberId));
 
         if (!removed) {
-            throw new ResourceNotFoundException("Nhân viên không phải là thành viên của Board này");
+            throw new ResourceNotFoundException(ErrorCode.BOARD_MEMBER_NOT_FOUND.getMessage());
         }
 
         boardRepository.save(board);
@@ -244,7 +244,7 @@ public class BoardService {
         boardValidator.validateBoardId(boardId);
         
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy Board với ID: " + boardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
         return boardMapper.toResponse(board);
     }
 
@@ -252,7 +252,7 @@ public class BoardService {
         boardValidator.validateBoardId(boardId);
         
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
 
         if (board.getMembers() == null) {
             return new ArrayList<>();

@@ -7,7 +7,9 @@ import management.member.demo.entity.Employee;
 import management.member.demo.entity.KanbanAttachment;
 import management.member.demo.entity.KanbanCard;
 import management.member.demo.entity.User;
+import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
+import management.member.demo.mapper.KanbanAttachmentMapper;
 import management.member.demo.repository.KanbanAttachmentRepository;
 import management.member.demo.repository.KanbanCardRepository;
 import management.member.demo.repository.UserRepository;
@@ -28,6 +30,7 @@ import java.util.stream.Collectors;
 public class KanbanAttachmentService {
 
     private final KanbanAttachmentRepository attachmentRepository;
+    private final KanbanAttachmentMapper kanbanAttachmentMapper;
     private final KanbanCardRepository cardRepository;
     private final UserRepository userRepository;
     private final S3Service s3Service;
@@ -43,11 +46,11 @@ public class KanbanAttachmentService {
      */
     public List<KanbanAttachmentResponse> getAttachmentsByCardId(Long cardId) {
         if (!cardRepository.existsById(cardId)) {
-            throw new ResourceNotFoundException("Card không tồn tại với ID: " + cardId);
+            throw new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage());
         }
 
         return attachmentRepository.findByCardIdOrderByUploadedAtDesc(cardId).stream()
-                .map(this::toResponse)
+                .map(kanbanAttachmentMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -57,16 +60,16 @@ public class KanbanAttachmentService {
     public KanbanAttachmentResponse uploadAttachment(Long cardId, MultipartFile file) throws IOException {
         // Validate
         if (file.isEmpty()) {
-            throw new IllegalArgumentException("File không được để trống");
+            throw new ResourceNotFoundException(ErrorCode.FILE_EMPTY.getMessage());
         }
 
         if (file.getSize() > MAX_FILE_SIZE) {
-            throw new IllegalArgumentException("Kích thước file không được vượt quá 10MB");
+            throw new ResourceNotFoundException(ErrorCode.FILE_SIZE_EXCEEDED.getMessage());
         }
 
         // Tìm card
         KanbanCard card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage()));
 
         // Lấy employee hiện tại qua User
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -102,7 +105,7 @@ public class KanbanAttachmentService {
         cardRepository.save(card);
 
         log.info("Attachment uploaded successfully: id={}, fileUrl={}", saved.getId(), fileUrl);
-        return toResponse(saved);
+        return kanbanAttachmentMapper.toResponse(saved);
     }
 
     /**
@@ -110,8 +113,8 @@ public class KanbanAttachmentService {
      */
     public KanbanAttachmentResponse getAttachmentById(Long attachmentId) {
         KanbanAttachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Attachment không tồn tại với ID: " + attachmentId));
-        return toResponse(attachment);
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ATTACHMENT_NOT_FOUND.getMessage()));
+        return kanbanAttachmentMapper.toResponse(attachment);
     }
 
     /**
@@ -119,7 +122,7 @@ public class KanbanAttachmentService {
      */
     public void deleteAttachment(Long attachmentId) {
         KanbanAttachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Attachment không tồn tại với ID: " + attachmentId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ATTACHMENT_NOT_FOUND.getMessage()));
 
         Long cardId = attachment.getCard().getId();
         String fileUrl = attachment.getFileUrl();
@@ -153,7 +156,7 @@ public class KanbanAttachmentService {
      */
     public String getDownloadUrl(Long attachmentId) {
         KanbanAttachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Attachment không tồn tại với ID: " + attachmentId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.ATTACHMENT_NOT_FOUND.getMessage()));
 
         String fileUrl = attachment.getFileUrl();
 
@@ -162,17 +165,4 @@ public class KanbanAttachmentService {
         return fileUrl;
     }
 
-    private KanbanAttachmentResponse toResponse(KanbanAttachment attachment) {
-        return KanbanAttachmentResponse.builder()
-                .id(attachment.getId())
-                .cardId(attachment.getCard().getId())
-                .fileName(attachment.getFileName())
-                .fileUrl(attachment.getFileUrl())
-                .fileType(attachment.getFileType())
-                .fileSize(attachment.getFileSize())
-                .uploadedById(attachment.getUploadedBy() != null ? attachment.getUploadedBy().getId() : null)
-                .uploadedByName(attachment.getUploadedBy() != null ? attachment.getUploadedBy().getFullName() : null)
-                .uploadedAt(attachment.getUploadedAt())
-                .build();
-    }
 }

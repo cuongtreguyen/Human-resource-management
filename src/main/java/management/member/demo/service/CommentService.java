@@ -138,10 +138,10 @@ public class CommentService {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         Employee currentEmployee = userRepository.findByEmail(currentEmail)
                 .map(user -> user.getEmployee())
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy User với email: " + currentEmail));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage()));
 
         if (currentEmployee == null) {
-            throw new ResourceNotFoundException("User chưa được liên kết với Employee");
+            throw new ResourceNotFoundException(ErrorCode.USER_NOT_LINKED_TO_EMPLOYEE.getMessage());
         }
 
         // 3. Kiểm tra quyền: chỉ author mới được xóa
@@ -160,7 +160,7 @@ public class CommentService {
      */
     public List<CommentResponse> getCommentsByCardId(Long cardId) {
         if (!cardRepository.existsById(cardId)) {
-            throw new ResourceNotFoundException("Card không tồn tại với ID: " + cardId);
+            throw new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage());
         }
 
         List<Comment> comments = commentRepository.findByCardIdOrderByCreatedAtDesc(cardId);
@@ -182,7 +182,7 @@ public class CommentService {
         log.info("CardId: {}, Content: {}", cardId, content);
 
         KanbanCard card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage()));
         log.info("Found card: {} - {}", card.getId(), card.getTitle());
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

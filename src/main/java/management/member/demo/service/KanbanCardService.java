@@ -8,8 +8,10 @@ import management.member.demo.entity.KanbanList;
 import management.member.demo.entity.User;
 import management.member.demo.enums.KanbanCardPriority;
 import management.member.demo.enums.Role;
+import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ForbiddenException;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
+import management.member.demo.mapper.KanbanCardMapper;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.KanbanCardRepository;
 import management.member.demo.repository.KanbanListRepository;
@@ -32,12 +34,13 @@ public class KanbanCardService {
     private final EmployeeRepository employeeRepository;
     private final UserRepository userRepository;
     private final KanbanValidator kanbanValidator;
+    private final KanbanCardMapper kanbanCardMapper;
 
     // Helper: Kiểm tra user có phải Manager/Admin không
     private boolean isManagerOrAdmin() {
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmail(currentEmail)
-                .orElseThrow(() -> new ResourceNotFoundException("User không tồn tại"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage()));
         Role role = user.getRole();
         return role == Role.MANAGER || role == Role.ADMIN;
     }
@@ -47,11 +50,11 @@ public class KanbanCardService {
         kanbanValidator.validateCreateCardRequest(listId, request);
         
         if (!isManagerOrAdmin()) {
-            throw new ForbiddenException("Chỉ Manager hoặc Admin mới có quyền tạo Card");
+            throw new ForbiddenException(ErrorCode.ACCESS_DENIED.getMessage());
         }
 
         KanbanList list = listRepository.findById(listId)
-                .orElseThrow(() -> new ResourceNotFoundException("List không tồn tại với ID: " + listId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.LIST_NOT_FOUND.getMessage()));
 
         // Lấy người tạo từ token
         String currentEmail = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -71,13 +74,13 @@ public class KanbanCardService {
                 .build();
 
         KanbanCard savedCard = cardRepository.save(card);
-        return toResponse(savedCard);
+        return kanbanCardMapper.toResponse(savedCard);
     }
 
     // Lấy tất cả cards của list
     public List<KanbanCardResponse> getCardsByListId(Long listId) {
         List<KanbanCard> cards = cardRepository.findByListIdAndArchivedFalseOrderByPositionAsc(listId);
-        return cards.stream().map(this::toResponse).collect(Collectors.toList());
+        return cards.stream().map(kanbanCardMapper::toResponse).collect(Collectors.toList());
     }
 
     // Lấy chi tiết card
@@ -85,8 +88,8 @@ public class KanbanCardService {
         kanbanValidator.validateCardId(cardId);
         
         KanbanCard card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
-        return toResponse(card);
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage()));
+        return kanbanCardMapper.toResponse(card);
     }
 
     // Cập nhật card
@@ -94,7 +97,7 @@ public class KanbanCardService {
         kanbanValidator.validateUpdateCardRequest(cardId, request);
         
         KanbanCard card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage()));
 
         if (request.getTitle() != null) {
             card.setTitle(request.getTitle());
@@ -119,7 +122,7 @@ public class KanbanCardService {
         }
 
         KanbanCard savedCard = cardRepository.save(card);
-        return toResponse(savedCard);
+        return kanbanCardMapper.toResponse(savedCard);
     }
 
     // Di chuyển card (đổi list và/hoặc position)
@@ -127,7 +130,7 @@ public class KanbanCardService {
         kanbanValidator.validateMoveCardRequest(cardId, request);
         
         KanbanCard card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage()));
 
         // Đổi list nếu khác
         if (!card.getList().getId().equals(request.getListId())) {
@@ -138,7 +141,7 @@ public class KanbanCardService {
 
         card.setPosition(request.getPosition());
         KanbanCard savedCard = cardRepository.save(card);
-        return toResponse(savedCard);
+        return kanbanCardMapper.toResponse(savedCard);
     }
 
     // Archive/Unarchive card
@@ -146,11 +149,11 @@ public class KanbanCardService {
         kanbanValidator.validateCardId(cardId);
         
         KanbanCard card = cardRepository.findById(cardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Card không tồn tại với ID: " + cardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage()));
 
         card.setArchived(!card.isArchived());
         KanbanCard savedCard = cardRepository.save(card);
-        return toResponse(savedCard);
+        return kanbanCardMapper.toResponse(savedCard);
     }
 
     // Xóa card
@@ -160,24 +163,4 @@ public class KanbanCardService {
         cardRepository.deleteById(cardId);
     }
 
-    // Helper: Convert entity to response
-    private KanbanCardResponse toResponse(KanbanCard card) {
-        return KanbanCardResponse.builder()
-                .id(card.getId())
-                .listId(card.getList().getId())
-                .title(card.getTitle())
-                .description(card.getDescription())
-                .position(card.getPosition())
-                .priority(card.getPriority())
-                .dueDate(card.getDueDate())
-                .assigneeIds(card.getAssigneeIds())
-                .labelIds(card.getLabelIds())
-                .attachmentCount(card.getAttachmentCount())
-                .commentCount(card.getCommentCount())
-                .checkItemStatus(card.getCheckItemStatus())
-                .archived(card.isArchived())
-                .createdAt(card.getCreatedAt())
-                .updatedAt(card.getUpdatedAt())
-                .build();
-    }
 }

@@ -6,7 +6,9 @@ import management.member.demo.entity.Board;
 import management.member.demo.entity.Employee;
 import management.member.demo.entity.KanbanActivity;
 import management.member.demo.entity.KanbanCard;
+import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
+import management.member.demo.mapper.KanbanActivityMapper;
 import management.member.demo.repository.BoardRepository;
 import management.member.demo.repository.EmployeeRepository;
 import management.member.demo.repository.KanbanActivityRepository;
@@ -29,31 +31,32 @@ public class KanbanActivityService {
     private final KanbanCardRepository cardRepository;
     private final BoardRepository boardRepository;
     private final EmployeeRepository employeeRepository;
+    private final KanbanActivityMapper kanbanActivityMapper;
 
     public List<KanbanActivityResponse> getActivitiesByCardId(Long cardId) {
         if (!cardRepository.existsById(cardId)) {
-            throw new ResourceNotFoundException("Card không tồn tại với ID: " + cardId);
+            throw new ResourceNotFoundException(ErrorCode.CARD_NOT_FOUND.getMessage());
         }
 
         return activityRepository.findByCardIdOrderByCreatedAtDesc(cardId).stream()
-                .map(this::toResponse)
+                .map(kanbanActivityMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
     public List<KanbanActivityResponse> getActivitiesByBoardId(Long boardId, int limit) {
         if (!boardRepository.existsById(boardId)) {
-            throw new ResourceNotFoundException("Board không tồn tại với ID: " + boardId);
+            throw new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage());
         }
 
         if (limit > 0) {
             return activityRepository.findByBoardIdOrderByCreatedAtDesc(boardId, PageRequest.of(0, limit))
                     .getContent().stream()
-                    .map(this::toResponse)
+                    .map(kanbanActivityMapper::toResponse)
                     .collect(Collectors.toList());
         }
 
         return activityRepository.findByBoardIdOrderByCreatedAtDesc(boardId).stream()
-                .map(this::toResponse)
+                .map(kanbanActivityMapper::toResponse)
                 .collect(Collectors.toList());
     }
 
@@ -112,20 +115,4 @@ public class KanbanActivityService {
         return employeeRepository.findByEmail(currentEmail).orElse(null);
     }
 
-    private KanbanActivityResponse toResponse(KanbanActivity activity) {
-        return KanbanActivityResponse.builder()
-                .id(activity.getId())
-                .cardId(activity.getCard() != null ? activity.getCard().getId() : null)
-                .cardTitle(activity.getCard() != null ? activity.getCard().getTitle() : null)
-                .boardId(activity.getBoard() != null ? activity.getBoard().getId() : null)
-                .actorId(activity.getActor() != null ? activity.getActor().getId() : null)
-                .actorName(activity.getActor() != null ? activity.getActor().getFullName() : null)
-                .actorAvatar(null) // Employee entity không có field avatar
-                .action(activity.getAction())
-                .description(activity.getDescription())
-                .oldValue(activity.getOldValue())
-                .newValue(activity.getNewValue())
-                .createdAt(activity.getCreatedAt())
-                .build();
-    }
 }

@@ -2,6 +2,8 @@ package management.member.demo.service;
 
 import management.member.demo.dto.*;
 import management.member.demo.entity.Notification;
+import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.NotificationMapper;
 import management.member.demo.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +52,7 @@ public class NotificationService {
     public MarkNotificationReadResponseDTO markAsRead(String id) {
         Long notificationId = Long.parseLong(id);
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.NOTIFICATION_NOT_FOUND.getMessage()));
 
         notification.setRead(true);
         notificationRepository.save(notification);

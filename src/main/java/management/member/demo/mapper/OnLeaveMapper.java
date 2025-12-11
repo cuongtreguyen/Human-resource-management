@@ -1,5 +1,6 @@
 package management.member.demo.mapper;
 
+import management.member.demo.dto.EmployeeLeaveSummaryDTO;
 import management.member.demo.dto.OnLeaveRequest;
 import management.member.demo.dto.OnLeaveResponse;
 import management.member.demo.dto.OnLeaveListResponse;
@@ -21,4 +22,12 @@ public interface OnLeaveMapper {
     OnLeaveListResponse toOnLeaveListResponse(OnLeave onLeave);
 
     List<OnLeaveListResponse> toOnLeaveListResponseList(List<OnLeave> onLeaves);
+
+    default EmployeeLeaveSummaryDTO toEmployeeLeaveSummaryDTO(long remaining, long used, long pending) {
+        return EmployeeLeaveSummaryDTO.builder()
+                .remaining(remaining)
+                .used(used)
+                .pending(pending)
+                .build();
+    }
 }

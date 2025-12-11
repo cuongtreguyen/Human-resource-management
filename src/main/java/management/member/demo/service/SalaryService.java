@@ -67,14 +67,11 @@ public class SalaryService {
 
         List<Salary> salaries = salaryRepository.findByEmployeeIdOrderByPayrollPaymentDateDesc(employeeId);
 
-        SalarySummaryResponse response = new SalarySummaryResponse();
-        response.setLatestSalary(calculateLatestSalary(employeeId));
-        response.setAverageSalary(calculateAverageSalary(employeeId));
-        response.setTotalIncome(salaries.stream()
-                .map(s -> s.getNetSalary() != null ? s.getNetSalary() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add));
-
-        return response;
+        return salaryMapper.toSalarySummaryResponse(
+                calculateLatestSalary(employeeId),
+                calculateAverageSalary(employeeId),
+                salaries
+        );
     }
 
     public SalaryResponse createSalary(SalaryRequest request) {

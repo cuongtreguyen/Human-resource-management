@@ -9,6 +9,8 @@ import management.member.demo.dto.BoardRequest;
 import management.member.demo.dto.BoardResponse;
 import management.member.demo.dto.EmployeeResponse;
 import management.member.demo.dto.UpdateBoardNameRequest;
+import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.service.BoardService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -97,7 +99,7 @@ public class BoardController {
     })
     public ResponseEntity<BoardResponse> addMember(@RequestBody @Valid AddMemberRequest request) {
         if (request.getBoardId() == null) {
-            throw new IllegalArgumentException("boardId is required in request body");
+            throw new ResourceNotFoundException(ErrorCode.INVALID_BOARD_ID.getMessage());
         }
         return ResponseEntity.ok(boardService.addMemberToBoard(request));
     }

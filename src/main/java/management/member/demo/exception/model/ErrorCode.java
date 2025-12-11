@@ -123,6 +123,7 @@ public enum ErrorCode {
     
     // User errors
     USER_NOT_FOUND("USER_NOT_FOUND", "Người dùng không tồn tại"),
+    USER_NOT_LINKED_TO_EMPLOYEE("USER_NOT_LINKED_TO_EMPLOYEE", "User chưa được liên kết với Employee"),
     INVALID_OLD_PASSWORD("INVALID_OLD_PASSWORD", "Mật khẩu cũ không đúng"),
     
     // File I/O errors
@@ -160,6 +161,35 @@ public enum ErrorCode {
     FLASK_API_ERROR("FLASK_API_ERROR", "Lỗi khi gọi Flask API"),
     FLASK_API_TIMEOUT("FLASK_API_TIMEOUT", "Flask API không phản hồi"),
     FLASK_API_INVALID_RESPONSE("FLASK_API_INVALID_RESPONSE", "Dữ liệu từ Flask API không hợp lệ"),
+    
+    // Board/Kanban errors
+    BOARD_NOT_FOUND("BOARD_NOT_FOUND", "Board không tồn tại"),
+    LIST_NOT_FOUND("LIST_NOT_FOUND", "List không tồn tại"),
+    CARD_NOT_FOUND("CARD_NOT_FOUND", "Card không tồn tại"),
+    CHECKLIST_NOT_FOUND("CHECKLIST_NOT_FOUND", "Checklist không tồn tại"),
+    ATTACHMENT_NOT_FOUND("ATTACHMENT_NOT_FOUND", "Attachment không tồn tại"),
+    LABEL_NOT_FOUND("LABEL_NOT_FOUND", "Label không tồn tại"),
+    LABEL_NOT_IN_SAME_BOARD("LABEL_NOT_IN_SAME_BOARD", "Label không thuộc cùng board với card"),
+    ACTIVITY_NOT_FOUND("ACTIVITY_NOT_FOUND", "Activity không tồn tại"),
+    BOARD_MEMBER_ALREADY_EXISTS("BOARD_MEMBER_ALREADY_EXISTS", "Nhân viên này đã là thành viên của Board"),
+    BOARD_MEMBER_NOT_FOUND("BOARD_MEMBER_NOT_FOUND", "Nhân viên không phải là thành viên của Board này"),
+    BOARD_NO_MEMBERS("BOARD_NO_MEMBERS", "Board không có thành viên nào"),
+    INVALID_BOARD_ID("INVALID_BOARD_ID", "boardId is required in request body"),
+    
+    // File validation errors
+    FILE_EMPTY("FILE_EMPTY", "File không được để trống"),
+    FILE_SIZE_EXCEEDED("FILE_SIZE_EXCEEDED", "Kích thước file không được vượt quá 10MB"),
+    
+    // Support Request errors
+    SUPPORT_REQUEST_NOT_FOUND("SUPPORT_REQUEST_NOT_FOUND", "Yêu cầu hỗ trợ không tồn tại"),
+    INVALID_SUPPORT_STATUS("INVALID_SUPPORT_STATUS", "Trạng thái không hợp lệ"),
+    
+    // Insurance Contract errors
+    INSURANCE_CONTRACT_NAME_EXISTS("INSURANCE_CONTRACT_NAME_EXISTS", "Insurance contract với tên này đã tồn tại"),
+    
+    // OnLeave status errors
+    INVALID_ONLEAVE_STATUS("INVALID_ONLEAVE_STATUS", "Trạng thái đơn nghỉ phép không hợp lệ"),
+    ONLEAVE_STATUS_NOT_VALID("ONLEAVE_STATUS_NOT_VALID", "Trạng thái không hợp lệ cho thao tác này"),
     
     // Common errors
     INTERNAL_SERVER_ERROR("INTERNAL_SERVER_ERROR", "Lỗi hệ thống nội bộ"),

@@ -96,7 +96,7 @@ public class TaskService {
     public BoardTaskStatDTO getTaskStatisticsBySingleBoard(Long boardId) {
         // 1. Kiểm tra Board có tồn tại không (để lấy tên Board luôn)
         Board board = boardRepository.findById(boardId)
-                .orElseThrow(() -> new ResourceNotFoundException("Board not found with id: " + boardId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
 
         // 2. Khởi tạo DTO
         BoardTaskStatDTO dto = new BoardTaskStatDTO();
@@ -178,7 +178,7 @@ public class TaskService {
         }
 
         List<TaskListItemDTO> taskDTOs = tasks.stream()
-                .map(this::toTaskListItemDTO)
+                .map(taskMapper::toTaskListItemDTO)
                 .collect(Collectors.toList());
 
         TaskListResponseDTO response = new TaskListResponseDTO();
@@ -202,7 +202,7 @@ public class TaskService {
         Board board = null;
         if (request.getBoardId() != null) {
             board = boardRepository.findById(request.getBoardId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Board not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.BOARD_NOT_FOUND.getMessage()));
         }
 
         Task task = new Task();
@@ -341,7 +341,7 @@ public class TaskService {
     public TaskDetailDTO getTaskById(String id) {
         Long taskId = Long.parseLong(id);
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.TASK_NOT_FOUND.getMessage()));
 
         TaskDetailDTO response = new TaskDetailDTO();
         TaskDetailDTO.TaskDetailData data = new TaskDetailDTO.TaskDetailData();
@@ -738,16 +738,9 @@ public class TaskService {
         List<Employee> employees = employeeRepository.searchEmployees(keyword, department);
 
         // Convert sang DTO để trả về Frontend (Avatar, Tên, Phòng ban)
-        return employees.stream().map(emp -> {
-            TaskAssigneeDTO dto = new TaskAssigneeDTO();
-            dto.setId(String.valueOf(emp.getId()));
-            dto.setName(emp.getFullName());
-            dto.setEmail(emp.getEmail());
-            dto.setDepartment(emp.getDepartment());
-            dto.setPosition(emp.getPosition());
-            // dto.setAvatar(...) // Nếu có avatar
-            return dto;
-        }).collect(Collectors.toList());
+        return employees.stream()
+                .map(taskMapper::toTaskAssigneeDTO)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -759,47 +752,9 @@ public class TaskService {
         List<Employee> employees = employeeRepository.findByDepartment(department);
         
         return employees.stream()
-                .map(emp -> EmployeeByDepartmentDTO.builder()
-                        .fullName(emp.getFullName())
-                        .department(emp.getDepartment())
-                        .build())
+                .map(taskMapper::toEmployeeByDepartmentDTO)
                 .collect(Collectors.toList());
     }
 
-    private TaskListItemDTO toTaskListItemDTO(Task task) {
-        TaskListItemDTO dto = new TaskListItemDTO();
-        dto.setId(task.getId());
-        dto.setTitle(task.getTitle());
-        dto.setDescription(task.getDescription());
-        dto.setStatus(task.getTaskStatus().name().toLowerCase().replace("_", "-"));
-        dto.setPriority(task.getTaskPriorityStatus().name().toLowerCase());
-
-        if (task.getTag() != null) {
-            dto.setTag(task.getTag().name());
-        }
-
-        if (task.getBoard() != null) {
-            dto.setBoardId(task.getBoard().getId());
-            dto.setBoardName(task.getBoard().getName());
-        }
-        dto.setCommentCount(task.getComments() != null ? task.getComments().size() : 0);
-
-        if (task.getEmployees() != null) {
-            List<TaskListItemDTO.AssigneeInfo> assigneeDtos = task.getEmployees().stream().map(emp -> {
-                TaskListItemDTO.AssigneeInfo info = new TaskListItemDTO.AssigneeInfo();
-                info.setId(emp.getId());
-                info.setName(emp.getFullName());
-                return info;
-            }).collect(Collectors.toList());
-            dto.setAssignees(assigneeDtos);
-        }
-
-        dto.setStartDate(task.getCreatedAt());
-        dto.setEndDate(task.getDeadline());
-        dto.setCreatedAt(task.getCreatedAt() != null ? task.getCreatedAt().atStartOfDay() : LocalDateTime.now());
-        dto.setUpdatedAt(LocalDateTime.now());
-
-        return dto;
-    }
 }
 

@@ -64,4 +64,8 @@ public class Task {
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     List<Comment> comments;
+
+    /** Quan hệ One-to-Many với OverTime: 1 task có thể có nhiều yêu cầu OT */
+    @OneToMany(mappedBy = "task", fetch = FetchType.LAZY)
+    List<OverTime> overTimes;
 }

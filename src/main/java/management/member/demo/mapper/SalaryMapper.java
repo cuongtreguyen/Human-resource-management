@@ -2,8 +2,12 @@ package management.member.demo.mapper;
 
 import management.member.demo.dto.SalaryRequest;
 import management.member.demo.dto.SalaryResponse;
+import management.member.demo.dto.SalarySummaryResponse;
 import management.member.demo.entity.Salary;
 import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Mapper class - Chỉ chịu trách nhiệm mapping giữa Entity và DTO
@@ -84,6 +88,19 @@ public class SalaryMapper {
         Salary salary = new Salary();
         updateSalaryFromRequest(salary, request);
         return salary;
+    }
+
+    /**
+     * Map sang SalarySummaryResponse
+     */
+    public SalarySummaryResponse toSalarySummaryResponse(BigDecimal latestSalary, BigDecimal averageSalary, List<Salary> salaries) {
+        SalarySummaryResponse response = new SalarySummaryResponse();
+        response.setLatestSalary(latestSalary);
+        response.setAverageSalary(averageSalary);
+        response.setTotalIncome(salaries.stream()
+                .map(s -> s.getNetSalary() != null ? s.getNetSalary() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
+        return response;
     }
 }
 

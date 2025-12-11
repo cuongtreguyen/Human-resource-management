@@ -4,6 +4,7 @@ import management.member.demo.dto.CreateInsuranceContractRequestDTO;
 import management.member.demo.dto.InsuranceContractResponseDTO;
 import management.member.demo.dto.UpdateInsuranceContractRequestDTO;
 import management.member.demo.entity.InsuranceContract;
+import management.member.demo.exception.model.ErrorCode;
 import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.mapper.InsuranceContractMapper;
 import management.member.demo.repository.InsuranceContractRepository;
@@ -91,7 +92,8 @@ public class InsuranceContractService {
         if (request.getInsurenceName() != null && !request.getInsurenceName().equals(insurenceName)) {
             // Kiểm tra insurenceName mới có trùng với contract khác không
             if (insuranceContractRepository.existsByInsurenceName(request.getInsurenceName())) {
-                throw new IllegalArgumentException("Insurance contract với tên '" + request.getInsurenceName() + "' đã tồn tại");
+                throw new ResourceNotFoundException(ErrorCode.INSURANCE_CONTRACT_NAME_EXISTS.getMessage() + 
+                        ": '" + request.getInsurenceName() + "'");
             }
         }
         

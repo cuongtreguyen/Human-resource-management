@@ -59,44 +59,8 @@ public class EmployeeService {
             throw ErrorCode.EMPLOYEE_EMAIL_EXISTS.toException("Email đã tồn tại: " + generatedEmail);
         }
 
-        Employee employee = new Employee();
-        // Set các field cơ bản
-        employee.setFullName(request.getName());
-        employee.setFirstName(request.getName() != null && request.getName().contains(" ") 
-                ? request.getName().split(" ")[0] : request.getName());
-        employee.setLastName(request.getName() != null && request.getName().contains(" ") 
-                ? request.getName().substring(request.getName().indexOf(" ") + 1) : "");
-        employee.setEmail(generatedEmail); // Email generated từ fullName
-        employee.setPersonalEmail(request.getPersonalEmail()); // Email cá nhân
-        employee.setPhone(request.getPhone());
-        employee.setGender(request.getGender());
-        employee.setStatus(EmployeeStatus.ACTIVE);
-        employee.setDepartment(request.getDepartment());
-        employee.setPosition(request.getPosition());
-        employee.setEmployeeId(request.getEmployeeId());
-        employee.setRole(Role.EMPLOYEE);
-        // Set các field bổ sung
-        employee.setIdCardIssueDate(request.getIdCardIssueDate());
-        employee.setIdCardIssuePlace(request.getIdCardIssuePlace());
-        employee.setMaritalStatus(request.getMaritalStatus());
-        employee.setTaxCode(request.getTaxCode());
-        employee.setContractCode(request.getContractCode());
-        // EmployeeType enum
-        if (request.getEmployeeType() != null) {
-            try {
-                employee.setEmployeeType(EmployeeType.valueOf(request.getEmployeeType().toUpperCase()));
-            } catch (IllegalArgumentException ignored) {
-                // Nếu sai enum → bỏ qua
-            }
-        }
-        employee.setEmergencyContactName(request.getEmergencyContactName());
-        employee.setEmergencyContactPhone(request.getEmergencyContactPhone());
-        employee.setEmergencyContactRelationship(request.getEmergencyContactRelationship());
-        employee.setTimeOut(request.getTimeOut());
-        employee.setTimeIn(request.getTimeIn());
-        employee.setShift(request.getShift());
-        employee.setPermanentAddress(request.getPermanentAddress());
-        employee.setTemporaryAddress(request.getTemporaryAddress());
+        // Map từ AddEmployeeRequest sang Employee entity
+        Employee employee = employeeMapper.toEntity(request, generatedEmail);
         employee.setWorkLocation(request.getWorkLocation());
         
         // Set các field khác

@@ -15,6 +15,7 @@ import management.member.demo.repository.OverTimeRepository;
 import management.member.demo.entity.OverTime;
 import management.member.demo.enums.OverTimeStatus;
 import management.member.demo.exception.model.ErrorCode;
+import management.member.demo.exception.specifiic.ResourceNotFoundException;
 import management.member.demo.validator.PayrollValidator;
 import java.time.YearMonth;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,7 +54,7 @@ public class PayrollService {
 
     public PayrollResponse getPayrollById(Long id) {
         Payroll payroll = payrollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PAYROLL_NOT_FOUND.getMessage()));
         return payrollMapper.toResponse(payroll);
     }
 
@@ -71,7 +72,7 @@ public class PayrollService {
 
     public PayrollResponse updatePayroll(Long id, PayrollRequest request) {
         Payroll payroll = payrollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PAYROLL_NOT_FOUND.getMessage()));
 
         payroll.setCode(request.getCode());
         payroll.setPeriod(request.getPeriod());
@@ -83,7 +84,7 @@ public class PayrollService {
 
     public void approvePayroll(Long id) {
         Payroll payroll = payrollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PAYROLL_NOT_FOUND.getMessage()));
         // Note: PayrollStatus doesn't have APPROVED, using PENDING as approved state
         payroll.setStatus(PayrollStatus.PENDING);
         payrollRepository.save(payroll);
@@ -91,7 +92,7 @@ public class PayrollService {
 
     public void payPayroll(Long id) {
         Payroll payroll = payrollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PAYROLL_NOT_FOUND.getMessage()));
         payroll.setStatus(PayrollStatus.PAID);
         payroll.setPaymentDate(LocalDate.now()); // Set payment date khi thanh toán
         payrollRepository.save(payroll);
@@ -114,7 +115,7 @@ public class PayrollService {
      */
     public void paySalary(Long salaryId) {
         Salary salary = salaryRepository.findById(salaryId)
-                .orElseThrow(() -> new RuntimeException("Salary not found with id: " + salaryId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.SALARY_NOT_FOUND.getMessage()));
         
         // Update status của Salary record này thành SUCCESS
         salary.setStatus(management.member.demo.enums.SalaryStatus.SUCCESS);
@@ -128,7 +129,7 @@ public class PayrollService {
 
     public void failPayroll(Long id) {
         Payroll payroll = payrollRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Payroll not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.PAYROLL_NOT_FOUND.getMessage()));
         payroll.setStatus(PayrollStatus.FAILED);
         payrollRepository.save(payroll);
     }
@@ -305,7 +306,7 @@ public class PayrollService {
 
         // Lấy Employee để có cả id (Long) và employeeId (String)
         Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + request.getEmployeeId()));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
 
         // Tạo response
         PayrollCalculationForAccountantResponseDTO response = new PayrollCalculationForAccountantResponseDTO();
@@ -467,7 +468,7 @@ public class PayrollService {
     public GetPayrollCalculationForAccountantResponseDTO getPayrollCalculationForAccountant(Long employeeId) {
         // Lấy employee
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found with id: " + employeeId));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.EMPLOYEE_NOT_FOUND.getMessage()));
         
         // Lấy salary mới nhất của employee
         // Query có thể trả về nhiều kết quả nếu có cùng paymentDate, nên lấy phần tử đầu tiên
@@ -494,17 +495,15 @@ public class PayrollService {
         LocalDate startDate = yearMonth.atDay(1);
         LocalDate endDate = yearMonth.atEndOfMonth();
         
-        BigDecimal totalOtHours = BigDecimal.ZERO;
-        List<OverTime> overtimes = overTimeRepository.findAll().stream()
-                .filter(ot -> ot.getEmployee() != null && 
-                        ot.getEmployee().getId().equals(employee.getId()) &&
-                        ot.getOtDate() != null &&
-                        !ot.getOtDate().isBefore(startDate) &&
-                        !ot.getOtDate().isAfter(endDate) &&
-                        ot.getOvertimeStatus() == OverTimeStatus.APPROVED)
-                .collect(Collectors.toList());
+        // ✅ Tối ưu: Dùng query method thay vì findAll() rồi filter
+        List<OverTime> overtimes = overTimeRepository.findApprovedOvertimeByEmployeeAndDateRange(
+                employee.getId(), 
+                startDate, 
+                endDate, 
+                OverTimeStatus.APPROVED
+        );
         
-        totalOtHours = overtimes.stream()
+        BigDecimal totalOtHours = overtimes.stream()
                 .map(ot -> BigDecimal.valueOf(ot.getOtHours() != null ? ot.getOtHours() : 0.0))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         response.setOtHours(totalOtHours);
@@ -712,14 +711,13 @@ public class PayrollService {
                     
                     BigDecimal totalOtHours = BigDecimal.ZERO;
                     if (employee != null) {
-                        List<OverTime> overtimes = overTimeRepository.findAll().stream()
-                                .filter(ot -> ot.getEmployee() != null && 
-                                        ot.getEmployee().getId().equals(employee.getId()) &&
-                                        ot.getOtDate() != null &&
-                                        !ot.getOtDate().isBefore(startDate) &&
-                                        !ot.getOtDate().isAfter(endDate) &&
-                                        ot.getOvertimeStatus() == OverTimeStatus.APPROVED)
-                                .collect(Collectors.toList());
+                        // ✅ Tối ưu: Dùng query method thay vì findAll() rồi filter
+                        List<OverTime> overtimes = overTimeRepository.findApprovedOvertimeByEmployeeAndDateRange(
+                                employee.getId(), 
+                                startDate, 
+                                endDate, 
+                                OverTimeStatus.APPROVED
+                        );
                         
                         totalOtHours = overtimes.stream()
                                 .map(ot -> BigDecimal.valueOf(ot.getOtHours() != null ? ot.getOtHours() : 0.0))

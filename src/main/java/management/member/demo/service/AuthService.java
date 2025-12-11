@@ -213,7 +213,7 @@ public class AuthService {
     
     public void testResetPassword(String email, String newPassword) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(ErrorCode.USER_NOT_FOUND.getMessage()));
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
