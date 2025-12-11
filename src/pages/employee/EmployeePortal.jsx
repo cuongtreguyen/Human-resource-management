@@ -322,7 +322,7 @@ const EmployeePortal = () => {
     { title: "Chấm công", desc: "Xem lịch sử chấm công", action: () => navigate("/employee/attendance") },
     { title: "Xin nghỉ phép", desc: "Gửi yêu cầu nghỉ phép", action: () => navigate("/employee/leave") },
     { title: "Bảng lương", desc: "Xem bảng lương của bạn", action: () => navigate("/employee/payroll") },
-    { title: "Nhiệm vụ", desc: "Công việc được giao", action: () => navigate("/employee/tasks") },
+    { title: "Nhiệm vụ", desc: "Công việc được giao", action: () => navigate("/employee/kanban") },
     { title: "Tài liệu", desc: "Văn bản & biểu mẫu", action: () => navigate("/employee/documents") },
     { title: "Hồ sơ cá nhân", desc: "Cập nhật thông tin", action: () => navigate("/employee/profile") },
     { title: "Phúc lợi", desc: "Bảo hiểm & phúc lợi", action: () => navigate("/employee/benefits") },
@@ -377,7 +377,7 @@ const EmployeePortal = () => {
               <Button
                 variant="outline"
                 className="bg-white/20 backdrop-blur border-white/30 text-white hover:bg-white/30"
-                onClick={() => navigate("/employee/tasks")}
+                onClick={() => navigate("/employee/kanban")}
               >
                 Xem nhiệm vụ
               </Button>
