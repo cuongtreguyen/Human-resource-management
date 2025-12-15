@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Clock,
   CheckCircle,
@@ -9,19 +9,26 @@ import {
   User,
   FileText,
   AlertCircle,
-  X
+  X,
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
-import { useOTContext } from '../../context/OTContext';
+import {
+  getOvertimeByStatus,
+  setOvertimeStatus,
+  countOvertimeByStatus,
+  formatOTListResponse,
+  mapOTStatusToBackend
+} from '../../services/overtimeService';
 import OTStatusBadge from '../../components/overtime/OTStatusBadge';
 import { getUserInfo } from '../../utils/auth';
 
 const OTManagement = () => {
-  const {
-    otRequests,
-    approveOT,
-    rejectOT,
-    getOTStatistics
-  } = useOTContext();
+  // State cho OT requests từ API
+  const [otRequests, setOtRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // State
   const [filter, setFilter] = useState('pending');
@@ -31,21 +38,84 @@ const OTManagement = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
 
+  // Stats
+  const [stats, setStats] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    completed: 0,
+    total: 0,
+    totalHours: 0
+  });
+
   // Get current manager from auth
   const currentUser = getUserInfo() || {};
   const managerName = currentUser.name || 'Quản lý';
 
-  // Stats
-  const stats = getOTStatistics();
+  // Fetch OT requests từ API
+  const fetchOTRequests = useCallback(async (statusFilter = null) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Map filter sang backend status
+      let backendStatus = null;
+      if (statusFilter && statusFilter !== 'all') {
+        backendStatus = mapOTStatusToBackend(statusFilter);
+      }
 
-  // Filter and search
+      const data = await getOvertimeByStatus(backendStatus);
+      const formattedData = formatOTListResponse(data || []);
+      setOtRequests(formattedData);
+    } catch (err) {
+      console.error('Error fetching OT requests:', err);
+      setError(err.message);
+      setOtRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch stats
+  const fetchStats = useCallback(async () => {
+    try {
+      // Lấy tất cả OT để tính stats
+      const allData = await getOvertimeByStatus(null);
+      const formattedData = formatOTListResponse(allData || []);
+
+      const pending = formattedData.filter(ot => ot.status === 'pending').length;
+      const approved = formattedData.filter(ot => ot.status === 'approved').length;
+      const rejected = formattedData.filter(ot => ot.status === 'rejected').length;
+      const completed = formattedData.filter(ot => ot.status === 'completed').length;
+      const totalHours = formattedData
+        .filter(ot => ['approved', 'completed'].includes(ot.status))
+        .reduce((sum, ot) => sum + (ot.otHours || 0), 0);
+
+      setStats({
+        pending,
+        approved,
+        rejected,
+        completed,
+        total: formattedData.length,
+        totalHours
+      });
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  }, []);
+
+  // Load data on mount và khi filter thay đổi
+  useEffect(() => {
+    fetchOTRequests(filter);
+    fetchStats();
+  }, [filter, fetchOTRequests, fetchStats]);
+
+  // Filter and search (chỉ search vì filter đã xử lý ở API)
   const filteredRequests = otRequests.filter(ot => {
-    const matchesFilter = filter === 'all' || ot.status === filter;
     const matchesSearch = searchTerm === '' ||
-      ot.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ot.taskTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ot.department.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesFilter && matchesSearch;
+      (ot.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (ot.taskTitle || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (ot.department || '').toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   // Format date
@@ -69,11 +139,23 @@ const OTManagement = () => {
     });
   };
 
-  // Handle approve
-  const handleApprove = (otId) => {
-    approveOT(otId, managerName);
-    setShowDetailModal(false);
-    setSelectedOT(null);
+  // Handle approve - GỌI API
+  const handleApprove = async (otId) => {
+    setActionLoading(true);
+    try {
+      await setOvertimeStatus(otId, 'APPROVED', `Đã duyệt bởi ${managerName}`);
+      // Refresh data
+      await fetchOTRequests(filter);
+      await fetchStats();
+      setShowDetailModal(false);
+      setSelectedOT(null);
+      alert('Đã duyệt yêu cầu OT thành công!');
+    } catch (err) {
+      console.error('Error approving OT:', err);
+      alert(err.message || 'Có lỗi xảy ra khi duyệt OT');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   // Handle reject
@@ -83,16 +165,36 @@ const OTManagement = () => {
     setShowRejectModal(true);
   };
 
-  const handleReject = () => {
+  // Handle reject - GỌI API
+  const handleReject = async () => {
     if (!rejectReason.trim()) {
       alert('Vui lòng nhập lý do từ chối');
       return;
     }
-    rejectOT(selectedOT.id, rejectReason, managerName);
-    setShowRejectModal(false);
-    setShowDetailModal(false);
-    setSelectedOT(null);
-    setRejectReason('');
+
+    setActionLoading(true);
+    try {
+      await setOvertimeStatus(selectedOT.id, 'REJECTED', rejectReason);
+      // Refresh data
+      await fetchOTRequests(filter);
+      await fetchStats();
+      setShowRejectModal(false);
+      setShowDetailModal(false);
+      setSelectedOT(null);
+      setRejectReason('');
+      alert('Đã từ chối yêu cầu OT!');
+    } catch (err) {
+      console.error('Error rejecting OT:', err);
+      alert(err.message || 'Có lỗi xảy ra khi từ chối OT');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Handle refresh
+  const handleRefresh = () => {
+    fetchOTRequests(filter);
+    fetchStats();
   };
 
   // View detail
@@ -105,9 +207,29 @@ const OTManagement = () => {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 rounded-2xl shadow-lg">
-        <h1 className="text-3xl font-bold mb-2">Quản lý OT</h1>
-        <p className="text-purple-100">Duyệt và quản lý yêu cầu làm thêm giờ</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Quản lý OT</h1>
+            <p className="text-purple-100">Duyệt và quản lý yêu cầu làm thêm giờ</p>
+          </div>
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+          >
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            <span>Làm mới</span>
+          </button>
+        </div>
       </div>
+
+      {/* Error message */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+          <AlertCircle className="text-red-500" size={20} />
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -232,7 +354,7 @@ const OTManagement = () => {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Nhân viên</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Task</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Board</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Ngày OT</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Giờ</th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Trạng thái</th>
@@ -240,7 +362,16 @@ const OTManagement = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {filteredRequests.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="px-4 py-8 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 size={20} className="animate-spin text-purple-600" />
+                      <span className="text-gray-500">Đang tải dữ liệu...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredRequests.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
                     Không có yêu cầu OT nào
@@ -255,23 +386,22 @@ const OTManagement = () => {
                           <User className="w-4 h-4 text-purple-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{ot.employeeName}</p>
-                          <p className="text-sm text-gray-500">{ot.department}</p>
+                          <p className="font-medium text-gray-900">{ot.employeeName || 'N/A'}</p>
+                          <p className="text-sm text-gray-500">{ot.department || 'N/A'}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <p className="text-sm text-gray-900 truncate max-w-xs" title={ot.taskTitle}>
-                        {ot.taskTitle}
+                      <p className="text-sm text-gray-900 truncate max-w-xs" title={ot.boardName}>
+                        {ot.boardName || 'Chưa có thông tin'}
                       </p>
-                      <p className="text-xs text-gray-500">Deadline: {formatDate(ot.taskDeadline)}</p>
                     </td>
                     <td className="px-4 py-3">
                       <p className="text-sm text-gray-900">{formatDate(ot.otDate)}</p>
-                      <p className="text-xs text-gray-500">Đăng ký: {formatDateTime(ot.submittedAt)}</p>
+                      <p className="text-xs text-gray-500">Đăng ký: {formatDateTime(ot.createdAt || ot.submittedAt)}</p>
                     </td>
                     <td className="px-4 py-3 text-center">
-                      <span className="font-semibold text-purple-600">{ot.plannedHours}h</span>
+                      <span className="font-semibold text-purple-600">{ot.otHours || ot.plannedHours || 0}h</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <OTStatusBadge status={ot.status} size="sm" />
@@ -290,14 +420,16 @@ const OTManagement = () => {
                           <>
                             <button
                               onClick={() => handleApprove(ot.id)}
-                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              disabled={actionLoading}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50"
                               title="Duyệt"
                             >
-                              <CheckCircle size={18} />
+                              {actionLoading ? <Loader2 size={18} className="animate-spin" /> : <CheckCircle size={18} />}
                             </button>
                             <button
                               onClick={() => openRejectModal(ot)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              disabled={actionLoading}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                               title="Từ chối"
                             >
                               <XCircle size={18} />
@@ -354,29 +486,26 @@ const OTManagement = () => {
                 </div>
                 <div className="p-4 border border-gray-200 rounded-lg">
                   <p className="text-sm text-gray-500">Số giờ đăng ký</p>
-                  <p className="font-semibold text-purple-600">{selectedOT.plannedHours} giờ</p>
+                  <p className="font-semibold text-purple-600">{selectedOT.otHours || selectedOT.plannedHours || 0} giờ</p>
                 </div>
               </div>
 
-              {/* Task Info */}
+              {/* Board Info */}
               <div className="p-4 border border-gray-200 rounded-lg">
-                <p className="text-sm text-gray-500 mb-1">Task</p>
-                <p className="font-semibold text-gray-900">{selectedOT.taskTitle}</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  Deadline: {formatDate(selectedOT.taskDeadline)}
-                </p>
+                <p className="text-sm text-gray-500 mb-1">Board</p>
+                <p className="font-semibold text-gray-900">{selectedOT.boardName || 'Chưa có thông tin'}</p>
               </div>
 
               {/* Reason */}
               <div className="p-4 border border-gray-200 rounded-lg">
                 <p className="text-sm text-gray-500 mb-1">Lý do đăng ký OT</p>
-                <p className="text-gray-900">{selectedOT.reason}</p>
+                <p className="text-gray-900">{selectedOT.reason || 'Không có lý do'}</p>
               </div>
 
               {/* Submitted Time */}
               <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-600">
-                  Đăng ký lúc: {formatDateTime(selectedOT.submittedAt)}
+                  Đăng ký lúc: {formatDateTime(selectedOT.createdAt || selectedOT.submittedAt)}
                 </p>
               </div>
 
@@ -392,11 +521,19 @@ const OTManagement = () => {
                 </div>
               )}
 
-              {/* Reject Reason */}
-              {selectedOT.status === 'rejected' && selectedOT.rejectReason && (
+              {/* Manager Note / Reject Reason */}
+              {selectedOT.status === 'rejected' && selectedOT.managerNote && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                   <p className="text-sm text-red-600">
-                    Lý do từ chối: {selectedOT.rejectReason}
+                    Lý do từ chối: {selectedOT.managerNote}
+                  </p>
+                </div>
+              )}
+
+              {selectedOT.status === 'approved' && selectedOT.managerNote && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-sm text-green-600">
+                    Ghi chú: {selectedOT.managerNote}
                   </p>
                 </div>
               )}
@@ -407,17 +544,23 @@ const OTManagement = () => {
               <div className="p-6 border-t border-gray-200 bg-gray-50 rounded-b-xl flex justify-end gap-3">
                 <button
                   onClick={() => openRejectModal(selectedOT)}
-                  className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                  disabled={actionLoading}
+                  className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
                 >
                   <XCircle size={18} />
                   <span>Từ chối</span>
                 </button>
                 <button
                   onClick={() => handleApprove(selectedOT.id)}
-                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  disabled={actionLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                 >
-                  <CheckCircle size={18} />
-                  <span>Duyệt OT</span>
+                  {actionLoading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <CheckCircle size={18} />
+                  )}
+                  <span>{actionLoading ? 'Đang xử lý...' : 'Duyệt OT'}</span>
                 </button>
               </div>
             )}
@@ -455,16 +598,22 @@ const OTManagement = () => {
                   setShowRejectModal(false);
                   setRejectReason('');
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+                disabled={actionLoading}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
               >
                 Hủy
               </button>
               <button
                 onClick={handleReject}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                disabled={actionLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
               >
-                <XCircle size={18} />
-                <span>Xác nhận từ chối</span>
+                {actionLoading ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <XCircle size={18} />
+                )}
+                <span>{actionLoading ? 'Đang xử lý...' : 'Xác nhận từ chối'}</span>
               </button>
             </div>
           </div>

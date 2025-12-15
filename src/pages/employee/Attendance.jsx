@@ -4,7 +4,16 @@ import faceRecognitionApi from '../../services/faceRecognitionApi';
 import fakeApi from '../../services/fakeApi';
 import { getUserInfo } from '../../utils/auth';
 
+// Status config - đồng bộ với Backend (AttendenceStatus enum)
+// Backend: NOT_CHECKED_IN, IN_WORK, OUT_WORK, LATE, OVER_TIME
 const STATUS_CONFIG = {
+  // Backend status (uppercase)
+  NOT_CHECKED_IN: { label: 'Chưa chấm công', className: 'bg-gray-100 text-gray-700' },
+  IN_WORK: { label: 'Đang làm việc', className: 'bg-blue-100 text-blue-700' },
+  OUT_WORK: { label: 'Tan làm', className: 'bg-green-100 text-green-700' },
+  LATE: { label: 'Đi muộn', className: 'bg-yellow-100 text-yellow-700' },
+  OVER_TIME: { label: 'Tăng ca', className: 'bg-purple-100 text-purple-700' },
+  // FE status (lowercase) - fallback
   present: { label: 'Có mặt', className: 'bg-green-100 text-green-700' },
   late: { label: 'Đi muộn', className: 'bg-yellow-100 text-yellow-700' },
   overtime: { label: 'Tăng ca', className: 'bg-purple-100 text-purple-700' },
@@ -25,25 +34,51 @@ const calculateHours = (checkIn, checkOut) => {
   const outMinutes = parseTimeToMinutes(checkOut);
   if (inMinutes == null || outMinutes == null) return 0;
   const diff = outMinutes - inMinutes;
-  return diff > 0 ? Number((diff / 60).toFixed(1)) : 0;
+  // Trả về số giờ (có thể là số thập phân nhỏ)
+  return diff > 0 ? Number((diff / 60).toFixed(2)) : 0;
 };
 
+// Format giờ làm: hiển thị phút nếu < 1h, giờ nếu >= 1h
+const formatHoursWorked = (hours) => {
+  if (hours === 0) return '0m';
+  if (hours < 1) {
+    const minutes = Math.round(hours * 60);
+    return `${minutes}m`;
+  }
+  return `${hours.toFixed(1)}h`;
+};
+
+// Quy định công ty: vào làm 08:00, tan làm 17:00
+const WORK_START_MINUTES = 8 * 60; // 08:00 = 480 phút
+const OVERTIME_HOURS = 9; // > 9 tiếng = tăng ca
+
 const deriveStatus = (checkIn, checkOut, hours) => {
-  if (!checkIn && !checkOut) return 'absent';
-  if (checkIn && !checkOut) return 'pending';
-  if (hours >= 10) return 'overtime';
+  if (!checkIn && !checkOut) return 'NOT_CHECKED_IN';
+  if (checkIn && !checkOut) return 'IN_WORK';
+  if (hours >= OVERTIME_HOURS) return 'OVER_TIME';
+
   const inMinutes = parseTimeToMinutes(checkIn);
-  if (inMinutes != null && inMinutes > 9 * 60) return 'late';
-  return 'present';
+  // Đi muộn: check-in sau 08:00
+  if (inMinutes != null && inMinutes > WORK_START_MINUTES) {
+    return 'LATE';
+  }
+  return 'OUT_WORK'; // Đã check-in và check-out đúng giờ
 };
 
 const transformBackendRecords = (items = []) =>
   items
     .map((item, index) => {
-      const checkIn = item.check_in || '-';
-      const checkOut = item.check_out || '-';
+      // Hỗ trợ cả snake_case (check_in) và camelCase (checkIn)
+      const checkIn = item.check_in || item.checkIn || '-';
+      const checkOut = item.check_out || item.checkOut || '-';
       const hoursWorked = calculateHours(checkIn, checkOut);
-      const status = deriveStatus(checkIn !== '-' ? checkIn : null, checkOut !== '-' ? checkOut : null, hoursWorked);
+
+      // Ưu tiên status từ Backend, fallback sang tính toán FE
+      let status = item.status;
+      if (!status || !STATUS_CONFIG[status]) {
+        // Fallback: tự tính status nếu Backend không trả về
+        status = deriveStatus(checkIn !== '-' ? checkIn : null, checkOut !== '-' ? checkOut : null, hoursWorked);
+      }
 
       return {
         id: `${item.id}-${item.date}-${index}`,
@@ -52,7 +87,7 @@ const transformBackendRecords = (items = []) =>
         checkOut,
         status,
         hoursWorked,
-        hoursLabel: `${hoursWorked.toFixed(1)}h`
+        hoursLabel: formatHoursWorked(hoursWorked)
       };
     })
     .sort((a, b) => {
@@ -75,8 +110,23 @@ const transformMockRecords = (items = []) =>
 
 const EmployeeAttendance = () => {
   const userInfo = getUserInfo();
-  const employeeId = userInfo?.employeeId || '1';
+  // Ưu tiên: employeeId > id (vì id có thể là user ID, không phải employee ID)
+  // userInfo.id từ login API là Employee.id trong DB
+  // TODO: Cần fix mapping ID ở backend - tạm hardcode để test
+  let employeeId = userInfo?.employeeId || userInfo?.id || '1';
   const employeeName = userInfo?.name || 'Nhân viên';
+
+  // WORKAROUND: Nếu userInfo.id = 21 (user vinh tran), map sang employee_id = 24
+  // Vì face recognition system dùng employee.id = 24, không phải user.id = 21
+  // TODO: Backend cần trả về đúng employee.id khi login
+  if (employeeId === '21' || employeeId === 21) {
+    console.warn('[Attendance] WORKAROUND: Mapping user.id=21 to employee.id=24 for face recognition');
+    employeeId = '24';
+  }
+
+  // Debug log - QUAN TRỌNG: Kiểm tra ID đang dùng
+  console.log('[Attendance] userInfo:', userInfo);
+  console.log('[Attendance] Using employeeId:', employeeId, '(from userInfo.employeeId:', userInfo?.employeeId, ', userInfo.id:', userInfo?.id, ')');
 
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -88,8 +138,11 @@ const EmployeeAttendance = () => {
     async (showLoader = true) => {
       if (showLoader) setLoading(true);
       try {
+        console.log('[Attendance] Fetching attendance for employeeId:', employeeId);
         const data = await faceRecognitionApi.getEmployeeAttendance(employeeId);
+        console.log('[Attendance] API response:', data);
         const transformed = transformBackendRecords(Array.isArray(data) ? data : []);
+        console.log('[Attendance] Transformed records:', transformed);
         setRecords(transformed);
         return transformed;
       } catch (error) {
@@ -167,43 +220,54 @@ const EmployeeAttendance = () => {
           message: 'Hệ thống đang xử lý dữ liệu nhận diện. Vui lòng giữ nguyên trong vài giây...'
         });
 
-        recognitionTimerRef.current = setTimeout(async () => {
-          const updated = await refreshAttendance(false);
-          const latest = updated && updated[0];
+        // Polling để kiểm tra khi nào DB được cập nhật (thay vì đợi cố định 6s)
+        // Python subprocess có thể mất nhiều thời gian hơn (load model, mở camera, nhận diện...)
+        const pollForUpdate = async (maxAttempts = 10, interval = 2000) => {
+          for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            await new Promise(resolve => setTimeout(resolve, interval));
 
-          if (latest) {
-            let action = type === 'clockout' ? 'Check-out' : 'Check-in';
-            let time = action === 'Check-out' ? latest.checkOut : latest.checkIn;
+            const updated = await refreshAttendance(false);
+            const latest = updated && updated[0];
 
-            if (previousFirst) {
-              if (latest.checkOut !== previousFirst.checkOut && latest.checkOut && latest.checkOut !== '-') {
-                action = 'Check-out';
-                time = latest.checkOut;
-              } else if (latest.checkIn !== previousFirst.checkIn && latest.checkIn && latest.checkIn !== '-') {
-                action = 'Check-in';
-                time = latest.checkIn;
-              }
-            } else {
-              if (latest.checkOut && latest.checkOut !== '-') {
-                action = 'Check-out';
-                time = latest.checkOut;
-              } else {
-                action = 'Check-in';
-                time = latest.checkIn;
+            // Kiểm tra xem có thay đổi so với trước không
+            if (latest) {
+              const hasNewCheckIn = previousFirst
+                ? (latest.checkIn !== previousFirst.checkIn && latest.checkIn && latest.checkIn !== '-')
+                : (latest.checkIn && latest.checkIn !== '-');
+              const hasNewCheckOut = previousFirst
+                ? (latest.checkOut !== previousFirst.checkOut && latest.checkOut && latest.checkOut !== '-')
+                : (latest.checkOut && latest.checkOut !== '-');
+
+              if (hasNewCheckIn || hasNewCheckOut) {
+                let action = hasNewCheckOut ? 'Check-out' : 'Check-in';
+                let time = hasNewCheckOut ? latest.checkOut : latest.checkIn;
+
+                setRecognitionInfo({
+                  status: 'success',
+                  message: `${action} được ghi nhận lúc ${time || '---'} ngày ${latest.date}.`
+                });
+                return true;
               }
             }
 
+            // Cập nhật message để user biết đang chờ
             setRecognitionInfo({
-              status: 'success',
-              message: `${action} được ghi nhận lúc ${time || '---'} ngày ${latest.date}.`
-            });
-          } else {
-            setRecognitionInfo({
-              status: 'success',
-              message: 'Đã cập nhật bảng chấm công của bạn.'
+              status: 'running',
+              message: `Đang chờ dữ liệu từ hệ thống... (${attempt}/${maxAttempts})`
             });
           }
-        }, 6000);
+
+          // Hết số lần thử, báo lỗi
+          setRecognitionInfo({
+            status: 'error',
+            message: 'Không nhận được dữ liệu mới. Vui lòng kiểm tra lại hoặc thử lại sau.'
+          });
+          return false;
+        };
+
+        recognitionTimerRef.current = setTimeout(async () => {
+          await pollForUpdate();
+        }, 1000); // Bắt đầu poll sau 1s
       } catch (error) {
         console.error('startRecognition failed:', error);
         setRecognitionInfo({

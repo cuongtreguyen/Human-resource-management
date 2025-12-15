@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Send, Clock, Calendar, AlertTriangle, CheckCircle, FileText, DollarSign, Briefcase } from 'lucide-react';
+import { ArrowLeft, Send, Clock, Calendar, AlertTriangle, CheckCircle, FileText, DollarSign, Briefcase, Loader2 } from 'lucide-react';
 import { useOTContext } from '../../context/OTContext';
-import { useTaskContext } from '../../context/TaskContext';
-import TaskSelector from '../../components/overtime/TaskSelector';
+import { boardService } from '../../services/kanbanService';
 import QuotaIndicator from '../../components/overtime/QuotaIndicator';
 import OTStatusBadge from '../../components/overtime/OTStatusBadge';
 import { getUserInfo } from '../../utils/auth';
@@ -17,21 +16,22 @@ const OTRequest = () => {
     checkMonthlyQuota,
     validateOTHours,
     getOTByEmployee,
-    MONTHLY_QUOTA
+    MONTHLY_QUOTA,
+    loading: contextLoading,
+    error: contextError,
   } = useOTContext();
-
-  const { getOTEligibleTasks } = useTaskContext();
 
   // Get current user from auth
   const currentUser = getUserInfo() || {};
   const employeeName = currentUser.name || 'Nhân viên';
-  const employeeId = currentUser.employeeId || '';
+  // Lấy ID số từ database (id) thay vì employeeId string
+  const employeeId = currentUser.id || currentUser.employeeId || '';
   const department = currentUser.department || '';
 
   // Form state
   const [form, setForm] = useState({
     otDate: new Date().toISOString().split('T')[0],
-    selectedTask: null,
+    selectedBoard: null,
     plannedHours: 2,
     reason: ''
   });
@@ -43,8 +43,30 @@ const OTRequest = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Get eligible tasks
-  const eligibleTasks = getOTEligibleTasks(employeeName);
+  // State cho boards từ API
+  const [myBoards, setMyBoards] = useState([]);
+  const [loadingBoards, setLoadingBoards] = useState(false);
+  const [boardsError, setBoardsError] = useState(null);
+
+  // Fetch boards mà employee là member
+  useEffect(() => {
+    const fetchMyBoards = async () => {
+      setLoadingBoards(true);
+      setBoardsError(null);
+      try {
+        const boards = await boardService.getMyBoards();
+        setMyBoards(boards || []);
+      } catch (err) {
+        console.error('Error fetching my boards:', err);
+        setBoardsError(err.message);
+        setMyBoards([]);
+      } finally {
+        setLoadingBoards(false);
+      }
+    };
+
+    fetchMyBoards();
+  }, []);
 
   // Get employee's OT history
   const myOTRequests = getOTByEmployee(employeeId);
@@ -103,8 +125,8 @@ const OTRequest = () => {
       return;
     }
 
-    if (!form.selectedTask) {
-      alert('Vui lòng chọn task cần làm OT');
+    if (!form.selectedBoard) {
+      alert('Vui lòng chọn board/nhiệm vụ cần làm OT');
       return;
     }
 
@@ -116,15 +138,12 @@ const OTRequest = () => {
     setIsSubmitting(true);
 
     try {
-      // Create OT request
-      createOTRequest({
-        employeeId,
+      // Create OT request - GỌI API BACKEND
+      await createOTRequest({
+        employeeId: employeeId, // ID số từ database
         employeeName,
         department,
-        taskId: form.selectedTask.id,
-        taskTitle: form.selectedTask.title,
-        taskDeadline: form.selectedTask.dueDate,
-        departmentId: form.selectedTask.departmentId,
+        boardId: form.selectedBoard.id, // Board ID từ API
         otDate: form.otDate,
         plannedHours: form.plannedHours,
         reason: form.reason
@@ -136,14 +155,15 @@ const OTRequest = () => {
       setTimeout(() => {
         setForm({
           otDate: new Date().toISOString().split('T')[0],
-          selectedTask: null,
+          selectedBoard: null,
           plannedHours: 2,
           reason: ''
         });
         setSubmitSuccess(false);
       }, 2000);
     } catch (error) {
-      alert('Có lỗi xảy ra. Vui lòng thử lại.');
+      console.error('Error creating OT request:', error);
+      alert(error.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -158,7 +178,7 @@ const OTRequest = () => {
   const canSubmit = deadlineCheck?.allowed &&
                     quotaInfo?.allowed &&
                     hoursValidation.valid &&
-                    form.selectedTask &&
+                    form.selectedBoard &&
                     form.reason.trim() &&
                     !isSubmitting;
 
@@ -222,16 +242,16 @@ const OTRequest = () => {
             )}
           </div>
 
-          {/* Tasks available for OT */}
+          {/* Boards available for OT */}
           <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-blue-100 rounded-lg">
                 <Briefcase className="text-blue-600" size={24} />
               </div>
               <div>
-                <p className="text-sm text-gray-500">Nhiệm vụ có thể OT</p>
+                <p className="text-sm text-gray-500">Board đang tham gia</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {eligibleTasks.length}
+                  {loadingBoards ? '...' : myBoards.length}
                 </p>
               </div>
             </div>
@@ -323,27 +343,71 @@ const OTRequest = () => {
               </div>
             </div>
 
-            {/* Task Selection - From assigned tasks */}
+            {/* Board Selection - From my boards */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 <span className="flex items-center gap-2">
                   <Briefcase size={16} />
-                  Nhiệm vụ được giao <span className="text-red-500">*</span>
+                  Board/Nhiệm vụ được giao <span className="text-red-500">*</span>
                 </span>
               </label>
               <p className="text-xs text-gray-500 mb-2">
-                Chọn từ danh sách nhiệm vụ đang được giao cho bạn (chưa hoàn thành và có deadline)
+                Chọn từ danh sách board mà bạn đang là thành viên
               </p>
-              <TaskSelector
-                tasks={eligibleTasks}
-                selectedTask={form.selectedTask}
-                onSelect={(task) => setForm({...form, selectedTask: task})}
-                disabled={!deadlineCheck?.allowed}
-                placeholder="Chọn nhiệm vụ cần làm OT..."
-              />
-              {eligibleTasks.length > 0 && (
+
+              {loadingBoards ? (
+                <div className="flex items-center gap-2 p-4 border border-gray-200 rounded-lg">
+                  <Loader2 size={20} className="animate-spin text-orange-500" />
+                  <span className="text-gray-500">Đang tải danh sách board...</span>
+                </div>
+              ) : boardsError ? (
+                <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                  <p className="text-red-600 text-sm">{boardsError}</p>
+                </div>
+              ) : myBoards.length === 0 ? (
+                <div className="p-4 border border-yellow-200 rounded-lg bg-yellow-50">
+                  <p className="text-yellow-700 text-sm">Bạn chưa được thêm vào board nào. Liên hệ Manager để được thêm vào board.</p>
+                </div>
+              ) : (
+                <select
+                  value={form.selectedBoard?.id || ''}
+                  onChange={(e) => {
+                    const boardId = e.target.value;
+                    const board = myBoards.find(b => b.id === Number(boardId));
+                    setForm({...form, selectedBoard: board || null});
+                  }}
+                  disabled={!deadlineCheck?.allowed}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                >
+                  <option value="">-- Chọn board cần làm OT --</option>
+                  {myBoards.map(board => (
+                    <option key={board.id} value={board.id}>
+                      {board.name} ({board.memberCount} thành viên - Tiến độ {Math.round(board.progress || 0)}%)
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              {/* Hiển thị thông tin board đã chọn */}
+              {form.selectedBoard && (
+                <div className="mt-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="font-medium text-blue-900">{form.selectedBoard.name}</p>
+                  <div className="flex gap-4 mt-2 text-sm text-blue-700">
+                    <span>👥 {form.selectedBoard.memberCount} thành viên</span>
+                    <span>📊 Tiến độ: {Math.round(form.selectedBoard.progress || 0)}%</span>
+                  </div>
+                  <div className="flex gap-4 mt-1 text-xs text-blue-600">
+                    <span>Cần làm: {form.selectedBoard.todoCount || 0}</span>
+                    <span>Đang làm: {form.selectedBoard.inProgressCount || 0}</span>
+                    <span>Review: {form.selectedBoard.reviewCount || 0}</span>
+                    <span>Xong: {form.selectedBoard.doneCount || 0}</span>
+                  </div>
+                </div>
+              )}
+
+              {myBoards.length > 0 && (
                 <p className="text-xs text-gray-500 mt-2">
-                  Có {eligibleTasks.length} nhiệm vụ phù hợp để đăng ký OT
+                  Có {myBoards.length} board bạn đang tham gia
                 </p>
               )}
             </div>
@@ -381,15 +445,24 @@ const OTRequest = () => {
               ) : (
                 <button
                   type="submit"
-                  disabled={!canSubmit}
+                  disabled={!canSubmit || isSubmitting}
                   className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 font-medium ${
-                    canSubmit
+                    canSubmit && !isSubmitting
                       ? 'bg-orange-500 text-white hover:bg-orange-600 shadow-lg hover:shadow-xl'
                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  <Send size={18} />
-                  <span>{isSubmitting ? 'Đang gửi...' : 'Đăng ký OT'}</span>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Đang gửi...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send size={18} />
+                      <span>Đăng ký OT</span>
+                    </>
+                  )}
                 </button>
               )}
             </div>
@@ -413,7 +486,7 @@ const OTRequest = () => {
             ) : (
               <div className="space-y-3">
                 {recentRequests.map((request) => {
-                  const otHours = request.report?.actualHours || request.plannedHours;
+                  const otHours = request.otHours || request.plannedHours || 0;
                   const otPay = otHours * OT_HOURLY_RATE;
                   return (
                     <div
@@ -429,7 +502,7 @@ const OTRequest = () => {
                             {new Date(request.otDate).toLocaleDateString('vi-VN')}
                           </p>
                           <p className="text-sm text-gray-500">
-                            {request.taskTitle}
+                            {request.boardName || request.taskTitle || 'N/A'}
                           </p>
                         </div>
                       </div>

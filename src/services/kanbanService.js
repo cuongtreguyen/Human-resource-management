@@ -25,6 +25,16 @@ export const boardService = {
     return res.json();
   },
 
+  // GET /api/boards/my-boards - Lấy các boards mà employee hiện tại là member
+  async getMyBoards() {
+    const res = await http(`${BASE_URL}/boards/my-boards`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error('Failed to fetch my boards');
+    return res.json();
+  },
+
   // GET /api/boards/{id} - Lấy chi tiết board với lists & cards
   async getById(boardId) {
     if (!boardId || boardId === 'undefined' || boardId === 'null') {

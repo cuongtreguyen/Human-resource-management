@@ -1,22 +1,22 @@
-import React, { useState } from 'react';
-import { ArrowLeft, FileText, Clock, CheckCircle, Send, AlertCircle, Star, DollarSign } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ArrowLeft, FileText, Clock, CheckCircle, Send, AlertCircle, Star, DollarSign, Loader2, RefreshCw } from 'lucide-react';
 import { useOTContext } from '../../context/OTContext';
 import OTStatusBadge from '../../components/overtime/OTStatusBadge';
 import { getUserInfo } from '../../utils/auth';
+import { getMyOvertimeHistory, formatOTHistoryResponse } from '../../services/overtimeService';
 
 // OT Rate: 100,000 VND per hour
 const OT_HOURLY_RATE = 100000;
 
 const OTReport = () => {
   const {
-    getOTByEmployee,
     getOTNeedingReport,
     submitReport
   } = useOTContext();
 
   // Get current user from auth
   const currentUser = getUserInfo() || {};
-  const employeeId = currentUser.employeeId || '';
+  const employeeId = currentUser.id || currentUser.employeeId || '';
 
   // State
   const [selectedOT, setSelectedOT] = useState(null);
@@ -28,8 +28,34 @@ const OTReport = () => {
   });
   const [filter, setFilter] = useState('all');
 
-  // Get OT requests
-  const allOTRequests = getOTByEmployee(employeeId);
+  // State cho OT history từ API
+  const [allOTRequests, setAllOTRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch OT history từ API
+  const fetchOTHistory = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await getMyOvertimeHistory();
+      const formatted = formatOTHistoryResponse(data || []);
+      setAllOTRequests(formatted);
+    } catch (err) {
+      console.error('Error fetching OT history:', err);
+      setError(err.message);
+      setAllOTRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load OT history on mount
+  useEffect(() => {
+    fetchOTHistory();
+  }, []);
+
+  // Get OT needing report from context (local state)
   const needingReport = getOTNeedingReport(employeeId);
 
   // Filter requests
@@ -51,7 +77,7 @@ const OTReport = () => {
   const openReportModal = (otRequest) => {
     setSelectedOT(otRequest);
     setReportForm({
-      actualHours: otRequest.plannedHours,
+      actualHours: otRequest.otHours || otRequest.plannedHours || 2,
       completedWork: '',
       progress: 50
     });
@@ -87,7 +113,7 @@ const OTReport = () => {
       <div className="space-y-6">
         {/* Header */}
         <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-white p-6 rounded-2xl shadow-lg">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <a
               href="/employee"
               className="flex items-center gap-2 px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-all duration-200 backdrop-blur-sm"
@@ -95,12 +121,28 @@ const OTReport = () => {
               <ArrowLeft size={18} />
               <span>Quay lại</span>
             </a>
+            <button
+              onClick={fetchOTHistory}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+            >
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+              <span>Làm mới</span>
+            </button>
           </div>
           <div>
-            <h1 className="text-3xl font-bold mb-2">Báo cáo OT</h1>
-            <p className="text-orange-100">Nộp kết quả làm việc sau khi hoàn thành OT</p>
+            <h1 className="text-3xl font-bold mb-2">Lịch sử & Báo cáo OT</h1>
+            <p className="text-orange-100">Xem lịch sử và nộp kết quả làm việc sau khi hoàn thành OT</p>
           </div>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+            <AlertCircle className="text-red-500" size={20} />
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
 
         {/* Pending Reports Alert */}
         {needingReport.length > 0 && (
@@ -189,8 +231,8 @@ const OTReport = () => {
                   >
                     <div>
                       <p className="font-medium text-gray-900">{formatDate(ot.otDate)}</p>
-                      <p className="text-sm text-gray-600">{ot.taskTitle}</p>
-                      <p className="text-sm text-gray-500">Đã đăng ký: {ot.plannedHours}h</p>
+                      <p className="text-sm text-gray-600">{ot.boardName || ot.taskTitle || 'N/A'}</p>
+                      <p className="text-sm text-gray-500">Đã đăng ký: {ot.otHours || ot.plannedHours || 0}h</p>
                     </div>
                     <button
                       onClick={() => openReportModal(ot)}
@@ -226,7 +268,12 @@ const OTReport = () => {
           </div>
 
           <div className="divide-y divide-gray-200">
-            {filteredRequests.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center gap-2 py-8">
+                <Loader2 size={20} className="animate-spin text-orange-600" />
+                <span className="text-gray-500">Đang tải lịch sử OT...</span>
+              </div>
+            ) : filteredRequests.length === 0 ? (
               <p className="text-gray-500 text-center py-8">Không có yêu cầu OT nào</p>
             ) : (
               filteredRequests.map((ot) => (
@@ -237,20 +284,20 @@ const OTReport = () => {
                         <p className="font-medium text-gray-900">{formatDate(ot.otDate)}</p>
                         <OTStatusBadge status={ot.status} size="sm" />
                       </div>
-                      <p className="text-sm text-gray-700">{ot.taskTitle}</p>
+                      <p className="text-sm text-gray-700">{ot.boardName || 'Chưa có thông tin board'}</p>
                       <p className="text-sm text-gray-500">{ot.reason}</p>
 
                       <div className="flex items-center gap-4 text-sm">
                         <span className="text-gray-600">
-                          Đăng ký: <span className="font-medium">{ot.plannedHours}h</span>
+                          Số giờ: <span className="font-medium">{ot.otHours || ot.plannedHours || 0}h</span>
                         </span>
-                        {ot.report?.actualHours && (
-                          <span className="text-gray-600">
-                            Thực tế: <span className="font-medium text-purple-600">{ot.report.actualHours}h</span>
+                        {ot.department && (
+                          <span className="text-gray-500">
+                            Phòng: {ot.department}
                           </span>
                         )}
                         <span className="text-green-600 font-medium">
-                          {calculatePay(ot.report?.actualHours || ot.plannedHours)} VND
+                          {calculatePay(ot.otHours || ot.plannedHours || 0)} VND
                         </span>
                       </div>
 
@@ -312,7 +359,7 @@ const OTReport = () => {
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-xl font-bold text-gray-900">Nộp báo cáo OT</h3>
               <p className="text-sm text-gray-500 mt-1">
-                {formatDate(selectedOT.otDate)} - {selectedOT.taskTitle}
+                {formatDate(selectedOT.otDate)} - {selectedOT.boardName || selectedOT.taskTitle || 'N/A'}
               </p>
             </div>
 
@@ -326,7 +373,7 @@ const OTReport = () => {
                   <input
                     type="range"
                     min="0.5"
-                    max={Math.min(selectedOT.plannedHours + 1, 4)}
+                    max={Math.min((selectedOT.otHours || selectedOT.plannedHours || 2) + 1, 4)}
                     step="0.5"
                     value={reportForm.actualHours}
                     onChange={(e) => setReportForm({...reportForm, actualHours: parseFloat(e.target.value)})}

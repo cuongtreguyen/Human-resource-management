@@ -881,6 +881,7 @@ const Login = () => {
       // LƯU ĐẦY ĐỦ → PORTAL HIỆN NGAY LẬP TỨC!
       setUserInfo({
         id: userFromApi.id,
+        employeeId: userFromApi.id, // QUAN TRỌNG: Dùng cho attendance, face recognition
         employeeCode: userFromApi.employeeId || `EMP${String(userFromApi.id || "").padStart(3, "0")}`,
         name: fullProfile?.name ||
               (fullProfile?.firstName ? `${fullProfile.firstName} ${fullProfile.lastName || ""}`.trim() : 

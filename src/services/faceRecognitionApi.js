@@ -108,8 +108,35 @@ class FaceRecognitionApi {
     if (!employeeId) {
       throw new Error('employeeId is required');
     }
+
+    // Ưu tiên gọi Python API (realtime từ S3/file JSON) - giống Admin
+    // Fallback sang Java API nếu Python không available
+    try {
+      const res = await http(
+        `${PY_API}/api/attendance/employee/${encodeURIComponent(employeeId)}`,
+        {},
+        10000
+      );
+      if (res.ok) {
+        const data = await res.json();
+        // Transform Python format sang format chuẩn
+        return data.map(item => ({
+          id: item.id,
+          date: item.date,
+          checkIn: item.check_in || item.checkIn,
+          checkOut: item.check_out || item.checkOut,
+          check_in: item.check_in,
+          check_out: item.check_out,
+          employeeName: item.name || item.employeeName
+        }));
+      }
+    } catch (err) {
+      console.warn('Python API failed, falling back to Java API:', err.message);
+    }
+
+    // Fallback: Gọi Java API
     const res = await http(
-      `${PY_API}/api/attendance/employee/${encodeURIComponent(employeeId)}`,
+      `${JAVA_API}/attendance/employee/${encodeURIComponent(employeeId)}`,
       {},
       10000
     );

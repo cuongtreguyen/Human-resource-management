@@ -1,9 +1,19 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+  createOvertimeRequest,
+  getOvertimeByStatus,
+  getOvertimeDetails,
+  setOvertimeStatus,
+  formatOTListResponse,
+  formatOTResponse,
+  mapOTStatusToBackend,
+  getMyOvertimeHistory,
+  formatOTHistoryResponse,
+} from '../services/overtimeService';
+import { getRole } from '../utils/auth';
 
 const OTContext = createContext();
 
-// Key for localStorage
-const STORAGE_KEY = 'hrm_ot_requests';
 const MONTHLY_QUOTA = 40; // 40 hours per month
 
 export const useOTContext = () => {
@@ -14,187 +24,46 @@ export const useOTContext = () => {
   return context;
 };
 
-// Default OT requests (sample data for demo)
-const defaultOTRequests = [
-  {
-    id: 'ot001',
-    employeeId: 'emp001',
-    employeeName: 'Nguyễn Văn An',
-    department: 'IT',
-    taskId: 't3',
-    taskTitle: 'Implement authentication system',
-    taskDeadline: '2024-12-20',
-    departmentId: 'it',
-    otDate: '2024-12-10',
-    plannedHours: 3,
-    reason: 'Hoàn thành module authentication trước deadline',
-    status: 'payroll_approved',
-    submittedAt: '2024-12-10T14:30:00',
-    approvedAt: '2024-12-10T15:00:00',
-    approvedBy: 'Manager Trần',
-    rejectReason: null,
-    report: {
-      actualHours: 3,
-      completedWork: 'Hoàn thành JWT authentication và OAuth integration',
-      progress: 85,
-      submittedAt: '2024-12-10T21:00:00'
-    },
-    review: {
-      reviewedAt: '2024-12-11T09:00:00',
-      reviewedBy: 'Manager Trần',
-      rating: 5,
-      feedback: 'Công việc tốt, đúng tiến độ'
-    },
-    payrollApproved: true,
-    payrollApprovedBy: 'Kế toán Linh',
-    payrollApprovedAt: '2024-12-11T10:00:00',
-    calculatedPay: 306818
-  },
-  {
-    id: 'ot002',
-    employeeId: 'emp002',
-    employeeName: 'Trần Thị Bình',
-    department: 'IT',
-    taskId: 't1',
-    taskTitle: 'Thiết kế giao diện dashboard mới',
-    taskDeadline: '2024-12-15',
-    departmentId: 'it',
-    otDate: '2024-12-12',
-    plannedHours: 2,
-    reason: 'Hoàn thiện UI mockup',
-    status: 'reviewed',
-    submittedAt: '2024-12-12T14:00:00',
-    approvedAt: '2024-12-12T14:30:00',
-    approvedBy: 'Manager Trần',
-    rejectReason: null,
-    report: {
-      actualHours: 2,
-      completedWork: 'Hoàn thành mockup cho 3 màn hình chính',
-      progress: 70,
-      submittedAt: '2024-12-12T20:00:00'
-    },
-    review: {
-      reviewedAt: '2024-12-13T09:00:00',
-      reviewedBy: 'Manager Trần',
-      rating: 4,
-      feedback: 'Tốt, cần bổ sung thêm responsive'
-    },
-    payrollApproved: false,
-    payrollApprovedBy: null,
-    payrollApprovedAt: null,
-    calculatedPay: null
-  },
-  {
-    id: 'ot003',
-    employeeId: 'emp003',
-    employeeName: 'Lê Văn Cường',
-    department: 'IT',
-    taskId: 't2',
-    taskTitle: 'Viết API documentation',
-    taskDeadline: '2024-12-18',
-    departmentId: 'it',
-    otDate: '2024-12-14',
-    plannedHours: 3,
-    reason: 'Cập nhật tài liệu cho các endpoints mới',
-    status: 'completed',
-    submittedAt: '2024-12-14T14:30:00',
-    approvedAt: '2024-12-14T15:00:00',
-    approvedBy: 'Manager Trần',
-    rejectReason: null,
-    report: {
-      actualHours: 2.5,
-      completedWork: 'Hoàn thành 80% tài liệu API',
-      progress: 80,
-      submittedAt: '2024-12-14T20:30:00'
-    },
-    review: null,
-    payrollApproved: false,
-    payrollApprovedBy: null,
-    payrollApprovedAt: null,
-    calculatedPay: null
-  },
-  {
-    id: 'ot004',
-    employeeId: 'emp001',
-    employeeName: 'Nguyễn Văn An',
-    department: 'IT',
-    taskId: 't4',
-    taskTitle: 'Fix responsive issues',
-    taskDeadline: '2024-12-16',
-    departmentId: 'it',
-    otDate: '2024-12-15',
-    plannedHours: 2,
-    reason: 'Sửa lỗi hiển thị trên mobile',
-    status: 'approved',
-    submittedAt: '2024-12-15T14:00:00',
-    approvedAt: '2024-12-15T14:30:00',
-    approvedBy: 'Manager Trần',
-    rejectReason: null,
-    report: null,
-    review: null,
-    payrollApproved: false,
-    payrollApprovedBy: null,
-    payrollApprovedAt: null,
-    calculatedPay: null
-  },
-  {
-    id: 'ot005',
-    employeeId: 'emp004',
-    employeeName: 'Phạm Thị Dung',
-    department: 'IT',
-    taskId: 't3',
-    taskTitle: 'Implement authentication system',
-    taskDeadline: '2024-12-20',
-    departmentId: 'it',
-    otDate: '2024-12-16',
-    plannedHours: 4,
-    reason: 'Hoàn thành OAuth2 integration',
-    status: 'pending',
-    submittedAt: '2024-12-16T14:00:00',
-    approvedAt: null,
-    approvedBy: null,
-    rejectReason: null,
-    report: null,
-    review: null,
-    payrollApproved: false,
-    payrollApprovedBy: null,
-    payrollApprovedAt: null,
-    calculatedPay: null
-  }
-];
-
 export const OTProvider = ({ children }) => {
-  // Initialize state from localStorage or use default
-  const [otRequests, setOTRequests] = useState(() => {
+  // State để lưu danh sách OT từ API
+  const [otRequests, setOTRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch OT list từ API - phân quyền theo role
+  const fetchOTRequests = useCallback(async (status = null) => {
+    setLoading(true);
+    setError(null);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : defaultOTRequests;
-    } catch {
-      return defaultOTRequests;
-    }
-  });
+      const userRole = getRole();
 
-  // Save to localStorage whenever otRequests change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(otRequests));
-  }, [otRequests]);
-
-  // Listen for changes from other tabs
-  useEffect(() => {
-    const handleStorageChange = (e) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        try {
-          const newData = JSON.parse(e.newValue);
-          setOTRequests(newData);
-        } catch {
-          // Ignore parse errors
-        }
+      let data;
+      if (userRole === 'employee') {
+        // Employee: chỉ lấy OT của chính mình
+        data = await getMyOvertimeHistory();
+        const formattedData = formatOTHistoryResponse(data);
+        setOTRequests(formattedData);
+        return formattedData;
+      } else {
+        // Admin/Manager/Accountant: lấy tất cả OT
+        data = await getOvertimeByStatus(status ? mapOTStatusToBackend(status) : null);
+        const formattedData = formatOTListResponse(data);
+        setOTRequests(formattedData);
+        return formattedData;
       }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    } catch (err) {
+      console.error('Error fetching OT requests:', err);
+      setError(err.message);
+      return [];
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // Load OT requests on mount
+  useEffect(() => {
+    fetchOTRequests();
+  }, [fetchOTRequests]);
 
   // ==================== VALIDATION HELPERS ====================
 
@@ -295,68 +164,155 @@ export const OTProvider = ({ children }) => {
 
   // ==================== CRUD OPERATIONS ====================
 
-  // Create new OT request
-  const createOTRequest = (requestData) => {
-    const newRequest = {
-      id: `ot${Date.now()}`,
-      ...requestData,
-      status: 'pending',
-      submittedAt: new Date().toISOString(),
-      approvedAt: null,
-      approvedBy: null,
-      rejectReason: null,
-      report: null,
-      review: null,
-      payrollApproved: false,
-      payrollApprovedBy: null,
-      payrollApprovedAt: null,
-      calculatedPay: null
-    };
+  // Create new OT request - GỌI API BACKEND
+  const createOTRequest = async (requestData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Map data từ frontend sang format backend cần
+      const apiData = {
+        employeeId: requestData.employeeId, // ID số từ database
+        otDate: requestData.otDate, // Format: YYYY-MM-DD
+        otHours: requestData.plannedHours || requestData.otHours,
+        boardId: requestData.boardId || null,
+        reason: requestData.reason,
+        department: requestData.department,
+      };
 
-    setOTRequests(prev => [...prev, newRequest]);
-    return newRequest;
+      const response = await createOvertimeRequest(apiData);
+      const formattedResponse = formatOTResponse(response);
+
+      // Thêm vào state local
+      setOTRequests(prev => [...prev, formattedResponse]);
+
+      // Refresh danh sách từ server
+      await fetchOTRequests();
+
+      return formattedResponse;
+    } catch (err) {
+      console.error('Error creating OT request:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Update OT request
+  // Update OT request - local state only (API không có endpoint update)
   const updateOTRequest = (id, updates) => {
     setOTRequests(prev => prev.map(ot =>
       ot.id === id ? { ...ot, ...updates } : ot
     ));
   };
 
-  // Delete OT request (only pending can be deleted)
-  const deleteOTRequest = (id) => {
-    setOTRequests(prev => prev.filter(ot => ot.id !== id));
+  // Delete/Cancel OT request - GỌI API BACKEND
+  const deleteOTRequest = async (id) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Gọi API để hủy OT (set status = CANCELLED)
+      await setOvertimeStatus(id, 'CANCELLED');
+
+      // Xóa khỏi state local
+      setOTRequests(prev => prev.filter(ot => ot.id !== id));
+
+      // Refresh danh sách
+      await fetchOTRequests();
+    } catch (err) {
+      console.error('Error deleting OT request:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ==================== APPROVAL WORKFLOW ====================
 
-  // Manager approves OT
-  const approveOT = (id, approvedBy) => {
-    setOTRequests(prev => prev.map(ot =>
-      ot.id === id ? {
-        ...ot,
-        status: 'approved',
-        approvedAt: new Date().toISOString(),
-        approvedBy
-      } : ot
-    ));
+  // Manager approves OT - GỌI API BACKEND
+  const approveOT = async (id, managerNote = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      await setOvertimeStatus(id, 'APPROVED', managerNote);
+
+      // Update local state
+      setOTRequests(prev => prev.map(ot =>
+        ot.id === id ? {
+          ...ot,
+          status: 'approved',
+          approvedAt: new Date().toISOString(),
+          managerNote
+        } : ot
+      ));
+
+      // Refresh danh sách
+      await fetchOTRequests();
+    } catch (err) {
+      console.error('Error approving OT:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Manager rejects OT
-  const rejectOT = (id, rejectReason, rejectedBy) => {
-    setOTRequests(prev => prev.map(ot =>
-      ot.id === id ? {
-        ...ot,
-        status: 'rejected',
-        approvedAt: new Date().toISOString(),
-        approvedBy: rejectedBy,
-        rejectReason
-      } : ot
-    ));
+  // Manager rejects OT - GỌI API BACKEND
+  const rejectOT = async (id, rejectReason = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      await setOvertimeStatus(id, 'REJECTED', rejectReason);
+
+      // Update local state
+      setOTRequests(prev => prev.map(ot =>
+        ot.id === id ? {
+          ...ot,
+          status: 'rejected',
+          approvedAt: new Date().toISOString(),
+          managerNote: rejectReason
+        } : ot
+      ));
+
+      // Refresh danh sách
+      await fetchOTRequests();
+    } catch (err) {
+      console.error('Error rejecting OT:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Employee submits result report
+  // Manager marks OT as completed - GỌI API BACKEND
+  const completeOT = async (id, managerNote = '') => {
+    setLoading(true);
+    setError(null);
+    try {
+      await setOvertimeStatus(id, 'COMPLETED', managerNote);
+
+      // Update local state
+      setOTRequests(prev => prev.map(ot =>
+        ot.id === id ? {
+          ...ot,
+          status: 'completed',
+          managerNote
+        } : ot
+      ));
+
+      // Refresh danh sách
+      await fetchOTRequests();
+    } catch (err) {
+      console.error('Error completing OT:', err);
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Employee submits result report (giữ local vì BE chưa có endpoint)
   const submitReport = (id, reportData) => {
     setOTRequests(prev => prev.map(ot =>
       ot.id === id ? {
@@ -370,7 +326,7 @@ export const OTProvider = ({ children }) => {
     ));
   };
 
-  // Manager reviews OT result
+  // Manager reviews OT result (giữ local vì BE chưa có endpoint)
   const reviewOT = (id, reviewData) => {
     setOTRequests(prev => prev.map(ot =>
       ot.id === id ? {
@@ -384,7 +340,7 @@ export const OTProvider = ({ children }) => {
     ));
   };
 
-  // Accountant approves for payroll
+  // Accountant approves for payroll (giữ local vì BE chưa có endpoint)
   const approveForPayroll = (id, approvedBy, hourlyRate) => {
     setOTRequests(prev => prev.map(ot => {
       if (ot.id === id) {
@@ -511,14 +467,16 @@ export const OTProvider = ({ children }) => {
     };
   };
 
-  // Reset to default data
-  const resetToDefault = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setOTRequests(defaultOTRequests);
+  // Reset/Refresh data từ API
+  const refreshOTRequests = () => {
+    return fetchOTRequests();
   };
 
   const value = {
+    // State
     otRequests,
+    loading,
+    error,
     // Validation
     canRegisterOT,
     checkMonthlyQuota,
@@ -531,6 +489,7 @@ export const OTProvider = ({ children }) => {
     // Workflow
     approveOT,
     rejectOT,
+    completeOT,
     submitReport,
     reviewOT,
     approveForPayroll,
@@ -544,7 +503,8 @@ export const OTProvider = ({ children }) => {
     getOTStatistics,
     getPayrollSummary,
     // Utils
-    resetToDefault,
+    refreshOTRequests,
+    fetchOTRequests,
   };
 
   return (

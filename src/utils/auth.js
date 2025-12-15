@@ -106,19 +106,21 @@ export const clearUserInfo = () => {
 };
 
 /**
- * Lấy user ID
+ * Lấy user ID (dùng cho attendance, face recognition)
+ * Ưu tiên: employeeId > id
  */
 export const getUserId = () => {
   const userInfo = getUserInfo();
-  return userInfo?.employeeId || null;
+  return userInfo?.employeeId || userInfo?.id || null;
 };
 
 /**
  * Lấy employee ID của user hiện tại
+ * Ưu tiên: employeeId > id
  */
 export const getCurrentEmployeeId = () => {
   const userInfo = getUserInfo();
-  return userInfo?.employeeId || null;
+  return userInfo?.employeeId || userInfo?.id || null;
 };
 
 /**

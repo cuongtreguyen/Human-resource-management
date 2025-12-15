@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   X, Users, Calendar, Clock, DollarSign, FileText, Settings, Home,
-  BarChart3, CheckSquare, User, Bell, Activity, Heart, Award,
+  BarChart3, CheckSquare, User, Bell, Heart, Award,
   HelpCircle, LogOut, ChevronLeft, Menu, BookOpen, Shield, Kanban
 } from 'lucide-react';
 import { getRole, clearRole } from '../../utils/auth';
@@ -121,14 +121,13 @@ const Sidebar = ({ sidebarOpen: mobileSidebarOpen, setSidebarOpen: setMobileSide
       { name: 'Danh sách nghỉ phép', href: '/leaves', icon: Calendar, allowedRoles: ['accountant'] },
       { name: 'Tạo đơn nghỉ phép', href: '/leaves/create', icon: FileText, allowedRoles: ['manager', 'accountant'] },
       { name: 'Duyệt OT', href: '/overtime', icon: Clock, allowedRoles: ['manager'] },
-      { name: 'Quản lý công việc', href: '/kanban', icon: Kanban, allowedRoles: ['admin', 'manager'] },
+      { name: 'Quản lý công việc', href: '/kanban', icon: Kanban, allowedRoles: ['manager'] },
       { name: 'Đánh giá nhân viên', href: '/evaluations', icon: Award, allowedRoles: ['admin', 'manager'] },
       { name: 'Tài liệu', href: '/documents', icon: FileText, allowedRoles: ['manager', 'accountant'] },
       { name: 'Báo cáo', href: '/reports', icon: BarChart3, allowedRoles: ['manager', 'accountant'] },
       { name: 'Thông báo', href: '/notifications', icon: Bell, allowedRoles: ['admin', 'manager', 'accountant'] },
       { name: 'Quản lý yêu cầu hỗ trợ', href: '/admin/support-tickets', icon: HelpCircle, allowedRoles: ['admin', 'manager'] },
       { name: 'Phúc lợi & Bảo hiểm', href: '/benefits', icon: Heart, allowedRoles: ['accountant'] },
-      { name: 'Nhật ký hệ thống', href: '/admin/logs', icon: Activity, allowedRoles: ['admin'] },
       { name: 'Cài đặt', href: '/settings', icon: Settings, allowedRoles: ['admin'] },
     ];
 
