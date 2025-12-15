@@ -6,6 +6,8 @@ import EmployeeLayout from './components/layout/EmployeeLayout';
 
 // Pages
 import Login from './pages/login/Login';
+import ForgotPassword from './pages/login/ForgotPassword';
+import ResetPassword from './pages/login/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import EmployeeList from './pages/admin/EmployeeList';
 import AddEmployee from './pages/admin/AddEmployee';
@@ -85,6 +87,8 @@ const AppRoutes = () => {
     <Routes>
 
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       <Route element={<StaffRoute><Layout /></StaffRoute>}>
         {/* Core */}

@@ -785,7 +785,7 @@
 
 // src/pages/Login.jsx - HOÀN CHỈNH, CHẠY NGON 100%
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   User,
   Lock,
@@ -1058,6 +1058,15 @@ const Login = () => {
                     <p className="text-sm text-red-600">{error}</p>
                   </div>
                 )}
+
+                <div className="flex items-center justify-end">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm font-medium text-purple-600 hover:text-purple-500 transition-colors"
+                  >
+                    Quên mật khẩu?
+                  </Link>
+                </div>
 
                 <button
                   type="submit"

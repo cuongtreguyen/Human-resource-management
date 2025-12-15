@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import React, { useState, useEffect, useCallback } from 'react';
+=======
+import React, { useState, useEffect } from 'react';
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
 import {
   Clock,
   CheckCircle,
@@ -22,13 +26,24 @@ import {
 } from '../../services/overtimeService';
 import OTStatusBadge from '../../components/overtime/OTStatusBadge';
 import { getUserInfo } from '../../utils/auth';
+import { getOTByStatus, setOTStatus } from '../../services/overtimeService';
+import { toast } from 'react-toastify';
 
 const OTManagement = () => {
+<<<<<<< HEAD
   // State cho OT requests từ API
   const [otRequests, setOtRequests] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+=======
+  const {
+    otRequests: contextOTRequests,
+    approveOT,
+    rejectOT,
+    getOTStatistics
+  } = useOTContext();
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
 
   // State
   const [filter, setFilter] = useState('pending');
@@ -37,6 +52,15 @@ const OTManagement = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [otRequests, setOTRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    total: 0,
+    totalHours: 0
+  });
 
   // Stats
   const [stats, setStats] = useState({
@@ -52,6 +76,7 @@ const OTManagement = () => {
   const currentUser = getUserInfo() || {};
   const managerName = currentUser.name || 'Quản lý';
 
+<<<<<<< HEAD
   // Fetch OT requests từ API
   const fetchOTRequests = useCallback(async (statusFilter = null) => {
     setLoading(true);
@@ -62,6 +87,95 @@ const OTManagement = () => {
       if (statusFilter && statusFilter !== 'all') {
         backendStatus = mapOTStatusToBackend(statusFilter);
       }
+=======
+  // Load OT requests from API
+  useEffect(() => {
+    loadOTRequests();
+  }, [filter]);
+
+  const loadOTRequests = async () => {
+    try {
+      setLoading(true);
+      let data = [];
+      
+      if (filter === 'all') {
+        // Load tất cả các status
+        const [pending, approved, rejected] = await Promise.all([
+          getOTByStatus('PENDING').catch(() => []),
+          getOTByStatus('APPROVED').catch(() => []),
+          getOTByStatus('REJECTED').catch(() => []),
+        ]);
+        data = [...pending, ...approved, ...rejected];
+      } else {
+        // Load theo status cụ thể
+        const statusMap = {
+          'pending': 'PENDING',
+          'approved': 'APPROVED',
+          'rejected': 'REJECTED',
+          'completed': 'COMPLETED',
+          'reviewed': 'REVIEWED',
+          'payroll_approved': 'PAYROLL_APPROVED',
+        };
+        const apiStatus = statusMap[filter] || 'PENDING';
+        data = await getOTByStatus(apiStatus);
+      }
+
+      // Transform data từ API format sang format của Context
+      const transformedData = data.map(item => ({
+        id: item.id,
+        employeeId: item.employeeId,
+        employeeName: item.employeeName || 'Chưa có tên',
+        department: item.department || null, // Giữ null thay vì 'N/A' để xử lý hiển thị
+        taskId: item.taskId,
+        taskTitle: item.title || 'Chưa có task',
+        taskDeadline: item.deadline,
+        otDate: item.otDate,
+        plannedHours: item.otHours,
+        reason: item.reason || '',
+        status: mapStatusFromAPI(item.overtimeStatus),
+        submittedAt: item.createdAt,
+        approvedBy: item.approvedBy,
+        managerNote: item.managerNote,
+      }));
+
+      setOTRequests(transformedData);
+      updateStats(transformedData);
+    } catch (error) {
+      console.error('Load OT requests error:', error);
+      toast.error('Không thể tải danh sách OT. Vui lòng thử lại.');
+      // Fallback to context data
+      setOTRequests(contextOTRequests);
+      setStats(getOTStatistics());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Map status từ API (APPROVED, PENDING, REJECTED) sang format của Context
+  const mapStatusFromAPI = (apiStatus) => {
+    const statusMap = {
+      'PENDING': 'pending',
+      'APPROVED': 'approved',
+      'REJECTED': 'rejected',
+      'COMPLETED': 'completed',
+      'REVIEWED': 'reviewed',
+      'PAYROLL_APPROVED': 'payroll_approved',
+    };
+    return statusMap[apiStatus] || apiStatus?.toLowerCase() || 'pending';
+  };
+
+  // Update stats từ data
+  const updateStats = (data) => {
+    const newStats = {
+      pending: data.filter(ot => ot.status === 'pending').length,
+      approved: data.filter(ot => ot.status === 'approved').length,
+      rejected: data.filter(ot => ot.status === 'rejected').length,
+      total: data.length,
+      totalHours: data.reduce((sum, ot) => sum + (ot.plannedHours || 0), 0),
+    };
+    setStats(newStats);
+  };
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
 
       const data = await getOvertimeByStatus(backendStatus);
       const formattedData = formatOTListResponse(data || []);
@@ -112,10 +226,17 @@ const OTManagement = () => {
   // Filter and search (chỉ search vì filter đã xử lý ở API)
   const filteredRequests = otRequests.filter(ot => {
     const matchesSearch = searchTerm === '' ||
+<<<<<<< HEAD
       (ot.employeeName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (ot.taskTitle || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (ot.department || '').toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
+=======
+      ot.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ot.taskTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (ot.department && ot.department.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesFilter && matchesSearch;
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
   });
 
   // Format date
@@ -139,6 +260,7 @@ const OTManagement = () => {
     });
   };
 
+<<<<<<< HEAD
   // Handle approve - GỌI API
   const handleApprove = async (otId) => {
     setActionLoading(true);
@@ -155,6 +277,25 @@ const OTManagement = () => {
       alert(err.message || 'Có lỗi xảy ra khi duyệt OT');
     } finally {
       setActionLoading(false);
+=======
+  // Handle approve
+  const handleApprove = async (otId) => {
+    try {
+      const response = await setOTStatus(otId, 'APPROVED', 'Đã được duyệt bởi Manager');
+      
+      // Cập nhật Context để đồng bộ
+      approveOT(otId, managerName);
+      
+      // Reload data
+      await loadOTRequests();
+      
+      toast.success('Đã duyệt yêu cầu OT thành công!');
+      setShowDetailModal(false);
+      setSelectedOT(null);
+    } catch (error) {
+      console.error('Approve OT error:', error);
+      toast.error(error.message || 'Không thể duyệt OT. Vui lòng thử lại.');
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
     }
   };
 
@@ -165,23 +306,40 @@ const OTManagement = () => {
     setShowRejectModal(true);
   };
 
+<<<<<<< HEAD
   // Handle reject - GỌI API
+=======
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
   const handleReject = async () => {
     if (!rejectReason.trim()) {
-      alert('Vui lòng nhập lý do từ chối');
+      toast.warning('Vui lòng nhập lý do từ chối');
       return;
     }
 
+<<<<<<< HEAD
     setActionLoading(true);
     try {
       await setOvertimeStatus(selectedOT.id, 'REJECTED', rejectReason);
       // Refresh data
       await fetchOTRequests(filter);
       await fetchStats();
+=======
+    try {
+      const response = await setOTStatus(selectedOT.id, 'REJECTED', rejectReason);
+      
+      // Cập nhật Context để đồng bộ
+      rejectOT(selectedOT.id, rejectReason, managerName);
+      
+      // Reload data
+      await loadOTRequests();
+      
+      toast.success('Đã từ chối yêu cầu OT.');
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
       setShowRejectModal(false);
       setShowDetailModal(false);
       setSelectedOT(null);
       setRejectReason('');
+<<<<<<< HEAD
       alert('Đã từ chối yêu cầu OT!');
     } catch (err) {
       console.error('Error rejecting OT:', err);
@@ -195,6 +353,12 @@ const OTManagement = () => {
   const handleRefresh = () => {
     fetchOTRequests(filter);
     fetchStats();
+=======
+    } catch (error) {
+      console.error('Reject OT error:', error);
+      toast.error(error.message || 'Không thể từ chối OT. Vui lòng thử lại.');
+    }
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
   };
 
   // View detail
@@ -349,6 +513,7 @@ const OTManagement = () => {
 
       {/* OT Requests Table */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+<<<<<<< HEAD
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -372,12 +537,35 @@ const OTManagement = () => {
                   </td>
                 </tr>
               ) : filteredRequests.length === 0 ? (
+=======
+        {loading && (
+          <div className="p-8 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <p className="mt-2 text-gray-500">Đang tải dữ liệu...</p>
+          </div>
+        )}
+        {!loading && (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                    Không có yêu cầu OT nào
-                  </td>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Nhân viên</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Task</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Ngày OT</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Giờ</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Trạng thái</th>
+                  <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">Thao tác</th>
                 </tr>
-              ) : (
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredRequests.length === 0 ? (
+                  <tr>
+                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                      Không có yêu cầu OT nào
+                    </td>
+                  </tr>
+                ) : (
                 filteredRequests.map((ot) => (
                   <tr key={ot.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3">
@@ -386,8 +574,17 @@ const OTManagement = () => {
                           <User className="w-4 h-4 text-purple-600" />
                         </div>
                         <div>
+<<<<<<< HEAD
                           <p className="font-medium text-gray-900">{ot.employeeName || 'N/A'}</p>
                           <p className="text-sm text-gray-500">{ot.department || 'N/A'}</p>
+=======
+                          <p className="font-medium text-gray-900">{ot.employeeName}</p>
+                          {ot.department ? (
+                            <p className="text-sm text-gray-500">{ot.department}</p>
+                          ) : (
+                            <p className="text-sm text-gray-400 italic">Chưa có phòng ban</p>
+                          )}
+>>>>>>> f1df64814d3ccd720b7ab626ac48303f39313ed7
                         </div>
                       </div>
                     </td>
@@ -440,10 +637,11 @@ const OTManagement = () => {
                     </td>
                   </tr>
                 ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Detail Modal */}
@@ -474,7 +672,11 @@ const OTManagement = () => {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900">{selectedOT.employeeName}</p>
-                  <p className="text-sm text-gray-500">{selectedOT.department}</p>
+                  {selectedOT.department ? (
+                    <p className="text-sm text-gray-500">{selectedOT.department}</p>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">Chưa có phòng ban</p>
+                  )}
                 </div>
               </div>
 
